@@ -14,6 +14,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.crypto.{DoubleSha256DigestBE, StringFactory}
+import org.bitcoins.rpc.client.clustermempool.ClusterMempoolRpcClient
 import org.bitcoins.rpc.client.v18.V18AssortedRpc
 import org.bitcoins.rpc.client.v20.V20MultisigRpc
 import org.bitcoins.rpc.client.v25.BitcoindV25RpcClient
@@ -347,6 +348,8 @@ object BitcoindRpcClient {
       case BitcoindVersion.V25 => BitcoindV25RpcClient.withActorSystem(instance)
       case BitcoindVersion.V26 => BitcoindV26RpcClient.withActorSystem(instance)
       case BitcoindVersion.V27 => BitcoindV27RpcClient.withActorSystem(instance)
+      case BitcoindVersion.V2799ClusterMempool =>
+        ClusterMempoolRpcClient.withActorSystem(instance)
       case BitcoindVersion.Unknown =>
         sys.error(
           s"Cannot create a Bitcoin Core RPC client: unsupported version"
@@ -373,7 +376,7 @@ object BitcoindVersion
   val newest: BitcoindVersion = V27
 
   val standard: Vector[BitcoindVersion] =
-    Vector(V27, V26, V25)
+    Vector(V2799ClusterMempool, V27, V26, V25)
 
   val known: Vector[BitcoindVersion] = standard
 
@@ -387,6 +390,10 @@ object BitcoindVersion
 
   case object V27 extends BitcoindVersion {
     override def toString: String = "v27.0"
+  }
+
+  case object V2799ClusterMempool extends BitcoindVersion {
+    override def toString: String = "v27.99.0"
   }
 
   case object Unknown extends BitcoindVersion {
@@ -420,8 +427,9 @@ object BitcoindVersion
 
   def findVersion(version: String): Option[BitcoindVersion] = {
     // first try to match the version exactly
-    BitcoindVersion.known
-      .find(v => version == v.toString) match {
+    val noCommit = version.split("-").head
+    val result = BitcoindVersion.known
+      .find(v => noCommit == v.toString) match {
       case Some(r) => Some(r)
       case None    =>
         // try to match the major version if we can't match it exactly
@@ -429,5 +437,6 @@ object BitcoindVersion
           version.startsWith(v.toString)
         }
     }
+    result
   }
 }

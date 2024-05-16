@@ -193,7 +193,7 @@ trait Client
                 val foundVersion = local.getVersion
                 if (foundVersion != v) {
                   throw new RuntimeException(
-                    s"Wrong version for bitcoind RPC client! Expected $version, got $foundVersion"
+                    s"Wrong version for bitcoind RPC client! Expected $v, got $foundVersion"
                   )
                 }
               }

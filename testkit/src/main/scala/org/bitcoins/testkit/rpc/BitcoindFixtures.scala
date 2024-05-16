@@ -1,6 +1,7 @@
 package org.bitcoins.testkit.rpc
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddNodeArgument
+import org.bitcoins.rpc.client.clustermempool.ClusterMempoolRpcClient
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v25.BitcoindV25RpcClient
 import org.bitcoins.rpc.util.{NodePair, NodeTriple}
@@ -65,6 +66,27 @@ trait BitcoindFixturesFundedCachedNewest
 
   override def afterAll(): Unit = {
     super[CachedBitcoindNewest].afterAll()
+    super[BitcoinSAsyncFixtureTest].afterAll()
+  }
+}
+
+trait BitcoindFixturesFundedCachedCluster
+    extends BitcoinSAsyncFixtureTest
+    with BitcoindFixturesFundedCached
+    with CachedBitcoindCluster {
+  override type FixtureParam = ClusterMempoolRpcClient
+
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    val f: Future[Outcome] = for {
+      bitcoind <- cachedBitcoindWithFundsF
+      futOutcome = withNewestFundedBitcoindCached(test, bitcoind)
+      fut <- futOutcome.toFuture
+    } yield fut
+    new FutureOutcome(f)
+  }
+
+  override def afterAll(): Unit = {
+    super[CachedBitcoindCluster].afterAll()
     super[BitcoinSAsyncFixtureTest].afterAll()
   }
 }
@@ -146,6 +168,27 @@ trait BitcoindFixturesCachedPairNewest
     with BitcoindFixturesCachedPair[BitcoindRpcClient] {
   override type FixtureParam = NodePair[BitcoindRpcClient]
   override val version: BitcoindVersion = BitcoindVersion.newest
+
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    val futOutcome = for {
+      pair <- clientsF
+      futOutcome = with2BitcoindsCached(test, pair)
+      f <- futOutcome.toFuture
+    } yield f
+    new FutureOutcome(futOutcome)
+  }
+
+  override def afterAll(): Unit = {
+    super[BitcoindFixturesCachedPair].afterAll()
+    super[BitcoinSAsyncFixtureTest].afterAll()
+  }
+}
+
+trait BitcoindFixturesCachedPairCluster
+    extends BitcoinSAsyncFixtureTest
+    with BitcoindFixturesCachedPair[BitcoindV25RpcClient] {
+  override type FixtureParam = NodePair[BitcoindV25RpcClient]
+  override val version: BitcoindVersion = BitcoindVersion.V2799ClusterMempool
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val futOutcome = for {
