@@ -1,7 +1,7 @@
 name: Release
 on:
   push:
-    branches: [master, main]
+    branches: [master, main, 2024-05-27-fix-release-yml]
     tags: ["*"]
   release:
     types: [ published ]
