@@ -92,7 +92,7 @@ TaskKeys.downloadLnd := {
       logger.info(s"Extracting archive with command: $extractCommand")
       extractCommand.!!
     } else {
-      Files.delete(versionDir)
+      Files.deleteIfExists(versionDir)
       logger.error(
         s"Downloaded invalid version of lnd, got $hash, expected $expectedHash")
     }
