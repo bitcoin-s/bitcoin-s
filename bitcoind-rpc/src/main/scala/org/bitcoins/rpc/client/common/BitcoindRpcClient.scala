@@ -386,7 +386,7 @@ object BitcoindVersion
   }
 
   case object V27 extends BitcoindVersion {
-    override def toString: String = "v27.0"
+    override def toString: String = "v27.1"
   }
 
   case object Unknown extends BitcoindVersion {

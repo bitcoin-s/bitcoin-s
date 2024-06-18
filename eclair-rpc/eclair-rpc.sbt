@@ -58,7 +58,7 @@ TaskKeys.downloadEclair := {
       logger.info(s"Extracting archive with command: $extractCommand")
       extractCommand.!!
     } else {
-      Files.delete(versionDir)
+      Files.deleteIfExists(versionDir)
       logger.error(
         s"Downloaded invalid version of eclair, got $hash, expected $expectedHash")
     }
