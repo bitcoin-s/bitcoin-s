@@ -15,7 +15,7 @@ object Deps {
     val avalonLoggingV = "20020627"
 
     val scalacheck = "1.18.0"
-    val scalaTest = "3.2.18" // https://www.scalatest.org/
+    val scalaTest = "3.2.19" // https://www.scalatest.org/
 
     val scalaTestPlus =
       "3.2.18.0" // super annoying... https://oss.sonatype.org/content/groups/public/org/scalatestplus/
