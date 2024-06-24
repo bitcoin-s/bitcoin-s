@@ -101,17 +101,17 @@ TaskKeys.downloadBitcoind := {
           else if (Properties.isMac)
             Map(
               "25.2" -> (if (System.getProperty("os.arch") == "aarch64")
-                "f55b394eebaa11d4b717d68aad9f75b824aaf3a7841dac7c26b1ef3d6d2915f5"
-              else
-                "e06ba379f6039ca99bc32d3e7974d420a31363498936f88aac7bab6f239de0f5"),
+                           "f55b394eebaa11d4b717d68aad9f75b824aaf3a7841dac7c26b1ef3d6d2915f5"
+                         else
+                           "e06ba379f6039ca99bc32d3e7974d420a31363498936f88aac7bab6f239de0f5"),
               "26.1" -> (if (System.getProperty("os.arch") == "aarch64")
-                "8a8e415763b7ffd5988153cf03967d812eca629016dd3b0ddf6da3ab6f4a3621"
-              else
-                "acb50edd20692a9d023de12da573b64ca0fd9b4e9a2b88d1251020a3022b0f27"),
+                           "8a8e415763b7ffd5988153cf03967d812eca629016dd3b0ddf6da3ab6f4a3621"
+                         else
+                           "acb50edd20692a9d023de12da573b64ca0fd9b4e9a2b88d1251020a3022b0f27"),
               "27.1" -> (if (System.getProperty("os.arch") == "aarch64")
-                "ad4a3fd484077224a82dd56d194efb6e614467f413ab1dfb8776da4d08a4c227"
-              else
-                "e1efd8c4605b2aabc876da93b6eee2bedd868ce7d1f02b0220c1001f903b3e2c")
+                           "ad4a3fd484077224a82dd56d194efb6e614467f413ab1dfb8776da4d08a4c227"
+                         else
+                           "e1efd8c4605b2aabc876da93b6eee2bedd868ce7d1f02b0220c1001f903b3e2c")
             )
           else if (Properties.isWin)
             Map(
@@ -145,6 +145,6 @@ TaskKeys.downloadBitcoind := {
     }
   }
 
-  //timeout if we cannot download in 5 minutes
+  // timeout if we cannot download in 5 minutes
   Await.result(Future.sequence(downloads), 5.minutes)
 }

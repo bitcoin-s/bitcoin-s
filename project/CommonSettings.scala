@@ -55,19 +55,19 @@ object CommonSettings {
     Test / scalacOptions ++= testCompilerOpts(scalaVersion =
       scalaVersion.value),
     Test / scalacOptions --= scala2_13SourceCompilerOpts,
-    //remove annoying import unused things in the scala console
-    //https://stackoverflow.com/questions/26940253/in-sbt-how-do-you-override-scalacoptions-for-console-in-all-configurations
+    // remove annoying import unused things in the scala console
+    // https://stackoverflow.com/questions/26940253/in-sbt-how-do-you-override-scalacoptions-for-console-in-all-configurations
     Compile / console / scalacOptions ~= (_ filterNot (s =>
       s == "-Ywarn-unused-import"
         || s == "-Ywarn-unused"
         || s == "-Xfatal-warnings"
-        //for 2.13 -- they use different compiler opts
+        // for 2.13 -- they use different compiler opts
         || s == "-Xlint:unused")),
-    //we don't want -Xfatal-warnings for publishing with publish/publishLocal either
+    // we don't want -Xfatal-warnings for publishing with publish/publishLocal either
     Compile / doc / scalacOptions ~= (_ filterNot (s =>
       s == "-Xfatal-warnings")),
-    //silence all scaladoc warnings generated from invalid syntax
-    //see: https://github.com/bitcoin-s/bitcoin-s/issues/3232
+    // silence all scaladoc warnings generated from invalid syntax
+    // see: https://github.com/bitcoin-s/bitcoin-s/issues/3232
     Compile / doc / scalacOptions ++= Vector(s"-Wconf:any:ws"),
     Test / console / scalacOptions ++= (Compile / console / scalacOptions).value,
     licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
@@ -94,7 +94,7 @@ object CommonSettings {
     // scaladoc settings end
     ////
     Compile / compile / javacOptions ++= {
-      //https://github.com/eclipse/jetty.project/issues/3244#issuecomment-495322586
+      // https://github.com/eclipse/jetty.project/issues/3244#issuecomment-495322586
       Seq("--release", "8")
     }
   )
@@ -104,20 +104,20 @@ object CommonSettings {
       "jdk.crypto.ec"
     )
     val dev = {
-      //needed for visualvm to profile/debug apps
+      // needed for visualvm to profile/debug apps
       Vector("jdk.management.agent", "java.instrument")
     }
     if (!isCI) base ++ dev
     else base
   }
 
-  //these are java modules we do not need
-  //our artifacts do not use java.desktop
-  //there may be others we don't need
-  //but this is the most obvious and reduces
-  //artifact size by 15MB
-  //do 'show jlinkModules' in the module
-  //to see what ones are used
+  // these are java modules we do not need
+  // our artifacts do not use java.desktop
+  // there may be others we don't need
+  // but this is the most obvious and reduces
+  // artifact size by 15MB
+  // do 'show jlinkModules' in the module
+  // to see what ones are used
   lazy val rmJlinkModules = Seq(
     "java.desktop"
   )
@@ -136,7 +136,7 @@ object CommonSettings {
 
   private val commonCompilerOpts = {
     List(
-      //https://stackoverflow.com/a/43103038/967713
+      // https://stackoverflow.com/a/43103038/967713
       "-release",
       "8"
     )
@@ -156,7 +156,7 @@ object CommonSettings {
       "-Xlint:eta-sam",
       "-Xlint:doc-detached",
       "-Xlint:private-shadow",
-      //"-Xlint:type-parameter-shadow" need to fix BinaryTree.scala
+      // "-Xlint:type-parameter-shadow" need to fix BinaryTree.scala
       "-Xlint:poly-implicit-overload",
       "-Xlint:option-implicit",
       "-Xlint:delayedinit-select",
@@ -182,7 +182,7 @@ object CommonSettings {
     "-Ywarn-unused-import"
   )
 
-  //https://docs.scala-lang.org/overviews/compiler-options/index.html
+  // https://docs.scala-lang.org/overviews/compiler-options/index.html
   def compilerOpts(scalaVersion: String): Seq[String] = {
     Seq(
       "-unchecked",
@@ -204,12 +204,12 @@ object CommonSettings {
   }
 
   def testCompilerOpts(scalaVersion: String): Seq[String] = {
-    //initialization checks: https://docs.scala-lang.org/tutorials/FAQ/initialization-order.html
+    // initialization checks: https://docs.scala-lang.org/tutorials/FAQ/initialization-order.html
     Vector("-Xcheckinit")
   }
 
   lazy val testSettings: Seq[Setting[_]] = Seq(
-    //show full stack trace (-oF) of failed tests and duration of tests (-oD)
+    // show full stack trace (-oF) of failed tests and duration of tests (-oD)
     Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oDF"),
     Test / logBuffered := false,
     skip / publish := true
@@ -218,23 +218,23 @@ object CommonSettings {
   lazy val prodSettings: Seq[Setting[_]] = settings
 
   lazy val appSettings: Seq[Setting[_]] = prodSettings ++ Vector(
-    //gives us the 'universal' directory in build artifacts
+    // gives us the 'universal' directory in build artifacts
     Compile / unmanagedResourceDirectories += baseDirectory.value / "src" / "universal"
   )
 
   lazy val dockerSettings: Seq[Setting[_]] = {
     Vector(
-      //https://sbt-native-packager.readthedocs.io/en/latest/formats/docker.html
+      // https://sbt-native-packager.readthedocs.io/en/latest/formats/docker.html
       dockerBaseImage := "eclipse-temurin:21",
       dockerRepository := Some("bitcoinscala"),
       Docker / daemonUser := "bitcoin-s",
-      //needed for umbrel environment, container uids and host uids must matchup so we can
-      //properly write to volumes on the host machine
-      //see: https://medium.com/@mccode/understanding-how-uid-and-gid-work-in-docker-containers-c37a01d01cf
-      //Docker / daemonUserUid := Some("1000"),
+      // needed for umbrel environment, container uids and host uids must matchup so we can
+      // properly write to volumes on the host machine
+      // see: https://medium.com/@mccode/understanding-how-uid-and-gid-work-in-docker-containers-c37a01d01cf
+      // Docker / daemonUserUid := Some("1000"),
       Docker / packageName := packageName.value,
       Docker / version := version.value,
-      //add a default exposed volume of /bitcoin-s so we can always write data here
+      // add a default exposed volume of /bitcoin-s so we can always write data here
       dockerExposedVolumes += "/bitcoin-s",
       dockerUpdateLatest := DynVer.isSnapshot
     )
@@ -247,9 +247,10 @@ object CommonSettings {
   lazy val dockerBuildWithBuildx =
     taskKey[Unit]("Build docker images using buildx")
 
-  /** These settings are needed to produce docker images across different chip architectures
-    * such as amd64 and arm64
-    * @see https://softwaremill.com/how-to-build-multi-platform-docker-image-with-sbt-and-docker-buildx/
+  /** These settings are needed to produce docker images across different chip
+    * architectures such as amd64 and arm64
+    * @see
+    *   https://softwaremill.com/how-to-build-multi-platform-docker-image-with-sbt-and-docker-buildx/
     */
   lazy val dockerBuildxSettings = {
     Seq(
@@ -262,10 +263,10 @@ object CommonSettings {
       dockerBuildWithBuildx := {
         streams.value.log("Building and pushing image with Buildx")
         dockerAliases.value.foreach { alias =>
-          //issue the command below in to the terminal in the same directory that
-          //our sbt plugin generates the docker file.
-          //if you want to reproduce the docker file, run docker:stage
-          //in your sbt terminal and you should find it in target/docker/stage/
+          // issue the command below in to the terminal in the same directory that
+          // our sbt plugin generates the docker file.
+          // if you want to reproduce the docker file, run docker:stage
+          // in your sbt terminal and you should find it in target/docker/stage/
           val cmd =
             "docker buildx build --platform=linux/amd64,linux/arm64 --push -t " +
               alias + " ."
@@ -290,11 +291,11 @@ object CommonSettings {
   lazy val cryptoJlinkIgnore = {
     Vector(
       "org.bouncycastle" -> "junit.framework"
-    ) //bouncy castle 1.74 requires junit as a transitive dep
+    ) // bouncy castle 1.74 requires junit as a transitive dep
   }
 
   lazy val dbCommonsJlinkIgnore = {
-    //we don't use android
+    // we don't use android
     Vector(
       "org.flywaydb.core.api.android" -> "android.content",
       "org.flywaydb.core.internal.logging.android" -> "android.util",
@@ -303,9 +304,9 @@ object CommonSettings {
       "org.flywaydb.core.internal.scanner.android" -> "android.content.pm",
       "org.flywaydb.core.internal.scanner.android" -> "android.content.res",
       "org.flywaydb.core.internal.scanner.android" -> "dalvik.system",
-      //we don't use hibernate
+      // we don't use hibernate
       "com.zaxxer.hikari.hibernate" -> "org.hibernate",
-      //we don't ship with support for any aws products
+      // we don't ship with support for any aws products
       "org.flywaydb.core.internal.resource.s3" -> "software.amazon.awssdk.awscore.exception",
       "org.flywaydb.core.internal.resource.s3" -> "software.amazon.awssdk.core",
       "org.flywaydb.core.internal.resource.s3" -> "software.amazon.awssdk.services.s3",
@@ -314,9 +315,9 @@ object CommonSettings {
       "org.flywaydb.core.internal.scanner.cloud.s3" -> "software.amazon.awssdk.services.s3",
       "org.flywaydb.core.internal.scanner.cloud.s3" -> "software.amazon.awssdk.services.s3.model",
       "org.flywaydb.core.api.configuration" -> "software.amazon.awssdk.services.s3",
-      //we don't use oracle database products
+      // we don't use oracle database products
       "org.flywaydb.core.internal.database.oracle" -> "oracle.jdbc",
-      //we don't use jboss
+      // we don't use jboss
       "org.flywaydb.core.internal.scanner.classpath.jboss" -> "org.jboss.vfs",
       "org.flywaydb.core.internal.logging.log4j2" -> "org.apache.logging.log4j",
       "com.zaxxer.hikari.metrics.micrometer" -> "io.micrometer.core.instrument",
@@ -325,10 +326,10 @@ object CommonSettings {
       "com.zaxxer.hikari.metrics.prometheus" -> "io.prometheus.client",
       "com.zaxxer.hikari.util" -> "javassist",
       "com.zaxxer.hikari.util" -> "javassist.bytecode",
-      //postgres requires this weird waffle dep
+      // postgres requires this weird waffle dep
       "waffle.jaas" -> "java.security.acl",
-      //no native image support for now
-      //https://github.com/xerial/sqlite-jdbc/commit/6f426839c56f3924be6cad8920d9192400a37d5f#diff-b335630551682c19a781afebcf4d07bf978fb1f8ac04c6bf87428ed5106870f5R117
+      // no native image support for now
+      // https://github.com/xerial/sqlite-jdbc/commit/6f426839c56f3924be6cad8920d9192400a37d5f#diff-b335630551682c19a781afebcf4d07bf978fb1f8ac04c6bf87428ed5106870f5R117
       "org.sqlite.nativeimage" -> "org.graalvm.nativeimage.hosted"
     )
   }
@@ -350,50 +351,49 @@ object CommonSettings {
     )
   }
 
-  /**
-   * Needed for waffle-jna "3.4.0"
-   * I tried just adding javax.annotation as a transitive dependency
-   * but couldn't get the build to work, unsure why so just ignore
-   * the dependencies for now as waffle-jna is only relevant on windows
-   * @see https://github.com/bitcoin-s/bitcoin-s/pull/5571
-   *
-   */
+  /** Needed for waffle-jna "3.4.0" I tried just adding javax.annotation as a
+    * transitive dependency but couldn't get the build to work, unsure why so
+    * just ignore the dependencies for now as waffle-jna is only relevant on
+    * windows
+    * @see
+    *   https://github.com/bitcoin-s/bitcoin-s/pull/5571
+    */
   private val byteBuddyJlinkIgnore = {
     Vector(
-    "net.bytebuddy" -> "org.objectweb.asm",
-    "net.bytebuddy.agent.utility.nullability" -> "javax.annotation",
-    "net.bytebuddy.agent.utility.nullability" -> "javax.annotation.meta",
-    "net.bytebuddy.asm" -> "javax.annotation",
-    "net.bytebuddy.asm" -> "org.objectweb.asm",
-    "net.bytebuddy.description" -> "javax.annotation",
-    "net.bytebuddy.description" -> "org.objectweb.asm",
-    "net.bytebuddy.description.field" -> "javax.annotation",
-    "net.bytebuddy.description.method" -> "javax.annotation",
-    "net.bytebuddy.description.method" -> "org.objectweb.asm",
-    "net.bytebuddy.description.modifier" -> "org.objectweb.asm",
-    "net.bytebuddy.description.type" -> "javax.annotation",
-    "net.bytebuddy.description.type" -> "org.objectweb.asm",
-    "net.bytebuddy.dynamic" -> "javax.annotation",
-    "net.bytebuddy.dynamic" -> "org.objectweb.asm",
-    "net.bytebuddy.dynamic.scaffold" -> "javax.annotation",
-    "net.bytebuddy.dynamic.scaffold" -> "org.objectweb.asm",
-    "net.bytebuddy.dynamic.scaffold.inline" -> "javax.annotation",
-    "net.bytebuddy.dynamic.scaffold.inline" -> "org.objectweb.asm",
-    "net.bytebuddy.dynamic.scaffold.subclass" -> "org.objectweb.asm",
-    "net.bytebuddy.implementation" -> "javax.annotation",
-    "net.bytebuddy.implementation" -> "org.objectweb.asm",
-    "net.bytebuddy.implementation.auxiliary" -> "org.objectweb.asm",
-    "net.bytebuddy.implementation.bind.annotation" -> "org.objectweb.asm",
-    "net.bytebuddy.implementation.bytecode.assign.primitive" -> "org.objectweb.asm",
-    "net.bytebuddy.implementation.bytecode.collection" -> "org.objectweb.asm",
-    "net.bytebuddy.implementation.bytecode.member" -> "org.objectweb.asm",
-    "net.bytebuddy.matcher" -> "org.objectweb.asm",
-    "net.bytebuddy.pool" -> "javax.annotation",
-    "net.bytebuddy.pool" -> "org.objectweb.asm",
-    "net.bytebuddy.utility" -> "org.objectweb.asm",
-    "net.bytebuddy.utility.dispatcher" -> "org.objectweb.asm",
-    "net.bytebuddy.utility.nullability" -> "javax.annotation",
-    "net.bytebuddy.utility.nullability" -> "javax.annotation.meta"
+      "net.bytebuddy" -> "org.objectweb.asm",
+      "net.bytebuddy.agent.utility.nullability" -> "javax.annotation",
+      "net.bytebuddy.agent.utility.nullability" -> "javax.annotation.meta",
+      "net.bytebuddy.asm" -> "javax.annotation",
+      "net.bytebuddy.asm" -> "org.objectweb.asm",
+      "net.bytebuddy.description" -> "javax.annotation",
+      "net.bytebuddy.description" -> "org.objectweb.asm",
+      "net.bytebuddy.description.field" -> "javax.annotation",
+      "net.bytebuddy.description.method" -> "javax.annotation",
+      "net.bytebuddy.description.method" -> "org.objectweb.asm",
+      "net.bytebuddy.description.modifier" -> "org.objectweb.asm",
+      "net.bytebuddy.description.type" -> "javax.annotation",
+      "net.bytebuddy.description.type" -> "org.objectweb.asm",
+      "net.bytebuddy.dynamic" -> "javax.annotation",
+      "net.bytebuddy.dynamic" -> "org.objectweb.asm",
+      "net.bytebuddy.dynamic.scaffold" -> "javax.annotation",
+      "net.bytebuddy.dynamic.scaffold" -> "org.objectweb.asm",
+      "net.bytebuddy.dynamic.scaffold.inline" -> "javax.annotation",
+      "net.bytebuddy.dynamic.scaffold.inline" -> "org.objectweb.asm",
+      "net.bytebuddy.dynamic.scaffold.subclass" -> "org.objectweb.asm",
+      "net.bytebuddy.implementation" -> "javax.annotation",
+      "net.bytebuddy.implementation" -> "org.objectweb.asm",
+      "net.bytebuddy.implementation.auxiliary" -> "org.objectweb.asm",
+      "net.bytebuddy.implementation.bind.annotation" -> "org.objectweb.asm",
+      "net.bytebuddy.implementation.bytecode.assign.primitive" -> "org.objectweb.asm",
+      "net.bytebuddy.implementation.bytecode.collection" -> "org.objectweb.asm",
+      "net.bytebuddy.implementation.bytecode.member" -> "org.objectweb.asm",
+      "net.bytebuddy.matcher" -> "org.objectweb.asm",
+      "net.bytebuddy.pool" -> "javax.annotation",
+      "net.bytebuddy.pool" -> "org.objectweb.asm",
+      "net.bytebuddy.utility" -> "org.objectweb.asm",
+      "net.bytebuddy.utility.dispatcher" -> "org.objectweb.asm",
+      "net.bytebuddy.utility.nullability" -> "javax.annotation",
+      "net.bytebuddy.utility.nullability" -> "javax.annotation.meta"
     )
   }
 
@@ -403,7 +403,7 @@ object CommonSettings {
       "com.github.benmanes.caffeine" -> "javax.annotation",
       "com.github.benmanes.caffeine.cache" -> "javax.annotation",
       "com.github.benmanes.caffeine.cache.stats" -> "javax.annotation",
-      //optional
+      // optional
       "org.codehaus.janino" -> "org.apache.tools.ant"
     )
       .++(loggingJlinkIgnore)
@@ -421,7 +421,7 @@ object CommonSettings {
       .++(byteBuddyJlinkIgnore)
       .++(
         Vector(
-          //https://github.com/janino-compiler/janino/blob/f6bb39d3137ad2e99b41ecc48aaaf8ab2644bd1c/janino/pom.xml#L37
+          // https://github.com/janino-compiler/janino/blob/f6bb39d3137ad2e99b41ecc48aaaf8ab2644bd1c/janino/pom.xml#L37
           "org.codehaus.janino" -> "org.apache.tools.ant",
           "com.github.benmanes.caffeine" -> "javax.annotation",
           "com.github.benmanes.caffeine.cache" -> "javax.annotation",
@@ -446,11 +446,11 @@ object CommonSettings {
     val versionIdx = split.zipWithIndex.find(_._1.count(_ == '.') > 1).get._2
     val insertedOSName = split.take(versionIdx) ++ Vector(osName)
     if (isRelease) {
-      //bitcoin-s-server-linux-1.9.3-1-60bfd603-SNAPSHOT.zip -> bitcoin-s-server-linux-1.9.3.zip
+      // bitcoin-s-server-linux-1.9.3-1-60bfd603-SNAPSHOT.zip -> bitcoin-s-server-linux-1.9.3.zip
       insertedOSName.mkString("-") ++ "-" ++ split(versionIdx)
     } else {
-      //bitcoin-s-server-1.9.2-1-59aaf330-20220616-1614-SNAPSHOT -> bitcoin-s-server-linux-1.9.2-1-59aaf330-20220616-1614-SNAPSHOT
-      //bitcoin-s-cli-1.9.2-1-59aaf330-20220616-1614-SNAPSHOT.zip -> bitcoin-s-cli-linux-1.9.2-1-59aaf330-20220616-1614-SNAPSHOT.zip
+      // bitcoin-s-server-1.9.2-1-59aaf330-20220616-1614-SNAPSHOT -> bitcoin-s-server-linux-1.9.2-1-59aaf330-20220616-1614-SNAPSHOT
+      // bitcoin-s-cli-1.9.2-1-59aaf330-20220616-1614-SNAPSHOT.zip -> bitcoin-s-cli-linux-1.9.2-1-59aaf330-20220616-1614-SNAPSHOT.zip
       (insertedOSName ++ split.drop(versionIdx)).mkString("-")
     }
   }
