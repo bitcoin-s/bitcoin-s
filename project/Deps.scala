@@ -24,7 +24,7 @@ object Deps {
     val zeromq = "0.5.4"
     val scalapb = "0.11.17"
     val akkav = "1.0.1"
-    val playv = "3.0.3" // https://github.com/playframework/play-json/releases
+    val playv = "3.0.4" // https://github.com/playframework/play-json/releases
     val akkaStreamv = "1.0.2"
     val jUnixSocketV = "2.9.1"
     val scodecV = "1.2.0"
