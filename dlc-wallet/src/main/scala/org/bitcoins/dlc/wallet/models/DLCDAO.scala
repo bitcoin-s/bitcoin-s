@@ -127,10 +127,8 @@ case class DLCDAO()(implicit
     safeDatabase.runVec(q.result)
   }
 
-  def findByFundingTxIdAction(txId: DoubleSha256DigestBE): DBIOAction[
-    Vector[DLCDb],
-    NoStream,
-    Effect.Read] = {
+  def findByFundingTxIdAction(txId: DoubleSha256DigestBE)
+      : DBIOAction[Vector[DLCDb], NoStream, Effect.Read] = {
     val q = table.filter(_.fundingTxIdOpt === txId)
     q.result.map(_.toVector)
   }

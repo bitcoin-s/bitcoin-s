@@ -257,10 +257,10 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
       blockHashOpt: Option[DoubleSha256DigestBE],
       spendingInfoDbs: Vector[SpendingInfoDb],
       newTags: Vector[AddressTag],
-      relevantReceivedOutputs: Vector[OutputWithIndex]): DBIOAction[
-    Vector[SpendingInfoDb],
-    NoStream,
-    Effect.Write with Effect.Read] = {
+      relevantReceivedOutputs: Vector[OutputWithIndex])
+      : DBIOAction[Vector[SpendingInfoDb],
+                   NoStream,
+                   Effect.Write with Effect.Read] = {
     val dlcDbsA = dlcDAO.findByFundingTxIdAction(tx.txIdBE)
     val actions = super
       .processReceivedUtxos(tx,

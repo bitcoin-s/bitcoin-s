@@ -358,14 +358,14 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
       blockHashOpt: Option[DoubleSha256DigestBE],
       spendingInfoDbs: Vector[SpendingInfoDb],
       newTags: Vector[AddressTag],
-      relevantReceivedOutputs: Vector[OutputWithIndex]): DBIOAction[
-    Vector[SpendingInfoDb],
-    NoStream,
-    Effect.Write with Effect.Read] = {
+      relevantReceivedOutputs: Vector[OutputWithIndex])
+      : DBIOAction[Vector[SpendingInfoDb],
+                   NoStream,
+                   Effect.Write with Effect.Read] = {
     if (spendingInfoDbs.isEmpty && relevantReceivedOutputs.isEmpty) {
-      //as an optimization if we don't have any relevant utxos
-      //and any relevant outputs that match scripts in our wallet
-      //we can just return now
+      // as an optimization if we don't have any relevant utxos
+      // and any relevant outputs that match scripts in our wallet
+      // we can just return now
       slick.dbio.DBIOAction.successful(Vector.empty)
     } else {
       val newOutputs = relevantReceivedOutputs.filterNot { output =>
@@ -564,10 +564,8 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
       transaction: Transaction,
       index: Int,
       blockHashOpt: Option[DoubleSha256DigestBE],
-      addressDb: AddressDb): DBIOAction[
-    SpendingInfoDb,
-    NoStream,
-    Effect.Write with Effect.Read] = {
+      addressDb: AddressDb)
+      : DBIOAction[SpendingInfoDb, NoStream, Effect.Write with Effect.Read] = {
     val output = transaction.outputs(index)
     val outPoint = TransactionOutPoint(transaction.txId, UInt32(index))
 
@@ -589,10 +587,8 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
   private def processExistingReceivedTxo(
       transaction: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE],
-      foundTxo: SpendingInfoDb): DBIOAction[
-    SpendingInfoDb,
-    NoStream,
-    Effect.Write with Effect.Read] = {
+      foundTxo: SpendingInfoDb)
+      : DBIOAction[SpendingInfoDb, NoStream, Effect.Write with Effect.Read] = {
     if (foundTxo.txid != transaction.txIdBE) {
       val errMsg =
         Seq(
@@ -635,10 +631,10 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
   private def addReceivedUTXOs(
       outputsWithIndex: Seq[OutputWithIndex],
       transaction: Transaction,
-      blockHashOpt: Option[DoubleSha256DigestBE]): DBIOAction[
-    Seq[SpendingInfoDb],
-    NoStream,
-    Effect.Write with Effect.Read] = {
+      blockHashOpt: Option[DoubleSha256DigestBE])
+      : DBIOAction[Seq[SpendingInfoDb],
+                   NoStream,
+                   Effect.Write with Effect.Read] = {
 
     val spks = outputsWithIndex.map(_.output.scriptPubKey).toVector
 
@@ -764,10 +760,10 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
       transaction: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE],
       newTags: Vector[AddressTag],
-      relevantReceivedOutputs: Vector[OutputWithIndex]): DBIOAction[
-    Seq[SpendingInfoDb],
-    NoStream,
-    Effect.Write with Effect.Read] = {
+      relevantReceivedOutputs: Vector[OutputWithIndex])
+      : DBIOAction[Seq[SpendingInfoDb],
+                   NoStream,
+                   Effect.Write with Effect.Read] = {
     if (relevantReceivedOutputs.isEmpty) {
 
       logger.trace(
@@ -781,7 +777,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
           relevantReceivedOutputs.contains(OutputWithIndex(o._1, o._2)))
 
       if (filteredOutputs.isEmpty) {
-        //no relevant outputs in this tx, return early
+        // no relevant outputs in this tx, return early
         slick.dbio.DBIOAction.successful(Vector.empty)
       } else {
         val relevantReceivedOutputsForTx: Vector[OutputWithIndex] = {

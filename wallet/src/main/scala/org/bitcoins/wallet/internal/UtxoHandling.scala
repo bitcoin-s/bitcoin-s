@@ -228,30 +228,27 @@ private[wallet] trait UtxoHandling extends WalletLogger {
       blockHashOpt: Option[DoubleSha256DigestBE],
       output: TransactionOutput,
       outPoint: TransactionOutPoint,
-      addressDb: AddressDb): DBIOAction[
-    SpendingInfoDb,
-    NoStream,
-    Effect.Write with Effect.Read] = {
-    val confirmationsA: DBIOAction[
-      Int,
-      NoStream,
-      Effect.Write with Effect.Read] = blockHashOpt match {
-      case Some(blockHash) =>
-        val confsF = chainQueryApi
-          .getNumberOfConfirmations(blockHash)
-          .map {
-            case Some(confs) =>
-              confs
-            case None =>
-              sys.error(
-                s"Could not find block with our chain data source, hash=${blockHash}"
-              )
-          }
+      addressDb: AddressDb)
+      : DBIOAction[SpendingInfoDb, NoStream, Effect.Write with Effect.Read] = {
+    val confirmationsA
+        : DBIOAction[Int, NoStream, Effect.Write with Effect.Read] =
+      blockHashOpt match {
+        case Some(blockHash) =>
+          val confsF = chainQueryApi
+            .getNumberOfConfirmations(blockHash)
+            .map {
+              case Some(confs) =>
+                confs
+              case None =>
+                sys.error(
+                  s"Could not find block with our chain data source, hash=${blockHash}"
+                )
+            }
 
-        slick.dbio.DBIOAction.from(confsF)
-      case None =>
-        slick.dbio.DBIOAction.successful(0) //no confirmations on the tx
-    }
+          slick.dbio.DBIOAction.from(confsF)
+        case None =>
+          slick.dbio.DBIOAction.successful(0) // no confirmations on the tx
+      }
 
     val stateA: DBIOAction[TxoState, NoStream, Effect.Write with Effect.Read] =
       confirmationsA.map { confs =>
@@ -266,41 +263,40 @@ private[wallet] trait UtxoHandling extends WalletLogger {
         }
       }
 
-    val utxoA: DBIOAction[
-      SpendingInfoDb,
-      NoStream,
-      Effect.Write with Effect.Read] = stateA.map { state =>
-      addressDb match {
-        case segwitAddr: SegWitAddressDb =>
-          SegwitV0SpendingInfo(
-            state = state,
-            outPoint = outPoint,
-            output = output,
-            privKeyPath = segwitAddr.path,
-            scriptWitness = segwitAddr.witnessScript,
-            spendingTxIdOpt = None
-          )
-        case LegacyAddressDb(path, _, _, _, _) =>
-          LegacySpendingInfo(
-            state = state,
-            outPoint = outPoint,
-            output = output,
-            privKeyPath = path,
-            spendingTxIdOpt = None
-          )
-        case nested: NestedSegWitAddressDb =>
-          NestedSegwitV0SpendingInfo(
-            outPoint = outPoint,
-            output = output,
-            privKeyPath = nested.path,
-            redeemScript = P2WPKHWitnessSPKV0(nested.ecPublicKey),
-            scriptWitness = P2WPKHWitnessV0(nested.ecPublicKey),
-            state = state,
-            spendingTxIdOpt = None,
-            id = None
-          )
+    val utxoA
+        : DBIOAction[SpendingInfoDb, NoStream, Effect.Write with Effect.Read] =
+      stateA.map { state =>
+        addressDb match {
+          case segwitAddr: SegWitAddressDb =>
+            SegwitV0SpendingInfo(
+              state = state,
+              outPoint = outPoint,
+              output = output,
+              privKeyPath = segwitAddr.path,
+              scriptWitness = segwitAddr.witnessScript,
+              spendingTxIdOpt = None
+            )
+          case LegacyAddressDb(path, _, _, _, _) =>
+            LegacySpendingInfo(
+              state = state,
+              outPoint = outPoint,
+              output = output,
+              privKeyPath = path,
+              spendingTxIdOpt = None
+            )
+          case nested: NestedSegWitAddressDb =>
+            NestedSegwitV0SpendingInfo(
+              outPoint = outPoint,
+              output = output,
+              privKeyPath = nested.path,
+              redeemScript = P2WPKHWitnessSPKV0(nested.ecPublicKey),
+              scriptWitness = P2WPKHWitnessV0(nested.ecPublicKey),
+              state = state,
+              spendingTxIdOpt = None,
+              id = None
+            )
+        }
       }
-    }
 
     for {
       utxo <- utxoA

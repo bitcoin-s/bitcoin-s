@@ -71,10 +71,8 @@ case class SpendingInfoDAO()(implicit
   }
 
   def createUnlessAction(si: SpendingInfoDb)(
-      condition: (UTXORecord, UTXORecord) => Boolean): DBIOAction[
-    SpendingInfoDb,
-    NoStream,
-    Effect.Write with Effect.Read] = {
+      condition: (UTXORecord, UTXORecord) => Boolean)
+      : DBIOAction[SpendingInfoDb, NoStream, Effect.Write with Effect.Read] = {
     val actions = for {
       foundOpt <- table.filter(_.outPoint === si.outPoint).result.headOption
       cond <- foundOpt match {
@@ -102,8 +100,8 @@ case class SpendingInfoDAO()(implicit
   }
 
   def createUnless(si: SpendingInfoDb)(
-      condition: (UTXORecord, UTXORecord) => Boolean): Future[
-    SpendingInfoDb] = {
+      condition: (UTXORecord, UTXORecord) => Boolean)
+      : Future[SpendingInfoDb] = {
     val actions = createUnlessAction(si)(condition)
     safeDatabase
       .run(actions)
@@ -152,10 +150,8 @@ case class SpendingInfoDAO()(implicit
       update(si).map(res => acc :+ res))
   }
 
-  def updateAction(si: SpendingInfoDb): DBIOAction[
-    SpendingInfoDb,
-    NoStream,
-    Effect.Read with Effect.Write] = {
+  def updateAction(si: SpendingInfoDb)
+      : DBIOAction[SpendingInfoDb, NoStream, Effect.Read with Effect.Write] = {
     val actions = for {
       spkOpt <-
         spkTable
