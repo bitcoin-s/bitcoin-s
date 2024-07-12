@@ -175,7 +175,7 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
       })
     }
 
-    def thisUsesUnstableApi(): Unit = ()
+    override def thisUsesUnstableApi(): Unit = ()
   }
 
   // Configure the client
