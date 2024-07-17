@@ -855,12 +855,16 @@ class EclairRpcClient(
     }
   }
 
-  override def cmd: String = {
+  override def cmd: Vector[String] = {
     val logback = instance.logbackXmlPath
       .map(path => s"-Dlogback.configurationFile=$path")
       .getOrElse("")
     val cmd = {
-      s"${pathToEclairJar} -Declair.datadir=${instance.authCredentials.datadir.get} $logback"
+      Vector(
+        pathToEclairJar,
+        s"-Declair.datadir=${instance.authCredentials.datadir.get}",
+        logback
+      )
     }
     cmd
   }

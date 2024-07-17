@@ -396,12 +396,17 @@ class CLightningRpcClient(val instance: CLightningInstanceLocal, binary: File)(
     clightningCall[SendCustomMessageResult]("sendcustommsg", params)
   }
 
-  override val cmd: String = {
+  override val cmd: Vector[String] = {
     val logFileConf = instance.logFileOpt
       .map(f => s"--log-file=${f.getAbsolutePath}")
       .getOrElse("")
 
-    s"$binary --lightning-dir=${instance.datadir.toAbsolutePath} --rpc-file=${instance.rpcFile.getAbsolutePath} $logFileConf"
+    Vector(
+      binary.toString,
+      s"--lightning-dir=${instance.datadir.toAbsolutePath}",
+      s"--rpc-file=${instance.rpcFile.getAbsolutePath}",
+      logFileConf
+    )
   }
 
   override def start(): Future[CLightningRpcClient] = {

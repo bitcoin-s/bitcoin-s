@@ -59,7 +59,7 @@ class TorClient()(implicit
   private lazy val executable = TorClient.torBinaryFromResource(conf.torDir)
 
   /** The command to start the daemon on the underlying OS */
-  override lazy val cmd: String = {
+  override lazy val cmd: Vector[String] = {
 
     val args = Vector(
       "--ExitRelay 0", // ensure we aren't an exit relay
@@ -71,9 +71,9 @@ class TorClient()(implicit
       s"""--Log "notice file ${conf.torLogFile.toAbsolutePath}" """,
       s"""--GeoIPFile "${conf.torDir.toAbsolutePath.resolve("geoip")}" """,
       s"""--GeoIPv6File "${conf.torDir.toAbsolutePath.resolve("geoip6")}" """
-    ).mkString(" ")
+    )
 
-    s"$executable $args"
+    executable.toString +: args
   }
 
 }

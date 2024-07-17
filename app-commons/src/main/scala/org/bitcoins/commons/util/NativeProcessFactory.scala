@@ -15,7 +15,7 @@ trait NativeProcessFactory extends BitcoinSLogger {
   private lazy val process: ProcessBuilder = scala.sys.process.Process(cmd)
 
   /** The command to start the daemon on the underlying OS */
-  def cmd: String
+  def cmd: Vector[String]
 
   def isAlive(): Boolean = {
     processOpt match {

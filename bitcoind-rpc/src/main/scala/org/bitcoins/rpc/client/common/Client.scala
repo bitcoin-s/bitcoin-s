@@ -131,16 +131,16 @@ trait Client
 
   def getDaemon: BitcoindInstance = instance
 
-  override lazy val cmd: String = {
+  override lazy val cmd: Vector[String] = {
     instance match {
       case _: BitcoindInstanceRemote =>
         logger.warn(
           s"Cannot start remote instance with local binary command. You've likely misconfigured something"
         )
-        ""
+        Vector.empty
       case local: BitcoindInstanceLocal =>
         val binaryPath = local.binary.getAbsolutePath
-        val cmd = List(
+        val cmd = Vector(
           binaryPath,
           "-datadir=" + local.datadir,
           "-rpcport=" + instance.rpcUri.getPort,
@@ -150,7 +150,7 @@ trait Client
           s"starting bitcoind with datadir ${local.datadir} and binary path $binaryPath"
         )
 
-        cmd.mkString(" ")
+        cmd
 
     }
   }
