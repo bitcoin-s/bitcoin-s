@@ -129,10 +129,13 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
   }
 
   /** The command to start the daemon on the underlying OS */
-  override def cmd: String = instance match {
+  override def cmd: Vector[String] = instance match {
     case local: LndInstanceLocal =>
-      s"${binaryOpt.get} --lnddir=${local.datadir.toAbsolutePath}"
-    case _: LndInstanceRemote => ""
+      Vector(
+        binaryOpt.get.toString,
+        s"--lnddir=${local.datadir.toAbsolutePath}"
+      )
+    case _: LndInstanceRemote => Vector.empty
   }
 
   implicit val executionContext: ExecutionContext = system.dispatcher
