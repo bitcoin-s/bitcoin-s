@@ -246,7 +246,7 @@ object AppConfig extends BitcoinSLogger {
       val full = Paths
         .get(Properties.userHome)
         .resolve("Library")
-        .resolve(s"Application\\ Support")
+        .resolve("Application Support")
         .resolve("bitcoin-s")
       if (Files.exists(full)) {
         full
