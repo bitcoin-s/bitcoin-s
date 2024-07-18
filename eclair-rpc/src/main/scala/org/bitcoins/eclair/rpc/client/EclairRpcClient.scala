@@ -823,7 +823,7 @@ class EclairRpcClient(
       // default to provided binary
       case (Some(binary), _) =>
         if (binary.exists) {
-          binary.toString
+          binary.toPath.toAbsolutePath.toString
         } else {
           throw new NoSuchFileException(
             s"Given binary ($binary) does not exist!"
@@ -856,15 +856,15 @@ class EclairRpcClient(
   }
 
   override def cmd: Vector[String] = {
-    val logback = instance.logbackXmlPath
+    val logbackOpt = instance.logbackXmlPath
       .map(path => s"-Dlogback.configurationFile=$path")
-      .getOrElse("")
-    val cmd = {
-      Vector(
-        pathToEclairJar,
-        s"-Declair.datadir=${instance.authCredentials.datadir.get}",
-        logback
-      )
+    val base = Vector(
+      pathToEclairJar,
+      s"-Declair.datadir=${instance.authCredentials.datadir.get}"
+    )
+    val cmd = logbackOpt match {
+      case Some(logback) => base.appended(logback)
+      case None          => base
     }
     cmd
   }
