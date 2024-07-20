@@ -11,8 +11,8 @@ import org.bitcoins.core.api.dlc.wallet.db.{
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.keymanager.BIP39KeyManagerApi
 import org.bitcoins.core.api.node.NodeApi
-import org.bitcoins.core.api.wallet._
-import org.bitcoins.core.api.wallet.db._
+import org.bitcoins.core.api.wallet.*
+import org.bitcoins.core.api.wallet.db.*
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.dlc.accounting.DLCWalletAccounting
@@ -20,9 +20,9 @@ import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.hd.{AddressType, HDAccount, HDChainType, HDPurpose}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.Block
-import org.bitcoins.core.protocol.dlc.models._
+import org.bitcoins.core.protocol.dlc.models.*
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.tlv._
+import org.bitcoins.core.protocol.tlv.*
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
   TransactionOutPoint,
@@ -67,6 +67,8 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
         throw new WalletNotInitialized
     }
   }
+
+  override def utxoHandling: UtxoHandlingApi = wallet.utxoHandling
 
   def isInitialized: Boolean = synchronized {
     walletOpt.isDefined
@@ -203,9 +205,9 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
   override def listUtxos(): Future[Vector[SpendingInfoDb]] = delegate(
     _.listUtxos()
   )
-
-  override def listUtxos(tag: AddressTag): Future[Vector[SpendingInfoDb]] =
-    delegate(_.listUtxos(tag))
+  /*
+    override def listUtxos(tag: AddressTag): Future[Vector[SpendingInfoDb]] =
+      delegate(_.listUtxos(tag))  */
 
   override def listUtxos(state: TxoState): Future[Vector[SpendingInfoDb]] =
     delegate(_.listUtxos(state))
@@ -235,7 +237,7 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
       scriptPubKey: ScriptPubKey
   ): Future[ScriptPubKeyDb] = delegate(_.watchScriptPubKey(scriptPubKey))
 
-  override def markUTXOsAsReserved(
+  /*  override def markUTXOsAsReserved(
       utxos: Vector[SpendingInfoDb]
   ): Future[Vector[SpendingInfoDb]] = delegate(_.markUTXOsAsReserved(utxos))
 
@@ -249,7 +251,7 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
 
   override def unmarkUTXOsAsReserved(
       tx: Transaction
-  ): Future[Vector[SpendingInfoDb]] = delegate(_.unmarkUTXOsAsReserved(tx))
+  ): Future[Vector[SpendingInfoDb]] = delegate(_.unmarkUTXOsAsReserved(tx))*/
 
   override def isEmpty(): Future[Boolean] = delegate(_.isEmpty())
 
@@ -608,7 +610,7 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
     _.makeOpReturnCommitment(message, hashMessage, feeRate, fromAccount)
   )
 
-  override def listDefaultAccountUtxos(): Future[Vector[SpendingInfoDb]] =
+  /*  override def listDefaultAccountUtxos(): Future[Vector[SpendingInfoDb]] =
     delegate(_.listDefaultAccountUtxos())
 
   override def listUtxos(account: HDAccount): Future[Vector[SpendingInfoDb]] =
@@ -622,7 +624,7 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
   override def listUtxos(
       hdAccount: HDAccount,
       state: TxoState
-  ): Future[Vector[SpendingInfoDb]] = delegate(_.listUtxos(hdAccount, state))
+  ): Future[Vector[SpendingInfoDb]] = delegate(_.listUtxos(hdAccount, state))*/
 
   override def listAddresses(account: HDAccount): Future[Vector[AddressDb]] =
     delegate(_.listAddresses(account))

@@ -28,7 +28,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
       for {
         accountDb <- wallet.getDefaultAccount()
         account = accountDb.hdAccount
-        utxos <- wallet.listUtxos(account)
+        utxos <- wallet.utxoHandling.listUtxos(account)
         _ = assert(utxos.nonEmpty)
 
         addresses <- wallet.listAddresses(account)
@@ -36,7 +36,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
         _ <- wallet.clearUtxos(account)
 
-        clearedUtxos <- wallet.listUtxos(account)
+        clearedUtxos <- wallet.utxoHandling.listUtxos(account)
         clearedAddresses <- wallet.listAddresses(account)
       } yield {
         assert(clearedUtxos.isEmpty)
@@ -198,7 +198,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
         account <- defaultAccountF
         txIds <-
-          wallet
+          wallet.utxoHandling
             .listUtxos(account.hdAccount)
             .map(_.map(_.txid))
         _ <- wallet
@@ -557,7 +557,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
         account <- defaultAccountF
         txIds <-
-          wallet
+          wallet.utxoHandling
             .listUtxos(account.hdAccount)
             .map(_.map(_.txid))
         _ <- wallet

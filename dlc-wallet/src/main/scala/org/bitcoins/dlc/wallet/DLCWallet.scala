@@ -5,33 +5,33 @@ import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
 import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
-import org.bitcoins.core.api.wallet.db._
-import org.bitcoins.core.currency._
+import org.bitcoins.core.api.wallet.db.*
+import org.bitcoins.core.currency.*
 import org.bitcoins.core.dlc.accounting.DLCWalletAccounting
-import org.bitcoins.core.hd._
-import org.bitcoins.core.number._
-import org.bitcoins.core.protocol._
+import org.bitcoins.core.hd.*
+import org.bitcoins.core.number.*
+import org.bitcoins.core.protocol.*
 import org.bitcoins.core.protocol.dlc.build.DLCTxBuilder
 import org.bitcoins.core.protocol.dlc.compute.DLCUtil
-import org.bitcoins.core.protocol.dlc.models.DLCMessage._
-import org.bitcoins.core.protocol.dlc.models.DLCState._
-import org.bitcoins.core.protocol.dlc.models._
-import org.bitcoins.core.protocol.dlc.sign._
-import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.dlc.models.DLCMessage.*
+import org.bitcoins.core.protocol.dlc.models.DLCState.*
+import org.bitcoins.core.protocol.dlc.models.*
+import org.bitcoins.core.protocol.dlc.sign.*
+import org.bitcoins.core.protocol.script.*
+import org.bitcoins.core.protocol.tlv.*
+import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.util.{FutureUtil, TimeUtil}
 import org.bitcoins.core.wallet.builder.{
   FundRawTxHelper,
   ShufflingNonInteractiveFinalizer
 }
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.crypto._
+import org.bitcoins.core.wallet.utxo.*
+import org.bitcoins.crypto.*
 import org.bitcoins.db.SafeDatabase
 import org.bitcoins.dlc.wallet.DLCWallet.InvalidAnnouncementSignature
-import org.bitcoins.dlc.wallet.internal._
-import org.bitcoins.dlc.wallet.models._
+import org.bitcoins.dlc.wallet.internal.*
+import org.bitcoins.dlc.wallet.models.*
 import org.bitcoins.dlc.wallet.util.{
   DLCAcceptUtil,
   DLCActionBuilder,
@@ -42,7 +42,7 @@ import org.bitcoins.dlc.wallet.util.{
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import scodec.bits.ByteVector
-import slick.dbio._
+import slick.dbio.*
 
 import java.net.InetSocketAddress
 import scala.concurrent.Future
@@ -306,7 +306,7 @@ abstract class DLCWallet
       inputs <- dlcInputsDAO.findByDLCId(dlcId, dlcDb.isInitiator)
       dbs <- spendingInfoDAO.findByOutPoints(inputs.map(_.outPoint))
       // allow this to fail in the case they have already been unreserved
-      _ <- unmarkUTXOsAsReserved(dbs).recoverWith {
+      _ <- utxoHandling.unmarkUTXOsAsReserved(dbs).recoverWith {
         case scala.util.control.NonFatal(_) => Future.successful(Vector.empty)
       }
       action = actionBuilder.deleteDLCAction(dlcId)
@@ -1522,7 +1522,7 @@ abstract class DLCWallet
   ): Future[Vector[ScriptSignatureParams[InputInfo]]] = {
     val outPoints =
       fundingInputs.filter(_.isInitiator == dlcDb.isInitiator).map(_.outPoint)
-    val utxosF = listUtxos(outPoints)
+    val utxosF = utxoHandling.listUtxos(outPoints)
     for {
       utxos <- utxosF
       scriptSigParams <-

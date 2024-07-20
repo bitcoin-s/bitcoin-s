@@ -1,13 +1,6 @@
 package org.bitcoins.wallet
 
 import org.apache.pekko.actor.ActorSystem
-import org.bitcoins.core.api.wallet.{
-  BlockSyncState,
-  CoinSelectionAlgo,
-  NeutrinoHDWalletApi,
-  SyncHeightDescriptor,
-  WalletInfo
-}
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
@@ -16,33 +9,34 @@ import org.bitcoins.core.api.wallet.db.{
   SpendingInfoDb,
   TransactionDb
 }
+import org.bitcoins.core.api.wallet.*
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtPublicKey
-import org.bitcoins.core.currency._
+import org.bitcoins.core.currency.*
 import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
-import org.bitcoins.core.hd._
+import org.bitcoins.core.hd.*
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.constant.ScriptConstant
 import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil, HDUtil}
-import org.bitcoins.core.wallet.builder._
-import org.bitcoins.core.wallet.fee._
+import org.bitcoins.core.wallet.builder.*
+import org.bitcoins.core.wallet.fee.*
 import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
-import org.bitcoins.core.wallet.utxo.TxoState._
-import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.crypto._
+import org.bitcoins.core.wallet.utxo.*
+import org.bitcoins.core.wallet.utxo.TxoState.*
+import org.bitcoins.crypto.*
 import org.bitcoins.db.SafeDatabase
 import org.bitcoins.db.models.MasterXPubDAO
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
 import org.bitcoins.wallet.callback.WalletCallbacks
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.internal._
-import org.bitcoins.wallet.models._
+import org.bitcoins.wallet.internal.*
+import org.bitcoins.wallet.models.*
 import scodec.bits.ByteVector
 import slick.dbio.{DBIOAction, Effect, NoStream}
 
@@ -55,7 +49,6 @@ import scala.util.{Failure, Random, Success}
 
 abstract class Wallet
     extends NeutrinoHDWalletApi
-    with UtxoHandling
     with AddressHandling
     with AccountHandling
     with FundTransactionHandling
@@ -97,9 +90,13 @@ abstract class Wallet
     WalletStateDescriptorDAO()
 
   protected lazy val safeDatabase: SafeDatabase = spendingInfoDAO.safeDatabase
+
   val nodeApi: NodeApi
   val chainQueryApi: ChainQueryApi
   val creationTime: Instant = keyManager.creationTime
+
+  def utxoHandling: UtxoHandling =
+    UtxoHandling(spendingInfoDAO, transactionDAO, chainQueryApi)
 
   def walletCallbacks: WalletCallbacks = walletConfig.callBacks
 
@@ -157,7 +154,7 @@ abstract class Wallet
   override def processCompactFilters(
       blockFilters: Vector[(DoubleSha256DigestBE, GolombFilter)]
   ): Future[Wallet] = {
-    val utxosF = listUtxos()
+    val utxosF = utxoHandling.listUtxos()
     val spksF = listScriptPubKeys()
     val blockHashOpt = blockFilters.lastOption.map(_._1)
     val heightOptF = blockHashOpt match {
@@ -378,7 +375,7 @@ abstract class Wallet
     processedTxF.recoverWith { case _ =>
       // if something fails, we need to unreserve the utxos associated with this tx
       // and then propogate the failed future upwards
-      unmarkUTXOsAsReserved(signed).flatMap(_ => processedTxF)
+      utxoHandling.unmarkUTXOsAsReserved(signed).flatMap(_ => processedTxF)
     }
   }
 
@@ -499,7 +496,7 @@ abstract class Wallet
       ec: ExecutionContext
   ): Future[Transaction] = {
     for {
-      utxos <- listUtxos()
+      utxos <- utxoHandling.listUtxos()
       balance = utxos.foldLeft(CurrencyUnits.zero)(_ + _.output.value)
       _ = logger.info(s"Sweeping wallet balance=$balance to address=$address")
       outpoints = utxos.map(_.outPoint)
@@ -993,6 +990,15 @@ abstract class Wallet
       TimeUnit.SECONDS
     )
   }
+
+  override def updateUtxoPendingStates(): Future[Vector[SpendingInfoDb]] =
+    utxoHandling.updateUtxoPendingStates()
+
+  override def listUtxos(): Future[Vector[SpendingInfoDb]] =
+    utxoHandling.listUtxos()
+
+  override def listUtxos(state: TxoState): Future[Vector[SpendingInfoDb]] =
+    utxoHandling.listUtxos(state)
 }
 
 // todo: create multiple wallets, need to maintain multiple databases

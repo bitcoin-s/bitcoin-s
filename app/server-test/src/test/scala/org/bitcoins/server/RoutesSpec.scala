@@ -744,13 +744,13 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .returning(Future.successful(Vector(spendingInfoDb)))
         .anyNumberOfTimes()
 
-      (mockWalletApi
+      (mockWalletApi.utxoHandling
         .markUTXOsAsReserved(_: Vector[SpendingInfoDb]))
         .expects(Vector(spendingInfoDb))
         .returning(Future.successful(Vector(spendingInfoDb)))
         .anyNumberOfTimes()
 
-      (mockWalletApi
+      (mockWalletApi.utxoHandling
         .unmarkUTXOsAsReserved(_: Vector[SpendingInfoDb]))
         .expects(Vector(spendingInfoDb))
         .returning(Future.successful(Vector(spendingInfoDb)))

@@ -4,7 +4,7 @@ import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.keymanager.KeyManagerApi
 import org.bitcoins.core.api.node.NodeApi
-import org.bitcoins.core.api.wallet.db._
+import org.bitcoins.core.api.wallet.db.*
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency.CurrencyUnit
@@ -111,12 +111,6 @@ trait WalletApi extends StartStopAsync[WalletApi] {
 
   def listTransactions(): Future[Vector[TransactionDb]]
 
-  /** Takes in a block header and updates our TxoStates to the new chain tip
-    * @param blockHeader
-    *   Block header we are processing
-    */
-  def updateUtxoPendingStates(): Future[Vector[SpendingInfoDb]]
-
   /** Gets the sum of all UTXOs in this wallet */
   def getBalance()(implicit ec: ExecutionContext): Future[CurrencyUnit] = {
     val confirmedF = getConfirmedBalance()
@@ -150,16 +144,6 @@ trait WalletApi extends StartStopAsync[WalletApi] {
 
   def getUnconfirmedBalance(tag: AddressTag): Future[CurrencyUnit]
 
-  /** Lists unspent transaction outputs in the wallet
-    * @return
-    *   Vector[SpendingInfoDb]
-    */
-  def listUtxos(): Future[Vector[SpendingInfoDb]]
-
-  def listUtxos(tag: AddressTag): Future[Vector[SpendingInfoDb]]
-
-  def listUtxos(state: TxoState): Future[Vector[SpendingInfoDb]]
-
   def listAddresses(): Future[Vector[AddressDb]]
 
   def listSpentAddresses(): Future[Vector[AddressDb]]
@@ -170,21 +154,11 @@ trait WalletApi extends StartStopAsync[WalletApi] {
 
   def listScriptPubKeys(): Future[Vector[ScriptPubKeyDb]]
 
+  def listUtxos(): Future[Vector[SpendingInfoDb]]
+
+  def listUtxos(state: TxoState): Future[Vector[SpendingInfoDb]]
+
   def watchScriptPubKey(scriptPubKey: ScriptPubKey): Future[ScriptPubKeyDb]
-
-  def markUTXOsAsReserved(
-      utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]]
-
-  /** Marks all utxos that are ours in this transactions as reserved */
-  def markUTXOsAsReserved(tx: Transaction): Future[Vector[SpendingInfoDb]]
-
-  def unmarkUTXOsAsReserved(
-      utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]]
-
-  /** Unmarks all utxos that are ours in this transactions indicating they are
-    * no longer reserved
-    */
-  def unmarkUTXOsAsReserved(tx: Transaction): Future[Vector[SpendingInfoDb]]
 
   /** Checks if the wallet contains any data */
   def isEmpty(): Future[Boolean]
@@ -480,6 +454,14 @@ trait WalletApi extends StartStopAsync[WalletApi] {
 
   def findByScriptPubKey(
       scriptPubKey: ScriptPubKey): Future[Vector[SpendingInfoDb]]
+
+  /** Takes in a block header and updates our TxoStates to the new chain tip
+    * @param blockHeader
+    *   Block header we are processing
+    */
+  def updateUtxoPendingStates(): Future[Vector[SpendingInfoDb]]
+
+  def utxoHandling: UtxoHandlingApi
 }
 
 case class WalletInfo(

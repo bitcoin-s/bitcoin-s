@@ -1,7 +1,7 @@
 package org.bitcoins.core.api.wallet
 
 import org.bitcoins.core.api.keymanager.BIP39KeyManagerApi
-import org.bitcoins.core.api.wallet.db.{AccountDb, AddressDb, SpendingInfoDb}
+import org.bitcoins.core.api.wallet.db.{AccountDb, AddressDb}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.{AddressType, HDAccount, HDChainType, HDPurpose}
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -17,7 +17,7 @@ import org.bitcoins.core.wallet.builder.{
 }
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
-import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
+import org.bitcoins.core.wallet.utxo.AddressTag
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -439,18 +439,6 @@ trait HDWalletApi extends WalletApi {
       tx <- makeOpReturnCommitment(message, hashMessage, feeRate, account)
     } yield tx
   }
-
-  def listDefaultAccountUtxos(): Future[Vector[SpendingInfoDb]]
-
-  def listUtxos(account: HDAccount): Future[Vector[SpendingInfoDb]]
-
-  def listUtxos(
-      hdAccount: HDAccount,
-      tag: AddressTag): Future[Vector[SpendingInfoDb]]
-
-  def listUtxos(
-      hdAccount: HDAccount,
-      state: TxoState): Future[Vector[SpendingInfoDb]]
 
   def listAddresses(account: HDAccount): Future[Vector[AddressDb]]
 

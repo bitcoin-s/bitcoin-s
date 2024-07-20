@@ -228,7 +228,7 @@ class FundTransactionHandlingTest
         block <- bitcoind.getBlockRaw(hash)
         _ <- wallet.processBlock(block)
 
-        utxos <- wallet.listUtxos(account2.hdAccount)
+        utxos <- wallet.utxoHandling.listUtxos(account2.hdAccount)
         _ = assert(utxos.size == 1)
 
         fundedTx <-
@@ -260,7 +260,7 @@ class FundTransactionHandlingTest
         spendingInfos <- wallet.findOutputsBeingSpent(
           fundRawTxHelper.unsignedTx
         )
-        reserved <- wallet.listUtxos(TxoState.Reserved)
+        reserved <- wallet.utxoHandling.listUtxos(TxoState.Reserved)
       } yield {
         assert(spendingInfos.exists(_.state == TxoState.Reserved))
         assert(reserved.size == spendingInfos.size)
@@ -280,7 +280,7 @@ class FundTransactionHandlingTest
       taggedBalance <- wallet.getBalance(tag)
       _ = assert(taggedBalance == destination.value * 2)
 
-      expectedUtxos <- wallet.listUtxos(account.hdAccount, tag)
+      expectedUtxos <- wallet.utxoHandling.listUtxos(account.hdAccount, tag)
       fundRawTxHelper <-
         wallet
           .fundRawTransaction(

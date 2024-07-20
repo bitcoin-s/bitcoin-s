@@ -1,16 +1,25 @@
 package org.bitcoins.wallet.internal
 
+import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.stream.scaladsl.{Sink, Source}
-import org.bitcoins.core.api.wallet.db._
+import org.bitcoins.commons.util.BitcoinSLogger
+import org.bitcoins.core.api.chain.ChainQueryApi
+import org.bitcoins.core.api.wallet.UtxoHandlingApi
+import org.bitcoins.core.api.wallet.db.*
 import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.hd.HDAccount
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.{P2WPKHWitnessSPKV0, P2WPKHWitnessV0}
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.util.{BlockHashWithConfs, FutureUtil}
-import org.bitcoins.core.wallet.utxo.TxoState._
-import org.bitcoins.core.wallet.utxo._
+import org.bitcoins.core.wallet.utxo.*
+import org.bitcoins.core.wallet.utxo.TxoState.*
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.wallet.{Wallet, WalletLogger}
+import org.bitcoins.db.SafeDatabase
+import org.bitcoins.wallet.callback.WalletCallbacks
+import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.models.{SpendingInfoDAO, TransactionDAO}
+import slick.dbio.{DBIOAction, Effect, NoStream}
 
 import scala.concurrent.Future
 
@@ -18,12 +27,21 @@ import scala.concurrent.Future
   * notable examples of functionality here are enumerating UTXOs in the wallet
   * and importing a UTXO into the wallet for later spending.
   */
-private[wallet] trait UtxoHandling extends WalletLogger {
-  self: Wallet =>
-  import walletConfig.profile.api._
+case class UtxoHandling(
+    spendingInfoDAO: SpendingInfoDAO,
+    transactionDAO: TransactionDAO,
+    chainQueryApi: ChainQueryApi)(implicit
+    walletConfig: WalletAppConfig,
+    system: ActorSystem)
+    extends UtxoHandlingApi
+    with BitcoinSLogger {
+  import system.dispatcher
+
+  private val walletCallbacks: WalletCallbacks = walletConfig.callBacks
+  private val safeDatabase: SafeDatabase = spendingInfoDAO.safeDatabase
 
   /** @inheritdoc */
-  def listDefaultAccountUtxos(): Future[Vector[SpendingInfoDb]] =
+  override def listDefaultAccountUtxos(): Future[Vector[SpendingInfoDb]] =
     listUtxos(walletConfig.defaultAccount)
 
   /** @inheritdoc */
@@ -319,7 +337,7 @@ private[wallet] trait UtxoHandling extends WalletLogger {
     } yield utxos
   }
 
-  protected def markUTXOsAsReservedAction(
+  def markUTXOsAsReservedAction(
       utxos: Vector[SpendingInfoDb]
   ): DBIOAction[
     (Vector[SpendingInfoDb], Future[Unit]),
@@ -401,6 +419,29 @@ private[wallet] trait UtxoHandling extends WalletLogger {
       updatedReceivedInfos <- updateUtxoReceiveConfirmedStates(receivedUtxos)
       updatedSpentInfos <- updateUtxoSpentConfirmedStates(spentUtxos)
     } yield (updatedReceivedInfos ++ updatedSpentInfos).toVector
+  }
+
+  /** Inserts the UTXO at the given index into our DB, swallowing the error if
+    * any (this is because we're operating on data we've already verified).
+    */
+  def processReceivedUtxo(
+      transaction: Transaction,
+      index: Int,
+      blockHashOpt: Option[DoubleSha256DigestBE],
+      addressDb: AddressDb
+  ): Future[SpendingInfoDb] = {
+    val output = transaction.outputs(index)
+    val outPoint = TransactionOutPoint(transaction.txId, UInt32(index))
+
+    // insert the UTXO into the DB
+    val utxoF = writeUtxo(
+      tx = transaction,
+      blockHashOpt = blockHashOpt,
+      output = output,
+      outPoint = outPoint,
+      addressDb = addressDb
+    )
+    utxoF
   }
 }
 
