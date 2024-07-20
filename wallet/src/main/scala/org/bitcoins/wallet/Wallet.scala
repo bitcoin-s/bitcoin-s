@@ -999,6 +999,36 @@ abstract class Wallet
 
   override def listUtxos(state: TxoState): Future[Vector[SpendingInfoDb]] =
     utxoHandling.listUtxos(state)
+
+  override def listUtxos(
+      hdAccount: HDAccount): Future[Vector[SpendingInfoDb]] = {
+    utxoHandling.listUtxos(hdAccount)
+  }
+
+  override def listUtxos(tag: AddressTag): Future[Vector[SpendingInfoDb]] = {
+    utxoHandling.listUtxos(tag)
+  }
+  def markUTXOsAsReserved(
+      utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
+    utxoHandling.markUTXOsAsReserved(utxos)
+  }
+
+  /** Marks all utxos that are ours in this transactions as reserved */
+  def markUTXOsAsReserved(tx: Transaction): Future[Vector[SpendingInfoDb]] = {
+    utxoHandling.markUTXOsAsReserved(tx)
+  }
+
+  def unmarkUTXOsAsReserved(
+      utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
+    utxoHandling.unmarkUTXOsAsReserved(utxos)
+  }
+
+  /** Unmarks all utxos that are ours in this transactions indicating they are
+    * no longer reserved
+    */
+  def unmarkUTXOsAsReserved(tx: Transaction): Future[Vector[SpendingInfoDb]] = {
+    utxoHandling.unmarkUTXOsAsReserved(tx)
+  }
 }
 
 // todo: create multiple wallets, need to maintain multiple databases

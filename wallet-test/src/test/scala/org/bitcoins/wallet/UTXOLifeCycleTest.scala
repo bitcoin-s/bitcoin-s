@@ -522,8 +522,7 @@ class UTXOLifeCycleTest
         _ = assert(reservedUtxos.forall(_.state == TxoState.Reserved))
         _ = assert(reservedUtxos.forall(allReserved.contains))
 
-        unreservedUtxos <- wallet.utxoHandling.unmarkUTXOsAsReserved(
-          reservedUtxos)
+        unreservedUtxos <- wallet.unmarkUTXOsAsReserved(reservedUtxos)
         newReserved <- wallet.listUtxos(TxoState.Reserved)
         newTransactions <- wallet.listTransactions()
       } yield {
@@ -558,7 +557,7 @@ class UTXOLifeCycleTest
             .forall(allReserved.map(_.outPoint).contains)
         )
 
-        unreservedUtxos <- wallet.utxoHandling.unmarkUTXOsAsReserved(tx)
+        unreservedUtxos <- wallet.unmarkUTXOsAsReserved(tx)
         newTransactions <- wallet.listTransactions()
       } yield {
         assert(unreservedUtxos.forall(_.state != TxoState.Reserved))
@@ -677,7 +676,7 @@ class UTXOLifeCycleTest
         utxos <- utxosF
         first = utxos.head
         // just reserve this one to start
-        reserved <- wallet.utxoHandling.markUTXOsAsReserved(Vector(first))
+        reserved <- wallet.markUTXOsAsReserved(Vector(first))
       } yield reserved.head
 
       val reserveFailedF = for {
@@ -685,7 +684,7 @@ class UTXOLifeCycleTest
         _ <- reservedUtxoF
         // now try to reserve them all
         // this should fail as the first utxo is reserved
-        _ <- wallet.utxoHandling.markUTXOsAsReserved(utxos)
+        _ <- wallet.markUTXOsAsReserved(utxos)
       } yield ()
 
       val assertionF = recoverToSucceededIf[RuntimeException](reserveFailedF)
@@ -724,7 +723,7 @@ class UTXOLifeCycleTest
         _ = assert(utxo.txid == txId)
         _ = assert(utxo.state == TxoState.PendingConfirmationsReceived)
         // now mark the utxo as reserved
-        _ <- wallet.utxoHandling.markUTXOsAsReserved(Vector(utxo))
+        _ <- wallet.markUTXOsAsReserved(Vector(utxo))
         // confirm it is reserved
         _ <- wallet
           .listUtxos(TxoState.Reserved)
@@ -769,7 +768,7 @@ class UTXOLifeCycleTest
         _ = assert(broadcastReceived.length == 1) // change output
 
         // mark all utxos as reserved
-        _ <- wallet.utxoHandling.markUTXOsAsReserved(utxos)
+        _ <- wallet.markUTXOsAsReserved(utxos)
         newReservedUtxos <- wallet.listUtxos(TxoState.Reserved)
 
         // make sure all utxos are reserved

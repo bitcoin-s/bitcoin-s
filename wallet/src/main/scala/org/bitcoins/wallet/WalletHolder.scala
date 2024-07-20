@@ -68,7 +68,7 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
     }
   }
 
-  override def utxoHandling: UtxoHandlingApi = wallet.utxoHandling
+//  override def utxoHandling: UtxoHandlingApi = wallet.utxoHandling
 
   def isInitialized: Boolean = synchronized {
     walletOpt.isDefined
@@ -205,12 +205,18 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
   override def listUtxos(): Future[Vector[SpendingInfoDb]] = delegate(
     _.listUtxos()
   )
-  /*
-    override def listUtxos(tag: AddressTag): Future[Vector[SpendingInfoDb]] =
-      delegate(_.listUtxos(tag))  */
+
+  override def listUtxos(
+      hdAccount: HDAccount): Future[Vector[SpendingInfoDb]] = {
+    delegate(_.listUtxos(hdAccount))
+  }
 
   override def listUtxos(state: TxoState): Future[Vector[SpendingInfoDb]] =
     delegate(_.listUtxos(state))
+
+  override def listUtxos(tag: AddressTag): Future[Vector[SpendingInfoDb]] = {
+    delegate(_.listUtxos(tag))
+  }
 
   override def listAddresses(): Future[Vector[AddressDb]] = delegate(
     _.listAddresses()
@@ -1108,6 +1114,30 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
         newTags = newTags
       )
     )
+  }
+
+  override def markUTXOsAsReserved(
+      utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
+    delegate(_.markUTXOsAsReserved(utxos))
+  }
+
+  /** Marks all utxos that are ours in this transactions as reserved */
+  override def markUTXOsAsReserved(
+      tx: Transaction): Future[Vector[SpendingInfoDb]] = {
+    delegate(_.markUTXOsAsReserved(tx))
+  }
+
+  override def unmarkUTXOsAsReserved(
+      utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
+    delegate(_.unmarkUTXOsAsReserved(utxos))
+  }
+
+  /** Unmarks all utxos that are ours in this transactions indicating they are
+    * no longer reserved
+    */
+  override def unmarkUTXOsAsReserved(
+      tx: Transaction): Future[Vector[SpendingInfoDb]] = {
+    delegate(_.unmarkUTXOsAsReserved(tx))
   }
 }
 

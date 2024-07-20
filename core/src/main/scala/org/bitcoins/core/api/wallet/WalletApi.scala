@@ -158,6 +158,10 @@ trait WalletApi extends StartStopAsync[WalletApi] {
 
   def listUtxos(state: TxoState): Future[Vector[SpendingInfoDb]]
 
+  def listUtxos(hdAccount: HDAccount): Future[Vector[SpendingInfoDb]]
+
+  def listUtxos(tag: AddressTag): Future[Vector[SpendingInfoDb]]
+
   def watchScriptPubKey(scriptPubKey: ScriptPubKey): Future[ScriptPubKeyDb]
 
   /** Checks if the wallet contains any data */
@@ -461,7 +465,19 @@ trait WalletApi extends StartStopAsync[WalletApi] {
     */
   def updateUtxoPendingStates(): Future[Vector[SpendingInfoDb]]
 
-  def utxoHandling: UtxoHandlingApi
+  def markUTXOsAsReserved(
+      utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]]
+
+  /** Marks all utxos that are ours in this transactions as reserved */
+  def markUTXOsAsReserved(tx: Transaction): Future[Vector[SpendingInfoDb]]
+
+  def unmarkUTXOsAsReserved(
+      utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]]
+
+  /** Unmarks all utxos that are ours in this transactions indicating they are
+    * no longer reserved
+    */
+  def unmarkUTXOsAsReserved(tx: Transaction): Future[Vector[SpendingInfoDb]]
 }
 
 case class WalletInfo(
