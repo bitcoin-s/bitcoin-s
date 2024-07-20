@@ -158,8 +158,6 @@ trait WalletApi extends StartStopAsync[WalletApi] {
 
   def listUtxos(state: TxoState): Future[Vector[SpendingInfoDb]]
 
-  def listUtxos(hdAccount: HDAccount): Future[Vector[SpendingInfoDb]]
-
   def listUtxos(tag: AddressTag): Future[Vector[SpendingInfoDb]]
 
   def watchScriptPubKey(scriptPubKey: ScriptPubKey): Future[ScriptPubKeyDb]
@@ -491,4 +489,6 @@ case class WalletInfo(
     imported: Boolean)
 
 /** An HDWallet that uses Neutrino to sync */
-trait NeutrinoHDWalletApi extends HDWalletApi with NeutrinoWalletApi
+trait NeutrinoHDWalletApi extends HDWalletApi with NeutrinoWalletApi {
+  def listUtxos(hdAccount: HDAccount): Future[Vector[SpendingInfoDb]]
+}
