@@ -1,7 +1,7 @@
 package org.bitcoins.core.api.wallet
 
 import org.bitcoins.core.api.keymanager.BIP39KeyManagerApi
-import org.bitcoins.core.api.wallet.db.{AccountDb, AddressDb}
+import org.bitcoins.core.api.wallet.db.{AccountDb, AddressDb, SpendingInfoDb}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.{AddressType, HDAccount, HDChainType, HDPurpose}
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -448,6 +448,10 @@ trait HDWalletApi extends WalletApi {
       account: HDAccount): Future[Vector[(AddressDb, CurrencyUnit)]]
 
   def listUnusedAddresses(account: HDAccount): Future[Vector[AddressDb]]
+
+  def listDefaultAccountUtxos(): Future[Vector[SpendingInfoDb]]
+
+  def listUtxos(hdAccount: HDAccount): Future[Vector[SpendingInfoDb]]
 
   override def clearAllUtxos(): Future[HDWalletApi]
 

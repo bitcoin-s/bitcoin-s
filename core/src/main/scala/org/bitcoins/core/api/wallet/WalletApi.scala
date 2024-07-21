@@ -489,6 +489,4 @@ case class WalletInfo(
     imported: Boolean)
 
 /** An HDWallet that uses Neutrino to sync */
-trait NeutrinoHDWalletApi extends HDWalletApi with NeutrinoWalletApi {
-  def listUtxos(hdAccount: HDAccount): Future[Vector[SpendingInfoDb]]
-}
+trait NeutrinoHDWalletApi extends HDWalletApi with NeutrinoWalletApi

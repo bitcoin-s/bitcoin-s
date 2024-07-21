@@ -68,8 +68,6 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
     }
   }
 
-//  override def utxoHandling: UtxoHandlingApi = wallet.utxoHandling
-
   def isInitialized: Boolean = synchronized {
     walletOpt.isDefined
   }
@@ -202,6 +200,9 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
   override def getUnconfirmedBalance(tag: AddressTag): Future[CurrencyUnit] =
     delegate(_.getUnconfirmedBalance(tag))
 
+  override def listDefaultAccountUtxos(): Future[Vector[SpendingInfoDb]] = {
+    delegate(_.listDefaultAccountUtxos())
+  }
   override def listUtxos(): Future[Vector[SpendingInfoDb]] = delegate(
     _.listUtxos()
   )

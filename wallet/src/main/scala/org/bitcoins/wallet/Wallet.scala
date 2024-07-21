@@ -1008,17 +1008,22 @@ abstract class Wallet
   override def listUtxos(tag: AddressTag): Future[Vector[SpendingInfoDb]] = {
     utxoHandling.listUtxos(tag)
   }
+
+  override def listDefaultAccountUtxos(): Future[Vector[SpendingInfoDb]] = {
+    utxoHandling.listDefaultAccountUtxos()
+  }
   def markUTXOsAsReserved(
       utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
     utxoHandling.markUTXOsAsReserved(utxos)
   }
 
   /** Marks all utxos that are ours in this transactions as reserved */
-  def markUTXOsAsReserved(tx: Transaction): Future[Vector[SpendingInfoDb]] = {
+  override def markUTXOsAsReserved(
+      tx: Transaction): Future[Vector[SpendingInfoDb]] = {
     utxoHandling.markUTXOsAsReserved(tx)
   }
 
-  def unmarkUTXOsAsReserved(
+  override def unmarkUTXOsAsReserved(
       utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
     utxoHandling.unmarkUTXOsAsReserved(utxos)
   }
@@ -1026,7 +1031,8 @@ abstract class Wallet
   /** Unmarks all utxos that are ours in this transactions indicating they are
     * no longer reserved
     */
-  def unmarkUTXOsAsReserved(tx: Transaction): Future[Vector[SpendingInfoDb]] = {
+  override def unmarkUTXOsAsReserved(
+      tx: Transaction): Future[Vector[SpendingInfoDb]] = {
     utxoHandling.unmarkUTXOsAsReserved(tx)
   }
 }

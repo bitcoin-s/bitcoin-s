@@ -41,15 +41,14 @@ case class UtxoHandling(
   private val safeDatabase: SafeDatabase = spendingInfoDAO.safeDatabase
 
   /** @inheritdoc */
-  override def listDefaultAccountUtxos(): Future[Vector[SpendingInfoDb]] =
-    listUtxos(walletConfig.defaultAccount)
-
-  /** @inheritdoc */
   override def listUtxos(): Future[Vector[SpendingInfoDb]] = {
     spendingInfoDAO.findAllUnspent()
   }
 
-  override def listUtxos(
+  def listDefaultAccountUtxos(): Future[Vector[SpendingInfoDb]] =
+    listUtxos(walletConfig.defaultAccount)
+
+  def listUtxos(
       hdAccount: HDAccount
   ): Future[Vector[SpendingInfoDb]] = {
     spendingInfoDAO.findAllUnspentForAccount(hdAccount)

@@ -501,6 +501,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "return the wallet utxos" in {
+
       (() => mockWalletApi.listUtxos())
         .expects()
         .returning(Future.successful(Vector(spendingInfoDb)))

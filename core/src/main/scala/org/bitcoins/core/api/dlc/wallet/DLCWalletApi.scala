@@ -22,6 +22,7 @@ import java.net.InetSocketAddress
 import scala.concurrent._
 
 trait DLCWalletApi { self: WalletApi =>
+
   def createDLCOffer(
       contractInfoTLV: ContractInfoTLV,
       collateral: Satoshis,
