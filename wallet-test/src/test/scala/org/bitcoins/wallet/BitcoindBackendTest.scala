@@ -109,7 +109,7 @@ class BitcoindBackendTest extends WalletAppConfigWithBitcoindNewestFixtures {
 
       _ <- BitcoindRpcBackendUtil.syncWalletToBitcoind(bitcoind, wallet, None)
 
-      utxos <- wallet.utxoHandling.listUtxos(TxoState.ConfirmedReceived)
+      utxos <- wallet.listUtxos(TxoState.ConfirmedReceived)
     } yield {
       assert(utxos.size == 1)
       val utxo = utxos.head

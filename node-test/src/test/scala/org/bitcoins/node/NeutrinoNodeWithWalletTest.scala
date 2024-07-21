@@ -60,8 +60,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       for {
         balance <- wallet.getBalance()
         addresses <- wallet.listAddresses()
-        account <- wallet.getDefaultAccount()
-        utxos <- wallet.listUtxos(account.hdAccount)
+        utxos <- wallet.listDefaultAccountUtxos()
       } yield {
         // +- fee rate because signatures could vary in size
         (expectedBalance === balance +- FeeRate.currencyUnit) &&
@@ -170,8 +169,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
         rescan <- wallet.isRescanning()
         balance <- wallet.getBalance()
         addresses <- wallet.listAddresses()
-        account <- wallet.getDefaultAccount()
-        utxos <- wallet.listUtxos(account.hdAccount)
+        utxos <- wallet.listDefaultAccountUtxos()
         spks = utxos
           .map(_.output.scriptPubKey)
       } yield {
@@ -183,9 +181,8 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
     }
 
     for {
-      account <- wallet.getDefaultAccount()
       addresses <- wallet.listAddresses()
-      utxos <- wallet.listUtxos(account.hdAccount)
+      utxos <- wallet.listDefaultAccountUtxos()
       _ = assert(addresses.size == 6)
       _ = assert(utxos.size == 3)
 
@@ -195,7 +192,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
           .sendToAddress(address, TestAmount)
 
       addresses <- wallet.listAddresses()
-      utxos <- wallet.listUtxos(account.hdAccount)
+      utxos <- wallet.listDefaultAccountUtxos()
       _ = assert(addresses.size == 7)
       _ = assert(utxos.size == 3)
       _ <-
@@ -211,7 +208,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       })
       _ <- wallet.clearAllUtxos()
       addresses <- wallet.listAddresses()
-      utxos <- wallet.listUtxos(account.hdAccount)
+      utxos <- wallet.listDefaultAccountUtxos()
       _ = assert(addresses.nonEmpty)
       _ = assert(utxos.isEmpty)
 
@@ -221,8 +218,8 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
 
       _ <- AsyncUtil.awaitConditionF(
         () => condition(),
-        maxTries = 15,
-        interval = 1.second
+        maxTries = 200,
+        interval = 200.millis
       )
       _ <- rescanState.asInstanceOf[RescanStarted].stop()
     } yield succeed

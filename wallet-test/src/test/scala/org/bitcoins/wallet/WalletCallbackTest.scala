@@ -160,7 +160,7 @@ class WalletCallbackTest extends BitcoinSWalletTest {
 
       for {
         utxos <- wallet.listUtxos()
-        _ <- wallet.utxoHandling.markUTXOsAsReserved(Vector(utxos.head))
+        _ <- wallet.markUTXOsAsReserved(Vector(utxos.head))
         result <- resultP.future
       } yield assert(
         // just compare outPoints because states will be changed so they won't be equal
@@ -185,10 +185,10 @@ class WalletCallbackTest extends BitcoinSWalletTest {
 
       for {
         utxos <- wallet.listUtxos()
-        reserved <- wallet.utxoHandling.markUTXOsAsReserved(Vector(utxos.head))
+        reserved <- wallet.markUTXOsAsReserved(Vector(utxos.head))
         _ = fundedWallet.wallet.walletConfig.addCallbacks(callbacks)
 
-        _ <- wallet.utxoHandling.unmarkUTXOsAsReserved(reserved)
+        _ <- wallet.unmarkUTXOsAsReserved(reserved)
         result <- resultP.future
         // just compare outPoints because states will be changed so they won't be equal
       } yield assert(result.map(_.outPoint) == reserved.map(_.outPoint))
