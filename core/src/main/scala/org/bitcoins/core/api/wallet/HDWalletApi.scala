@@ -17,7 +17,7 @@ import org.bitcoins.core.wallet.builder.{
 }
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
-import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
+import org.bitcoins.core.wallet.utxo.AddressTag
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -440,18 +440,6 @@ trait HDWalletApi extends WalletApi {
     } yield tx
   }
 
-  def listDefaultAccountUtxos(): Future[Vector[SpendingInfoDb]]
-
-  def listUtxos(account: HDAccount): Future[Vector[SpendingInfoDb]]
-
-  def listUtxos(
-      hdAccount: HDAccount,
-      tag: AddressTag): Future[Vector[SpendingInfoDb]]
-
-  def listUtxos(
-      hdAccount: HDAccount,
-      state: TxoState): Future[Vector[SpendingInfoDb]]
-
   def listAddresses(account: HDAccount): Future[Vector[AddressDb]]
 
   def listSpentAddresses(account: HDAccount): Future[Vector[AddressDb]]
@@ -460,6 +448,10 @@ trait HDWalletApi extends WalletApi {
       account: HDAccount): Future[Vector[(AddressDb, CurrencyUnit)]]
 
   def listUnusedAddresses(account: HDAccount): Future[Vector[AddressDb]]
+
+  def listDefaultAccountUtxos(): Future[Vector[SpendingInfoDb]]
+
+  def listUtxos(hdAccount: HDAccount): Future[Vector[SpendingInfoDb]]
 
   override def clearAllUtxos(): Future[HDWalletApi]
 

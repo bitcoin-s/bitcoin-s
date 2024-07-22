@@ -272,7 +272,6 @@ class FundTransactionHandlingTest
       tag: AddressTag
   ): Future[Assertion] = {
     for {
-      account <- wallet.getDefaultAccount()
       feeRate <- wallet.getFeeRate()
       taggedAddr <- wallet.getNewAddress(Vector(tag))
       _ <-
@@ -280,7 +279,7 @@ class FundTransactionHandlingTest
       taggedBalance <- wallet.getBalance(tag)
       _ = assert(taggedBalance == destination.value * 2)
 
-      expectedUtxos <- wallet.listUtxos(account.hdAccount, tag)
+      expectedUtxos <- wallet.listUtxos(tag)
       fundRawTxHelper <-
         wallet
           .fundRawTransaction(

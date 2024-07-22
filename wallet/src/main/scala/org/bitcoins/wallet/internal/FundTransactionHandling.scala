@@ -15,6 +15,8 @@ import scala.concurrent.Future
 trait FundTransactionHandling extends WalletLogger { self: Wallet =>
   import walletConfig.profile.api._
   import org.bitcoins.core.currency.currencyUnitNumeric
+
+  def utxoHandling: UtxoHandling
   def fundRawTransaction(
       destinations: Vector[TransactionOutput],
       feeRate: FeeUnit,
@@ -165,7 +167,8 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
         filtered = walletUtxos.filter(utxo =>
           utxos.exists(_.outPoint == utxo._1.outPoint))
         (_, callbackF) <-
-          if (markAsReserved) markUTXOsAsReservedAction(filtered.map(_._1))
+          if (markAsReserved)
+            utxoHandling.markUTXOsAsReservedAction(filtered.map(_._1))
           else DBIO.successful((Vector.empty, Future.unit))
       } yield (filtered, callbackF)
 

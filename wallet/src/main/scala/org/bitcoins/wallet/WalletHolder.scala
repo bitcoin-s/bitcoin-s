@@ -11,8 +11,8 @@ import org.bitcoins.core.api.dlc.wallet.db.{
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.keymanager.BIP39KeyManagerApi
 import org.bitcoins.core.api.node.NodeApi
-import org.bitcoins.core.api.wallet._
-import org.bitcoins.core.api.wallet.db._
+import org.bitcoins.core.api.wallet.*
+import org.bitcoins.core.api.wallet.db.*
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.dlc.accounting.DLCWalletAccounting
@@ -20,9 +20,9 @@ import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.hd.{AddressType, HDAccount, HDChainType, HDPurpose}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.Block
-import org.bitcoins.core.protocol.dlc.models._
+import org.bitcoins.core.protocol.dlc.models.*
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.tlv._
+import org.bitcoins.core.protocol.tlv.*
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
   TransactionOutPoint,
@@ -200,15 +200,24 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
   override def getUnconfirmedBalance(tag: AddressTag): Future[CurrencyUnit] =
     delegate(_.getUnconfirmedBalance(tag))
 
+  override def listDefaultAccountUtxos(): Future[Vector[SpendingInfoDb]] = {
+    delegate(_.listDefaultAccountUtxos())
+  }
   override def listUtxos(): Future[Vector[SpendingInfoDb]] = delegate(
     _.listUtxos()
   )
 
-  override def listUtxos(tag: AddressTag): Future[Vector[SpendingInfoDb]] =
-    delegate(_.listUtxos(tag))
+  override def listUtxos(
+      hdAccount: HDAccount): Future[Vector[SpendingInfoDb]] = {
+    delegate(_.listUtxos(hdAccount))
+  }
 
   override def listUtxos(state: TxoState): Future[Vector[SpendingInfoDb]] =
     delegate(_.listUtxos(state))
+
+  override def listUtxos(tag: AddressTag): Future[Vector[SpendingInfoDb]] = {
+    delegate(_.listUtxos(tag))
+  }
 
   override def listAddresses(): Future[Vector[AddressDb]] = delegate(
     _.listAddresses()
@@ -607,22 +616,6 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
   )(implicit ec: ExecutionContext): Future[Transaction] = delegate(
     _.makeOpReturnCommitment(message, hashMessage, feeRate, fromAccount)
   )
-
-  override def listDefaultAccountUtxos(): Future[Vector[SpendingInfoDb]] =
-    delegate(_.listDefaultAccountUtxos())
-
-  override def listUtxos(account: HDAccount): Future[Vector[SpendingInfoDb]] =
-    delegate(_.listUtxos(account))
-
-  override def listUtxos(
-      hdAccount: HDAccount,
-      tag: AddressTag
-  ): Future[Vector[SpendingInfoDb]] = delegate(_.listUtxos(hdAccount))
-
-  override def listUtxos(
-      hdAccount: HDAccount,
-      state: TxoState
-  ): Future[Vector[SpendingInfoDb]] = delegate(_.listUtxos(hdAccount, state))
 
   override def listAddresses(account: HDAccount): Future[Vector[AddressDb]] =
     delegate(_.listAddresses(account))

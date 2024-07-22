@@ -32,6 +32,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
   import walletConfig.profile.api._
   import org.bitcoins.core.currency.currencyUnitNumeric
 
+  def utxoHandling: UtxoHandling
   /////////////////////
   // Public facing API
 
@@ -400,7 +401,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
       toBeUpdated = outputsBeingSpent.flatMap(
         markAsSpent(_, transaction.txIdBE)
       )
-      processed <- updateUtxoSpentConfirmedStates(toBeUpdated)
+      processed <- utxoHandling.updateUtxoSpentConfirmedStates(toBeUpdated)
     } yield {
       processed
     }
@@ -552,29 +553,6 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
     }
   }
 
-  /** Inserts the UTXO at the given index into our DB, swallowing the error if
-    * any (this is because we're operating on data we've already verified).
-    */
-  private def processReceivedUtxo(
-      transaction: Transaction,
-      index: Int,
-      blockHashOpt: Option[DoubleSha256DigestBE],
-      addressDb: AddressDb
-  ): Future[SpendingInfoDb] = {
-    val output = transaction.outputs(index)
-    val outPoint = TransactionOutPoint(transaction.txId, UInt32(index))
-
-    // insert the UTXO into the DB
-    val utxoF = writeUtxo(
-      tx = transaction,
-      blockHashOpt = blockHashOpt,
-      output = output,
-      outPoint = outPoint,
-      addressDb = addressDb
-    )
-    utxoF
-  }
-
   /** Processes an incoming transaction that already exists in our wallet. If
     * the incoming transaction has more confirmations than what we have in the
     * DB, we update the TX
@@ -603,7 +581,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
 
           // Update Txo State
           updateTxDbF.flatMap(_ =>
-            updateUtxoReceiveConfirmedStates(foundTxo).flatMap {
+            utxoHandling.updateUtxoReceiveConfirmedStates(foundTxo).flatMap {
               case Some(txo) =>
                 logger.debug(
                   s"Updated block_hash of txo=${txo.txid.hex} new block hash=${blockHash.hex}"
@@ -647,7 +625,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
     } yield {
       val outputsVec = addressDbWithOutput.map { case (addressDb, out) =>
         require(addressDb.scriptPubKey == out.output.scriptPubKey)
-        processReceivedUtxo(
+        utxoHandling.processReceivedUtxo(
           transaction,
           out.index,
           blockHashOpt,
