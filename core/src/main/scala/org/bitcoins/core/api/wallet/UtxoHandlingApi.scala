@@ -27,8 +27,6 @@ trait UtxoHandlingApi {
       hdAccount: HDAccount,
       state: TxoState): Future[Vector[SpendingInfoDb]]
 
-  // def listDefaultAccountUtxos(): Future[Vector[SpendingInfoDb]]
-
   def markUTXOsAsReserved(
       utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]]
 
