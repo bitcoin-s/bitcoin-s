@@ -272,7 +272,6 @@ class FundTransactionHandlingTest
       tag: AddressTag
   ): Future[Assertion] = {
     for {
-      // account <- wallet.getDefaultAccount()
       feeRate <- wallet.getFeeRate()
       taggedAddr <- wallet.getNewAddress(Vector(tag))
       _ <-

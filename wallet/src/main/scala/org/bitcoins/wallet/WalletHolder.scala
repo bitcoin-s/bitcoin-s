@@ -244,7 +244,7 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
       scriptPubKey: ScriptPubKey
   ): Future[ScriptPubKeyDb] = delegate(_.watchScriptPubKey(scriptPubKey))
 
-  /*  override def markUTXOsAsReserved(
+  override def markUTXOsAsReserved(
       utxos: Vector[SpendingInfoDb]
   ): Future[Vector[SpendingInfoDb]] = delegate(_.markUTXOsAsReserved(utxos))
 
@@ -258,7 +258,7 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
 
   override def unmarkUTXOsAsReserved(
       tx: Transaction
-  ): Future[Vector[SpendingInfoDb]] = delegate(_.unmarkUTXOsAsReserved(tx))*/
+  ): Future[Vector[SpendingInfoDb]] = delegate(_.unmarkUTXOsAsReserved(tx))
 
   override def isEmpty(): Future[Boolean] = delegate(_.isEmpty())
 
@@ -616,22 +616,6 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
   )(implicit ec: ExecutionContext): Future[Transaction] = delegate(
     _.makeOpReturnCommitment(message, hashMessage, feeRate, fromAccount)
   )
-
-  /*  override def listDefaultAccountUtxos(): Future[Vector[SpendingInfoDb]] =
-    delegate(_.listDefaultAccountUtxos())
-
-  override def listUtxos(account: HDAccount): Future[Vector[SpendingInfoDb]] =
-    delegate(_.listUtxos(account))
-
-  override def listUtxos(
-      hdAccount: HDAccount,
-      tag: AddressTag
-  ): Future[Vector[SpendingInfoDb]] = delegate(_.listUtxos(hdAccount))
-
-  override def listUtxos(
-      hdAccount: HDAccount,
-      state: TxoState
-  ): Future[Vector[SpendingInfoDb]] = delegate(_.listUtxos(hdAccount, state))*/
 
   override def listAddresses(account: HDAccount): Future[Vector[AddressDb]] =
     delegate(_.listAddresses(account))
@@ -1115,30 +1099,6 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
         newTags = newTags
       )
     )
-  }
-
-  override def markUTXOsAsReserved(
-      utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
-    delegate(_.markUTXOsAsReserved(utxos))
-  }
-
-  /** Marks all utxos that are ours in this transactions as reserved */
-  override def markUTXOsAsReserved(
-      tx: Transaction): Future[Vector[SpendingInfoDb]] = {
-    delegate(_.markUTXOsAsReserved(tx))
-  }
-
-  override def unmarkUTXOsAsReserved(
-      utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
-    delegate(_.unmarkUTXOsAsReserved(utxos))
-  }
-
-  /** Unmarks all utxos that are ours in this transactions indicating they are
-    * no longer reserved
-    */
-  override def unmarkUTXOsAsReserved(
-      tx: Transaction): Future[Vector[SpendingInfoDb]] = {
-    delegate(_.unmarkUTXOsAsReserved(tx))
   }
 }
 
