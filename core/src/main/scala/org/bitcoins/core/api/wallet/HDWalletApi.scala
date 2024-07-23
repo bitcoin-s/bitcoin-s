@@ -28,9 +28,10 @@ import scala.concurrent.{ExecutionContext, Future}
   * @see
   *   [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki BIP44]]
   */
-trait HDWalletApi extends WalletApi {
+trait HDWalletApi extends WalletApi with AccountHandlingApi {
 
   override def keyManager: BIP39KeyManagerApi
+  def accountHandling: AccountHandlingApi
 
   /** Gets the balance of the given account */
   def getBalance(account: HDAccount)(implicit
@@ -68,7 +69,8 @@ trait HDWalletApi extends WalletApi {
     * @return
     *   Future[AccountDb]
     */
-  def getDefaultAccount(): Future[AccountDb]
+  def getDefaultAccount(): Future[AccountDb] =
+    accountHandling.getDefaultAccount()
 
   /** Fetches the default account for the given address/account kind
     * @param addressType
@@ -476,7 +478,9 @@ trait HDWalletApi extends WalletApi {
       chainType: HDChainType,
       addressIndex: Int): Future[AddressDb]
 
-  def listAccounts(): Future[Vector[AccountDb]]
+  def listAccounts(): Future[Vector[AccountDb]] = {
+    accountHandling.listAccounts()
+  }
 
   /** Lists all wallet accounts with the given type
     * @param purpose
@@ -484,8 +488,9 @@ trait HDWalletApi extends WalletApi {
     *   [[Future[Vector[AccountDb]]
     */
   def listAccounts(purpose: HDPurpose)(implicit
-      ec: ExecutionContext): Future[Vector[AccountDb]] =
-    listAccounts().map(_.filter(_.hdAccount.purpose == purpose))
+      ec: ExecutionContext): Future[Vector[AccountDb]] = {
+    accountHandling.listAccounts().map(_.filter(_.hdAccount.purpose == purpose))
+  }
 
   def createNewAccount(keyManagerParams: KeyManagerParams): Future[HDWalletApi]
 

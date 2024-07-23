@@ -50,7 +50,6 @@ import scala.util.{Failure, Random, Success}
 abstract class Wallet
     extends NeutrinoHDWalletApi
     with AddressHandling
-    with AccountHandling
     with FundTransactionHandling
     with TransactionProcessing
     with RescanHandling
@@ -97,6 +96,7 @@ abstract class Wallet
 
   def utxoHandling: UtxoHandling =
     UtxoHandling(spendingInfoDAO, transactionDAO, chainQueryApi)
+  def accountHandling: AccountHandlingApi = AccountHandling(accountDAO)
 
   def walletCallbacks: WalletCallbacks = walletConfig.callBacks
 
@@ -1034,6 +1034,11 @@ abstract class Wallet
   override def unmarkUTXOsAsReserved(
       tx: Transaction): Future[Vector[SpendingInfoDb]] = {
     utxoHandling.unmarkUTXOsAsReserved(tx)
+  }
+
+  override def getDefaultAccountForType(
+      addressType: AddressType): Future[AccountDb] = {
+    accountHandling.getDefaultAccountForType(addressType)
   }
 }
 
