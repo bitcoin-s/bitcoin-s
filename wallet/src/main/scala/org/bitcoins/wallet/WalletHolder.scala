@@ -67,6 +67,8 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
     }
   }
 
+  override def accountHandling: AccountHandlingApi = wallet.accountHandling
+
   def isInitialized: Boolean = synchronized {
     walletOpt.isDefined
   }
@@ -651,10 +653,6 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
       addressIndex: Int
   ): Future[AddressDb] = delegate(
     _.getAddress(account, chainType, addressIndex)
-  )
-
-  override def listAccounts(): Future[Vector[AccountDb]] = delegate(
-    _.listAccounts()
   )
 
   override def createNewAccount(
