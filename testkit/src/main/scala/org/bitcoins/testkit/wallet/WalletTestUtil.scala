@@ -1,24 +1,24 @@
 package org.bitcoins.testkit.wallet
 
-import org.bitcoins.core.api.wallet.db._
+import org.bitcoins.core.api.wallet.db.*
 import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.crypto._
-import org.bitcoins.core.currency._
-import org.bitcoins.core.hd._
+import org.bitcoins.core.crypto.*
+import org.bitcoins.core.currency.*
+import org.bitcoins.core.hd.*
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.{
   ChainParams,
   RegTestNetChainParams
 }
-import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.script.*
+import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.protocol.{Bech32Address, P2SHAddress}
-import org.bitcoins.core.wallet.utxo._
+import org.bitcoins.core.wallet.utxo.*
 import org.bitcoins.crypto.{CryptoUtil, DoubleSha256DigestBE, ECPublicKey}
-import org.bitcoins.testkit.fixtures.WalletDAOs
-import org.bitcoins.testkitcore.Implicits._
+import org.bitcoins.testkitcore.Implicits.*
 import org.bitcoins.testkitcore.gen.{CryptoGenerators, NumberGenerator}
 import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.models.WalletDAOs
 
 import scala.concurrent.{ExecutionContext, Future}
 

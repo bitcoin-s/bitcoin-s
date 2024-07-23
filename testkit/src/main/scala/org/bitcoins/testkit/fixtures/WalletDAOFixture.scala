@@ -8,31 +8,6 @@ import org.scalatest._
 
 import scala.concurrent.{Await, Future}
 
-case class WalletDAOs(
-    accountDAO: AccountDAO,
-    addressDAO: AddressDAO,
-    addressTagDAO: AddressTagDAO,
-    utxoDAO: SpendingInfoDAO,
-    transactionDAO: TransactionDAO,
-    incomingTxDAO: IncomingTransactionDAO,
-    outgoingTxDAO: OutgoingTransactionDAO,
-    scriptPubKeyDAO: ScriptPubKeyDAO,
-    stateDescriptorDAO: WalletStateDescriptorDAO
-) {
-
-  val list = Vector(
-    scriptPubKeyDAO,
-    accountDAO,
-    addressDAO,
-    addressTagDAO,
-    transactionDAO,
-    incomingTxDAO,
-    utxoDAO,
-    outgoingTxDAO,
-    stateDescriptorDAO
-  )
-}
-
 trait WalletDAOFixture extends BitcoinSFixture with EmbeddedPg {
 
   implicit protected val config: WalletAppConfig =
