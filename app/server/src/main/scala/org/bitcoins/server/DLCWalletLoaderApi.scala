@@ -47,7 +47,6 @@ sealed trait DLCWalletLoaderApi
   ): Future[(WalletHolder, WalletAppConfig, DLCAppConfig)]
 
   protected def loadWallet(
-      walletHolder: WalletHolder,
       chainQueryApi: ChainQueryApi,
       nodeApi: NodeApi,
       feeProviderApi: FeeRateApi,
@@ -67,15 +66,6 @@ sealed trait DLCWalletLoaderApi
         walletName,
         aesPasswordOpt
       )
-      _ <- {
-        if (walletHolder.isInitialized) {
-          walletHolder
-            .stop()
-            .map(_ => ())
-        } else {
-          Future.unit
-        }
-      }
       _ <- walletConfig.start()
       _ <- dlcConfig.start()
       dlcWallet <- dlcConfig.createDLCWallet(
@@ -308,7 +298,6 @@ case class DLCWalletNeutrinoBackendLoader(
       _ <- stopCallbackF
       _ <- stopRescanF
       (dlcWallet, walletConfig, dlcConfig) <- loadWallet(
-        walletHolder = walletHolder,
         chainQueryApi = chainQueryApi,
         nodeApi = nodeApi,
         feeProviderApi = feeRateApi,
@@ -359,7 +348,6 @@ case class DLCWalletBitcoindBackendLoader(
       _ <- stopCallbackF
       _ <- stopRescanF
       (dlcWallet, walletConfig, dlcConfig) <- loadWallet(
-        walletHolder = walletHolder,
         chainQueryApi = bitcoind,
         nodeApi = nodeApi,
         feeProviderApi = feeProvider,
