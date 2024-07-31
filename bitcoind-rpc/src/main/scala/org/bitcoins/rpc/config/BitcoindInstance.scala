@@ -77,6 +77,10 @@ sealed trait BitcoindInstanceLocal extends BitcoindInstance {
         throw exception
     }
   }
+
+  def bitcoindRpcAppConfig: BitcoindRpcAppConfig = {
+    BitcoindRpcAppConfig.fromDatadir(datadir.toPath)
+  }
 }
 
 /** Refers to a bitcoind instance that is running remotely on another machine */

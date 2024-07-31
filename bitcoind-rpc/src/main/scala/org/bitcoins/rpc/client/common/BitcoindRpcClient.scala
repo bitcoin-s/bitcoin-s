@@ -1,6 +1,8 @@
 package org.bitcoins.rpc.client.common
 
+import org.apache.pekko.Done
 import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.stream.scaladsl.{Keep, RunnableGraph, Sink, Source}
 import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.chain.db.BlockHeaderDb
 import org.bitcoins.core.api.chain.{ChainApi, FilterSyncMarker}
@@ -19,7 +21,7 @@ import org.bitcoins.rpc.client.v20.V20MultisigRpc
 import org.bitcoins.rpc.client.v25.BitcoindV25RpcClient
 import org.bitcoins.rpc.client.v26.BitcoindV26RpcClient
 import org.bitcoins.rpc.client.v27.BitcoindV27RpcClient
-import org.bitcoins.rpc.config._
+import org.bitcoins.rpc.config.*
 
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
@@ -35,7 +37,8 @@ import scala.concurrent.Future
   * handle them as you see fit.
   */
 class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
-    override val system: ActorSystem
+    override val system: ActorSystem,
+    bitcoindRpcAppConfig: BitcoindRpcAppConfig
 ) extends Client
     with FeeRateApi
     with NodeApi
@@ -166,7 +169,17 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
 
   override def downloadBlocks(
       blockHashes: Vector[DoubleSha256DigestBE]
-  ): Future[Unit] = Future.unit
+  ): Future[Unit] = {
+    val callback =
+      bitcoindRpcAppConfig.callBacks.executeOnBlockReceivedCallbacks(_)
+    val graph: RunnableGraph[Future[Done]] = Source(blockHashes)
+      .mapAsync(FutureUtil.getParallelism)(getBlockRaw)
+      .toMat(Sink.foreachAsync(1)(callback))(Keep.right)
+
+    graph
+      .run()
+      .map(_ => ())
+  }
 
   override def processHeaders(headers: Vector[BlockHeader]): Future[ChainApi] =
     Future.successful(this)
@@ -294,33 +307,15 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
 }
 
 object BitcoindRpcClient {
-
-  /** The name we give to actor systems we create. We use this information to
-    * know which actor systems to shut down
-    */
-  private[rpc] val ActorSystemName = "bitcoind-rpc-client-created-by-bitcoin-s"
-
-  implicit private lazy val system: ActorSystem =
-    ActorSystem.create(ActorSystemName)
-
   val DEFAULT_WALLET_NAME: String = "wallet.dat"
-
-  /** Creates an RPC client from the given instance.
-    *
-    * Behind the scenes, we create an actor system for you. You can use
-    * `withActorSystem` if you want to manually specify an actor system for the
-    * RPC client.
-    */
-  def apply(instance: BitcoindInstance): BitcoindRpcClient = {
-    withActorSystem(instance)(system)
-  }
 
   /** Creates an RPC client from the given instance, together with the given
     * actor system. This is for advanced users, where you need fine grained
     * control over the RPC client.
     */
-  def withActorSystem(instance: BitcoindInstance)(implicit
-      system: ActorSystem
+  def apply(instance: BitcoindInstance)(implicit
+      system: ActorSystem,
+      bitcoindRpcAppConfig: BitcoindRpcAppConfig
   ): BitcoindRpcClient =
     new BitcoindRpcClient(instance)
 
@@ -331,9 +326,10 @@ object BitcoindRpcClient {
   def fromDatadir(
       datadir: File = BitcoindConfig.DEFAULT_DATADIR,
       binary: File
-  ): BitcoindRpcClient = {
+  )(implicit system: ActorSystem): BitcoindRpcClient = {
     val instance = BitcoindInstanceLocal.fromDatadir(datadir, binary)
-    val cli = BitcoindRpcClient(instance)
+    val appConfig = BitcoindRpcAppConfig.fromDatadir(datadir.toPath)
+    val cli = BitcoindRpcClient(instance)(system, appConfig)
     cli
   }
 
@@ -341,25 +337,19 @@ object BitcoindRpcClient {
     * bitcoind is NOT started.
     */
   def fromVersion(version: BitcoindVersion, instance: BitcoindInstance)(implicit
-      system: ActorSystem
+      system: ActorSystem,
+      bitcoindRpcAppConfig: BitcoindRpcAppConfig
   ): BitcoindRpcClient = {
     val bitcoind = version match {
-      case BitcoindVersion.V25 => BitcoindV25RpcClient.withActorSystem(instance)
-      case BitcoindVersion.V26 => BitcoindV26RpcClient.withActorSystem(instance)
-      case BitcoindVersion.V27 => BitcoindV27RpcClient.withActorSystem(instance)
+      case BitcoindVersion.V25 => BitcoindV25RpcClient(instance)
+      case BitcoindVersion.V26 => BitcoindV26RpcClient(instance)
+      case BitcoindVersion.V27 => BitcoindV27RpcClient(instance)
       case BitcoindVersion.Unknown =>
         sys.error(
           s"Cannot create a Bitcoin Core RPC client: unsupported version"
         )
     }
     bitcoind
-  }
-
-  def fromVersionNoSystem(
-      version: BitcoindVersion,
-      instance: BitcoindInstance
-  ): BitcoindRpcClient = {
-    fromVersion(version, instance)(system)
   }
 }
 

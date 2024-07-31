@@ -323,11 +323,6 @@ trait Client
       // i think bitcoind stops asynchronously
       // so it returns fast from the 'stop' rpc command
       _ <- stopBinary()
-      _ <- {
-        if (system.name == BitcoindRpcClient.ActorSystemName) {
-          system.terminate()
-        } else Future.unit
-      }
     } yield this.asInstanceOf[BitcoindRpcClient]
   }
 

@@ -618,10 +618,14 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       system: ActorSystem
   ): Future[(BitcoindRpcClient, BitcoindRpcClient)] = {
     implicit val ec: ExecutionContextExecutor = system.getDispatcher
+    val instance1 = instance()
+    val instance2 = instance()
+    val appConfig1 = BitcoindRpcAppConfig.fromDatadir(instance1.datadir.toPath)
+    val appConfig2 = BitcoindRpcAppConfig.fromDatadir(instance2.datadir.toPath)
     val client1: BitcoindRpcClient =
-      BitcoindRpcClient.withActorSystem(instance())
+      BitcoindRpcClient(instance1)(system, appConfig1)
     val client2: BitcoindRpcClient =
-      BitcoindRpcClient.withActorSystem(instance())
+      BitcoindRpcClient(instance2)(system, appConfig2)
 
     startServers(Vector(client1, client2)).map { _ =>
       clientAccum ++= List(client1, client2)
@@ -673,16 +677,17 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     val clients: Vector[T] = (0 until numNodes).map { _ =>
       val rpc = version match {
         case BitcoindVersion.Unknown =>
-          BitcoindRpcClient.withActorSystem(BitcoindRpcTestUtil.instance())
+          val instance = BitcoindRpcTestUtil.instance()
+          BitcoindRpcClient(instance)(system, instance.bitcoindRpcAppConfig)
         case BitcoindVersion.V25 =>
-          BitcoindV25RpcClient.withActorSystem(
-            BitcoindRpcTestUtil.v25Instance())
+          val instance = BitcoindRpcTestUtil.v25Instance()
+          BitcoindV25RpcClient(instance)(system, instance.bitcoindRpcAppConfig)
         case BitcoindVersion.V26 =>
-          BitcoindV26RpcClient.withActorSystem(
-            BitcoindRpcTestUtil.v26Instance())
+          val instance = BitcoindRpcTestUtil.v26Instance()
+          BitcoindV26RpcClient(instance)(system, instance.bitcoindRpcAppConfig)
         case BitcoindVersion.V27 =>
-          BitcoindV27RpcClient.withActorSystem(
-            BitcoindRpcTestUtil.v27Instance())
+          val instance = BitcoindRpcTestUtil.v27Instance()
+          BitcoindV27RpcClient(instance)(system, instance.bitcoindRpcAppConfig)
       }
 
       // this is safe as long as this method is never
@@ -1071,7 +1076,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     )
 
     // start the bitcoind instance so eclair can properly use it
-    val rpc = BitcoindRpcClient.withActorSystem(instance)
+    val rpc = BitcoindRpcClient(instance)(system, instance.bitcoindRpcAppConfig)
     val startedF = startServers(Vector(rpc))
 
     val blocksToGenerate = 102
