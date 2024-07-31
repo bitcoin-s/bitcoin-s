@@ -11,12 +11,13 @@ import org.apache.pekko.stream.scaladsl.{
 }
 import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.CallbackHandler
+import org.bitcoins.core.api.callback.OnBlockReceived
 import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.node._
+import org.bitcoins.node.*
 
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.{ExecutionContext, Future}

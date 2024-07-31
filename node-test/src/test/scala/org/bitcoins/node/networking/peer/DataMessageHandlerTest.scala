@@ -3,15 +3,16 @@ package org.bitcoins.node.networking.peer
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandler
+import org.bitcoins.core.api.callback.OnBlockReceived
 import org.bitcoins.core.config.SigNet
-import org.bitcoins.core.currency._
+import org.bitcoins.core.currency.*
 import org.bitcoins.core.gcs.{FilterType, GolombFilter}
 import org.bitcoins.core.p2p.HeadersMessage
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.NodeState.{FilterHeaderSync, HeaderSync}
-import org.bitcoins.node._
+import org.bitcoins.node.*
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.node.fixture.NeutrinoNodeConnectedWithBitcoind
