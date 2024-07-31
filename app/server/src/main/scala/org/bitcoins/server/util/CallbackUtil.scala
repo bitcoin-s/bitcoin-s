@@ -116,7 +116,21 @@ object CallbackUtil extends BitcoinSLogger {
         .runWith(txSink)
         .map(_ => ())
     }
-    val callbacks = NodeCallbacks(onTxReceived = Vector(onTx))
+
+    val blockSink = Sink.foreachAsync[Block](1) { block =>
+      wallet
+        .processBlock(block)
+        .map(_ => ())
+    }
+    val onBlock: OnBlockReceived = { block =>
+      logger.info(s"CallbackUtil onBlock=${block.blockHeader.hashBE.hex}")
+      Source
+        .single(block)
+        .runWith(blockSink)
+        .map(_ => ())
+    }
+    val callbacks = NodeCallbacks(onTxReceived = Vector(onTx),
+                                  onBlockReceived = Vector(onBlock))
     val streamManager = NodeCallbackStreamManager(callbacks)
     Future.successful(streamManager)
   }

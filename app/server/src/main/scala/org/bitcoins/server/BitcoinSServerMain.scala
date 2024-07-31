@@ -401,14 +401,14 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     } yield {
       WebsocketUtil.buildChainCallbacks(wsQueue, bitcoind)
     }
-    val nodeApiF = for {
-      bitcoind <- bitcoindF
-      chainCallbacks <- chainCallbacksF
-    } yield BitcoindRpcBackendUtil.buildBitcoindNodeApi(
-      bitcoind,
-      Future.successful(walletHolder),
-      Some(chainCallbacks)
-    )
+//    val nodeApiF = for {
+//      bitcoind <- bitcoindF
+//      chainCallbacks <- chainCallbacksF
+//    } yield BitcoindRpcBackendUtil.buildBitcoindNodeApi(
+//      bitcoind,
+//      Future.successful(walletHolder),
+//      Some(chainCallbacks)
+//    )
 
     val feeProviderF = bitcoindF.map { bitcoind =>
       FeeProviderFactory.getFeeProviderOrElse(
@@ -423,13 +423,12 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val loadWalletApiF = {
       for {
         bitcoind <- bitcoindF
-        nodeApi <- nodeApiF
         feeProvider <- feeProviderF
       } yield {
         val l = DLCWalletBitcoindBackendLoader(
           walletHolder = walletHolder,
           bitcoind = bitcoind,
-          nodeApi = nodeApi,
+          nodeApi = bitcoind,
           feeProvider = feeProvider
         )
 
@@ -629,7 +628,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       pollingCancellable <- syncF.flatMap { _ =>
         if (bitcoindRpcConf.zmqConfig == ZmqConfig.empty) {
           val blockingPollingCancellable = BitcoindRpcBackendUtil
-            .startBitcoindBlockPolling(wallet, bitcoind, chainCallbacksOpt)
+            .startBitcoindBlockPolling(wallet, bitcoind, chainCallbacksOpt)(
+              nodeConf.callBacks.executeOnBlockReceivedCallbacks(_))
           val mempoolCancellable = BitcoindRpcBackendUtil
             .startBitcoindMempoolPolling(wallet, bitcoind) { tx =>
               nodeConf.callBacks

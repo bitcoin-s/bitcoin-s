@@ -443,7 +443,8 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
       bitcoind: BitcoindRpcClient,
       chainCallbacksOpt: Option[ChainCallbacks],
       interval: FiniteDuration = 10.seconds
-  )(implicit system: ActorSystem): Cancellable = {
+  )(processBlock: Block => Future[Unit])(implicit
+      system: ActorSystem): Cancellable = {
     import system.dispatcher
 
     val processingBitcoindBlocks = new AtomicBoolean(false)
@@ -451,7 +452,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
     system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
       {
         val isBitcoindSyncedF = isBitcoindInSync(bitcoind)
-
+        logger.info(s"startBitcoindBlockPolling() interval ")
         isBitcoindSyncedF.map { isBitcoindSynced =>
           if (!isBitcoindSynced) {
             logger.info(s"Bitcoind is not synced, waiting for IBD to complete.")
@@ -463,10 +464,10 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
                 if (!rescanning) {
                   val pollFOptF =
                     pollBitcoind(
-                      wallet = wallet,
                       bitcoind = bitcoind,
                       chainCallbacksOpt = chainCallbacksOpt,
-                      prevCount = walletSyncState.height
+                      prevCount = walletSyncState.height,
+                      processBlock = processBlock
                     )
 
                   pollFOptF.flatMap {
@@ -484,9 +485,9 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
             f.onComplete { _ =>
               processingBitcoindBlocks.set(false)
               BitcoindRpcBackendUtil.setSyncingFlag(
-                false,
-                bitcoind,
-                chainCallbacksOpt
+                syncing = false,
+                bitcoind = bitcoind,
+                chainCallbacksOpt = chainCallbacksOpt
               )
             } // reset polling variable
             f.failed.foreach(err =>
@@ -506,10 +507,10 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
     *   completed when the sync is finished.
     */
   private def pollBitcoind(
-      wallet: WalletApi,
       bitcoind: BitcoindRpcClient,
       chainCallbacksOpt: Option[ChainCallbacks],
-      prevCount: Int
+      prevCount: Int,
+      processBlock: Block => Future[Unit]
   )(implicit system: ActorSystem): Future[Option[Future[Done]]] = {
     import system.dispatcher
     val atomicPrevCount = new AtomicInteger(prevCount)
@@ -523,7 +524,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
     val processBlockSink: Sink[(Block, GetBlockHeaderResult), Future[Done]] = {
       Sink.foreachAsync[(Block, GetBlockHeaderResult)](1) {
         case (block, blockHeaderResult) =>
-          val processBlocksF = wallet.processBlock(block)
+          val processBlocksF = processBlock(block)
 
           processBlocksF.failed.foreach { case err =>
             val failedCount = atomicPrevCount.get
