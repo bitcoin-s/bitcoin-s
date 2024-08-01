@@ -53,7 +53,8 @@ implicit val ec: ExecutionContextExecutor = system.dispatcher
 implicit val walletConf: WalletAppConfig =
     BitcoinSTestAppConfig.getNeutrinoTestConfig().walletConf
 
-val bitcoind = BitcoindRpcClient(BitcoindInstanceLocal.fromConfFile())
+val instance = BitcoindInstanceLocal.fromConfFile()
+val bitcoind = BitcoindRpcClient(instance)(system,instance.bitcoindRpcAppConfig)
 val aesPasswordOpt = Some(AesPassword.fromString("password"))
 
 // Here is a super simple example of a callback, this could be replaced with anything, from

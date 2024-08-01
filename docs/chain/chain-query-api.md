@@ -5,6 +5,7 @@ title: Chain Query API
 
 ```scala mdoc:invisible
 import org.apache.pekko.actor.ActorSystem
+import org.bitcoins.core.api.callback.OnBlockReceived
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.crypto._
@@ -76,7 +77,7 @@ implicit val walletConf: WalletAppConfig =
     BitcoinSTestAppConfig.getNeutrinoTestConfig().walletConf
 
 val instance = BitcoindInstanceLocal.fromConfigFile(BitcoindConfig.DEFAULT_CONF_FILE)
-val bitcoind = BitcoindRpcClient(instance)
+val bitcoind = BitcoindRpcClient(instance)(system,instance.bitcoindRpcAppConfig)
 val nodeApi = MockNodeApi.mock
 
 // This function can be used to create a callback for when our chain api receives a transaction, block, or

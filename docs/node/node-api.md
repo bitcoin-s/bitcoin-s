@@ -4,6 +4,7 @@ id: node-api title: Node API
 
 ```scala mdoc:invisible
 import org.apache.pekko.actor.ActorSystem
+import org.bitcoins.core.api.callback.OnBlockReceived
 import org.bitcoins.core.api.node._
 import org.bitcoins.crypto._
 import org.bitcoins.core.protocol.blockchain.Block
@@ -54,7 +55,7 @@ implicit val walletConf: WalletAppConfig =
 // let's use a helper method to get a v19 bitcoind
 // and a ChainApi
 val instance = BitcoindInstanceLocal.fromConfigFile(BitcoindConfig.DEFAULT_CONF_FILE)
-val bitcoind = BitcoindRpcClient(instance)
+val bitcoind = BitcoindRpcClient(instance)(system,instance.bitcoindRpcAppConfig)
 val chainApi = MockChainQueryApi.mock
 val aesPasswordOpt = Some(AesPassword.fromString("password"))
 

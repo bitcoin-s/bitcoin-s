@@ -112,7 +112,7 @@ val bitcoindInstance = {
   )
 }
 
-val rpcCli = BitcoindRpcClient(bitcoindInstance)
+val rpcCli = BitcoindRpcClient(bitcoindInstance)(system,bitcoindInstance.bitcoindRpcAppConfig)
 
 rpcCli.getBalance.onComplete { case balance =>
   println(s"Wallet balance=${balance}")
@@ -131,7 +131,8 @@ handling could look:
 
 ```scala mdoc:compile-only
 
-implicit val ec: ExecutionContext = ExecutionContext.global
+implicit val system: ActorSystem = ActorSystem()
+implicit val ec: ExecutionContext = system.dispatcher
 
 // let's assume you have an already running client,
 // so there's no need to start this one
