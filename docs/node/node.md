@@ -42,6 +42,7 @@ For your node to be able to service these filters you will need set
 
 ```scala mdoc:invisible
 import org.apache.pekko.actor.ActorSystem
+import org.bitcoins.core.api.callback.OnBlockReceived
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.callback.OnBlockReceived
 import org.bitcoins.core.protocol.blockchain.Block

@@ -55,7 +55,7 @@ implicit val walletConf: WalletAppConfig =
 // let's use a helper method to get a v19 bitcoind
 // and a ChainApi
 val instance = BitcoindInstanceLocal.fromConfigFile(BitcoindConfig.DEFAULT_CONF_FILE)
-val bitcoind = BitcoindRpcClient(instance)
+val bitcoind = BitcoindRpcClient(instance)(system,instance.bitcoindRpcAppConfig)
 val chainApi = MockChainQueryApi.mock
 val aesPasswordOpt = Some(AesPassword.fromString("password"))
 
