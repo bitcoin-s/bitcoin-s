@@ -112,7 +112,7 @@ val bitcoindInstance = {
   )
 }
 
-val rpcCli = BitcoindRpcClient(bitcoindInstance)(system,bitcoindInstance.bitcoindRpcAppConfig)
+val rpcCli = BitcoindRpcClient(bitcoindInstance)
 
 rpcCli.getBalance.onComplete { case balance =>
   println(s"Wallet balance=${balance}")
@@ -130,7 +130,6 @@ class is only intended to cover errors returned by Bitcoin Core. An example of h
 handling could look:
 
 ```scala mdoc:compile-only
-
 implicit val system: ActorSystem = ActorSystem()
 implicit val ec: ExecutionContext = system.dispatcher
 

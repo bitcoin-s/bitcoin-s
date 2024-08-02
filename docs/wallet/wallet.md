@@ -115,7 +115,7 @@ val configF: Future[Unit] = for {
 
 val bitcoindInstance = BitcoindInstanceLocal.fromDatadir()
 
-val bitcoind = BitcoindRpcClient(bitcoindInstance)(system,bitcoindInstance.bitcoindRpcAppConfig)
+val bitcoind = BitcoindRpcClient(bitcoindInstance)
 
 // when this future completes, we have
 // synced our chain handler to our bitcoind

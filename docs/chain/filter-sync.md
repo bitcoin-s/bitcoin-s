@@ -59,7 +59,7 @@ implicit val ec: ExecutionContext = system.dispatcher
 implicit val chainAppConfig: ChainAppConfig = BitcoinSTestAppConfig.getNeutrinoTestConfig().chainConf
 
 val instance = BitcoindInstanceLocal.fromConfigFile(BitcoindConfig.DEFAULT_CONF_FILE)
-val bitcoind = BitcoindRpcClient(instance)(system,instance.bitcoindRpcAppConfig)
+val bitcoind = BitcoindRpcClient(instance)
 val bitcoindWithChainApiF: Future[BitcoindBaseVersionChainHandlerViaRpc] = {
   ChainUnitTest.createChainApiWithBitcoindRpc(bitcoind)
 }
