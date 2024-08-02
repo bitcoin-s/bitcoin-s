@@ -2,7 +2,11 @@ package org.bitcoins.rpc.client.v27
 
 import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.config.{BitcoindInstance, BitcoindRpcAppConfig}
+import org.bitcoins.rpc.config.{
+  BitcoindInstance,
+  BitcoindInstanceLocal,
+  BitcoindRpcAppConfig
+}
 
 import scala.concurrent.Future
 
@@ -21,10 +25,9 @@ object BitcoindV27RpcClient {
     * actor system. This is for advanced users, where you need fine grained
     * control over the RPC client.
     */
-  def apply(instance: BitcoindInstance)(implicit
-      system: ActorSystem,
-      bitcoindRpcAppConfig: BitcoindRpcAppConfig
+  def apply(instance: BitcoindInstanceLocal)(implicit
+      system: ActorSystem
   ): BitcoindV27RpcClient =
-    new BitcoindV27RpcClient(instance)(system, bitcoindRpcAppConfig)
+    new BitcoindV27RpcClient(instance)(system, instance.bitcoindRpcAppConfig)
 
 }

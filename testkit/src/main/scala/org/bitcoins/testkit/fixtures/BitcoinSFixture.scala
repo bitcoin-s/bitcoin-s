@@ -129,7 +129,7 @@ object BitcoinSFixture {
     val appConfig = BitcoindRpcAppConfig.fromDatadir(instance.datadir.toPath)
     val bitcoind = versionOpt match {
       case Some(v) =>
-        BitcoindRpcClient.fromVersion(v, instance)(system, appConfig)
+        BitcoindRpcClient.fromVersion(v, instance)
       case None => new BitcoindRpcClient(instance)(system, appConfig)
     }
     BitcoindRpcTestUtil.startServers(Vector(bitcoind)).map(_ => bitcoind)

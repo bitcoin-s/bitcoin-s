@@ -69,7 +69,7 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
     val instance =
       BitcoindRpcTestUtil.instance(versionOpt = Some(BitcoindVersion.newest))
     val walletClient =
-      BitcoindRpcClient(instance)(system, instance.bitcoindRpcAppConfig)
+      BitcoindRpcClient(instance)
 
     for {
       _ <- startClient(walletClient)

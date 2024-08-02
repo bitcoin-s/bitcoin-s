@@ -313,11 +313,10 @@ object BitcoindRpcClient {
     * actor system. This is for advanced users, where you need fine grained
     * control over the RPC client.
     */
-  def apply(instance: BitcoindInstance)(implicit
-      system: ActorSystem,
-      bitcoindRpcAppConfig: BitcoindRpcAppConfig
+  def apply(instance: BitcoindInstanceLocal)(implicit
+      system: ActorSystem
   ): BitcoindRpcClient =
-    new BitcoindRpcClient(instance)
+    new BitcoindRpcClient(instance)(system, instance.bitcoindRpcAppConfig)
 
   /** Constructs a RPC client from the given datadir, or the default datadir if
     * no directory is provided. This is always a [[BitcoindInstanceLocal]] since
@@ -328,22 +327,40 @@ object BitcoindRpcClient {
       binary: File
   )(implicit system: ActorSystem): BitcoindRpcClient = {
     val instance = BitcoindInstanceLocal.fromDatadir(datadir, binary)
-    val appConfig = BitcoindRpcAppConfig.fromDatadir(datadir.toPath)
-    val cli = BitcoindRpcClient(instance)(system, appConfig)
+    val cli = BitcoindRpcClient(instance)
     cli
   }
 
   /** Returns a bitcoind with the appropriated version you passed in, the
     * bitcoind is NOT started.
     */
-  def fromVersion(version: BitcoindVersion, instance: BitcoindInstance)(implicit
-      system: ActorSystem,
-      bitcoindRpcAppConfig: BitcoindRpcAppConfig
+  def fromVersion(version: BitcoindVersion, instance: BitcoindInstanceLocal)(
+      implicit system: ActorSystem
   ): BitcoindRpcClient = {
     val bitcoind = version match {
       case BitcoindVersion.V25 => BitcoindV25RpcClient(instance)
       case BitcoindVersion.V26 => BitcoindV26RpcClient(instance)
       case BitcoindVersion.V27 => BitcoindV27RpcClient(instance)
+      case BitcoindVersion.Unknown =>
+        sys.error(
+          s"Cannot create a Bitcoin Core RPC client: unsupported version"
+        )
+    }
+    bitcoind
+  }
+
+  /** Returns a bitcoind with the appropriated version you passed in, the
+    * bitcoind is NOT started.
+    */
+  def fromVersion(version: BitcoindVersion, instance: BitcoindInstanceRemote)(
+      implicit
+      system: ActorSystem,
+      bitcoindRpcAppConfig: BitcoindRpcAppConfig
+  ): BitcoindRpcClient = {
+    val bitcoind = version match {
+      case BitcoindVersion.V25 => new BitcoindV25RpcClient(instance)
+      case BitcoindVersion.V26 => new BitcoindV26RpcClient(instance)
+      case BitcoindVersion.V27 => new BitcoindV27RpcClient(instance)
       case BitcoindVersion.Unknown =>
         sys.error(
           s"Cannot create a Bitcoin Core RPC client: unsupported version"

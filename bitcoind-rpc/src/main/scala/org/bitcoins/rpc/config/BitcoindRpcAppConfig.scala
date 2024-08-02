@@ -185,12 +185,12 @@ case class BitcoindRpcAppConfig(
       case local: BitcoindInstanceLocal =>
         val version = versionOpt.getOrElse(local.getVersion)
         val client =
-          BitcoindRpcClient.fromVersion(version, bitcoindInstance)(system, this)
+          BitcoindRpcClient.fromVersion(version, local)
         Future.successful(client)
-      case _: BitcoindInstanceRemote =>
+      case remote: BitcoindInstanceRemote =>
         // first get a generic rpc client so we can retrieve
         // the proper version of the remote running bitcoind
-        val noVersionRpc = new BitcoindRpcClient(bitcoindInstance)(system, this)
+        val noVersionRpc = new BitcoindRpcClient(remote)(system, this)
         val versionF = getBitcoindVersion(noVersionRpc)
 
         // if we don't retrieve the proper version, we can
@@ -199,9 +199,8 @@ case class BitcoindRpcAppConfig(
         // such as blockfilters
         // see: https://github.com/bitcoin-s/bitcoin-s/issues/3695#issuecomment-929492945
         versionF.map { version =>
-          BitcoindRpcClient.fromVersion(version, instance = bitcoindInstance)(
-            system,
-            this)
+          BitcoindRpcClient.fromVersion(version, instance = remote)(system,
+                                                                    this)
         }
     }
   }
