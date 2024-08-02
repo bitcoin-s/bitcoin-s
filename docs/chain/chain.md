@@ -38,7 +38,7 @@ implicit val system: ActorSystem = ActorSystem("System")
 // to a local or remote `bitcoind` node.
 
 val bitcoindInstance = BitcoindInstanceLocal.fromDatadir()
-val rpcCli = BitcoindRpcClient(bitcoindInstance)(system,bitcoindInstance.bitcoindRpcAppConfig)
+val rpcCli = BitcoindRpcClient(bitcoindInstance)
 
 // Next, we need to create a way to monitor the chain:
 
