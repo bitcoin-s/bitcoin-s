@@ -3,13 +3,14 @@ package org.bitcoins.server.util
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import org.bitcoins.commons.util.BitcoinSLogger
+import org.bitcoins.core.api.callback.OnBlockReceived
 import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
 import org.bitcoins.core.api.wallet.{NeutrinoWalletApi, WalletApi}
 import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.node._
+import org.bitcoins.node.*
 import org.bitcoins.node.callback.NodeCallbackStreamManager
 import org.bitcoins.wallet.WalletNotInitialized
 

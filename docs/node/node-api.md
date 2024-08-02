@@ -4,6 +4,7 @@ id: node-api title: Node API
 
 ```scala mdoc:invisible
 import org.apache.pekko.actor.ActorSystem
+import org.bitcoins.core.api.callback.OnBlockReceived
 import org.bitcoins.core.api.node._
 import org.bitcoins.crypto._
 import org.bitcoins.core.protocol.blockchain.Block

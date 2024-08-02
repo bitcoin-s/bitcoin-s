@@ -2,7 +2,12 @@ package org.bitcoins.node
 
 import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.commons.util.BitcoinSLogger
-import org.bitcoins.core.api.callback.{CallbackFactory, ModuleCallbacks}
+import org.bitcoins.core.api.callback.{
+  CallbackFactory,
+  ModuleCallbacks,
+  NodeApiCallbacks,
+  OnBlockReceived
+}
 import org.bitcoins.core.api.{Callback, Callback2, CallbackHandler}
 import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
@@ -15,7 +20,10 @@ import scala.concurrent.{ExecutionContext, Future}
 /** Callbacks for responding to events in the node. The appropriate callback is
   * executed whenever the node receives a `getdata` message matching it.
   */
-trait NodeCallbacks extends ModuleCallbacks[NodeCallbacks] with BitcoinSLogger {
+trait NodeCallbacks
+    extends ModuleCallbacks[NodeCallbacks]
+    with NodeApiCallbacks
+    with BitcoinSLogger {
 
   def onCompactFiltersReceived
       : CallbackHandler[Vector[
@@ -24,8 +32,6 @@ trait NodeCallbacks extends ModuleCallbacks[NodeCallbacks] with BitcoinSLogger {
                         OnCompactFiltersReceived]
 
   def onTxReceived: CallbackHandler[Transaction, OnTxReceived]
-
-  def onBlockReceived: CallbackHandler[Block, OnBlockReceived]
 
   def onMerkleBlockReceived: CallbackHandler[
     (MerkleBlock, Vector[Transaction]),
@@ -47,7 +53,7 @@ trait NodeCallbacks extends ModuleCallbacks[NodeCallbacks] with BitcoinSLogger {
     )
   }
 
-  def executeOnBlockReceivedCallbacks(
+  override def executeOnBlockReceivedCallbacks(
       block: Block
   )(implicit ec: ExecutionContext): Future[Unit] = {
     onBlockReceived.execute(
@@ -100,9 +106,6 @@ trait NodeCallbacks extends ModuleCallbacks[NodeCallbacks] with BitcoinSLogger {
     )
   }
 }
-
-/** Callback for handling a received block */
-trait OnBlockReceived extends Callback[Block]
 
 /** Callback for handling a received Merkle block with its corresponding TXs */
 trait OnMerkleBlockReceived extends Callback2[MerkleBlock, Vector[Transaction]]

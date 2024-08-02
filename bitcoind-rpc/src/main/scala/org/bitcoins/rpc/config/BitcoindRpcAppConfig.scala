@@ -4,7 +4,10 @@ import com.typesafe.config.Config
 import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.config.{AppConfig, ConfigOps}
+import org.bitcoins.core.api.CallbackConfig
+import org.bitcoins.core.api.callback.CallbackFactory
 import org.bitcoins.core.api.tor.Socks5ProxyParams
+import org.bitcoins.rpc.BitcoindCallbacks
 import org.bitcoins.rpc.BitcoindException.InWarmUp
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.util.AppConfigFactoryActorSystem
@@ -12,7 +15,7 @@ import org.bitcoins.tor.config.TorAppConfig
 
 import java.io.File
 import java.net.{InetSocketAddress, URI}
-import java.nio.file._
+import java.nio.file.*
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Future, Promise}
 
@@ -26,7 +29,8 @@ case class BitcoindRpcAppConfig(
     baseDatadir: Path,
     configOverrides: Vector[Config]
 )(implicit val system: ActorSystem)
-    extends AppConfig {
+    extends AppConfig
+    with CallbackConfig[BitcoindCallbacks] {
 
   import system.dispatcher
 
@@ -180,12 +184,13 @@ case class BitcoindRpcAppConfig(
     bitcoindInstance match {
       case local: BitcoindInstanceLocal =>
         val version = versionOpt.getOrElse(local.getVersion)
-        val client = BitcoindRpcClient.fromVersion(version, bitcoindInstance)
+        val client =
+          BitcoindRpcClient.fromVersion(version, local)
         Future.successful(client)
-      case _: BitcoindInstanceRemote =>
+      case remote: BitcoindInstanceRemote =>
         // first get a generic rpc client so we can retrieve
         // the proper version of the remote running bitcoind
-        val noVersionRpc = new BitcoindRpcClient(bitcoindInstance)
+        val noVersionRpc = new BitcoindRpcClient(remote)(system, this)
         val versionF = getBitcoindVersion(noVersionRpc)
 
         // if we don't retrieve the proper version, we can
@@ -194,7 +199,8 @@ case class BitcoindRpcAppConfig(
         // such as blockfilters
         // see: https://github.com/bitcoin-s/bitcoin-s/issues/3695#issuecomment-929492945
         versionF.map { version =>
-          BitcoindRpcClient.fromVersion(version, instance = bitcoindInstance)
+          BitcoindRpcClient.fromVersion(version, instance = remote)(system,
+                                                                    this)
         }
     }
   }
@@ -227,6 +233,9 @@ case class BitcoindRpcAppConfig(
       version
     }
   }
+
+  override def callbackFactory: CallbackFactory[BitcoindCallbacks] =
+    BitcoindCallbacks
 }
 
 object BitcoindRpcAppConfig

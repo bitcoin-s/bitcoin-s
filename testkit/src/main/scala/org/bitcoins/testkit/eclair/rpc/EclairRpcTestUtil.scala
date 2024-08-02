@@ -18,7 +18,7 @@ import org.bitcoins.core.protocol.ln.channel.{
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.crypto.Sha256Digest
-import org.bitcoins.eclair.rpc.api._
+import org.bitcoins.eclair.rpc.api.*
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.EclairInstanceLocal
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
@@ -768,7 +768,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         authCredentials = auth.bitcoinAuthOpt.get,
         binary = BitcoindRpcTestUtil.getBinary(bitcoindVersion)
       )
-      BitcoindRpcClient.withActorSystem(bitcoindInstance)
+      BitcoindRpcClient(bitcoindInstance)
     }
     bitcoindRpc
   }

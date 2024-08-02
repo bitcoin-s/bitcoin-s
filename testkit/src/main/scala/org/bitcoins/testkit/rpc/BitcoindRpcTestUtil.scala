@@ -618,10 +618,12 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       system: ActorSystem
   ): Future[(BitcoindRpcClient, BitcoindRpcClient)] = {
     implicit val ec: ExecutionContextExecutor = system.getDispatcher
+    val instance1 = instance()
+    val instance2 = instance()
     val client1: BitcoindRpcClient =
-      BitcoindRpcClient.withActorSystem(instance())
+      BitcoindRpcClient(instance1)
     val client2: BitcoindRpcClient =
-      BitcoindRpcClient.withActorSystem(instance())
+      BitcoindRpcClient(instance2)
 
     startServers(Vector(client1, client2)).map { _ =>
       clientAccum ++= List(client1, client2)
@@ -673,16 +675,17 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     val clients: Vector[T] = (0 until numNodes).map { _ =>
       val rpc = version match {
         case BitcoindVersion.Unknown =>
-          BitcoindRpcClient.withActorSystem(BitcoindRpcTestUtil.instance())
+          val instance = BitcoindRpcTestUtil.instance()
+          BitcoindRpcClient(instance)
         case BitcoindVersion.V25 =>
-          BitcoindV25RpcClient.withActorSystem(
-            BitcoindRpcTestUtil.v25Instance())
+          val instance = BitcoindRpcTestUtil.v25Instance()
+          BitcoindV25RpcClient(instance)
         case BitcoindVersion.V26 =>
-          BitcoindV26RpcClient.withActorSystem(
-            BitcoindRpcTestUtil.v26Instance())
+          val instance = BitcoindRpcTestUtil.v26Instance()
+          BitcoindV26RpcClient(instance)
         case BitcoindVersion.V27 =>
-          BitcoindV27RpcClient.withActorSystem(
-            BitcoindRpcTestUtil.v27Instance())
+          val instance = BitcoindRpcTestUtil.v27Instance()
+          BitcoindV27RpcClient(instance)
       }
 
       // this is safe as long as this method is never
@@ -1071,7 +1074,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     )
 
     // start the bitcoind instance so eclair can properly use it
-    val rpc = BitcoindRpcClient.withActorSystem(instance)
+    val rpc = BitcoindRpcClient(instance)
     val startedF = startServers(Vector(rpc))
 
     val blocksToGenerate = 102

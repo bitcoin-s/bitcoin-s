@@ -130,8 +130,8 @@ class is only intended to cover errors returned by Bitcoin Core. An example of h
 handling could look:
 
 ```scala mdoc:compile-only
-
-implicit val ec: ExecutionContext = ExecutionContext.global
+implicit val system: ActorSystem = ActorSystem()
+implicit val ec: ExecutionContext = system.dispatcher
 
 // let's assume you have an already running client,
 // so there's no need to start this one

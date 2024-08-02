@@ -66,10 +66,10 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
 
   // This client's wallet is encrypted
   lazy val walletClientF: Future[BitcoindRpcClient] = clientsF.flatMap { _ =>
+    val instance =
+      BitcoindRpcTestUtil.instance(versionOpt = Some(BitcoindVersion.newest))
     val walletClient =
-      BitcoindRpcClient.withActorSystem(
-        BitcoindRpcTestUtil.instance(versionOpt = Some(BitcoindVersion.newest))
-      )
+      BitcoindRpcClient(instance)
 
     for {
       _ <- startClient(walletClient)
