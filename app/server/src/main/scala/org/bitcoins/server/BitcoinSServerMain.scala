@@ -28,18 +28,19 @@ import org.bitcoins.core.api.wallet.{NeutrinoHDWalletApi, WalletApi}
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.dlc.node.DLCNode
 import org.bitcoins.dlc.node.config.DLCNodeAppConfig
-import org.bitcoins.dlc.wallet._
+import org.bitcoins.dlc.wallet.*
 import org.bitcoins.feeprovider.MempoolSpaceTarget.HourFeeTarget
-import org.bitcoins.feeprovider._
+import org.bitcoins.feeprovider.*
 import org.bitcoins.node.Node
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.NodeStateDescriptorDAO
+import org.bitcoins.rpc.BitcoindCallbacks
 import org.bitcoins.rpc.BitcoindException.InWarmUp
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.{BitcoindRpcAppConfig, ZmqConfig}
 import org.bitcoins.server.bitcoind.BitcoindSyncState
 import org.bitcoins.server.routes.{BitcoinSServerRunner, CommonRoutes, Server}
-import org.bitcoins.server.util._
+import org.bitcoins.server.util.*
 import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.wallet.WalletHolder
 import org.bitcoins.wallet.config.WalletAppConfig
@@ -401,14 +402,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     } yield {
       WebsocketUtil.buildChainCallbacks(wsQueue, bitcoind)
     }
-//    val nodeApiF = for {
-//      bitcoind <- bitcoindF
-//      chainCallbacks <- chainCallbacksF
-//    } yield BitcoindRpcBackendUtil.buildBitcoindNodeApi(
-//      bitcoind,
-//      Future.successful(walletHolder),
-//      Some(chainCallbacks)
-//    )
 
     val feeProviderF = bitcoindF.map { bitcoind =>
       FeeProviderFactory.getFeeProviderOrElse(
@@ -446,6 +439,11 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
           Some(walletName),
           conf.walletConf.aesPasswordOpt
         )
+        bitcoind <- bitcoindF
+        walletHolder = result._1
+        callback = BitcoindCallbacks.onBlockReceived(
+          walletHolder.processBlock(_).map(_ => ()))
+        _ = bitcoind.bitcoindRpcAppConfig.addCallbacks(callback)
       } yield result
     }
 
