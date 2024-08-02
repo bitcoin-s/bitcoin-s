@@ -25,4 +25,14 @@ object BitcoindCallbacks extends CallbackFactory[BitcoindCallbacks] {
   }
   override def empty: BitcoindCallbacks = BitcoindCallbacksImpl(
     CallbackHandler.empty)
+
+  /** Constructs a set of callbacks that only acts on block received */
+  def onBlockReceived(f: OnBlockReceived): BitcoindCallbacks = {
+    BitcoindCallbacksImpl(onBlockReceived =
+      CallbackHandler[Block, OnBlockReceived](
+        "onBlockReceived",
+        Vector(f)
+      ))
+  }
+
 }
