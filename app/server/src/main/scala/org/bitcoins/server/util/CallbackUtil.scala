@@ -123,7 +123,6 @@ object CallbackUtil extends BitcoinSLogger {
         .map(_ => ())
     }
     val onBlock: OnBlockReceived = { block =>
-      logger.info(s"CallbackUtil onBlock=${block.blockHeader.hashBE.hex}")
       Source
         .single(block)
         .runWith(blockSink)

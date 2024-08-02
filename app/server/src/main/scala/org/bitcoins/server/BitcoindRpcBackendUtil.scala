@@ -452,7 +452,6 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
     system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
       {
         val isBitcoindSyncedF = isBitcoindInSync(bitcoind)
-        logger.info(s"startBitcoindBlockPolling() interval ")
         isBitcoindSyncedF.map { isBitcoindSynced =>
           if (!isBitcoindSynced) {
             logger.info(s"Bitcoind is not synced, waiting for IBD to complete.")
