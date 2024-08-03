@@ -38,7 +38,7 @@ import scala.concurrent.Future
   */
 class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
     override val system: ActorSystem,
-    bitcoindRpcAppConfig: BitcoindRpcAppConfig
+    val bitcoindRpcAppConfig: BitcoindRpcAppConfig
 ) extends Client
     with FeeRateApi
     with NodeApi

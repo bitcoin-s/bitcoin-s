@@ -31,6 +31,10 @@
 
     <logger name="org.bitcoins.wallet" level="WARN"/>
 
+    <logger name="org.bitcoins.dlc.wallet" level="WARN"/>
+
+    <logger name="org.bitcoins.server" level="WARN"/>
+
     <!-- see what slick is compiling to in sql -->
     <logger name="slick" level="OFF"/>
 
