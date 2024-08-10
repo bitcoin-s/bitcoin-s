@@ -35,8 +35,7 @@ trait BitcoinSServerMainBitcoindFixture
 
         // needed for fundWalletWithBitcoind
         _ <- walletHolder.createNewAccount(
-          hdAccount = account1,
-          keyManagerParams = walletHolder.keyManager.kmParams
+          hdAccount = account1
         )
         walletWithBitcoind = WalletWithBitcoindRpc(
           walletHolder,

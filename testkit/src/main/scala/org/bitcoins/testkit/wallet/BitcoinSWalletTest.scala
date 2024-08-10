@@ -389,8 +389,7 @@ object BitcoinSWalletTest extends WalletLogger {
       wallet <- defaultWalletF
       account1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
       newAccountWallet <- wallet.createNewAccount(
-        hdAccount = account1,
-        kmParams = wallet.keyManager.kmParams
+        hdAccount = account1
       )
     } yield newAccountWallet
 
@@ -409,8 +408,7 @@ object BitcoinSWalletTest extends WalletLogger {
       )
       account1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
       newAccountWallet <- wallet.createNewAccount(
-        hdAccount = account1,
-        kmParams = wallet.keyManager.kmParams
+        hdAccount = account1
       )
     } yield newAccountWallet.asInstanceOf[DLCWallet]
   }

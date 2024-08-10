@@ -26,7 +26,6 @@ import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil, HDUtil}
 import org.bitcoins.core.wallet.builder.*
 import org.bitcoins.core.wallet.fee.*
-import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.core.wallet.utxo.*
 import org.bitcoins.core.wallet.utxo.TxoState.*
 import org.bitcoins.crypto.*
@@ -898,25 +897,24 @@ abstract class Wallet
     *
     * @return
     */
-  override def createNewAccount(kmParams: KeyManagerParams): Future[Wallet] = {
-    getLastAccountOpt(kmParams.purpose).flatMap {
+  override def createNewAccount(purpose: HDPurpose): Future[Wallet] = {
+    getLastAccountOpt(purpose).flatMap {
       case Some(accountDb) =>
         val hdAccount = accountDb.hdAccount
         val newAccount = hdAccount.copy(index = hdAccount.index + 1)
-        createNewAccount(newAccount, kmParams)
+        createNewAccount(newAccount)
       case None =>
-        createNewAccount(walletConfig.defaultAccount, kmParams)
+        createNewAccount(walletConfig.defaultAccount)
     }
   }
 
   // todo: check if there's addresses in the most recent
   // account before creating new
   override def createNewAccount(
-      hdAccount: HDAccount,
-      kmParams: KeyManagerParams
+      hdAccount: HDAccount
   ): Future[Wallet] = {
     logger.info(
-      s"Creating new account at index ${hdAccount.index} for purpose ${kmParams.purpose}"
+      s"Creating new account at index ${hdAccount.index} for purpose ${hdAccount.purpose}"
     )
 
     val xpub: ExtPublicKey = {

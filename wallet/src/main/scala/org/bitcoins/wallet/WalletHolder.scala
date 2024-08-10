@@ -35,7 +35,6 @@ import org.bitcoins.core.wallet.builder.{
   ShufflingNonInteractiveFinalizer
 }
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
-import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.core.wallet.utxo.{
   AddressTag,
@@ -659,15 +658,13 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
   )
 
   override def createNewAccount(
-      keyManagerParams: KeyManagerParams
-  ): Future[HDWalletApi] = delegate(_.createNewAccount(keyManagerParams))
+      purpose: HDPurpose
+  ): Future[HDWalletApi] = delegate(_.createNewAccount(purpose))
 
-  override def createNewAccount(
-      hdAccount: HDAccount,
-      keyManagerParams: KeyManagerParams
-  ): Future[HDWalletApi] = delegate(
-    _.createNewAccount(hdAccount, keyManagerParams)
-  )
+  override def createNewAccount(hdAccount: HDAccount): Future[HDWalletApi] =
+    delegate(
+      _.createNewAccount(hdAccount)
+    )
 
   override def getSyncDescriptorOpt(): Future[Option[SyncHeightDescriptor]] =
     delegate(_.getSyncDescriptorOpt())
