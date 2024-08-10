@@ -31,6 +31,8 @@ object HDPurposes {
   final val SegWit = HDPurpose(SegWitHDPath.PURPOSE)
   final val NestedSegWit = HDPurpose(NestedSegWitHDPath.PURPOSE)
 
+  final val default: HDPurpose = SegWit
+
   lazy val singleSigPurposes = Vector(Legacy, SegWit, NestedSegWit)
 
   lazy val all: Vector[HDPurpose] =

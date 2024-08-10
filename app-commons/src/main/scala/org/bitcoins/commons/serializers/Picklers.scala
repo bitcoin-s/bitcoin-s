@@ -9,22 +9,22 @@ import org.bitcoins.core.api.dlc.wallet.db.{DLCContactDb, IncomingDLCOfferDb}
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.config.DLC
-import org.bitcoins.core.crypto._
+import org.bitcoins.core.crypto.*
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.dlc.accounting.DLCWalletAccounting
 import org.bitcoins.core.gcs.FilterType
-import org.bitcoins.core.hd.{AddressType, HDPath}
+import org.bitcoins.core.hd.{AddressType, HDPath, HDPurpose}
 import org.bitcoins.core.number.{Int32, UInt16, UInt32, UInt64}
 import org.bitcoins.core.protocol.blockchain.Block
-import org.bitcoins.core.protocol.dlc.models.DLCStatus._
-import org.bitcoins.core.protocol.dlc.models._
+import org.bitcoins.core.protocol.dlc.models.DLCStatus.*
+import org.bitcoins.core.protocol.dlc.models.*
 import org.bitcoins.core.protocol.script.{
   ScriptPubKey,
   ScriptWitness,
   ScriptWitnessV0,
   WitnessScriptPubKey
 }
-import org.bitcoins.core.protocol.tlv._
+import org.bitcoins.core.protocol.tlv.*
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
   TransactionOutPoint,
@@ -35,14 +35,14 @@ import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.serializers.PicklerKeys
 import org.bitcoins.core.util.{NetworkUtil, TimeUtil}
-import org.bitcoins.core.util.TimeUtil._
+import org.bitcoins.core.util.TimeUtil.*
 import org.bitcoins.core.util.sorted.OrderedSchnorrSignatures
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.{AddressLabelTag, TxoState}
-import org.bitcoins.crypto._
+import org.bitcoins.crypto.*
 import scodec.bits.ByteVector
-import ujson._
-import upickle.default._
+import ujson.*
+import upickle.default.*
 
 import java.io.File
 import java.net.{InetSocketAddress, URI}
@@ -1765,6 +1765,10 @@ object Picklers {
 
   private def readFeeUnit(value: Value): FeeUnit = {
     SatoshisPerVirtualByte.fromLong(value.num.toLong)
+  }
+
+  implicit val hdPurposes: ReadWriter[HDPurpose] = {
+    readwriter[ujson.Num].bimap(_.constant, num => HDPurpose(num.value.toInt))
   }
 
 }

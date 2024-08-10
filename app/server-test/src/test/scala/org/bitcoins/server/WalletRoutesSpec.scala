@@ -1,18 +1,23 @@
 package org.bitcoins.server
 
-import org.apache.pekko.http.scaladsl.model.ContentTypes._
+import org.apache.pekko.http.scaladsl.model.ContentTypes.*
 import org.apache.pekko.http.scaladsl.testkit.ScalatestRouteTest
+import org.bitcoins.commons.serializers.Picklers
 import org.bitcoins.core.api.chain.ChainApi
+import org.bitcoins.core.config.RegTest
+import org.bitcoins.core.hd.HDPurposes
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.dlc.models.DLCMessage.{DLCAccept, DLCOffer}
 import org.bitcoins.core.protocol.dlc.models.DLCStatus
 import org.bitcoins.core.protocol.tlv.{DLCOfferTLV, LnMessage, LnMessageFactory}
-import org.bitcoins.core.wallet.fee.{SatoshisPerVirtualByte}
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.feeprovider.ConstantFeeRateProvider
 import org.bitcoins.node.Node
 import org.bitcoins.server.routes.ServerCommand
 import org.bitcoins.testkit.BitcoinSTestAppConfig
+import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkitcore.Implicits.GeneratorOps
 import org.bitcoins.testkitcore.gen.TLVGen
 import org.bitcoins.wallet.{MockWalletApi, WalletHolder}
@@ -152,6 +157,33 @@ class WalletRoutesSpec
           responseAs[
             String
           ] == s"""{"result":"${dummyAcceptLnMsg.hex}","error":null}"""
+        )
+      }
+    }
+
+    "createnewaccount" in {
+      val kmParams =
+        KeyManagerParams(FileUtil.tmpDir().toPath,
+                         purpose = HDPurposes.default,
+                         RegTest)
+      (mockWalletApi
+        .createNewAccount(_: KeyManagerParams))
+        .expects(kmParams)
+        .returning(Future.successful(mockWalletApi))
+
+      val cmd = ServerCommand(
+        "createnewaccount",
+        ujson.Arr(
+          upickle.default.writeJs(HDPurposes.default)(Picklers.hdPurposes))
+      )
+      val route = walletRoutes.handleCommand(cmd)
+
+      Get() ~> route ~> check {
+        assert(contentType == `application/json`)
+        assert(
+          responseAs[
+            String
+          ] == s"""{"result":"","error":null}"""
         )
       }
     }
