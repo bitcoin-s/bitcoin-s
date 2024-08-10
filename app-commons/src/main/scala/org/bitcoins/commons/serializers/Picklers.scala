@@ -1767,9 +1767,8 @@ object Picklers {
     SatoshisPerVirtualByte.fromLong(value.num.toLong)
   }
 
-  implicit val hdPurpose: ReadWriter[HDPurpose] = {
-    readwriter[ujson.Str]
-      .bimap(_.toString, str => HDPurpose.fromString(str.str))
+  implicit val hdPurposes: ReadWriter[HDPurpose] = {
+    readwriter[ujson.Num].bimap(_.constant, num => HDPurpose(num.value.toInt))
   }
 
 }

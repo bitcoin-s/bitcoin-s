@@ -268,18 +268,7 @@ object ConsoleCli extends BitcoinSLogger {
         .text("Returns list of all wallet accounts"),
       cmd("createnewaccount")
         .action((_, conf) => conf.copy(command = CreateNewAccount(null)))
-        .text("Creates a new wallet account")
-        .children(
-          arg[String]("hd_purpose")
-            .text("hd_purpose according to BIP43")
-            .required()
-            .action((purpose, conf) =>
-              conf.copy(command = conf.command match {
-                case c: CreateNewAccount =>
-                  c.copy(purpose = HDPurpose.fromString(purpose))
-                case other => other
-              }))
-        ),
+        .text("Creates a new wallet account"),
       cmd("getaddressinfo")
         .action((_, conf) => conf.copy(command = GetAddressInfo(null)))
         .text("Returns list of all wallet accounts")
@@ -2679,6 +2668,7 @@ object CliCommand {
   case object GetFundedAddresses extends AppServerCliCommand
   case object GetUnusedAddresses extends AppServerCliCommand
   case object GetAccounts extends AppServerCliCommand
+  case class CreateNewAccount(purpose: HDPurpose) extends AppServerCliCommand
   case object IsEmpty extends AppServerCliCommand
   case object WalletInfo extends AppServerCliCommand
   case object ListWallets extends AppServerCliCommand
