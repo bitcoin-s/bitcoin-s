@@ -16,7 +16,6 @@ import org.bitcoins.core.wallet.builder.{
   ShufflingNonInteractiveFinalizer
 }
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.core.wallet.utxo.AddressTag
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -487,7 +486,8 @@ trait HDWalletApi extends WalletApi {
       ec: ExecutionContext): Future[Vector[AccountDb]] =
     listAccounts().map(_.filter(_.hdAccount.purpose == purpose))
 
-  def createNewAccount(keyManagerParams: KeyManagerParams): Future[HDWalletApi]
+  /** Creates a new account with the given purpose */
+  def createNewAccount(purpose: HDPurpose): Future[HDWalletApi]
 
   /** Tries to create a new account in this wallet. Fails if the most recent
     * account has no transaction history, as per BIP44
@@ -495,9 +495,7 @@ trait HDWalletApi extends WalletApi {
     * @see
     *   [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#account BIP44 account section]]
     */
-  def createNewAccount(
-      hdAccount: HDAccount,
-      keyManagerParams: KeyManagerParams): Future[HDWalletApi]
+  def createNewAccount(hdAccount: HDAccount): Future[HDWalletApi]
 
   def findAccount(account: HDAccount): Future[Option[AccountDb]]
 

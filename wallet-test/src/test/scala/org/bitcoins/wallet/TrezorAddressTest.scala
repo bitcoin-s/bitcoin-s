@@ -195,7 +195,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
     val accountsToCreate = existing.length until testVectors.length
     FutureUtil
       .sequentially(accountsToCreate) { _ =>
-        wallet.createNewAccount(keyManagerParams)
+        wallet.createNewAccount(keyManagerParams.purpose)
       }
       .map(_ => ())
   }

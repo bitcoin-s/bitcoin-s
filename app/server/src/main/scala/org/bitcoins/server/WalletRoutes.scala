@@ -864,7 +864,8 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
     case ServerCommand("createnewaccount", _) =>
       complete {
         for {
-          newWallet <- wallet.createNewAccount(wallet.keyManager.kmParams)
+          newWallet <- wallet.createNewAccount(
+            wallet.keyManager.kmParams.purpose)
           accounts <- newWallet.listAccounts()
         } yield {
           val xpubs = accounts.map(_.xpub)
