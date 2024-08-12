@@ -1812,7 +1812,7 @@ object CreateNewAccount {
   def fromJsArr(arr: ujson.Arr): Try[CreateNewAccount] = {
     arr.arr.toVector match {
       case purposeJs +: _ =>
-        Try(upickle.default.read(purposeJs)(Picklers.hdPurpose))
+        Try(upickle.default.read(purposeJs)(Picklers.hdPurposes))
           .map(CreateNewAccount.apply)
       case _ =>
         val exn = new IllegalArgumentException(
