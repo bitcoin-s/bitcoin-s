@@ -4,20 +4,20 @@ import org.apache.pekko.http.scaladsl.model.ContentTypes.*
 import org.apache.pekko.http.scaladsl.testkit.ScalatestRouteTest
 import org.bitcoins.commons.serializers.Picklers
 import org.bitcoins.core.api.chain.ChainApi
-import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.hd.HDPurposes
+import org.bitcoins.core.api.wallet.db.AccountDb
+import org.bitcoins.core.crypto.ExtKeyVersion.SegWitMainNetPriv
+import org.bitcoins.core.crypto.ExtPrivateKey
+import org.bitcoins.core.hd.{HDAccount, HDPurpose, HDPurposes}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.dlc.models.DLCMessage.{DLCAccept, DLCOffer}
 import org.bitcoins.core.protocol.dlc.models.DLCStatus
 import org.bitcoins.core.protocol.tlv.{DLCOfferTLV, LnMessage, LnMessageFactory}
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.feeprovider.ConstantFeeRateProvider
 import org.bitcoins.node.Node
 import org.bitcoins.server.routes.ServerCommand
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkitcore.Implicits.GeneratorOps
 import org.bitcoins.testkitcore.gen.TLVGen
 import org.bitcoins.wallet.{MockWalletApi, WalletHolder}
@@ -162,14 +162,19 @@ class WalletRoutesSpec
     }
 
     "createnewaccount" in {
-      val kmParams =
-        KeyManagerParams(FileUtil.tmpDir().toPath,
-                         purpose = HDPurposes.default,
-                         RegTest)
+      val keyVersion = SegWitMainNetPriv
+      val extPrivKey = ExtPrivateKey.freshRootKey(keyVersion)
+      val extPubKey = extPrivKey.extPublicKey
+      val hdAccount = HDAccount.fromExtKeyVersion(version = keyVersion, idx = 0)
+      val accountDb = AccountDb(extPubKey, hdAccount = hdAccount)
       (mockWalletApi
-        .createNewAccount(_: KeyManagerParams))
-        .expects(kmParams)
+        .createNewAccount(_: HDPurpose))
+        .expects(HDPurposes.default)
         .returning(Future.successful(mockWalletApi))
+
+      (() => mockWalletApi.listAccounts())
+        .expects()
+        .returning(Future.successful(Vector(accountDb)))
 
       val cmd = ServerCommand(
         "createnewaccount",
@@ -180,10 +185,9 @@ class WalletRoutesSpec
 
       Get() ~> route ~> check {
         assert(contentType == `application/json`)
+        val response = responseAs[String]
         assert(
-          responseAs[
-            String
-          ] == s"""{"result":"","error":null}"""
+          response == s"""{"result":["${extPubKey.toString}"],"error":null}"""
         )
       }
     }

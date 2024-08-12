@@ -1,9 +1,12 @@
 package org.bitcoins.core.crypto
 
+import org.bitcoins.core.hd.HDCoinType
 import org.bitcoins.crypto.{Factory, NetworkElement}
-import scodec.bits._
+import scodec.bits.*
 
-sealed abstract class ExtKeyVersion extends NetworkElement
+sealed abstract class ExtKeyVersion extends NetworkElement {
+  def hdCoinType: HDCoinType
+}
 
 sealed abstract class ExtKeyPrivVersion extends ExtKeyVersion
 
@@ -43,6 +46,8 @@ object ExtKeyVersion extends Factory[ExtKeyVersion] {
     */
   case object LegacyMainNetPriv extends ExtKeyPrivVersion {
     override val bytes = hex"0x0488ADE4"
+
+    override def hdCoinType: HDCoinType = HDCoinType.Bitcoin
   }
 
   /** Generating a [[org.bitcoins.core.crypto.ExtPrivateKey ExtPrivateKey]] with
@@ -50,6 +55,7 @@ object ExtKeyVersion extends Factory[ExtKeyVersion] {
     */
   case object LegacyTestNet3Priv extends ExtKeyPrivVersion {
     override val bytes = hex"0x04358394"
+    override def hdCoinType: HDCoinType = HDCoinType.Testnet
   }
 
   /** Generating a [[org.bitcoins.core.crypto.ExtPrivateKey ExtPrivateKey]] with
@@ -57,6 +63,7 @@ object ExtKeyVersion extends Factory[ExtKeyVersion] {
     */
   case object SegWitMainNetPriv extends ExtKeyPrivVersion {
     override val bytes = hex"0x04b2430c"
+    override def hdCoinType: HDCoinType = HDCoinType.Bitcoin
   }
 
   /** Generating a [[org.bitcoins.core.crypto.ExtPrivateKey ExtPrivateKey]] with
@@ -64,6 +71,7 @@ object ExtKeyVersion extends Factory[ExtKeyVersion] {
     */
   case object SegWitTestNet3Priv extends ExtKeyPrivVersion {
     override val bytes = hex"0x045f18bc"
+    override def hdCoinType: HDCoinType = HDCoinType.Testnet
   }
 
   /** Generating a [[org.bitcoins.core.crypto.ExtPrivateKey ExtPrivateKey]] with
@@ -74,6 +82,7 @@ object ExtKeyVersion extends Factory[ExtKeyVersion] {
     */
   case object NestedSegWitMainNetPriv extends ExtKeyPrivVersion {
     override val bytes = hex"0x049D7878"
+    override def hdCoinType: HDCoinType = HDCoinType.Bitcoin
   }
 
   /** Generating a [[org.bitcoins.core.crypto.ExtPrivateKey ExtPrivateKey]] with
@@ -84,6 +93,7 @@ object ExtKeyVersion extends Factory[ExtKeyVersion] {
     */
   case object NestedSegWitTestNet3Priv extends ExtKeyPrivVersion {
     override val bytes = hex"0x044a4e28"
+    override def hdCoinType: HDCoinType = HDCoinType.Testnet
   }
 }
 
@@ -103,6 +113,7 @@ object ExtKeyPubVersion extends Factory[ExtKeyPubVersion] {
     */
   case object LegacyMainNetPub extends ExtKeyPubVersion {
     override val bytes = hex"0x0488b21E"
+    override def hdCoinType: HDCoinType = HDCoinType.Bitcoin
   }
 
   /** Generating a [[org.bitcoins.core.crypto.ExtPublicKey ExtPublicKey]] with
@@ -117,6 +128,7 @@ object ExtKeyPubVersion extends Factory[ExtKeyPubVersion] {
     // Value stolen from Trezor lib, see link above
     // ByteVector.fromLong(71979618).toHex = 00000000044a5262
     override val bytes = hex"0x044a5262"
+    override def hdCoinType: HDCoinType = HDCoinType.Testnet
   }
 
   /** Generating a [[org.bitcoins.core.crypto.ExtPublicKey ExtPublicKey]] with
@@ -127,6 +139,7 @@ object ExtKeyPubVersion extends Factory[ExtKeyPubVersion] {
     */
   case object NestedSegWitMainNetPub extends ExtKeyPubVersion {
     override val bytes = hex"0x049D7CB2"
+    override def hdCoinType: HDCoinType = HDCoinType.Bitcoin
   }
 
   /** Generating a [[org.bitcoins.core.crypto.ExtPublicKey ExtPublicKey]] with
@@ -134,6 +147,7 @@ object ExtKeyPubVersion extends Factory[ExtKeyPubVersion] {
     */
   case object SegWitTestNet3Pub extends ExtKeyPubVersion {
     override val bytes = hex"0x045f1cf6"
+    override def hdCoinType: HDCoinType = HDCoinType.Testnet
   }
 
   /** Generating a [[org.bitcoins.core.crypto.ExtPublicKey ExtPublicKey]] with
@@ -141,6 +155,7 @@ object ExtKeyPubVersion extends Factory[ExtKeyPubVersion] {
     */
   case object LegacyTestNet3Pub extends ExtKeyPubVersion {
     override val bytes = hex"0x043587CF"
+    override def hdCoinType: HDCoinType = HDCoinType.Testnet
   }
 
   /** Generating a [[org.bitcoins.core.crypto.ExtPublicKey ExtPublicKey]] with
@@ -148,6 +163,7 @@ object ExtKeyPubVersion extends Factory[ExtKeyPubVersion] {
     */
   case object SegWitMainNetPub extends ExtKeyPubVersion {
     override val bytes = hex"0x04b24746"
+    override def hdCoinType: HDCoinType = HDCoinType.Bitcoin
   }
 
   override def fromBytes(bytes: ByteVector): ExtKeyPubVersion = {

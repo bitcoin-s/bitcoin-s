@@ -2,26 +2,26 @@ package org.bitcoins.commons.rpc
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.commons.jsonmodels.cli.ContractDescriptorParser
-import org.bitcoins.commons.serializers.JsonReaders
+import org.bitcoins.commons.serializers.{JsonReaders, Picklers}
 import org.bitcoins.commons.util.{BitcoinSLogger, WalletNames}
 import org.bitcoins.core.api.dlc.wallet.db.DLCContactDb
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.crypto.{ExtPrivateKey, MnemonicCode}
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
-import org.bitcoins.core.hd.AddressType
+import org.bitcoins.core.hd.{AddressType, HDPurpose}
 import org.bitcoins.core.hd.AddressType.SegWit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.dlc.models.ContractDescriptor
-import org.bitcoins.core.protocol.tlv._
+import org.bitcoins.core.protocol.tlv.*
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
-import org.bitcoins.crypto._
+import org.bitcoins.crypto.*
 import scodec.bits.ByteVector
-import ujson._
+import ujson.*
 
 import java.net.{InetSocketAddress, URI}
 import java.nio.file.Path
@@ -1799,6 +1799,25 @@ object LoadWallet extends ServerJsonModels with BitcoinSLogger {
         throw new IllegalArgumentException(
           s"Bad number of arguments: ${other.length}. Expected: 3"
         )
+    }
+  }
+}
+
+case class CreateNewAccount(purpose: HDPurpose)
+    extends CommandRpc
+    with AppServerCliCommand
+
+object CreateNewAccount {
+
+  def fromJsArr(arr: ujson.Arr): Try[CreateNewAccount] = {
+    arr.arr.toVector match {
+      case purposeJs +: _ =>
+        Try(upickle.default.read(purposeJs)(Picklers.hdPurposes))
+          .map(CreateNewAccount.apply)
+      case _ =>
+        val exn = new IllegalArgumentException(
+          s"Invalid input for createnewaccount rpc, got=$arr")
+        Failure(exn)
     }
   }
 }

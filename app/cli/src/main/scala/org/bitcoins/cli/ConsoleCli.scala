@@ -11,7 +11,7 @@ import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.*
 import org.bitcoins.core.currency.*
-import org.bitcoins.core.hd.{AddressType, HDPurpose}
+import org.bitcoins.core.hd.AddressType
 import org.bitcoins.core.hd.AddressType.SegWit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.tlv.*
@@ -2668,7 +2668,6 @@ object CliCommand {
   case object GetFundedAddresses extends AppServerCliCommand
   case object GetUnusedAddresses extends AppServerCliCommand
   case object GetAccounts extends AppServerCliCommand
-  case class CreateNewAccount(purpose: HDPurpose) extends AppServerCliCommand
   case object IsEmpty extends AppServerCliCommand
   case object WalletInfo extends AppServerCliCommand
   case object ListWallets extends AppServerCliCommand
