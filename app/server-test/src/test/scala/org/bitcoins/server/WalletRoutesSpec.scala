@@ -7,7 +7,7 @@ import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.wallet.db.AccountDb
 import org.bitcoins.core.crypto.ExtKeyVersion.SegWitMainNetPriv
 import org.bitcoins.core.crypto.ExtPrivateKey
-import org.bitcoins.core.hd.{HDAccount, HDPurpose, HDPurposes}
+import org.bitcoins.core.hd.{HDAccount, HDPurpose}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.dlc.models.DLCMessage.{DLCAccept, DLCOffer}
 import org.bitcoins.core.protocol.dlc.models.DLCStatus
@@ -169,7 +169,7 @@ class WalletRoutesSpec
       val accountDb = AccountDb(extPubKey, hdAccount = hdAccount)
       (mockWalletApi
         .createNewAccount(_: HDPurpose))
-        .expects(HDPurposes.default)
+        .expects(HDPurpose.default)
         .returning(Future.successful(mockWalletApi))
 
       (() => mockWalletApi.listAccounts())
@@ -179,7 +179,7 @@ class WalletRoutesSpec
       val cmd = ServerCommand(
         "createnewaccount",
         ujson.Arr(
-          upickle.default.writeJs(HDPurposes.default)(Picklers.hdPurposes))
+          upickle.default.writeJs(HDPurpose.default)(Picklers.hdPurpose))
       )
       val route = walletRoutes.handleCommand(cmd)
 

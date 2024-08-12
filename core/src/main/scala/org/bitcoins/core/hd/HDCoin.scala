@@ -35,7 +35,7 @@ object HDCoin {
 
   def fromPath(path: BIP32Path): Option[HDCoin] = {
     if (path.path.length == 2) {
-      HDPurposes.fromNode(path.path.head).map { purpose =>
+      HDPurpose.fromNode(path.path.head).map { purpose =>
         val coinType = HDCoinType.fromInt(path.path.last.index)
 
         HDCoin(purpose, coinType)
@@ -49,13 +49,13 @@ object HDCoin {
     version match {
       case SegWitMainNetPriv | SegWitMainNetPub | SegWitTestNet3Priv |
           SegWitTestNet3Pub =>
-        HDCoin(HDPurposes.SegWit, version.hdCoinType)
+        HDCoin(HDPurpose.SegWit, version.hdCoinType)
       case NestedSegWitMainNetPriv | NestedSegWitMainNetPub |
           NestedSegWitTestNet3Priv | NestedSegWitTestNet3Pub =>
-        HDCoin(HDPurposes.NestedSegWit, version.hdCoinType)
+        HDCoin(HDPurpose.NestedSegWit, version.hdCoinType)
       case LegacyMainNetPriv | LegacyMainNetPub | LegacyTestNet3Priv |
           LegacyTestNet3Pub =>
-        HDCoin(HDPurposes.Legacy, version.hdCoinType)
+        HDCoin(HDPurpose.Legacy, version.hdCoinType)
     }
   }
 }

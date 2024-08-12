@@ -25,7 +25,7 @@ case class HDPurpose(constant: Int) extends BIP32Path {
     BIP32Node(constant, HardenedType.defaultOpt))
 }
 
-object HDPurposes {
+object HDPurpose {
   final val Legacy = HDPurpose(LegacyHDPath.PURPOSE)
   final val Multisig = HDPurpose(MultisigHDPath.PURPOSE)
   final val SegWit = HDPurpose(SegWitHDPath.PURPOSE)

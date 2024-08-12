@@ -1143,7 +1143,7 @@ object Wallet extends WalletLogger {
     val createAccountActions: Vector[
       DBIOAction[AccountDb, NoStream, Effect.Read with Effect.Write]
     ] = {
-      val accounts = HDPurposes.singleSigPurposes.map { purpose =>
+      val accounts = HDPurpose.singleSigPurposes.map { purpose =>
         // we need to create key manager params for each purpose
         // and then initialize a key manager to derive the correct xpub
         val kmParams = wallet.keyManager.kmParams.copy(purpose = purpose)

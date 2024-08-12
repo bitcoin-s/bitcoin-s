@@ -6,7 +6,7 @@ import org.bitcoins.commons.util.WalletNames
 import org.bitcoins.core.api.commons.ArgumentSource
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.MnemonicCode
-import org.bitcoins.core.hd.{HDPurpose, HDPurposes}
+import org.bitcoins.core.hd.HDPurpose
 import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.crypto.{AesPassword, CryptoUtil}
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
@@ -70,9 +70,9 @@ case class KeyManagerAppConfig(
 
   private lazy val defaultAccountKind: HDPurpose =
     config.getString("bitcoin-s.wallet.defaultAccountType") match {
-      case "legacy"        => HDPurposes.Legacy
-      case "segwit"        => HDPurposes.SegWit
-      case "nested-segwit" => HDPurposes.NestedSegWit
+      case "legacy"        => HDPurpose.Legacy
+      case "segwit"        => HDPurpose.SegWit
+      case "nested-segwit" => HDPurpose.NestedSegWit
       // todo: validate this pre-app startup
       case other: String =>
         throw new RuntimeException(s"$other is not a valid account type!")

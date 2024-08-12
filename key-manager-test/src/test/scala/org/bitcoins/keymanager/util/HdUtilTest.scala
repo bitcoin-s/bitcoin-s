@@ -17,7 +17,7 @@ import org.bitcoins.core.crypto.ExtKeyVersion.{
   SegWitMainNetPriv,
   SegWitTestNet3Priv
 }
-import org.bitcoins.core.hd.{HDCoinType, HDPurpose, HDPurposes}
+import org.bitcoins.core.hd.{HDCoinType, HDPurpose}
 import org.bitcoins.core.util.HDUtil
 import org.bitcoins.testkit.keymanager.KeyManagerApiUnitTest
 
@@ -25,26 +25,26 @@ class HdUtilTest extends KeyManagerApiUnitTest {
 
   it must "get the correct version for a public key" in {
     assert(
-      HDUtil.getXpubVersion(HDPurposes.Legacy, MainNet) == LegacyMainNetPub
+      HDUtil.getXpubVersion(HDPurpose.Legacy, MainNet) == LegacyMainNetPub
     )
     assert(
-      HDUtil.getXpubVersion(HDPurposes.Legacy, TestNet3) == LegacyTestNet3Pub
+      HDUtil.getXpubVersion(HDPurpose.Legacy, TestNet3) == LegacyTestNet3Pub
     )
     assert(
-      HDUtil.getXpubVersion(HDPurposes.SegWit, MainNet) == SegWitMainNetPub
+      HDUtil.getXpubVersion(HDPurpose.SegWit, MainNet) == SegWitMainNetPub
     )
     assert(
-      HDUtil.getXpubVersion(HDPurposes.SegWit, TestNet3) == SegWitTestNet3Pub
+      HDUtil.getXpubVersion(HDPurpose.SegWit, TestNet3) == SegWitTestNet3Pub
     )
     assert(
       HDUtil.getXpubVersion(
-        HDPurposes.NestedSegWit,
+        HDPurpose.NestedSegWit,
         MainNet
       ) == NestedSegWitMainNetPub
     )
     assert(
       HDUtil.getXpubVersion(
-        HDPurposes.NestedSegWit,
+        HDPurpose.NestedSegWit,
         TestNet3
       ) == NestedSegWitTestNet3Pub
     )
@@ -56,26 +56,26 @@ class HdUtilTest extends KeyManagerApiUnitTest {
 
   it must "get the correct version for a private key" in {
     assert(
-      HDUtil.getXprivVersion(HDPurposes.Legacy, MainNet) == LegacyMainNetPriv
+      HDUtil.getXprivVersion(HDPurpose.Legacy, MainNet) == LegacyMainNetPriv
     )
     assert(
-      HDUtil.getXprivVersion(HDPurposes.Legacy, TestNet3) == LegacyTestNet3Priv
+      HDUtil.getXprivVersion(HDPurpose.Legacy, TestNet3) == LegacyTestNet3Priv
     )
     assert(
-      HDUtil.getXprivVersion(HDPurposes.SegWit, MainNet) == SegWitMainNetPriv
+      HDUtil.getXprivVersion(HDPurpose.SegWit, MainNet) == SegWitMainNetPriv
     )
     assert(
-      HDUtil.getXprivVersion(HDPurposes.SegWit, TestNet3) == SegWitTestNet3Priv
+      HDUtil.getXprivVersion(HDPurpose.SegWit, TestNet3) == SegWitTestNet3Priv
     )
     assert(
       HDUtil.getXprivVersion(
-        HDPurposes.NestedSegWit,
+        HDPurpose.NestedSegWit,
         MainNet
       ) == NestedSegWitMainNetPriv
     )
     assert(
       HDUtil.getXprivVersion(
-        HDPurposes.NestedSegWit,
+        HDPurpose.NestedSegWit,
         TestNet3
       ) == NestedSegWitTestNet3Priv
     )

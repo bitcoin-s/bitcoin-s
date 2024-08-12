@@ -4,7 +4,7 @@ import java.nio.file.Files
 
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
-import org.bitcoins.core.hd.HDPurposes
+import org.bitcoins.core.hd.HDPurpose
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.bitcoins.wallet.config.WalletAppConfig
 
@@ -61,8 +61,8 @@ class WalletAppConfigTest extends BitcoinSAsyncTest {
 
     val twiceOverriden = overriden.withOverrides(thirdConf)
 
-    assert(overriden.defaultAccountKind == HDPurposes.SegWit)
-    assert(twiceOverriden.defaultAccountKind == HDPurposes.NestedSegWit)
+    assert(overriden.defaultAccountKind == HDPurpose.SegWit)
+    assert(twiceOverriden.defaultAccountKind == HDPurpose.NestedSegWit)
 
     assert(config.datadir == overriden.datadir)
     assert(twiceOverriden.datadir == overriden.datadir)

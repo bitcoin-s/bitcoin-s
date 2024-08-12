@@ -63,7 +63,7 @@ object HDGenerators {
 
   /** Generates a valid HD purpose path */
   def hdPurpose: Gen[HDPurpose] =
-    Gen.oneOf(HDPurposes.Legacy, HDPurposes.NestedSegWit, HDPurposes.SegWit)
+    Gen.oneOf(HDPurpose.Legacy, HDPurpose.NestedSegWit, HDPurpose.SegWit)
 
   def hdCoin: Gen[HDCoin] =
     for {
@@ -92,7 +92,7 @@ object HDGenerators {
   def legacyHdPath: Gen[LegacyHDPath] =
     for {
       coinType <- hdCoinType
-      purpose = HDPurposes.Legacy
+      purpose = HDPurpose.Legacy
       accountIndex <- NumberGenerator.positiveInts
       addressIndex <- NumberGenerator.positiveInts
       chainType <- hdChainType

@@ -7,7 +7,7 @@ import org.bitcoins.core.hd.{
   HDChainType,
   HDCoin,
   HDCoinType,
-  HDPurposes,
+  HDPurpose,
   LegacyHDPath,
   NestedSegWitHDPath,
   SegWitHDPath
@@ -73,5 +73,5 @@ object WalletTestUtil {
     )
 
   val defaultHdAccount: HDAccount =
-    HDAccount(HDCoin(HDPurposes.SegWit, hdCoinType), 0)
+    HDAccount(HDCoin(HDPurpose.SegWit, hdCoinType), 0)
 }

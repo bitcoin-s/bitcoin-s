@@ -25,7 +25,7 @@ case class AddressRecord(
 
   def toAddressDb(scriptPubKey: ScriptPubKey): AddressDb = {
     (purpose, address, scriptWitnessOpt) match {
-      case (HDPurposes.SegWit, bechAddr: Bech32Address, Some(scriptWitness)) =>
+      case (HDPurpose.SegWit, bechAddr: Bech32Address, Some(scriptWitness)) =>
         val path =
           SegWitHDPath(coinType = accountCoin,
                        accountIndex = accountIndex,
@@ -39,7 +39,7 @@ case class AddressRecord(
                         witnessScript = scriptWitness,
                         scriptPubKey = scriptPubKey)
 
-      case (HDPurposes.Legacy, legacyAddr: P2PKHAddress, None) =>
+      case (HDPurpose.Legacy, legacyAddr: P2PKHAddress, None) =>
         val path = LegacyHDPath(coinType = accountCoin,
                                 accountIndex = accountIndex,
                                 chainType = accountChain,
@@ -50,7 +50,7 @@ case class AddressRecord(
                         legacyAddr,
                         scriptPubKey = scriptPubKey)
 
-      case (HDPurposes.NestedSegWit,
+      case (HDPurpose.NestedSegWit,
             address: P2SHAddress,
             Some(scriptWitness)) =>
         val path = NestedSegWitHDPath(coinType = accountCoin,

@@ -29,7 +29,7 @@ object GetAddresses extends App {
   def printerr(x: Any): Unit = System.err.println(x.toString())
 
   val accountInfo = for {
-    constant <- HDPurposes.singleSigPurposes
+    constant <- HDPurpose.singleSigPurposes
     coin <- List(HDCoinType.Bitcoin /*, HDCoinType.Testnet*/ )
     accountIndex <- 0 until 3
   } yield {
@@ -41,17 +41,17 @@ object GetAddresses extends App {
 
     val pathType =
       constant match {
-        case HDPurposes.Legacy       => "legacy"
-        case HDPurposes.NestedSegWit => "p2sh-segwit"
-        case HDPurposes.SegWit       => "segwit"
+        case HDPurpose.Legacy       => "legacy"
+        case HDPurpose.NestedSegWit => "p2sh-segwit"
+        case HDPurpose.SegWit       => "segwit"
         case other => throw new RuntimeException(s"Unexpected purpose $other")
       }
 
     val trezorPathType =
       constant match {
-        case HDPurposes.Legacy       => "address"
-        case HDPurposes.NestedSegWit => "p2shsegwit"
-        case HDPurposes.SegWit       => "segwit"
+        case HDPurpose.Legacy       => "address"
+        case HDPurpose.NestedSegWit => "p2shsegwit"
+        case HDPurpose.SegWit       => "segwit"
         case other => throw new RuntimeException(s"Unexpected purpose $other")
       }
 
