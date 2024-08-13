@@ -11,7 +11,7 @@ import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.*
 import org.bitcoins.core.currency.*
-import org.bitcoins.core.hd.AddressType
+import org.bitcoins.core.hd.{AddressType, HDPurpose}
 import org.bitcoins.core.hd.AddressType.SegWit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.tlv.*
@@ -268,7 +268,18 @@ object ConsoleCli extends BitcoinSLogger {
         .text("Returns list of all wallet accounts"),
       cmd("createnewaccount")
         .action((_, conf) => conf.copy(command = CreateNewAccount(null)))
-        .text("Creates a new wallet account"),
+        .text("Creates a new wallet account")
+        .children(
+          arg[String]("hd_purpose")
+            .text("hd_purpose according to BIP43")
+            .required()
+            .action((purpose, conf) =>
+              conf.copy(command = conf.command match {
+                case c: CreateNewAccount =>
+                  c.copy(purpose = HDPurpose.fromString(purpose))
+                case other => other
+              }))
+        ),
       cmd("getaddressinfo")
         .action((_, conf) => conf.copy(command = GetAddressInfo(null)))
         .text("Returns list of all wallet accounts")
