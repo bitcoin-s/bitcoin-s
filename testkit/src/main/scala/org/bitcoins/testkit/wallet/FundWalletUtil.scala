@@ -8,7 +8,8 @@ import org.bitcoins.core.api.wallet.HDWalletApi
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.transaction.TransactionOutput
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.{BitcoinSAppConfig, BitcoindRpcBackendUtil}
@@ -103,13 +104,26 @@ trait FundWalletUtil extends BitcoinSLogger {
     val txAndHashF = for {
       addresses <- addressesF
       addressAmountMap = addresses.zip(amts).toMap
+      (tx, blockHash) <- fundAddressesWithBitcoind(addressAmountMap, bitcoind)
+      _ <- wallet.processTransaction(tx, Some(blockHash))
+    } yield (tx, blockHash)
+
+    txAndHashF.map(_ => wallet)
+  }
+
+  def fundAddressesWithBitcoind(
+      addressAmountMap: Map[BitcoinAddress, CurrencyUnit],
+      bitcoind: BitcoindRpcClient
+  )(implicit
+      ec: ExecutionContext): Future[(Transaction, DoubleSha256DigestBE)] = {
+
+    val txAndHashF = for {
       txId <- bitcoind.sendMany(addressAmountMap)
       tx <- bitcoind.getRawTransactionRaw(txId)
       hashes <- bitcoind.generate(6)
-      _ <- wallet.processTransaction(tx, hashes.headOption)
     } yield (tx, hashes.head)
 
-    txAndHashF.map(_ => wallet)
+    txAndHashF
   }
 
   /** Funds a bitcoin-s wallet with 3 utxos with 1, 2 and 3 bitcoin in the utxos

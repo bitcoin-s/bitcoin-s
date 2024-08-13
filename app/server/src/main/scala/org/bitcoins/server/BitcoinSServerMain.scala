@@ -53,7 +53,7 @@ import scala.concurrent.{Await, Future, Promise}
 class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     override val system: ActorSystem,
     val conf: BitcoinSAppConfig
-) extends BitcoinSServerRunner[WalletHolder] {
+) extends BitcoinSServerRunner[Unit] {
 
   implicit lazy val nodeConf: NodeAppConfig = conf.nodeConf
   implicit lazy val chainConf: ChainAppConfig = conf.chainConf
@@ -62,7 +62,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   implicit lazy val torConf: TorAppConfig = conf.torConf
   lazy val network = conf.walletConf.network
 
-  override def start(): Future[WalletHolder] = {
+  override def start(): Future[Unit] = {
     logger.info("Starting appServer")
     val startTime = TimeUtil.currentEpochMs
     val startedConfigF = conf.start()
@@ -83,7 +83,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       // on server startup we assume we are out of sync with the bitcoin network
       // so we set this flag to true.
       _ <- initializeChainState(chainApi, nodeType)
-      start <- {
+      _ <- {
         nodeType match {
           case _: InternalImplementationNodeType =>
             startBitcoinSBackend(startedConfig.torStartedF)
@@ -95,7 +95,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       logger.info(
         s"Done start BitcoinSServerMain, it took=${TimeUtil.currentEpochMs - startTime}ms"
       )
-      start
+      ()
     }
   }
 
@@ -127,7 +127,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     }
   }
 
-  override def stop(): Future[WalletHolder] = {
+  override def stop(): Future[Unit] = {
     logger.info(s"Exiting process")
     for {
       _ <- {
@@ -154,7 +154,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     } yield {
       resetState()
       // return empty wallet holder
-      WalletHolder.empty
+      ()
     }
   }
 
@@ -172,7 +172,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     */
   def startBitcoinSBackend(
       startedTorConfigF: Future[Unit]
-  ): Future[WalletHolder] = {
+  ): Future[Unit] = {
     logger.info(s"startBitcoinSBackend()")
     val start = System.currentTimeMillis()
 
@@ -295,8 +295,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
 
     for {
       _ <- startedF
-      walletHolder <- configuredWalletF.map(_._1)
-    } yield walletHolder
+      _ <- configuredWalletF.map(_._1)
+    } yield ()
   }
 
   private def buildNeutrinoCallbacks(
