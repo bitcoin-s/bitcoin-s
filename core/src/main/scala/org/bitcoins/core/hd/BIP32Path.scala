@@ -201,6 +201,15 @@ case class BIP32Node(index: Int, hardenedOpt: Option[HardenedType]) {
     else UInt32(index)
 }
 
+object BIP32Node extends StringFactory[BIP32Node] {
+  override def fromString(string: String): BIP32Node = {
+    val path = BIP32Path.fromString(string)
+    require(path.length == 1,
+            s"BIP32Node can only have one element in the path, got=$path")
+    BIP32Node(path.head.index, path.head.hardenedOpt)
+  }
+}
+
 sealed abstract class HardenedType
 
 object HardenedType extends StringFactory[HardenedType] {

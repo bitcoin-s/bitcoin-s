@@ -1768,7 +1768,8 @@ object Picklers {
   }
 
   implicit val hdPurpose: ReadWriter[HDPurpose] = {
-    readwriter[ujson.Num].bimap(_.constant, num => HDPurpose(num.value.toInt))
+    readwriter[ujson.Str]
+      .bimap(_.toString, str => HDPurpose.fromString(str.str))
   }
 
 }

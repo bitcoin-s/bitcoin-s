@@ -1,7 +1,7 @@
 package org.bitcoins.core.crypto.bip32
 
 import org.bitcoins.core.crypto.{ExtKey, ExtPublicKey}
-import org.bitcoins.core.hd.{BIP32Node, BIP32Path, HardenedType}
+import org.bitcoins.core.hd.{BIP32Node, BIP32Path, HDPurpose, HardenedType}
 import org.bitcoins.testkitcore.gen.{
   CryptoGenerators,
   HDGenerators,
@@ -9,7 +9,7 @@ import org.bitcoins.testkitcore.gen.{
 }
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalacheck.Gen
-import scodec.bits._
+import scodec.bits.*
 
 import scala.util.{Success, Try}
 
@@ -285,6 +285,14 @@ class BIP32PathTest extends BitcoinSUnitTest {
 
     assertThrows[IllegalArgumentException] {
       BIP32Path.fromHardenedString(badPath4)
+    }
+  }
+
+  it must "have serialization symmetry for HDPurpose" in {
+    for (p <- HDPurpose.all) {
+      val fromString = HDPurpose.fromString(p.toString)
+      assert(fromString == p)
+      assert(p.toString == fromString.toString)
     }
   }
 }
