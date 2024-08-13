@@ -78,9 +78,9 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
 
     override def reads(json: JsValue): JsResult[HDPurpose] =
       json.validate[String].map {
-        case "legacy"      => HDPurposes.Legacy
-        case "segwit"      => HDPurposes.SegWit
-        case "p2sh-segwit" => HDPurposes.NestedSegWit
+        case "legacy"      => HDPurpose.Legacy
+        case "segwit"      => HDPurpose.SegWit
+        case "p2sh-segwit" => HDPurpose.NestedSegWit
       }
   }
 
@@ -122,20 +122,20 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
   }
 
   lazy val legacyVectors =
-    vectors.filter(_.pathType == HDPurposes.Legacy)
+    vectors.filter(_.pathType == HDPurpose.Legacy)
 
   lazy val segwitVectors =
-    vectors.filter(_.pathType == HDPurposes.SegWit)
+    vectors.filter(_.pathType == HDPurpose.SegWit)
 
   lazy val nestedVectors =
-    vectors.filter(_.pathType == HDPurposes.NestedSegWit)
+    vectors.filter(_.pathType == HDPurpose.NestedSegWit)
 
   def configForPurposeAndSeed(purpose: HDPurpose): Config = {
     val purposeStr = purpose match {
-      case HDPurposes.Legacy       => "legacy"
-      case HDPurposes.SegWit       => "segwit"
-      case HDPurposes.NestedSegWit => "nested-segwit"
-      case other                   => fail(s"unexpected purpose: $other")
+      case HDPurpose.Legacy       => "legacy"
+      case HDPurpose.SegWit       => "segwit"
+      case HDPurpose.NestedSegWit => "nested-segwit"
+      case other                  => fail(s"unexpected purpose: $other")
     }
     val entropy = mnemonic.toEntropy.toHex
     val confStr = s"""bitcoin-s.wallet.defaultAccountType = $purposeStr
@@ -236,10 +236,10 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
         .walletConf
 
     val testVectors = purpose match {
-      case HDPurposes.Legacy       => legacyVectors
-      case HDPurposes.SegWit       => segwitVectors
-      case HDPurposes.NestedSegWit => nestedVectors
-      case other                   => fail(s"unknown purpose: $other")
+      case HDPurpose.Legacy       => legacyVectors
+      case HDPurpose.SegWit       => segwitVectors
+      case HDPurpose.NestedSegWit => nestedVectors
+      case other                  => fail(s"unknown purpose: $other")
     }
 
     val assertionsF: Future[Seq[Assertion]] = for {
@@ -306,14 +306,14 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
   }
 
   it must "act the same way as Trezor for legacy accounts" in { _ =>
-    testAccountType(HDPurposes.Legacy)
+    testAccountType(HDPurpose.Legacy)
   }
 
   it must "act the same way as Trezor for segwit accounts" in { _ =>
-    testAccountType(HDPurposes.SegWit)
+    testAccountType(HDPurpose.SegWit)
   }
 
   it must "act the same way as Trezor for nested segwit accounts" in { _ =>
-    testAccountType(HDPurposes.NestedSegWit)
+    testAccountType(HDPurpose.NestedSegWit)
   }
 }

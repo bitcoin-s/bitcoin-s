@@ -692,6 +692,7 @@ lazy val testkit = project
     coreJVM % testAndCompile,
     appServer,
     chain,
+    cli,
     bitcoindRpc,
     eclairRpc,
     lndRpc,

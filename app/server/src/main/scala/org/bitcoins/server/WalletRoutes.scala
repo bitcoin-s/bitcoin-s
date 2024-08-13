@@ -5,12 +5,13 @@ import org.apache.pekko.http.scaladsl.model.HttpEntity
 import org.apache.pekko.http.scaladsl.server.Directives.complete
 import org.apache.pekko.http.scaladsl.server.Route
 import org.apache.pekko.stream.Materializer
-import org.bitcoins.commons.rpc._
-import org.bitcoins.commons.serializers.Picklers._
+import org.bitcoins.commons.rpc.*
+import org.bitcoins.commons.serializers.Picklers
+import org.bitcoins.commons.serializers.Picklers.*
 import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
-import org.bitcoins.core.currency._
-import org.bitcoins.core.protocol.tlv._
+import org.bitcoins.core.currency.*
+import org.bitcoins.core.protocol.tlv.*
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.rescan.RescanState
@@ -21,13 +22,13 @@ import org.bitcoins.core.wallet.utxo.{
   TxoState
 }
 import org.bitcoins.crypto.NetworkElement
-import org.bitcoins.keymanager._
+import org.bitcoins.keymanager.*
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
 import org.bitcoins.server.routes.{Server, ServerCommand, ServerRoute}
 import org.bitcoins.wallet.WalletHolder
 import org.bitcoins.wallet.config.WalletAppConfig
-import ujson._
-import upickle.default._
+import ujson.*
+import upickle.default.*
 
 import java.nio.file.{Files, Path}
 import java.time.Instant
@@ -861,16 +862,20 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
           }
       }
 
-    case ServerCommand("createnewaccount", _) =>
-      complete {
-        for {
-          newWallet <- wallet.createNewAccount(
-            wallet.keyManager.kmParams.purpose)
-          accounts <- newWallet.listAccounts()
-        } yield {
-          val xpubs = accounts.map(_.xpub)
-          Server.httpSuccess(xpubs)
-        }
+    case ServerCommand("createnewaccount", arr) =>
+      withValidServerCommand(CreateNewAccount.fromJsArr(arr)) {
+        case CreateNewAccount(purpose) =>
+          complete {
+            for {
+              newWallet <- wallet.createNewAccount(purpose)
+              accounts <- newWallet.listAccounts()
+            } yield {
+              val xpubs = accounts.map(_.xpub)
+              val json =
+                xpubs.map(upickle.default.writeJs(_)(Picklers.extPubKeyPickler))
+              Server.httpSuccess(Arr.from(json))
+            }
+          }
       }
 
     case ServerCommand("keymanagerpassphrasechange", arr) =>

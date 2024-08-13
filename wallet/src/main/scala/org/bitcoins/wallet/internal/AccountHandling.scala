@@ -51,9 +51,9 @@ private[wallet] trait AccountHandling { self: Wallet =>
       addressType: AddressType
   ): Future[AccountDb] = {
     val hdCoin = addressType match {
-      case Legacy       => HDCoin(HDPurposes.Legacy, DEFAULT_HD_COIN_TYPE)
-      case NestedSegWit => HDCoin(HDPurposes.NestedSegWit, DEFAULT_HD_COIN_TYPE)
-      case SegWit       => HDCoin(HDPurposes.SegWit, DEFAULT_HD_COIN_TYPE)
+      case Legacy       => HDCoin(HDPurpose.Legacy, DEFAULT_HD_COIN_TYPE)
+      case NestedSegWit => HDCoin(HDPurpose.NestedSegWit, DEFAULT_HD_COIN_TYPE)
+      case SegWit       => HDCoin(HDPurpose.SegWit, DEFAULT_HD_COIN_TYPE)
       case P2TR =>
         throw new UnsupportedOperationException(
           s"Taproot not supported in wallet")

@@ -44,12 +44,12 @@ private[hd] trait HDPathFactory[PathType <: BIP32Path]
       case BIP32Node(_, None) =>
         throw new IllegalArgumentException(
           "The first child in a HD path must be hardened")
-      case BIP32Node(HDPurposes.Legacy.constant, Some(_)) => HDPurposes.Legacy
-      case BIP32Node(HDPurposes.SegWit.constant, Some(_)) => HDPurposes.SegWit
-      case BIP32Node(HDPurposes.NestedSegWit.constant, Some(_)) =>
-        HDPurposes.NestedSegWit
-      case BIP32Node(HDPurposes.Multisig.constant, Some(_)) =>
-        HDPurposes.Multisig
+      case BIP32Node(HDPurpose.Legacy.constant, Some(_)) => HDPurpose.Legacy
+      case BIP32Node(HDPurpose.SegWit.constant, Some(_)) => HDPurpose.SegWit
+      case BIP32Node(HDPurpose.NestedSegWit.constant, Some(_)) =>
+        HDPurpose.NestedSegWit
+      case BIP32Node(HDPurpose.Multisig.constant, Some(_)) =>
+        HDPurpose.Multisig
       case BIP32Node(unknown, Some(_)) =>
         throw new IllegalArgumentException(
           s"Purpose constant ($unknown) is not a known purpose constant")
@@ -103,7 +103,7 @@ private[hd] trait HDPathFactory[PathType <: BIP32Path]
   def PURPOSE: Int
 
   protected lazy val hdPurpose: HDPurpose =
-    HDPurposes.fromConstant(PURPOSE).get // todo
+    HDPurpose.fromConstant(PURPOSE).get // todo
 
   lazy val purposeChild: BIP32Node = BIP32Node(PURPOSE, HardenedType.defaultOpt)
 

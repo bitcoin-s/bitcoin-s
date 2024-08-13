@@ -23,7 +23,7 @@ import scodec.bits.BitVector
 import java.nio.file.Files
 
 class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
-  val purpose = HDPurposes.Legacy
+  val purpose = HDPurpose.Legacy
 
   // this is taken from 'trezor-addresses.json' which give us test cases that conform with trezor
   val mnemonicStr =
@@ -339,7 +339,7 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
     val seedPath = KeyManagerTestUtil.tmpSeedPath
     val aesPasswordOpt = KeyManagerTestUtil.aesPasswordOpt
     val kmParams =
-      keymanagement.KeyManagerParams(seedPath, HDPurposes.SegWit, RegTest)
+      keymanagement.KeyManagerParams(seedPath, HDPurpose.SegWit, RegTest)
     val entropy = MnemonicCode.getEntropy256Bits
     val passwordOpt = Some(KeyManagerTestUtil.bip39Password)
     val keyManager = withInitializedKeyManager(
@@ -376,7 +376,7 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
     val seedPath = KeyManagerTestUtil.tmpSeedPath
     val aesPasswordOpt = KeyManagerTestUtil.aesPasswordOpt
     val kmParams =
-      keymanagement.KeyManagerParams(seedPath, HDPurposes.SegWit, RegTest)
+      keymanagement.KeyManagerParams(seedPath, HDPurpose.SegWit, RegTest)
     val entropy = MnemonicCode.getEntropy256Bits
     val passwordOpt = Some(KeyManagerTestUtil.bip39Password)
     val keyManager = withInitializedKeyManager(

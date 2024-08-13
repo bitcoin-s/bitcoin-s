@@ -1,5 +1,7 @@
 package org.bitcoins.core.hd
 
+import org.bitcoins.crypto.StringFactory
+
 /** This is a field that is used in conjunction with BIP44 to indicate what the
   * purpose of this [[org.bitcoins.core.crypto.ExtKey ExtKey]] is.
   *
@@ -25,11 +27,13 @@ case class HDPurpose(constant: Int) extends BIP32Path {
     BIP32Node(constant, HardenedType.defaultOpt))
 }
 
-object HDPurposes {
+object HDPurpose extends StringFactory[HDPurpose] {
   final val Legacy = HDPurpose(LegacyHDPath.PURPOSE)
   final val Multisig = HDPurpose(MultisigHDPath.PURPOSE)
   final val SegWit = HDPurpose(SegWitHDPath.PURPOSE)
   final val NestedSegWit = HDPurpose(NestedSegWitHDPath.PURPOSE)
+
+  final val default: HDPurpose = SegWit
 
   lazy val singleSigPurposes = Vector(Legacy, SegWit, NestedSegWit)
 
@@ -43,5 +47,12 @@ object HDPurposes {
     require(node.hardened,
             s"Cannot construct HDPurpose from un-hardened node: $node")
     fromConstant(node.index)
+  }
+
+  override def fromString(string: String): HDPurpose = {
+    val node = BIP32Node.fromString(string)
+    fromNode(node).getOrElse {
+      sys.error(s"Cannot create HDPurpose from string=$string")
+    }
   }
 }

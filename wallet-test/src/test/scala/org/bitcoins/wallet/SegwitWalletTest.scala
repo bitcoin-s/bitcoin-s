@@ -1,6 +1,6 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.core.hd.{AddressType, HDPurposes}
+import org.bitcoins.core.hd.{AddressType, HDPurpose}
 import org.bitcoins.core.protocol.{Bech32Address, P2PKHAddress, P2SHAddress}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.scalatest.FutureOutcome
@@ -21,7 +21,7 @@ class SegwitWalletTest extends BitcoinSWalletTest {
       thirdAddr <- wallet.getNewAddress(AddressType.SegWit)
       allAddrs <- wallet.listAddresses()
     } yield {
-      assert(account.hdAccount.purpose == HDPurposes.SegWit)
+      assert(account.hdAccount.purpose == HDPurpose.SegWit)
       assert(allAddrs.forall(_.address.isInstanceOf[Bech32Address]))
       assert(allAddrs.length == 3)
       assert(allAddrs.exists(_.address == addr))
@@ -35,7 +35,7 @@ class SegwitWalletTest extends BitcoinSWalletTest {
       account <- wallet.getDefaultAccountForType(AddressType.Legacy)
       addr <- wallet.getNewAddress(AddressType.Legacy)
     } yield {
-      assert(account.hdAccount.purpose == HDPurposes.Legacy)
+      assert(account.hdAccount.purpose == HDPurpose.Legacy)
       assert(addr.isInstanceOf[P2PKHAddress])
     }
   }

@@ -1,5 +1,7 @@
 package org.bitcoins.core.hd
 
+import org.bitcoins.core.crypto.ExtKeyVersion
+
 /** Represents a
   * [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#Account BIP44]],
   * [[https://github.com/bitcoin/bips/blob/master/bip-0084.mediawiki BIP84]] and
@@ -62,5 +64,10 @@ object HDAccount {
 
   def isSameAccount(bip32Path: BIP32Path, account: HDAccount): Boolean = {
     isSameAccount(bip32Path.toVector, account)
+  }
+
+  def fromExtKeyVersion(version: ExtKeyVersion, idx: Int): HDAccount = {
+    val coin = HDCoin.fromExtKeyVersion(version)
+    HDAccount(coin, idx)
   }
 }

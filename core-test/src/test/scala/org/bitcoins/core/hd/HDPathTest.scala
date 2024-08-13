@@ -198,7 +198,7 @@ class HDPathTest extends BitcoinSUnitTest {
 
     val firstString = " m / 44' / 0' / 0' / 0 / 0 "
     val first = LegacyHDPath.fromString(firstString)
-    assert(first.purpose == HDPurposes.Legacy)
+    assert(first.purpose == HDPurpose.Legacy)
     assert(first.coin.coinType == HDCoinType.Bitcoin)
     assert(first.account.index == 0)
     assert(first.chain.chainType == HDChainType.External)
@@ -207,7 +207,7 @@ class HDPathTest extends BitcoinSUnitTest {
 
     val secondString = " m / 44' / 0' / 0' / 0 / 1 "
     val second = LegacyHDPath.fromString(secondString)
-    assert(second.purpose == HDPurposes.Legacy)
+    assert(second.purpose == HDPurpose.Legacy)
     assert(second.coin.coinType == HDCoinType.Bitcoin)
     assert(second.account.index == 0)
     assert(second.chain.chainType == HDChainType.External)
@@ -216,7 +216,7 @@ class HDPathTest extends BitcoinSUnitTest {
 
     val thirdString = " m / 44' / 0' / 0' / 1 / 0 "
     val third = LegacyHDPath.fromString(thirdString)
-    assert(third.purpose == HDPurposes.Legacy)
+    assert(third.purpose == HDPurpose.Legacy)
     assert(third.coin.coinType == HDCoinType.Bitcoin)
     assert(third.account.index == 0)
     assert(third.chain.chainType == HDChainType.Change)
@@ -225,7 +225,7 @@ class HDPathTest extends BitcoinSUnitTest {
 
     val fourthString = " m / 44' / 0' / 0' / 1 / 1 "
     val fourth = LegacyHDPath.fromString(fourthString)
-    assert(fourth.purpose == HDPurposes.Legacy)
+    assert(fourth.purpose == HDPurpose.Legacy)
     assert(fourth.coin.coinType == HDCoinType.Bitcoin)
     assert(fourth.account.index == 0)
     assert(fourth.chain.chainType == HDChainType.Change)
@@ -234,7 +234,7 @@ class HDPathTest extends BitcoinSUnitTest {
 
     val fifthString = " m / 44' / 0' / 1' / 0 / 0 "
     val fifth = LegacyHDPath.fromString(fifthString)
-    assert(fifth.purpose == HDPurposes.Legacy)
+    assert(fifth.purpose == HDPurpose.Legacy)
     assert(fifth.coin.coinType == HDCoinType.Bitcoin)
     assert(fifth.account.index == 1)
     assert(fifth.chain.chainType == HDChainType.External)
@@ -243,7 +243,7 @@ class HDPathTest extends BitcoinSUnitTest {
 
     val sixthString = " m / 44' / 0' / 1' / 0 / 1 "
     val sixth = LegacyHDPath.fromString(sixthString)
-    assert(sixth.purpose == HDPurposes.Legacy)
+    assert(sixth.purpose == HDPurpose.Legacy)
     assert(sixth.coin.coinType == HDCoinType.Bitcoin)
     assert(sixth.account.index == 1)
     assert(sixth.chain.chainType == HDChainType.External)
@@ -252,7 +252,7 @@ class HDPathTest extends BitcoinSUnitTest {
 
     val seventhString = " m / 44' / 0' / 1' / 1 / 0 "
     val seventh = LegacyHDPath.fromString(seventhString)
-    assert(seventh.purpose == HDPurposes.Legacy)
+    assert(seventh.purpose == HDPurpose.Legacy)
     assert(seventh.coin.coinType == HDCoinType.Bitcoin)
     assert(seventh.account.index == 1)
     assert(seventh.chain.chainType == HDChainType.Change)
@@ -261,7 +261,7 @@ class HDPathTest extends BitcoinSUnitTest {
 
     val eightString = " m / 44' / 0' / 1' / 1 / 1 "
     val eigth = LegacyHDPath.fromString(eightString)
-    assert(eigth.purpose == HDPurposes.Legacy)
+    assert(eigth.purpose == HDPurpose.Legacy)
     assert(eigth.coin.coinType == HDCoinType.Bitcoin)
     assert(eigth.account.index == 1)
     assert(eigth.chain.chainType == HDChainType.Change)
@@ -270,7 +270,7 @@ class HDPathTest extends BitcoinSUnitTest {
 
     val ninthString = " m / 44' / 1' / 0' / 0 / 1 "
     val ninth = LegacyHDPath.fromString(ninthString)
-    assert(ninth.purpose == HDPurposes.Legacy)
+    assert(ninth.purpose == HDPurpose.Legacy)
     assert(ninth.coin.coinType == HDCoinType.Testnet)
     assert(ninth.account.index == 0)
     assert(ninth.chain.chainType == HDChainType.External)
@@ -279,7 +279,7 @@ class HDPathTest extends BitcoinSUnitTest {
 
     val tenthString = " m / 44' / 1' / 0' / 0 / 1 "
     val tenth = LegacyHDPath.fromString(tenthString)
-    assert(tenth.purpose == HDPurposes.Legacy)
+    assert(tenth.purpose == HDPurpose.Legacy)
     assert(tenth.coin.coinType == HDCoinType.Testnet)
     assert(tenth.account.index == 0)
     assert(tenth.chain.chainType == HDChainType.External)
@@ -288,7 +288,7 @@ class HDPathTest extends BitcoinSUnitTest {
 
     val eleventhString = " m / 44' / 1' / 0' / 1 / 0 "
     val eleventh = LegacyHDPath.fromString(eleventhString)
-    assert(eleventh.purpose == HDPurposes.Legacy)
+    assert(eleventh.purpose == HDPurpose.Legacy)
     assert(eleventh.coin.coinType == HDCoinType.Testnet)
     assert(eleventh.account.index == 0)
     assert(eleventh.chain.chainType == HDChainType.Change)
@@ -297,7 +297,7 @@ class HDPathTest extends BitcoinSUnitTest {
 
     val twelfthString = " m / 44' / 1' / 0' / 1 / 1 "
     val twelfth = LegacyHDPath.fromString(twelfthString)
-    assert(twelfth.purpose == HDPurposes.Legacy)
+    assert(twelfth.purpose == HDPurpose.Legacy)
     assert(twelfth.coin.coinType == HDCoinType.Testnet)
     assert(twelfth.account.index == 0)
     assert(twelfth.chain.chainType == HDChainType.Change)
@@ -306,7 +306,7 @@ class HDPathTest extends BitcoinSUnitTest {
 
     val thirteenthString = " m / 44' / 1' / 1' / 0 / 0 "
     val thirteenth = LegacyHDPath.fromString(thirteenthString)
-    assert(thirteenth.purpose == HDPurposes.Legacy)
+    assert(thirteenth.purpose == HDPurpose.Legacy)
     assert(thirteenth.coin.coinType == HDCoinType.Testnet)
     assert(thirteenth.account.index == 1)
     assert(thirteenth.chain.chainType == HDChainType.External)
@@ -315,7 +315,7 @@ class HDPathTest extends BitcoinSUnitTest {
 
     val fourteenthString = " m / 44' / 1' / 1' / 0 / 1 "
     val fourteenth = LegacyHDPath.fromString(fourteenthString)
-    assert(fourteenth.purpose == HDPurposes.Legacy)
+    assert(fourteenth.purpose == HDPurpose.Legacy)
     assert(fourteenth.coin.coinType == HDCoinType.Testnet)
     assert(fourteenth.account.index == 1)
     assert(fourteenth.chain.chainType == HDChainType.External)
@@ -324,7 +324,7 @@ class HDPathTest extends BitcoinSUnitTest {
 
     val fifteenthString = " m / 44' / 1' / 1' / 1 / 0 "
     val fifteenth = LegacyHDPath.fromString(fifteenthString)
-    assert(fifteenth.purpose == HDPurposes.Legacy)
+    assert(fifteenth.purpose == HDPurpose.Legacy)
     assert(fifteenth.coin.coinType == HDCoinType.Testnet)
     assert(fifteenth.account.index == 1)
     assert(fifteenth.chain.chainType == HDChainType.Change)
@@ -333,7 +333,7 @@ class HDPathTest extends BitcoinSUnitTest {
 
     val sixteenthString = " m / 44' / 1' / 1' / 1 / 1 "
     val sixteenth = LegacyHDPath.fromString(sixteenthString)
-    assert(sixteenth.purpose == HDPurposes.Legacy)
+    assert(sixteenth.purpose == HDPurpose.Legacy)
     assert(sixteenth.coin.coinType == HDCoinType.Testnet)
     assert(sixteenth.account.index == 1)
     assert(sixteenth.chain.chainType == HDChainType.Change)

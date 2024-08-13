@@ -3,7 +3,7 @@ package org.bitcoins.testkit.keymanager
 import java.nio.file.Path
 
 import org.bitcoins.core.config.Networks
-import org.bitcoins.core.hd.HDPurposes
+import org.bitcoins.core.hd.HDPurpose
 import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
 import org.bitcoins.crypto.AesPassword
 import org.bitcoins.keymanager.WalletStorage
@@ -27,7 +27,7 @@ object KeyManagerTestUtil {
     val seedPath = KeyManagerTestUtil.tmpSeedPath
     KeyManagerParams(
       seedPath = seedPath,
-      purpose = Gen.oneOf(HDPurposes.all).sample.get,
+      purpose = Gen.oneOf(HDPurpose.all).sample.get,
       network = Gen.oneOf(Networks.knownNetworks).sample.get
     )
   }

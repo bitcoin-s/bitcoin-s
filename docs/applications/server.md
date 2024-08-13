@@ -185,7 +185,7 @@ the `-p 9999:9999` port mapping on the docker container to adjust for this.
  - `getunusedaddresses` - Returns list of all wallet addresses that have not been used
  - `getaccounts` - Returns list of all wallet accounts
  - `walletinfo` - Returns meta information about the wallet
- - `createnewaccount` - Creates a new wallet account
+ - `createnewaccount` `purpose` - Creates a new wallet account with the given HD purpose from [BIP43](https://github.com/bitcoin/bips/blob/master/bip-0043.mediawiki)
  - `getaddressinfo` `address` - Returns list of all wallet accounts
     - `address` - Address to get information about
  - `getnewaddress` - Get a new address

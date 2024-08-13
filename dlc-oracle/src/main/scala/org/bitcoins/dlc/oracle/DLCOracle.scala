@@ -71,7 +71,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
   def getRootXpub: ExtPublicKey = extPrivateKey.extPublicKey
 
   private def signingKey: ECPrivateKey = {
-    val coin = HDCoin(HDPurposes.SegWit, coinType)
+    val coin = HDCoin(HDPurpose.SegWit, coinType)
     val account = HDAccount(coin, 0)
     val purpose = coin.purpose
     val chain = HDChainType.External

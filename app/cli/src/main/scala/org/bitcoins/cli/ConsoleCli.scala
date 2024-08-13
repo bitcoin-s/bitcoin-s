@@ -1,20 +1,20 @@
 package org.bitcoins.cli
 
-import org.bitcoins.cli.CliCommand._
-import org.bitcoins.cli.CliReaders._
+import org.bitcoins.cli.CliCommand.*
+import org.bitcoins.cli.CliReaders.*
 import org.bitcoins.cli.ConsoleCli.RequestParam
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
-import org.bitcoins.commons.rpc._
-import org.bitcoins.commons.serializers.Picklers._
+import org.bitcoins.commons.rpc.*
+import org.bitcoins.commons.serializers.Picklers.*
 import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.crypto._
-import org.bitcoins.core.currency._
-import org.bitcoins.core.hd.AddressType
+import org.bitcoins.core.crypto.*
+import org.bitcoins.core.currency.*
+import org.bitcoins.core.hd.{AddressType, HDPurpose}
 import org.bitcoins.core.hd.AddressType.SegWit
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.tlv._
+import org.bitcoins.core.protocol.tlv.*
 import org.bitcoins.core.protocol.transaction.{
   EmptyTransaction,
   Transaction,
@@ -24,15 +24,15 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.AddressLabelTag
-import org.bitcoins.crypto._
+import org.bitcoins.crypto.*
 import scodec.bits.ByteVector
 import scopt.OParser
 import sttp.client3.logging.LogLevel
 import sttp.client3.logging.slf4j.Slf4jLoggingBackend
 import sttp.client3.{Identity, SttpBackend}
 import sttp.model.StatusCode
-import ujson._
-import upickle.{default => up}
+import ujson.*
+import upickle.default as up
 
 import java.io.File
 import java.net.InetSocketAddress
@@ -267,8 +267,19 @@ object ConsoleCli extends BitcoinSLogger {
         .action((_, conf) => conf.copy(command = GetAccounts))
         .text("Returns list of all wallet accounts"),
       cmd("createnewaccount")
-        .action((_, conf) => conf.copy(command = CreateNewAccount))
-        .text("Creates a new wallet account"),
+        .action((_, conf) => conf.copy(command = CreateNewAccount(null)))
+        .text("Creates a new wallet account")
+        .children(
+          arg[String]("hd_purpose")
+            .text("hd_purpose according to BIP43")
+            .required()
+            .action((purpose, conf) =>
+              conf.copy(command = conf.command match {
+                case c: CreateNewAccount =>
+                  c.copy(purpose = HDPurpose.fromString(purpose))
+                case other => other
+              }))
+        ),
       cmd("getaddressinfo")
         .action((_, conf) => conf.copy(command = GetAddressInfo(null)))
         .text("Returns list of all wallet accounts")
@@ -2160,8 +2171,8 @@ object CliCommand {
         RequestParam("getunusedaddresses")
       case GetAccounts =>
         RequestParam("getaccounts")
-      case CreateNewAccount =>
-        RequestParam("createnewaccount")
+      case CreateNewAccount(purpose) =>
+        RequestParam("createnewaccount", Seq(up.writeJs(purpose)))
       case IsEmpty =>
         RequestParam("isempty")
       case WalletInfo =>
@@ -2668,7 +2679,6 @@ object CliCommand {
   case object GetFundedAddresses extends AppServerCliCommand
   case object GetUnusedAddresses extends AppServerCliCommand
   case object GetAccounts extends AppServerCliCommand
-  case object CreateNewAccount extends AppServerCliCommand
   case object IsEmpty extends AppServerCliCommand
   case object WalletInfo extends AppServerCliCommand
   case object ListWallets extends AppServerCliCommand

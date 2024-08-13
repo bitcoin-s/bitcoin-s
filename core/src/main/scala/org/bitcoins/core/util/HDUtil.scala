@@ -11,7 +11,7 @@ object HDUtil {
       hdPurpose: HDPurpose,
       network: NetworkParameters): ExtKeyPrivVersion = {
     import org.bitcoins.core.crypto.ExtKeyVersion._
-    import org.bitcoins.core.hd.HDPurposes._
+    import org.bitcoins.core.hd.HDPurpose._
 
     (hdPurpose, network) match {
       case (SegWit, MainNet)                     => SegWitMainNetPriv
@@ -35,7 +35,7 @@ object HDUtil {
   def getXpubVersion(
       hdPurpose: HDPurpose,
       network: NetworkParameters): ExtKeyPubVersion = {
-    import org.bitcoins.core.hd.HDPurposes._
+    import org.bitcoins.core.hd.HDPurpose._
 
     (hdPurpose, network) match {
       case (SegWit, MainNet | SigNet) => ExtKeyPubVersion.SegWitMainNetPub

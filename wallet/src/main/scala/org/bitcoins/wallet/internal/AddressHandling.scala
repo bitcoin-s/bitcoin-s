@@ -368,11 +368,11 @@ private[wallet] trait AddressHandling extends WalletLogger {
     val accountIndex = account.hdAccount.index
 
     val path = account.hdAccount.purpose match {
-      case HDPurposes.Legacy =>
+      case HDPurpose.Legacy =>
         LegacyHDPath(coinType, accountIndex, chainType, addressIndex)
-      case HDPurposes.NestedSegWit =>
+      case HDPurpose.NestedSegWit =>
         NestedSegWitHDPath(coinType, accountIndex, chainType, addressIndex)
-      case HDPurposes.SegWit =>
+      case HDPurpose.SegWit =>
         SegWitHDPath(coinType, accountIndex, chainType, addressIndex)
 
       case invalid: HDPurpose =>
@@ -396,19 +396,19 @@ private[wallet] trait AddressHandling extends WalletLogger {
     }
 
     val addressDb = account.hdAccount.purpose match {
-      case HDPurposes.SegWit =>
+      case HDPurpose.SegWit =>
         AddressDbHelper.getSegwitAddress(
           pubkey,
           SegWitHDPath(coinType, accountIndex, chainType, addressIndex),
           networkParameters
         )
-      case HDPurposes.NestedSegWit =>
+      case HDPurpose.NestedSegWit =>
         AddressDbHelper.getNestedSegwitAddress(
           pubkey,
           NestedSegWitHDPath(coinType, accountIndex, chainType, addressIndex),
           networkParameters
         )
-      case HDPurposes.Legacy =>
+      case HDPurpose.Legacy =>
         AddressDbHelper.getLegacyAddress(
           pubkey,
           LegacyHDPath(coinType, accountIndex, chainType, addressIndex),

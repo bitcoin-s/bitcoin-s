@@ -79,7 +79,7 @@ import java.nio.file._
 val seedPath = Files.createTempDirectory("key-manager-example").resolve(WalletStorage.ENCRYPTED_SEED_FILE_NAME)
 
 //let's create a native segwit key manager
-val purpose = HDPurposes.SegWit
+val purpose = HDPurpose.SegWit
 
 //let's choose regtest as our network
 val network = RegTest
@@ -107,7 +107,7 @@ again after initializing it once. You can use the same `mnemonic` for different 
 ```scala mdoc:to-string
 
 //let's create a nested segwit key manager for mainnet
-val mainnetKmParams = KeyManagerParams(seedPath, HDPurposes.SegWit, MainNet)
+val mainnetKmParams = KeyManagerParams(seedPath, HDPurpose.SegWit, MainNet)
 
 //we do not need to all `initializeWithMnemonic()` again as we have saved the seed to dis
 val mainnetKeyManager = BIP39KeyManager.fromMnemonic(mnemonic, mainnetKmParams, None, Instant.now, false)

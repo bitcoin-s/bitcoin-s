@@ -104,7 +104,7 @@ object WalletTestUtil {
   }
 
   val defaultHdAccount: HDAccount =
-    HDAccount(HDCoin(HDPurposes.SegWit, hdCoinType), 0)
+    HDAccount(HDCoin(HDPurpose.SegWit, hdCoinType), 0)
 
   def getHdAccount1(walletAppConfig: WalletAppConfig): HDAccount = {
     val purpose = walletAppConfig.defaultAccountKind
@@ -117,7 +117,7 @@ object WalletTestUtil {
   def nestedSegWitAccountDb: AccountDb =
     AccountDb(
       freshXpub(),
-      HDAccount(HDCoin(HDPurposes.NestedSegWit, hdCoinType), 0)
+      HDAccount(HDCoin(HDPurpose.NestedSegWit, hdCoinType), 0)
     )
 
   private def randomScriptWitness: ScriptWitness =

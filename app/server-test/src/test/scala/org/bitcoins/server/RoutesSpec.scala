@@ -647,8 +647,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       val accountDb =
         AccountDb(
           xpub = xpub,
-          hdAccount =
-            HDAccount(HDCoin(HDPurposes.Legacy, HDCoinType.Testnet), 0)
+          hdAccount = HDAccount(HDCoin(HDPurpose.Legacy, HDCoinType.Testnet), 0)
         )
 
       (() => mockWalletApi.listAccounts())

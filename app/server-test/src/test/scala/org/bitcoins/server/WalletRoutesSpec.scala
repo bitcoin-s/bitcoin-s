@@ -1,13 +1,18 @@
 package org.bitcoins.server
 
-import org.apache.pekko.http.scaladsl.model.ContentTypes._
+import org.apache.pekko.http.scaladsl.model.ContentTypes.*
 import org.apache.pekko.http.scaladsl.testkit.ScalatestRouteTest
+import org.bitcoins.commons.serializers.Picklers
 import org.bitcoins.core.api.chain.ChainApi
+import org.bitcoins.core.api.wallet.db.AccountDb
+import org.bitcoins.core.crypto.ExtKeyVersion.SegWitMainNetPriv
+import org.bitcoins.core.crypto.ExtPrivateKey
+import org.bitcoins.core.hd.{HDAccount, HDPurpose}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.dlc.models.DLCMessage.{DLCAccept, DLCOffer}
 import org.bitcoins.core.protocol.dlc.models.DLCStatus
 import org.bitcoins.core.protocol.tlv.{DLCOfferTLV, LnMessage, LnMessageFactory}
-import org.bitcoins.core.wallet.fee.{SatoshisPerVirtualByte}
+import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.feeprovider.ConstantFeeRateProvider
 import org.bitcoins.node.Node
@@ -152,6 +157,37 @@ class WalletRoutesSpec
           responseAs[
             String
           ] == s"""{"result":"${dummyAcceptLnMsg.hex}","error":null}"""
+        )
+      }
+    }
+
+    "createnewaccount" in {
+      val keyVersion = SegWitMainNetPriv
+      val extPrivKey = ExtPrivateKey.freshRootKey(keyVersion)
+      val extPubKey = extPrivKey.extPublicKey
+      val hdAccount = HDAccount.fromExtKeyVersion(version = keyVersion, idx = 0)
+      val accountDb = AccountDb(extPubKey, hdAccount = hdAccount)
+      (mockWalletApi
+        .createNewAccount(_: HDPurpose))
+        .expects(HDPurpose.default)
+        .returning(Future.successful(mockWalletApi))
+
+      (() => mockWalletApi.listAccounts())
+        .expects()
+        .returning(Future.successful(Vector(accountDb)))
+
+      val cmd = ServerCommand(
+        "createnewaccount",
+        ujson.Arr(
+          upickle.default.writeJs(HDPurpose.default)(Picklers.hdPurpose))
+      )
+      val route = walletRoutes.handleCommand(cmd)
+
+      Get() ~> route ~> check {
+        assert(contentType == `application/json`)
+        val response = responseAs[String]
+        assert(
+          response == s"""{"result":["${extPubKey.toString}"],"error":null}"""
         )
       }
     }
