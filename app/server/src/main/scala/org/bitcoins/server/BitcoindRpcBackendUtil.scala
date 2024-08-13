@@ -12,10 +12,11 @@ import org.apache.pekko.stream.scaladsl.{
 }
 import org.apache.pekko.{Done, NotUsed}
 import org.bitcoins.chain.ChainCallbacks
-import org.bitcoins.commons.jsonmodels.bitcoind.{GetBlockHeaderResult}
+import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
 import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.wallet.{NeutrinoHDWalletApi, WalletApi}
+import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3}
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -436,17 +437,23 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
     *   The starting block height of the wallet
     * @param interval
     *   The amount of time between polls, this should not be too aggressive as
-    *   the wallet will need to process the new blocks
+    *   the wallet will need to process the new blocks. If you do not provide
+    *   this we will intelligently choose one depending on the network we are on
     */
   def startBitcoindBlockPolling(
       wallet: WalletApi,
       bitcoind: BitcoindRpcClient,
       chainCallbacksOpt: Option[ChainCallbacks],
-      interval: FiniteDuration = 10.seconds
+      intervalOpt: Option[FiniteDuration] = None
   )(processBlock: Block => Future[Unit])(implicit
       system: ActorSystem): Cancellable = {
     import system.dispatcher
-
+    val interval = intervalOpt.getOrElse {
+      bitcoind.bitcoindRpcAppConfig.network match {
+        case MainNet | TestNet3 | SigNet => 10.seconds
+        case RegTest                     => 1.second
+      }
+    }
     val processingBitcoindBlocks = new AtomicBoolean(false)
 
     system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>

@@ -50,8 +50,7 @@ class BitcoindBlockPollingTest
         cancellable = BitcoindRpcBackendUtil.startBitcoindBlockPolling(
           wallet,
           bitcoind,
-          None,
-          1.second
+          None
         )(wallet.processBlock(_).map(_ => ()))
         _ <- bitcoind.generateToAddress(6, bech32Address)
 
