@@ -452,7 +452,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
   }
 
   it must "receive updates when sync flag changes" in { serverWithBitcoind =>
-    val ServerWithBitcoind(_, server) = serverWithBitcoind
+    val ServerWithBitcoind(bitcoind, server) = serverWithBitcoind
 
     val req = buildReq(server.conf)
     val tuple: (
@@ -466,7 +466,8 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     val promise = tuple._2._2
 
     for {
-      _ <- PekkoUtil.nonBlockingSleep(15.seconds)
+      _ <- bitcoind.generate(1)
+      _ <- PekkoUtil.nonBlockingSleep(5.seconds)
       _ = promise.success(None)
       notifications <- notificationsF
     } yield {
