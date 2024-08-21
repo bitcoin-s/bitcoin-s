@@ -1,22 +1,30 @@
 package org.bitcoins.wallet.internal
 
+import org.bitcoins.core.api.wallet.AccountHandlingApi
 import org.bitcoins.core.api.wallet.db.AccountDb
-import org.bitcoins.core.hd.AddressType._
-import org.bitcoins.core.hd._
+import org.bitcoins.core.hd.AddressType.*
+import org.bitcoins.core.hd.*
 import org.bitcoins.core.protocol.blockchain.{
+  ChainParams,
   MainNetChainParams,
   RegTestNetChainParams,
   SigNetChainParams,
   TestNetChainParams
 }
-import org.bitcoins.wallet.Wallet
+import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.models.AccountDAO
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 /** Provides functionality related enumerating accounts. Account creation does
   * not happen here, as that requires an unlocked wallet.
   */
-private[wallet] trait AccountHandling { self: Wallet =>
+case class AccountHandling(accountDAO: AccountDAO)(implicit
+    walletConfig: WalletAppConfig,
+    ec: ExecutionContext)
+    extends AccountHandlingApi {
+
+  private val chainParams: ChainParams = walletConfig.chain
 
   /** @inheritdoc */
   override def listAccounts(): Future[Vector[AccountDb]] =
