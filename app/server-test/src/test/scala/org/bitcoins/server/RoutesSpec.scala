@@ -650,6 +650,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           hdAccount = HDAccount(HDCoin(HDPurpose.Legacy, HDCoinType.Testnet), 0)
         )
 
+      (() => mockWalletApi.accountHandling)
+        .expects()
+        .returning(mockWalletApi)
+
       (() => mockWalletApi.listAccounts())
         .expects()
         .returning(Future.successful(Vector(accountDb)))
