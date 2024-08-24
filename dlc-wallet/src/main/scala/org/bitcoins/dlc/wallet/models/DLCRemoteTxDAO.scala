@@ -25,7 +25,7 @@ case class DLCRemoteTxDAO()(implicit
     TableQuery[DLCRemoteTxTable]
 
   class DLCRemoteTxTable(tag: Tag)
-      extends TxTable[TransactionDb](tag, schemaName, "watch_only_tx_table") {
+      extends TxTable(tag, schemaName, "watch_only_tx_table") {
     def txIdBE: Rep[DoubleSha256DigestBE] = column("txIdBE", O.PrimaryKey)
 
     def transaction: Rep[Transaction] = column("transaction")

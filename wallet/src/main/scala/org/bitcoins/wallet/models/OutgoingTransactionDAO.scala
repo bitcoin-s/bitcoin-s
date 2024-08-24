@@ -25,7 +25,7 @@ case class OutgoingTransactionDAO()(implicit
   }
 
   class OutgoingTransactionTable(tag: Tag)
-      extends TxTable[OutgoingTransactionDb](
+      extends TxTable(
         tag,
         schemaName,
         "wallet_outgoing_txs"

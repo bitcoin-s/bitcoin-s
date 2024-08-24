@@ -15,7 +15,7 @@ trait TxCRUDComponent[DbEntryType <: TxDB] {
   self: CRUD[DbEntryType, DoubleSha256DigestBE] =>
   import profile.api._
 
-  abstract class TxTable[DbEntryType <: TxDB](
+  abstract class TxTable(
       tag: profile.api.Tag,
       schemaName: Option[String],
       tableName: String
@@ -34,26 +34,25 @@ trait TxDAO[DbEntryType <: TxDB]
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
 
-  type DbTable = TxTable[DbEntryType]
-  override val table: TableQuery[_ <: DbTable]
+  override val table: TableQuery[? <: TxTable]
 
   override def createAll(ts: Vector[DbEntryType]): Future[Vector[DbEntryType]] =
     createAllNoAutoInc(ts, safeDatabase)
 
   override def findByPrimaryKeys(
       txIdBEs: Vector[DoubleSha256DigestBE]
-  ): Query[DbTable, DbEntryType, Seq] =
+  ): Query[TxTable, DbEntryType, Seq] =
     table.filter(_.txIdBE.inSet(txIdBEs))
 
   override def findByPrimaryKey(
       txIdBE: DoubleSha256DigestBE
-  ): Query[DbTable, DbEntryType, Seq] = {
+  ): Query[TxTable, DbEntryType, Seq] = {
     table.filter(_.txIdBE === txIdBE)
   }
 
   override def findAll(
       txs: Vector[DbEntryType]
-  ): Query[DbTable, DbEntryType, Seq] =
+  ): Query[TxTable, DbEntryType, Seq] =
     findByPrimaryKeys(txs.map(_.txIdBE))
 
   def findByOutPoint(
@@ -118,8 +117,7 @@ case class TransactionDAO()(implicit
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers._
 
-  override val table
-      : slick.lifted.TableQuery[TransactionDAO.this.TransactionTable] =
+  override val table: slick.lifted.TableQuery[TransactionTable] =
     TableQuery[TransactionTable]
 
   def findAllUnconfirmed(): Future[Vector[TransactionDb]] = {
@@ -135,7 +133,7 @@ case class TransactionDAO()(implicit
   }
 
   class TransactionTable(tag: Tag)
-      extends TxTable[TransactionDb](tag, schemaName, "tx_table") {
+      extends TxTable(tag, schemaName, "tx_table") {
 
     def txIdBE: Rep[DoubleSha256DigestBE] = column("txIdBE", O.PrimaryKey)
 
