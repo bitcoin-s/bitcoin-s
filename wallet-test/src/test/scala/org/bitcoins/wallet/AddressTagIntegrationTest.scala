@@ -84,7 +84,7 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
       feeRate <- wallet.getFeeRate()
       rawTxHelper <- bitcoind.getNewAddress.flatMap { addr =>
         val output = TransactionOutput(valueToBitcoind, addr.scriptPubKey)
-        wallet
+        wallet.fundTxHandling
           .fundRawTransaction(
             destinations = Vector(output),
             feeRate = feeRate,

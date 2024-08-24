@@ -49,7 +49,6 @@ import scala.util.{Failure, Random, Success}
 abstract class Wallet
     extends NeutrinoHDWalletApi
     with AddressHandling
-    with FundTransactionHandling
     with TransactionProcessing
     with RescanHandling
     with WalletLogger {
@@ -95,6 +94,15 @@ abstract class Wallet
 
   def utxoHandling: UtxoHandling =
     UtxoHandling(spendingInfoDAO, transactionDAO, chainQueryApi)
+
+  def fundTxHandling: FundTransactionHandling = FundTransactionHandling(
+    accountHandling = this,
+    utxoHandling = utxoHandling,
+    addressHandling = this,
+    spendingInfoDAO = spendingInfoDAO,
+    transactionDAO = transactionDAO,
+    keyManager = keyManager
+  )
   def accountHandling: AccountHandlingApi = AccountHandling(accountDAO)
 
   def walletCallbacks: WalletCallbacks = walletConfig.callBacks
@@ -621,7 +629,7 @@ abstract class Wallet
     logger.info(s"Sending $amount to $address at feerate $feeRate")
     val destination = TransactionOutput(amount, address.scriptPubKey)
     for {
-      rawTxHelper <- fundRawTransactionInternal(
+      rawTxHelper <- fundTxHandling.fundRawTransactionInternal(
         destinations = Vector(destination),
         feeRate = feeRate,
         fromAccount = fromAccount,
@@ -712,7 +720,7 @@ abstract class Wallet
     val output = TransactionOutput(0.satoshis, scriptPubKey)
 
     for {
-      fundRawTxHelper <- fundRawTransactionInternal(
+      fundRawTxHelper <- fundTxHandling.fundRawTransactionInternal(
         destinations = Vector(output),
         feeRate = feeRate,
         fromAccount = fromAccount,
@@ -736,7 +744,7 @@ abstract class Wallet
       newTags: Vector[AddressTag]
   )(implicit ec: ExecutionContext): Future[Transaction] = {
     for {
-      fundRawTxHelper <- fundRawTransactionInternal(
+      fundRawTxHelper <- fundTxHandling.fundRawTransactionInternal(
         destinations = outputs,
         feeRate = feeRate,
         fromAccount = fromAccount,

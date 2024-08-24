@@ -406,7 +406,7 @@ abstract class DLCWallet
       nextIndex <- getNextAvailableIndex(account, chainType)
       _ <- writeDLCKeysToAddressDb(account, chainType, nextIndex)
 
-      fundRawTxHelper <- fundRawTransactionInternal(
+      fundRawTxHelper <- fundTxHandling.fundRawTransactionInternal(
         destinations = Vector(TransactionOutput(collateral, EmptyScriptPubKey)),
         feeRate = feeRate,
         fromAccount = account,
@@ -810,7 +810,7 @@ abstract class DLCWallet
     val txBuilderAndSpendingInfosF
         : Future[FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
       for {
-        fundRawTxHelper <- fundRawTransactionInternal(
+        fundRawTxHelper <- fundTxHandling.fundRawTransactionInternal(
           destinations =
             Vector(TransactionOutput(collateral, EmptyScriptPubKey)),
           feeRate = offer.feeRate,

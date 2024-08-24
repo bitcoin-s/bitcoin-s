@@ -69,6 +69,8 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
 
   override def accountHandling: AccountHandlingApi = wallet.accountHandling
 
+  override def fundTxHandling: FundTransactionHandlingApi =
+    wallet.fundTxHandling
   def isInitialized: Boolean = synchronized {
     walletOpt.isDefined
   }
@@ -160,14 +162,14 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
       txId: DoubleSha256DigestBE
   ): Future[Option[TransactionDb]] = delegate(_.findTransaction(txId))
 
-  override def fundRawTransaction(
-      destinations: Vector[TransactionOutput],
-      feeRate: FeeUnit,
-      fromTagOpt: Option[AddressTag],
-      markAsReserved: Boolean
-  ): Future[FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = delegate(
-    _.fundRawTransaction(destinations, feeRate, fromTagOpt, markAsReserved)
-  )
+//  override def fundRawTransaction(
+//      destinations: Vector[TransactionOutput],
+//      feeRate: FeeUnit,
+//      fromTagOpt: Option[AddressTag],
+//      markAsReserved: Boolean
+//  ): Future[FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = delegate(
+//    _.fundRawTransaction(destinations, feeRate, fromTagOpt, markAsReserved)
+//  )
 
   override def fundRawTransaction(
       destinations: Vector[TransactionOutput],

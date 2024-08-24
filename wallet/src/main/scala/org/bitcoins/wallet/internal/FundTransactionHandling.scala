@@ -1,30 +1,47 @@
 package org.bitcoins.wallet.internal
 
-import org.bitcoins.core.api.wallet._
+import org.apache.pekko.actor.ActorSystem
+import org.bitcoins.core.api.keymanager.BIP39KeyManagerApi
+import org.bitcoins.core.api.wallet.*
 import org.bitcoins.core.api.wallet.db.AccountDb
 import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.wallet.builder._
+import org.bitcoins.core.protocol.transaction.*
+import org.bitcoins.core.wallet.builder.*
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.wallet.{Wallet, WalletLogger}
+import org.bitcoins.core.wallet.utxo.*
+import org.bitcoins.db.SafeDatabase
+import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.models.{SpendingInfoDAO, TransactionDAO}
+import org.bitcoins.wallet.WalletLogger
+import slick.dbio.{DBIO, DBIOAction, Effect, NoStream}
 
 import scala.concurrent.Future
 
-trait FundTransactionHandling extends WalletLogger { self: Wallet =>
-  import walletConfig.profile.api._
+case class FundTransactionHandling(
+    accountHandling: AccountHandlingApi,
+    utxoHandling: UtxoHandling,
+    addressHandling: AddressHandling,
+    spendingInfoDAO: SpendingInfoDAO,
+    transactionDAO: TransactionDAO,
+    keyManager: BIP39KeyManagerApi)(implicit
+    walletConfig: WalletAppConfig,
+    system: ActorSystem)
+    extends FundTransactionHandlingApi
+    with WalletLogger {
+  // import walletConfig.profile.api._
   import org.bitcoins.core.currency.currencyUnitNumeric
+  import system.dispatcher
+  private val safeDatabase: SafeDatabase = spendingInfoDAO.safeDatabase
 
-  def utxoHandling: UtxoHandling
-  def fundRawTransaction(
+  override def fundRawTransaction(
       destinations: Vector[TransactionOutput],
       feeRate: FeeUnit,
       fromTagOpt: Option[AddressTag],
       markAsReserved: Boolean
   ): Future[FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
     for {
-      account <- getDefaultAccount()
+      account <- accountHandling.getDefaultAccount()
       funded <- fundRawTransaction(
         destinations = destinations,
         feeRate = feeRate,
@@ -52,7 +69,7 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
   }
 
   /** Funds an unsigned transaction from the specified account */
-  def fundRawTransaction(
+  override def fundRawTransaction(
       destinations: Vector[TransactionOutput],
       feeRate: FeeUnit,
       fromAccount: AccountDb,
@@ -162,7 +179,7 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
           walletUtxos = selectableUtxos,
           outputs = destinations,
           feeRate = feeRate,
-          longTermFeeRateOpt = Some(self.walletConfig.longTermFeeRate)
+          longTermFeeRateOpt = Some(walletConfig.longTermFeeRate)
         )
         filtered = walletUtxos.filter(utxo =>
           utxos.exists(_.outPoint == utxo._1.outPoint))
@@ -174,10 +191,10 @@ trait FundTransactionHandling extends WalletLogger { self: Wallet =>
 
     for {
       (selectedUtxos, callbackF) <- selectedUtxosA
-      change <- getNewChangeAddressAction(fromAccount)
+      change <- addressHandling.getNewChangeAddressAction(fromAccount)
       utxoSpendingInfos = {
         selectedUtxos.map { case (utxo, prevTx) =>
-          utxo.toUTXOInfo(keyManager = self.keyManager, prevTx)
+          utxo.toUTXOInfo(keyManager = keyManager, prevTx)
         }
       }
     } yield {
