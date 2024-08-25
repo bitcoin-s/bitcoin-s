@@ -39,7 +39,7 @@ class FundTransactionHandlingTest
       val wallet = fundedWallet.wallet
       for {
         feeRate <- wallet.getFeeRate()
-        fundRawTxHelper <- wallet.fundRawTransaction(
+        fundRawTxHelper <- wallet.fundTxHandling.fundRawTransaction(
           destinations = Vector(destination),
           feeRate = feeRate,
           fromTagOpt = None,
@@ -66,7 +66,7 @@ class FundTransactionHandlingTest
       val wallet = fundedWallet.wallet
       for {
         feeRate <- wallet.getFeeRate()
-        fundRawTxHelper <- wallet.fundRawTransaction(
+        fundRawTxHelper <- wallet.fundTxHandling.fundRawTransaction(
           destinations = Vector(newDestination),
           feeRate = feeRate,
           fromTagOpt = None,
@@ -93,7 +93,7 @@ class FundTransactionHandlingTest
 
       for {
         feeRate <- wallet.getFeeRate()
-        fundRawTxHelper <- wallet.fundRawTransaction(
+        fundRawTxHelper <- wallet.fundTxHandling.fundRawTransaction(
           destinations = destinations,
           feeRate = feeRate,
           fromTagOpt = None,
@@ -125,7 +125,7 @@ class FundTransactionHandlingTest
 
       val fundedTxF = for {
         feeRate <- wallet.getFeeRate()
-        fundedTx <- wallet.fundRawTransaction(
+        fundedTx <- wallet.fundTxHandling.fundRawTransaction(
           destinations = Vector(tooBigOutput),
           feeRate = feeRate,
           fromTagOpt = None,
@@ -147,7 +147,7 @@ class FundTransactionHandlingTest
 
       val fundedTxF = for {
         feeRate <- wallet.getFeeRate()
-        fundedTx <- wallet.fundRawTransaction(
+        fundedTx <- wallet.fundTxHandling.fundRawTransaction(
           destinations = Vector(tooBigOutput),
           feeRate = feeRate,
           fromTagOpt = None,
@@ -250,7 +250,7 @@ class FundTransactionHandlingTest
       val wallet = fundedWallet.wallet
       for {
         feeRate <- wallet.getFeeRate()
-        fundRawTxHelper <- wallet.fundRawTransaction(
+        fundRawTxHelper <- wallet.fundTxHandling.fundRawTransaction(
           destinations = Vector(destination),
           feeRate = feeRate,
           fromTagOpt = None,
@@ -281,7 +281,7 @@ class FundTransactionHandlingTest
 
       expectedUtxos <- wallet.listUtxos(tag)
       fundRawTxHelper <-
-        wallet
+        wallet.fundTxHandling
           .fundRawTransaction(
             destinations = Vector(destination),
             feeRate = feeRate,

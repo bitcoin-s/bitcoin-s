@@ -168,7 +168,7 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
         )
       } yield fundingTx
 
-      val processedFundingTxF: Future[WalletApi] = for {
+      val processedFundingTxF: Future[Wallet] = for {
         (fundingTx, _) <- fundingTxF
         // make sure wallet is empty
         balance <- wallet.getBalance()
@@ -185,7 +185,7 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
         destinations = Vector(
           TransactionOutput(amount, receivingAddress.scriptPubKey)
         )
-        rawTxHelper <- wallet.fundRawTransaction(
+        rawTxHelper <- wallet.fundTxHandling.fundRawTransaction(
           destinations = destinations,
           feeRate = SatoshisPerByte.one,
           fromTagOpt = None,

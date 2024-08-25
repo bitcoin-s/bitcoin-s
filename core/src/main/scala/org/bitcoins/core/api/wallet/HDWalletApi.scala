@@ -31,6 +31,7 @@ trait HDWalletApi extends WalletApi with AccountHandlingApi {
 
   override def keyManager: BIP39KeyManagerApi
   def accountHandling: AccountHandlingApi
+  def fundTxHandling: FundTransactionHandlingApi
 
   /** Gets the balance of the given account */
   def getBalance(account: HDAccount)(implicit
@@ -509,5 +510,10 @@ trait HDWalletApi extends WalletApi with AccountHandlingApi {
       feeRate: FeeUnit,
       fromAccount: AccountDb,
       markAsReserved: Boolean)
-      : Future[FundRawTxHelper[ShufflingNonInteractiveFinalizer]]
+      : Future[FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
+    fundTxHandling.fundRawTransaction(destinations,
+                                      feeRate,
+                                      fromAccount,
+                                      markAsReserved)
+  }
 }

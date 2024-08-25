@@ -480,7 +480,7 @@ class UTXOLifeCycleTest
     for {
       oldTransactions <- wallet.listTransactions()
       feeRate <- wallet.getFeeRate()
-      rawTxHelper <- wallet.fundRawTransaction(
+      rawTxHelper <- wallet.fundTxHandling.fundRawTransaction(
         Vector(dummyOutput),
         feeRate,
         fromTagOpt = None,
@@ -509,7 +509,7 @@ class UTXOLifeCycleTest
       for {
         oldTransactions <- wallet.listTransactions()
         feeRate <- wallet.getFeeRate()
-        rawTxHelper <- wallet.fundRawTransaction(
+        rawTxHelper <- wallet.fundTxHandling.fundRawTransaction(
           Vector(dummyOutput),
           feeRate,
           fromTagOpt = None,
@@ -542,7 +542,7 @@ class UTXOLifeCycleTest
       for {
         oldTransactions <- wallet.listTransactions()
         feeRate <- wallet.getFeeRate()
-        rawTxHelper <- wallet.fundRawTransaction(
+        rawTxHelper <- wallet.fundTxHandling.fundRawTransaction(
           Vector(dummyOutput),
           feeRate,
           fromTagOpt = None,
