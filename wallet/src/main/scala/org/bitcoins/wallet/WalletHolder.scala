@@ -106,8 +106,34 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
     Future(wallet).flatMap[T](_)
   }
 
-  override def processBlock(block: Block): Future[WalletApi] =
+  override def processBlock(block: Block): Future[Unit] =
     delegate(_.processBlock(block))
+
+  override def processTransaction(
+      transaction: Transaction,
+      blockHashOpt: Option[DoubleSha256DigestBE]): Future[Unit] = {
+    delegate(_.processTransaction(transaction, blockHashOpt))
+  }
+
+  /** Processes TXs originating from our wallet. This is called right after
+    * we've signed a TX, updating our UTXO state.
+    */
+  override def processOurTransaction(
+      transaction: Transaction,
+      feeRate: FeeUnit,
+      inputAmount: CurrencyUnit,
+      sentAmount: CurrencyUnit,
+      blockHashOpt: Option[DoubleSha256DigestBE],
+      newTags: Vector[AddressTag]
+  ): Future[ProcessTxResult] = {
+    delegate(
+      _.processOurTransaction(transaction,
+                              feeRate,
+                              inputAmount,
+                              sentAmount,
+                              blockHashOpt,
+                              newTags))
+  }
 
   override def processCompactFilters(
       blockFilters: Vector[(DoubleSha256DigestBE, GolombFilter)]
@@ -153,24 +179,6 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
     res
   }
 
-  override def processTransaction(
-      transaction: Transaction,
-      blockHash: Option[DoubleSha256DigestBE]
-  ): Future[WalletApi] = delegate(_.processTransaction(transaction, blockHash))
-
-  override def findTransaction(
-      txId: DoubleSha256DigestBE
-  ): Future[Option[TransactionDb]] = delegate(_.findTransaction(txId))
-
-//  override def fundRawTransaction(
-//      destinations: Vector[TransactionOutput],
-//      feeRate: FeeUnit,
-//      fromTagOpt: Option[AddressTag],
-//      markAsReserved: Boolean
-//  ): Future[FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = delegate(
-//    _.fundRawTransaction(destinations, feeRate, fromTagOpt, markAsReserved)
-//  )
-
   override def fundRawTransaction(
       destinations: Vector[TransactionOutput],
       feeRate: FeeUnit,
@@ -181,10 +189,6 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
       _.fundRawTransaction(destinations, feeRate, fromAccount, markAsReserved)
     )
   }
-
-  override def listTransactions(): Future[Vector[TransactionDb]] = delegate(
-    _.listTransactions()
-  )
 
   override def updateUtxoPendingStates(): Future[Vector[SpendingInfoDb]] =
     delegate(_.updateUtxoPendingStates())
@@ -205,6 +209,10 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
 
   override def listDefaultAccountUtxos(): Future[Vector[SpendingInfoDb]] = {
     delegate(_.listDefaultAccountUtxos())
+  }
+
+  override def listTransactions(): Future[Vector[TransactionDb]] = {
+    delegate(_.listTransactions())
   }
   override def listUtxos(): Future[Vector[SpendingInfoDb]] = delegate(
     _.listUtxos()
@@ -676,14 +684,11 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
   override def broadcastTransaction(transaction: Transaction): Future[Unit] =
     delegate(_.broadcastTransaction(transaction))
 
-  override def getFeeRate(): Future[FeeUnit] = delegate(_.getFeeRate())
+  override def getTransactionsToBroadcast: Future[Vector[Transaction]] = {
+    delegate(_.getTransactionsToBroadcast)
+  }
 
-  override def processTransactions(
-      transactions: Vector[Transaction],
-      blockHash: Option[DoubleSha256DigestBE]
-  )(implicit ec: ExecutionContext): Future[WalletApi] = delegate(
-    _.processTransactions(transactions, blockHash)
-  )
+  override def getFeeRate(): Future[FeeUnit] = delegate(_.getFeeRate())
 
   override def getBalance()(implicit
       ec: ExecutionContext
@@ -1076,26 +1081,6 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
       scriptPubKey: ScriptPubKey
   ): Future[Vector[SpendingInfoDb]] = {
     delegate(_.findByScriptPubKey(scriptPubKey))
-  }
-
-  override def processOurTransaction(
-      transaction: Transaction,
-      feeRate: FeeUnit,
-      inputAmount: CurrencyUnit,
-      sentAmount: CurrencyUnit,
-      blockHashOpt: Option[DoubleSha256DigestBE],
-      newTags: Vector[AddressTag]
-  ): Future[ProcessTxResult] = {
-    delegate(
-      _.processOurTransaction(
-        transaction = transaction,
-        feeRate = feeRate,
-        inputAmount = inputAmount,
-        sentAmount = sentAmount,
-        blockHashOpt = blockHashOpt,
-        newTags = newTags
-      )
-    )
   }
 }
 

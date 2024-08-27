@@ -1,7 +1,13 @@
 package org.bitcoins.wallet.internal
 
-import org.bitcoins.core.api.wallet.ProcessTxResult
-import org.bitcoins.core.api.wallet.db._
+import org.bitcoins.core.api.chain.ChainQueryApi
+import org.bitcoins.core.api.wallet.{
+  ProcessTxResult,
+  TransactionProcessingApi,
+  WalletApi
+}
+import org.bitcoins.core.api.wallet.db.*
+import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -14,25 +20,57 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.core.wallet.utxo.TxoState._
+import org.bitcoins.core.wallet.utxo.TxoState.*
 import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.wallet._
+import org.bitcoins.db.SafeDatabase
+import org.bitcoins.wallet.*
+import org.bitcoins.wallet.callback.WalletCallbacks
+import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.models.{
+  AddressDAO,
+  AddressTagDAO,
+  IncomingTransactionDAO,
+  OutgoingTransactionDAO,
+  ScriptPubKeyDAO,
+  SpendingInfoDAO,
+  TransactionDAO,
+  WalletDAOs,
+  WalletStateDescriptorDAO
+}
+import slick.dbio.{DBIOAction, Effect, NoStream}
 
-import scala.concurrent.{Future, Promise}
+import scala.collection.mutable
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success, Try}
 
 /** Provides functionality for processing transactions. This includes importing
   * UTXOs spent to our wallet, updating confirmation counts and marking UTXOs as
   * spent when spending from our wallet
   */
-private[bitcoins] trait TransactionProcessing extends WalletLogger {
-  self: Wallet =>
-
-  import walletConfig.profile.api._
+case class TransactionProcessing(
+    walletApi: WalletApi,
+    chainQueryApi: ChainQueryApi,
+    utxoHandling: UtxoHandling,
+    walletDAOs: WalletDAOs)(implicit
+    walletConfig: WalletAppConfig,
+    ec: ExecutionContext)
+    extends TransactionProcessingApi
+    with WalletLogger {
   import org.bitcoins.core.currency.currencyUnitNumeric
+  private def walletCallbacks: WalletCallbacks = walletConfig.callBacks
+  private val stateDescriptorDAO: WalletStateDescriptorDAO =
+    walletDAOs.stateDescriptorDAO
+  private val spendingInfoDAO: SpendingInfoDAO = walletDAOs.utxoDAO
+  private val transactionDAO: TransactionDAO = walletDAOs.transactionDAO
+  private val scriptPubKeyDAO: ScriptPubKeyDAO = walletDAOs.scriptPubKeyDAO
+  private val addressDAO: AddressDAO = walletDAOs.addressDAO
+  private val incomingTxDAO: IncomingTransactionDAO = walletDAOs.incomingTxDAO
+  private val outgoingTxDAO: OutgoingTransactionDAO = walletDAOs.outgoingTxDAO
+  private val addressTagDAO: AddressTagDAO = walletDAOs.addressTagDAO
+  private val safeDatabase: SafeDatabase = stateDescriptorDAO.safeDatabase
+  private val networkParameters: NetworkParameters = walletConfig.network
 
-  def utxoHandling: UtxoHandling
   /////////////////////
   // Public facing API
 
@@ -40,7 +78,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
   override def processTransaction(
       transaction: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE]
-  ): Future[Wallet] = {
+  ): Future[Unit] = {
     for {
       relevantReceivedOutputs <- getRelevantOutputs(transaction)
       result <- processTransactionImpl(
@@ -49,7 +87,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
         newTags = Vector.empty,
         receivedSpendingInfoDbsOpt = None,
         spentSpendingInfoDbsOpt = None,
-        relevantReceivedOutputs
+        relevantReceivedOutputs = relevantReceivedOutputs
       )
     } yield {
       if (result.updatedIncoming.nonEmpty || result.updatedOutgoing.nonEmpty) {
@@ -58,17 +96,17 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
         )
 
       }
-      this
+      ()
     }
   }
 
-  override def processBlock(block: Block): Future[Wallet] = {
+  override def processBlock(block: Block): Future[Unit] = {
     val start = TimeUtil.currentEpochMs
-    val isEmptyF = isEmpty()
+    val isEmptyF = walletApi.isEmpty()
     val heightF = chainQueryApi.getBlockHeight(block.blockHeader.hashBE)
     heightF.foreach { heightOpt =>
       logger.debug(
-        s"Processing block=${block.blockHeader.hash.flip.hex} heightOpt=$heightOpt"
+        s"Processing block=${block.blockHeader.hashBE.hex} heightOpt=$heightOpt"
       )
     }
 
@@ -76,7 +114,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
       case Some(height) =>
         val resF = for {
           isEmpty <- isEmptyF
-          newWallet <- {
+          _ <- {
             if (!isEmpty) {
               processBlockCachedUtxos(block)
             } else {
@@ -86,15 +124,15 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
               Future.successful(this)
             }
           }
-        } yield newWallet
+        } yield ()
 
         val f = for {
-          res <- resF
+          _ <- resF
           hash = block.blockHeader.hashBE
           _ <- stateDescriptorDAO.updateSyncHeight(hash, height)
           _ <- walletConfig.callBacks.executeOnBlockProcessed(block)
         } yield {
-          res
+          ()
         }
 
         f.onComplete(failure =>
@@ -116,7 +154,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
         logger.warn(
           s"Could not find blockheight for blockHash=${block.blockHeader.hashBE.hex}, skipping processing in wallet"
         )
-        Future.successful(this)
+        Future.unit
     }
 
   }
@@ -126,7 +164,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
     * [[processTransaction]] is called. This significantly improves performance
     * on rescans or IBD with an existing wallet
     */
-  private def processBlockCachedUtxos(block: Block): Future[Wallet] = {
+  private def processBlockCachedUtxos(block: Block): Future[Unit] = {
     // fetch all received spending info dbs relevant to txs in this block to improve performance
     val receivedSpendingInfoDbsF =
       spendingInfoDAO
@@ -145,7 +183,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
     // as an optimization
     val relevantReceivedOutputsForBlockF = getRelevantOutputsForBlock(block)
 
-    val resultF: Future[Future[Wallet]] = for {
+    val resultF: Future[Future[Unit]] = for {
       // map on these first so we don't have to call
       // .map everytime we iterate through a tx
       // which is costly (thread overhead)
@@ -161,15 +199,15 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
         Some(spentSpendingInfoDbs)
       }
       val blockInputs = block.transactions.flatMap(_.inputs)
-      val wallet: Future[Wallet] = {
-        block.transactions.foldLeft(Future.successful(this)) {
+      val processedF: Future[Unit] = {
+        block.transactions.foldLeft(Future.successful(())) {
           (walletF, transaction) =>
             for {
-              wallet <- walletF
+              _ <- walletF
               relevantReceivedOutputsForTx = relevantReceivedOutputsForBlock
                 .getOrElse(transaction.txIdBE, Vector.empty)
               processTxResult <- {
-                wallet.processTransactionImpl(
+                processTransactionImpl(
                   transaction = transaction,
                   blockHashOpt = blockHashOpt,
                   newTags = Vector.empty,
@@ -201,11 +239,11 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
                 cachedSpentOpt = newCachedSpentOpt
               }
             } yield {
-              this
+              ()
             }
         }
       }
-      wallet
+      processedF
     }
 
     resultF.flatten
@@ -223,7 +261,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
   /////////////////////
   // Internal wallet API
 
-  protected def insertTransaction(
+  override def insertTransaction(
       tx: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE]
   ): Future[TransactionDb] = {
@@ -307,10 +345,10 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
   /////////////////////
   // Private methods
 
-  private var blockProcessingSignals =
-    Map.empty[DoubleSha256DigestBE, Promise[DoubleSha256DigestBE]]
+  private val blockProcessingSignals =
+    mutable.Map.empty[DoubleSha256DigestBE, Promise[DoubleSha256DigestBE]]
 
-  private[wallet] def subscribeForBlockProcessingCompletionSignal(
+  override def subscribeForBlockProcessingCompletionSignal(
       blockHash: DoubleSha256DigestBE
   ): Future[DoubleSha256DigestBE] =
     synchronized {
@@ -318,30 +356,28 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
         case Some(existingSignal) => existingSignal.future
         case None =>
           val newSignal = Promise[DoubleSha256DigestBE]()
-          blockProcessingSignals =
-            blockProcessingSignals.updated(blockHash, newSignal)
+          blockProcessingSignals.addOne((blockHash, newSignal))
           newSignal.future
       }
     }
 
   private def signalBlockProcessingCompletion(
       blockHash: DoubleSha256DigestBE,
-      failure: Try[_]
-  ): Unit =
+      failure: Try[?]
+  ): Unit = {
     synchronized {
-      logger.debug(
-        s"Updating wallet signal completion for ${blockHash.flip.hex}"
-      )
-      blockProcessingSignals.get(blockHash).foreach { signal =>
-        blockProcessingSignals =
-          blockProcessingSignals.filterNot(_._1 == blockHash)
-        failure match {
-          case Success(_) =>
-            signal.success(blockHash)
-          case Failure(exception) => signal.failure(exception)
-        }
+      blockProcessingSignals.remove(blockHash) match {
+        case Some(signal) =>
+          failure match {
+            case Success(_) =>
+              signal.success(blockHash)
+            case Failure(exception) => signal.failure(exception)
+          }
+          ()
+        case None => ()
       }
     }
+  }
 
   /** Processes received utxos that are contained in the given transaction
     * @param transaction
@@ -354,7 +390,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
     *   tags associated with this tx
     * @return
     */
-  protected def processReceivedUtxos(
+  override def processReceivedUtxos(
       transaction: Transaction,
       blockHashOpt: Option[DoubleSha256DigestBE],
       spendingInfoDbs: Vector[SpendingInfoDb],
@@ -387,7 +423,7 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
   /** Searches for outputs on the given transaction that are being spent from
     * our wallet
     */
-  protected def processSpentUtxos(
+  override def processSpentUtxos(
       transaction: Transaction,
       outputsBeingSpent: Vector[SpendingInfoDb],
       blockHashOpt: Option[DoubleSha256DigestBE]
@@ -483,9 +519,9 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
       }
       _ <-
         // only notify about our transactions
-        if (incoming.nonEmpty || outgoing.nonEmpty)
+        if (incoming.nonEmpty || outgoing.nonEmpty) {
           walletCallbacks.executeOnTransactionProcessed(transaction)
-        else Future.unit
+        } else Future.unit
     } yield {
       ProcessTxResult(incoming, outgoing)
     }
@@ -808,16 +844,5 @@ private[bitcoins] trait TransactionProcessing extends WalletLogger {
         } yield utxos
       }
     }
-  }
-
-  private[wallet] def getTransactionsToBroadcast
-      : Future[Vector[Transaction]] = {
-    for {
-      mempoolUtxos <- spendingInfoDAO.findAllInMempool
-      txIds = mempoolUtxos.map { utxo =>
-        utxo.spendingTxIdOpt.getOrElse(utxo.txid)
-      }
-      txDbs <- transactionDAO.findByTxIdBEs(txIds)
-    } yield txDbs.map(_.transaction)
   }
 }

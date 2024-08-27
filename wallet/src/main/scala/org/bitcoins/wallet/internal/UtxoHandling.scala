@@ -55,7 +55,7 @@ case class UtxoHandling(
   }
 
   /** Returns all the utxos originating from the given outpoints */
-  def listUtxos(
+  override def listUtxos(
       outPoints: Vector[TransactionOutPoint]
   ): Future[Vector[SpendingInfoDb]] = {
     spendingInfoDAO

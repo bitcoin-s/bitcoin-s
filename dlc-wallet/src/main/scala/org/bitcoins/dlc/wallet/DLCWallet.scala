@@ -40,6 +40,8 @@ import org.bitcoins.dlc.wallet.util.{
   IntermediaryDLCStatus
 }
 import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.internal.TransactionProcessing
+import org.bitcoins.wallet.models.WalletDAOs
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import scodec.bits.ByteVector
 import slick.dbio.*
@@ -51,7 +53,6 @@ import scala.concurrent.Future
 abstract class DLCWallet
     extends Wallet
     with DLCNeutrinoHDWalletApi
-    with DLCTransactionProcessing
     with IncomingDLCOffersHandling {
 
   implicit val dlcConfig: DLCAppConfig
@@ -81,6 +82,15 @@ abstract class DLCWallet
   private[bitcoins] val contactDAO: DLCContactDAO =
     DLCContactDAO()
 
+  private val walletDAOs: WalletDAOs = WalletDAOs(accountDAO,
+                                                  addressDAO,
+                                                  addressTagDAO,
+                                                  spendingInfoDAO,
+                                                  transactionDAO,
+                                                  incomingTxDAO,
+                                                  outgoingTxDAO,
+                                                  scriptPubKeyDAO,
+                                                  stateDescriptorDAO)
   private[wallet] val dlcWalletDAOs = DLCWalletDAOs(
     dlcDAO,
     contractDataDAO,
@@ -103,6 +113,24 @@ abstract class DLCWallet
     DLCActionBuilder(dlcWalletDAOs)
   }
 
+  override lazy val transactionProcessing: DLCTransactionProcessing = {
+    val txProcessing = TransactionProcessing(
+      walletApi = this,
+      chainQueryApi = chainQueryApi,
+      utxoHandling = utxoHandling,
+      walletDAOs = walletDAOs
+    )
+    DLCTransactionProcessing(
+      txProcessing = txProcessing,
+      dlcWalletDAOs = dlcWalletDAOs,
+      dlcDataManagement = dlcDataManagement,
+      keyManager = keyManager,
+      transactionDAO = transactionDAO,
+      rescanHandling = this,
+      utxoHandling = utxoHandling,
+      dlcWalletApi = this
+    )
+  }
   private lazy val safeDLCDatabase: SafeDatabase = dlcDAO.safeDatabase
   private lazy val walletDatabase: SafeDatabase = addressDAO.safeDatabase
 
@@ -1516,26 +1544,11 @@ abstract class DLCWallet
     }
   }
 
-  private[wallet] def getScriptSigParams(
+  private def getScriptSigParams(
       dlcDb: DLCDb,
       fundingInputs: Vector[DLCFundingInputDb]
   ): Future[Vector[ScriptSignatureParams[InputInfo]]] = {
-    val outPoints =
-      fundingInputs.filter(_.isInitiator == dlcDb.isInitiator).map(_.outPoint)
-    val utxosF = utxoHandling.listUtxos(outPoints)
-    for {
-      utxos <- utxosF
-      scriptSigParams <-
-        FutureUtil.foldLeftAsync(
-          Vector.empty[ScriptSignatureParams[InputInfo]],
-          utxos
-        ) { (accum, utxo) =>
-          transactionDAO
-            .findByOutPoint(utxo.outPoint)
-            .map(txOpt =>
-              utxo.toUTXOInfo(keyManager, txOpt.get.transaction) +: accum)
-        }
-    } yield scriptSigParams
+    transactionProcessing.getScriptSigParams(dlcDb, fundingInputs)
   }
 
   override def getDLCFundingTx(contractId: ByteVector): Future[Transaction] = {
@@ -1820,7 +1833,6 @@ abstract class DLCWallet
       _ <- updateDLCOracleSigs(sigsUsed)
       _ <- updateDLCState(contractId, DLCState.Claimed)
       dlcDb <- updateClosingTxId(contractId, tx.txIdBE)
-
       oracleSigSum =
         OracleSignatures.computeAggregateSignature(outcome, sigsUsed)
       aggSig = SchnorrDigitalSignature(
@@ -1829,7 +1841,7 @@ abstract class DLCWallet
       )
       _ <- updateAggregateSignature(contractId, aggSig)
 
-      _ <- processTransaction(tx, None)
+      _ <- transactionProcessing.processTransaction(tx, None)
       dlcStatusOpt <- findDLC(dlcId = dlcDb.dlcId)
       _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(dlcStatusOpt.get)
     } yield tx
@@ -1888,7 +1900,8 @@ abstract class DLCWallet
       _ <- updateDLCState(contractId, DLCState.Refunded)
       _ <- updateClosingTxId(contractId, refundTx.txIdBE)
 
-      _ <- processTransaction(refundTx, blockHashOpt = None)
+      _ <- transactionProcessing.processTransaction(refundTx,
+                                                    blockHashOpt = None)
       status <- findDLC(dlcDb.dlcId)
       _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(status.get)
     } yield refundTx

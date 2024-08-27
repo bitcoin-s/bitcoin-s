@@ -360,18 +360,12 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
           parallelism = numParallelism
         )
 
-        val sinkF
-            : Future[Sink[(Block, GetBlockHeaderResult), Future[WalletApi]]] = {
-          walletF.map { initWallet =>
-            Sink.foldAsync[WalletApi, (Block, GetBlockHeaderResult)](
-              initWallet
-            ) {
-              case (
-                    wallet: WalletApi,
-                    (block: Block, blockHeaderResult: GetBlockHeaderResult)
-                  ) =>
+        val sinkF: Future[Sink[(Block, GetBlockHeaderResult), Future[Done]]] = {
+          walletF.map { wallet =>
+            Sink.foreachAsync(1) {
+              case (block: Block, blockHeaderResult: GetBlockHeaderResult) =>
                 val blockProcessedF = wallet.processBlock(block)
-                val executeCallbackF: Future[WalletApi] = {
+                val executeCallbackF: Future[Unit] = {
                   for {
                     wallet <- blockProcessedF
                     _ <- handleChainCallbacks(
@@ -386,7 +380,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
           }
         }
 
-        val doneF: Future[WalletApi] = sinkF.flatMap { sink =>
+        val doneF: Future[Done] = sinkF.flatMap { sink =>
           source
             .via(fetchBlocksFlow)
             .toMat(sink)(Keep.right)
@@ -394,7 +388,8 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
         }
 
         for {
-          w <- doneF
+          _ <- doneF
+          w <- walletF
           _ <- w.updateUtxoPendingStates()
         } yield ()
       }

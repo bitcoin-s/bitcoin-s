@@ -2,7 +2,7 @@ package org.bitcoins.core.api.wallet
 
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.hd.HDAccount
-import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
 
 import scala.concurrent.Future
@@ -26,6 +26,10 @@ trait UtxoHandlingApi {
   def listUtxos(
       hdAccount: HDAccount,
       state: TxoState): Future[Vector[SpendingInfoDb]]
+
+  def listUtxos(
+      outPoints: Vector[TransactionOutPoint]
+  ): Future[Vector[SpendingInfoDb]]
 
   def markUTXOsAsReserved(
       utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]]

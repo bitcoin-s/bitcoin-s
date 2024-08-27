@@ -9,6 +9,7 @@ import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
@@ -85,9 +86,10 @@ trait FundWalletUtil extends BitcoinSLogger {
     }
 
     val fundedWalletF =
-      txsF.flatMap(txs => wallet.processTransactions(txs, None))
+      txsF.flatMap(txs =>
+        FutureUtil.sequentially(txs)(tx => wallet.processTransaction(tx, None)))
 
-    fundedWalletF.map(_.asInstanceOf[Wallet])
+    fundedWalletF.map(_ => wallet)
   }
 
   def fundAccountForWalletWithBitcoind(

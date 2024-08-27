@@ -1,12 +1,22 @@
 package org.bitcoins.dlc.wallet.internal
 
-import org.bitcoins.core.api.dlc.wallet.db._
-import org.bitcoins.core.api.wallet.db.SpendingInfoDb
+import org.bitcoins.commons.util.BitcoinSLogger
+import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
+import org.bitcoins.core.api.dlc.wallet.db.*
+import org.bitcoins.core.api.wallet.{
+  ProcessTxResult,
+  RescanHandlingApi,
+  TransactionProcessingApi,
+  UtxoHandlingApi
+}
+import org.bitcoins.core.api.wallet.db.{SpendingInfoDb, TransactionDb}
+import org.bitcoins.core.currency.CurrencyUnit
+import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.dlc.execution.SetupDLC
-import org.bitcoins.core.protocol.dlc.models.DLCMessage._
-import org.bitcoins.core.protocol.dlc.models._
-import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.tlv._
+import org.bitcoins.core.protocol.dlc.models.DLCMessage.*
+import org.bitcoins.core.protocol.dlc.models.*
+import org.bitcoins.core.protocol.script.*
+import org.bitcoins.core.protocol.tlv.*
 import org.bitcoins.core.protocol.transaction.{
   OutputWithIndex,
   Transaction,
@@ -14,24 +24,47 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.core.wallet.utxo.AddressTag
+import org.bitcoins.core.wallet.fee.FeeUnit
+import org.bitcoins.core.wallet.utxo.{
+  AddressTag,
+  InputInfo,
+  ScriptSignatureParams
+}
 import org.bitcoins.crypto.{
   DoubleSha256DigestBE,
   SchnorrDigitalSignature,
   Sha256Digest
 }
 import org.bitcoins.db.SafeDatabase
-import org.bitcoins.dlc.wallet.DLCWallet
-import org.bitcoins.dlc.wallet.models._
-import org.bitcoins.wallet.internal.TransactionProcessing
+import org.bitcoins.dlc.wallet.DLCAppConfig
+import org.bitcoins.dlc.wallet.models.*
+import org.bitcoins.keymanager.bip39.BIP39KeyManager
+import org.bitcoins.wallet.models.TransactionDAO
 
-import scala.concurrent._
+import scala.concurrent.*
 
 /** Overrides TransactionProcessing from Wallet to add extra logic to process
   * transactions that could from our own DLC.
   */
-private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
-  self: DLCWallet =>
+case class DLCTransactionProcessing(
+    txProcessing: TransactionProcessingApi,
+    dlcWalletDAOs: DLCWalletDAOs,
+    dlcDataManagement: DLCDataManagement,
+    keyManager: BIP39KeyManager,
+    transactionDAO: TransactionDAO,
+    rescanHandling: RescanHandlingApi,
+    utxoHandling: UtxoHandlingApi,
+    dlcWalletApi: DLCWalletApi)(implicit
+    dlcConfig: DLCAppConfig,
+    ec: ExecutionContext)
+    extends TransactionProcessingApi
+    with BitcoinSLogger {
+  private val dlcDAO: DLCDAO = dlcWalletDAOs.dlcDAO
+  private val dlcInputsDAO: DLCFundingInputDAO = dlcWalletDAOs.dlcInputsDAO
+  private val dlcSigsDAO: DLCCETSignaturesDAO = dlcWalletDAOs.dlcSigsDAO
+  private val oracleNonceDAO: OracleNonceDAO = dlcWalletDAOs.oracleNonceDAO
+  private val dlcAnnouncementDAO: DLCAnnouncementDAO =
+    dlcWalletDAOs.dlcAnnouncementDAO
   private lazy val safeDLCDatabase: SafeDatabase = dlcDAO.safeDatabase
 
   /** Calculates the new state of the DLCDb based on the closing transaction,
@@ -95,7 +128,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
           val withState = dlcDb.updateState(DLCState.RemoteClaimed)
           for {
             withOutcomeOpt <- calculateAndSetOutcome(withState)
-            dlc <- findDLC(dlcDb.dlcId)
+            dlc <- dlcWalletApi.findDLC(dlcDb.dlcId)
             _ = dlcConfig.walletCallbacks.executeOnDLCStateChange(dlc.get)
           } yield {
             withOutcomeOpt
@@ -248,63 +281,48 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
     }
   }
 
-  /** Process incoming utxos as normal, and then update the DLC states if
-    * applicable
-    */
-  override protected def processReceivedUtxos(
+  /** Updates DLC states for a funding transaction we've received */
+  private def processFundingTx(
       tx: Transaction,
-      blockHashOpt: Option[DoubleSha256DigestBE],
-      spendingInfoDbs: Vector[SpendingInfoDb],
-      newTags: Vector[AddressTag],
-      relevantReceivedOutputs: Vector[OutputWithIndex]
-  ): Future[Vector[SpendingInfoDb]] = {
+      blockHashOpt: Option[DoubleSha256DigestBE]
+  ): Future[Vector[DLCDb]] = {
     val dlcDbsF = dlcDAO.findByFundingTxId(tx.txIdBE)
-    super
-      .processReceivedUtxos(
-        tx,
-        blockHashOpt,
-        spendingInfoDbs,
-        newTags,
-        relevantReceivedOutputs
-      )
-      .flatMap { res =>
-        for {
-          dlcDbs <- dlcDbsF
-          _ <-
-            if (dlcDbs.nonEmpty) {
-              logger.info(
-                s"Processing received utxos in tx ${tx.txIdBE.hex} for ${dlcDbs.size} DLC(s)"
-              )
-              insertTransaction(tx, blockHashOpt)
-            } else FutureUtil.unit
+    for {
+      dlcDbs <- dlcDbsF
+      _ <-
+        if (dlcDbs.nonEmpty) {
+          logger.info(
+            s"Processing received utxos in tx ${tx.txIdBE.hex} for ${dlcDbs.size} DLC(s)"
+          )
+          txProcessing.insertTransaction(tx, blockHashOpt)
+        } else FutureUtil.unit
 
-          // Update the state to be confirmed or broadcasted
-          updated = dlcDbs.map { dlcDb =>
-            dlcDb.state match {
-              case DLCState.Offered | DLCState.Accepted | DLCState.Signed |
-                  DLCState.Broadcasted =>
-                if (blockHashOpt.isDefined)
-                  dlcDb.updateState(DLCState.Confirmed)
-                else dlcDb.copy(state = DLCState.Broadcasted)
-              case _: DLCState.AdaptorSigComputationState =>
-                val contractIdOpt = dlcDb.contractIdOpt.map(_.toHex)
-                throw new IllegalStateException(
-                  s"Cannot be settling a DLC when we are computing adaptor sigs! contractId=${contractIdOpt}"
-                )
-              case DLCState.Confirmed | DLCState.Claimed |
-                  DLCState.RemoteClaimed | DLCState.Refunded =>
-                dlcDb
-            }
-          }
-
-          _ <- dlcDAO.updateAll(updated)
-          dlcIds = updated.map(_.dlcId).distinct
-          isRescanning <- isRescanning()
-          _ <- sendWsDLCStateChange(dlcIds, isRescanning)
-        } yield {
-          res
+      // Update the state to be confirmed or broadcasted
+      updated = dlcDbs.map { dlcDb =>
+        dlcDb.state match {
+          case DLCState.Offered | DLCState.Accepted | DLCState.Signed |
+              DLCState.Broadcasted =>
+            if (blockHashOpt.isDefined)
+              dlcDb.updateState(DLCState.Confirmed)
+            else dlcDb.copy(state = DLCState.Broadcasted)
+          case _: DLCState.AdaptorSigComputationState =>
+            val contractIdOpt = dlcDb.contractIdOpt.map(_.toHex)
+            throw new IllegalStateException(
+              s"Cannot be settling a DLC when we are computing adaptor sigs! contractId=${contractIdOpt}"
+            )
+          case DLCState.Confirmed | DLCState.Claimed | DLCState.RemoteClaimed |
+              DLCState.Refunded =>
+            dlcDb
         }
       }
+
+      _ <- dlcDAO.updateAll(updated)
+      dlcIds = updated.map(_.dlcId).distinct
+      isRescanning <- rescanHandling.isRescanning()
+      _ <- sendWsDLCStateChange(dlcIds, isRescanning)
+    } yield {
+      updated
+    }
   }
 
   /** Sends out a websocket event for the given dlcIds since their [[DLCState]]
@@ -323,7 +341,7 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
       // don't send ws events if we are rescanning the wallet
       Future.unit
     } else {
-      val updatedDlcDbsF = Future.sequence(dlcIds.map(findDLC))
+      val updatedDlcDbsF = Future.traverse(dlcIds)(dlcWalletApi.findDLC)
       val sendF = updatedDlcDbsF.flatMap { updatedDlcDbs =>
         Future.sequence {
           updatedDlcDbs.map(u =>
@@ -334,34 +352,29 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
     }
   }
 
-  override protected def processSpentUtxos(
+  /** Processes all settled DLCs in this transaction and updates their states */
+  private def processSettledDLCs(
       transaction: Transaction,
-      outputsBeingSpent: Vector[SpendingInfoDb],
       blockHashOpt: Option[DoubleSha256DigestBE]
-  ): Future[Vector[SpendingInfoDb]] = {
+  ): Future[Vector[DLCDb]] = {
     val outPoints = transaction.inputs.map(_.previousOutput).toVector
     val dlcDbsF = dlcDAO.findByFundingOutPoints(outPoints)
-    super
-      .processSpentUtxos(transaction, outputsBeingSpent, blockHashOpt)
-      .flatMap { res =>
-        for {
-          dlcDbs <- dlcDbsF
-          _ <-
-            if (dlcDbs.nonEmpty) {
-              logger.info(
-                s"Processing spent utxos in tx ${transaction.txIdBE.hex} for ${dlcDbs.size} DLC(s)"
-              )
-              insertTransaction(transaction, blockHashOpt)
-            } else FutureUtil.unit
+    for {
+      dlcDbs <- dlcDbsF
+      _ <-
+        if (dlcDbs.nonEmpty) {
+          logger.info(
+            s"Processing spent utxos in tx ${transaction.txIdBE.hex} for ${dlcDbs.size} DLC(s)"
+          )
+          txProcessing.insertTransaction(transaction, blockHashOpt)
+        } else FutureUtil.unit
 
-          withTx = dlcDbs.map(_.updateClosingTxId(transaction.txIdBE))
-          updatedFs = withTx.map(calculateAndSetState)
-          updated <- Future.sequence(updatedFs)
-          _ <- dlcDAO.updateAll(updated.flatten)
-        } yield {
-          res
-        }
-      }
+      withTx = dlcDbs.map(_.updateClosingTxId(transaction.txIdBE))
+      updated <- Future.traverse(withTx)(calculateAndSetState)
+      _ <- dlcDAO.updateAll(updated.flatten)
+    } yield {
+      updated.flatten
+    }
   }
 
   private def getOutcomeDbInfo(
@@ -475,5 +488,99 @@ private[bitcoins] trait DLCTransactionProcessing extends TransactionProcessing {
     )
 
     sigsAndOutcomeOpt.get
+  }
+
+  def getScriptSigParams(
+      dlcDb: DLCDb,
+      fundingInputs: Vector[DLCFundingInputDb]
+  ): Future[Vector[ScriptSignatureParams[InputInfo]]] = {
+    val outPoints =
+      fundingInputs.filter(_.isInitiator == dlcDb.isInitiator).map(_.outPoint)
+    val utxosF = utxoHandling.listUtxos(outPoints)
+    for {
+      utxos <- utxosF
+      scriptSigParams <-
+        FutureUtil.foldLeftAsync(
+          Vector.empty[ScriptSignatureParams[InputInfo]],
+          utxos
+        ) { (accum, utxo) =>
+          transactionDAO
+            .findByOutPoint(utxo.outPoint)
+            .map(txOpt =>
+              utxo.toUTXOInfo(keyManager, txOpt.get.transaction) +: accum)
+        }
+    } yield scriptSigParams
+  }
+
+  override def processTransaction(
+      transaction: Transaction,
+      blockHashOpt: Option[DoubleSha256DigestBE]): Future[Unit] = {
+    txProcessing
+      .processTransaction(transaction, blockHashOpt)
+      .flatMap(_ => processFundingTx(transaction, blockHashOpt))
+      .flatMap(_ => processSettledDLCs(transaction, blockHashOpt))
+      .map(_ => ())
+  }
+
+  override def processReceivedUtxos(
+      tx: Transaction,
+      blockHashOpt: Option[DoubleSha256DigestBE],
+      spendingInfoDbs: Vector[SpendingInfoDb],
+      newTags: Vector[AddressTag],
+      relevantReceivedOutputs: Vector[OutputWithIndex])
+      : Future[Vector[SpendingInfoDb]] = {
+    txProcessing.processReceivedUtxos(tx,
+                                      blockHashOpt,
+                                      spendingInfoDbs,
+                                      newTags,
+                                      relevantReceivedOutputs)
+  }
+
+  override def processSpentUtxos(
+      transaction: Transaction,
+      outputsBeingSpent: Vector[SpendingInfoDb],
+      blockHashOpt: Option[DoubleSha256DigestBE])
+      : Future[Vector[SpendingInfoDb]] = {
+    txProcessing.processSpentUtxos(transaction, outputsBeingSpent, blockHashOpt)
+  }
+
+  /** Processes TXs originating from our wallet. This is called right after
+    * we've signed a TX, updating our UTXO state.
+    */
+  override def processOurTransaction(
+      transaction: Transaction,
+      feeRate: FeeUnit,
+      inputAmount: CurrencyUnit,
+      sentAmount: CurrencyUnit,
+      blockHashOpt: Option[DoubleSha256DigestBE],
+      newTags: Vector[AddressTag]): Future[ProcessTxResult] = {
+    txProcessing.processOurTransaction(transaction,
+                                       feeRate,
+                                       inputAmount,
+                                       sentAmount,
+                                       blockHashOpt,
+                                       newTags)
+  }
+
+  override def processBlock(block: Block): Future[Unit] =
+    txProcessing.processBlock(block)
+
+  override def listTransactions(): Future[Vector[TransactionDb]] =
+    txProcessing.listTransactions()
+
+  override def findTransaction(
+      txId: DoubleSha256DigestBE): Future[Option[TransactionDb]] =
+    txProcessing.findTransaction(txId)
+
+  override def subscribeForBlockProcessingCompletionSignal(
+      blockHash: DoubleSha256DigestBE): Future[DoubleSha256DigestBE] = {
+    txProcessing.subscribeForBlockProcessingCompletionSignal(blockHash)
+  }
+
+  override def insertTransaction(
+      tx: Transaction,
+      blockHashOpt: Option[DoubleSha256DigestBE]
+  ): Future[TransactionDb] = {
+    txProcessing.insertTransaction(tx, blockHashOpt)
   }
 }

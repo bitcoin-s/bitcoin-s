@@ -48,31 +48,25 @@ trait WalletApi extends StartStopAsync[WalletApi] {
   def broadcastTransaction(transaction: Transaction): Future[Unit] =
     nodeApi.broadcastTransaction(transaction)
 
+  def getTransactionsToBroadcast: Future[Vector[Transaction]]
+
   def getFeeRate(): Future[FeeUnit] = feeRateApi.getFeeRate()
 
   def start(): Future[WalletApi]
 
   def stop(): Future[WalletApi]
 
-  /** Processes the given transaction, updating our DB state if it's relevant to
-    * us.
-    * @param transaction
-    *   The transaction we're processing
-    * @param blockHash
-    *   Containing block hash
+  /** Processes the give block, updating our DB state if it's relevant to us.
+    *
+    * @param block
+    *   The block we're processing
     */
+  def processBlock(block: Block): Future[Unit]
+
   def processTransaction(
       transaction: Transaction,
-      blockHashOpt: Option[DoubleSha256DigestBE]): Future[WalletApi]
-
-  def processTransactions(
-      transactions: Vector[Transaction],
-      blockHashOpt: Option[DoubleSha256DigestBE])(implicit
-      ec: ExecutionContext): Future[WalletApi] = {
-    transactions.foldLeft(Future.successful(this)) { case (wallet, tx) =>
-      wallet.flatMap(_.processTransaction(tx, blockHashOpt))
-    }
-  }
+      blockHashOpt: Option[DoubleSha256DigestBE]
+  ): Future[Unit]
 
   /** Processes TXs originating from our wallet. This is called right after
     * we've signed a TX, updating our UTXO state.
@@ -83,18 +77,8 @@ trait WalletApi extends StartStopAsync[WalletApi] {
       inputAmount: CurrencyUnit,
       sentAmount: CurrencyUnit,
       blockHashOpt: Option[DoubleSha256DigestBE],
-      newTags: Vector[AddressTag]): Future[ProcessTxResult]
-
-  /** Processes the give block, updating our DB state if it's relevant to us.
-    *
-    * @param block
-    *   The block we're processing
-    */
-  def processBlock(block: Block): Future[WalletApi]
-
-  def findTransaction(txId: DoubleSha256DigestBE): Future[Option[TransactionDb]]
-
-  def listTransactions(): Future[Vector[TransactionDb]]
+      newTags: Vector[AddressTag]
+  ): Future[ProcessTxResult]
 
   /** Gets the sum of all UTXOs in this wallet */
   def getBalance()(implicit ec: ExecutionContext): Future[CurrencyUnit] = {
@@ -138,6 +122,8 @@ trait WalletApi extends StartStopAsync[WalletApi] {
   def listUnusedAddresses(): Future[Vector[AddressDb]]
 
   def listScriptPubKeys(): Future[Vector[ScriptPubKeyDb]]
+
+  def listTransactions(): Future[Vector[TransactionDb]]
 
   def listUtxos(): Future[Vector[SpendingInfoDb]]
 

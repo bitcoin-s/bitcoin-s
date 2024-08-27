@@ -189,12 +189,14 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
       withValidServerCommand(GetTransaction.fromJsArr(arr)) {
         case GetTransaction(txId) =>
           complete {
-            wallet.findTransaction(txId).map {
+            val resultF = wallet.findByTxId(txId).map {
               case None =>
                 Server.httpSuccess(ujson.Null)
               case Some(txDb) =>
                 Server.httpSuccess(txDb.transaction.hex)
             }
+            resultF.failed.foreach(err => logger.error(s"resultF", err))
+            resultF
           }
       }
 
