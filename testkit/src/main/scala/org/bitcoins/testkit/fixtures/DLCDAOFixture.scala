@@ -9,39 +9,6 @@ import org.scalatest._
 
 import scala.concurrent.{Await, Future}
 
-case class DLCDAOs(
-    announcementDAO: OracleAnnouncementDataDAO,
-    nonceDAO: OracleNonceDAO,
-    dlcAnnouncementDAO: DLCAnnouncementDAO,
-    dlcDAO: DLCDAO,
-    contractDataDAO: DLCContractDataDAO,
-    dlcOfferDAO: DLCOfferDAO,
-    dlcAcceptDAO: DLCAcceptDAO,
-    dlcInputsDAO: DLCFundingInputDAO,
-    dlcSigsDAO: DLCCETSignaturesDAO,
-    dlcRefundSigDAO: DLCRefundSigsDAO,
-    dlcRemoteTxDAO: DLCRemoteTxDAO,
-    incomingDLCOfferDAO: IncomingDLCOfferDAO,
-    contactDAO: DLCContactDAO
-) {
-
-  val list = Vector(
-    announcementDAO,
-    nonceDAO,
-    dlcDAO,
-    dlcAnnouncementDAO,
-    contractDataDAO,
-    dlcOfferDAO,
-    dlcAcceptDAO,
-    dlcInputsDAO,
-    dlcSigsDAO,
-    dlcRefundSigDAO,
-    dlcRemoteTxDAO,
-    incomingDLCOfferDAO,
-    contactDAO: DLCContactDAO
-  )
-}
-
 trait DLCDAOFixture extends BitcoinSFixture with EmbeddedPg {
 
   private lazy val daos: DLCDAOs = {
