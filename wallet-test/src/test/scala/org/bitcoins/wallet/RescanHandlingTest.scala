@@ -11,8 +11,6 @@ import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTestCachedBitcoindNewest,
   WalletWithBitcoindRpc
 }
-
-import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
 class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
@@ -83,7 +81,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
           )
         rescanState <- wallet.fullRescanNeutrinoWallet(DEFAULT_ADDR_BATCH_SIZE)
         _ = assert(rescanState.isInstanceOf[RescanState.RescanStarted])
-        _ <- rescanState.asInstanceOf[RescanState.RescanStarted].blocksMatchedF
+        _ <- RescanState.awaitRescanDone(rescanState)
         balanceAfterRescan <- wallet.getBalance()
       } yield {
         assert(balanceAfterRescan == initBalance)
@@ -142,13 +140,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
           useCreationTime = false,
           force = false
         )
-        _ <- {
-          rescanState match {
-            case started: RescanState.RescanStarted =>
-              started.entireRescanDoneF
-            case _: RescanState => Future.unit
-          }
-        }
+        _ <- RescanState.awaitRescanDone(rescanState)
         balance <- wallet.getBalance()
         unconfirmedBalance <- wallet.getUnconfirmedBalance()
       } yield {
@@ -262,12 +254,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
           useCreationTime = true,
           force = false
         )
-        _ <- {
-          rescanState match {
-            case started: RescanState.RescanStarted => started.blocksMatchedF
-            case _: RescanState                     => Future.unit
-          }
-        }
+        _ <- RescanState.awaitRescanDone(rescanState)
         balance <- wallet.getBalance()
         unconfirmedBalance <- wallet.getUnconfirmedBalance()
       } yield {
@@ -311,12 +298,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
           useCreationTime = false,
           force = false
         )
-        _ <- {
-          rescanState match {
-            case started: RescanState.RescanStarted => started.blocksMatchedF
-            case _: RescanState                     => Future.unit
-          }
-        }
+        _ <- RescanState.awaitRescanDone(rescanState)
         balanceAfterRescan <- wallet.getBalance()
       } yield {
         assert(balanceAfterRescan == CurrencyUnits.zero)

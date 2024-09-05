@@ -76,7 +76,7 @@ object RescanState {
         b0 <- blocksMatchedF
         recursive <- recursiveRescanP.future
         b1 <- recursive match {
-          case r: RescanStarted => r.blocksMatchedF
+          case r: RescanStarted => r.entireRescanDoneF
           case RescanDone | RescanAlreadyStarted | RescanNotNeeded =>
             Future.successful(Vector.empty)
         }
@@ -170,5 +170,4 @@ object RescanState {
         }
     }
   }
-
 }
