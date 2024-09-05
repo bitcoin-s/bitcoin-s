@@ -4,7 +4,7 @@ import sbt._
 object Deps {
 
   object V {
-    val antV = "1.10.14"
+    val antV = "1.10.15"
     val bouncyCastle = "1.78.1"
     val dropwizardMetricsV = "4.2.27" // https://github.com/dropwizard/metrics
 
