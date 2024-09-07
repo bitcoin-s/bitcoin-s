@@ -3,7 +3,7 @@ package org.bitcoins.testkit.wallet
 import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.crypto.WitnessTxSigComponent
-import org.bitcoins.core.currency._
+import org.bitcoins.core.currency.*
 import org.bitcoins.core.hd.{BIP32Path, HDAccount, HDChainType}
 import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.policy.Policy
@@ -12,10 +12,10 @@ import org.bitcoins.core.protocol.dlc.models.DLCMessage.{
   DLCOffer,
   DLCSign
 }
-import org.bitcoins.core.protocol.dlc.models._
+import org.bitcoins.core.protocol.dlc.models.*
 import org.bitcoins.core.protocol.script.{P2WPKHWitnessSPKV0, P2WPKHWitnessV0}
-import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.tlv.*
+import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.PreExecutionScriptProgram
@@ -23,12 +23,13 @@ import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.util.sorted.OrderedNonces
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.crypto._
+import org.bitcoins.crypto.*
 import org.bitcoins.dlc.wallet.DLCWallet
-import org.bitcoins.dlc.wallet.models._
+import org.bitcoins.dlc.wallet.models.*
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest.expectedDefaultAmt
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
 import org.bitcoins.testkitcore.dlc.DLCTestUtil
+import org.scalatest.Assertions
 import org.scalatest.Assertions.fail
 import scodec.bits.ByteVector
 
@@ -483,8 +484,8 @@ object DLCWalletUtil extends BitcoinSLogger {
       _ <- dlcA.broadcastTransaction(tx)
       dlcDb <- dlcA.dlcDAO.findByContractId(contractId)
 
-      _ <- verifyProperlySetTxIds(dlcA)
-      _ <- verifyProperlySetTxIds(dlcB)
+      _ <- verifyProperlySetTxIds(contractId = contractId, wallet = dlcA)
+      _ <- verifyProperlySetTxIds(contractId = contractId, wallet = dlcB)
     } yield {
       assert(tx.inputs.size == 1)
       assert(tx.outputs.size == expectedOutputs)
@@ -501,18 +502,19 @@ object DLCWalletUtil extends BitcoinSLogger {
     }
   }
 
-  def verifyProperlySetTxIds(
+  private def verifyProperlySetTxIds(
+      contractId: ByteVector,
       wallet: DLCWallet
   )(implicit ec: ExecutionContext): Future[Unit] = {
     for {
-      contractId <- getContractId(wallet)
       dlcDbOpt <- wallet.dlcDAO.findByContractId(contractId)
     } yield {
       dlcDbOpt match {
         case None => fail()
         case Some(dlcDb) =>
-          assert(dlcDb.fundingOutPointOpt.isDefined)
-          assert(dlcDb.closingTxIdOpt.isDefined)
+          Assertions.assert(dlcDb.fundingOutPointOpt.isDefined)
+          Assertions.assert(dlcDb.closingTxIdOpt.isDefined)
+          ()
       }
     }
   }
