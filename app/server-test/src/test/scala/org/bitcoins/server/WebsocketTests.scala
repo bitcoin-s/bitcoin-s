@@ -189,7 +189,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       val expectedAddress = BitcoinAddress.fromString(expectedAddressStr)
 
       for {
-        _ <- PekkoUtil.nonBlockingSleep(500.millis)
+        _ <- PekkoUtil.nonBlockingSleep(1.second)
         _ = promise.success(None)
         notifications <- walletNotificationsF
       } yield {
