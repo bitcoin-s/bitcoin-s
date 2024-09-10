@@ -930,9 +930,14 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
                 )
             }
 
-            WalletStorage.writeSeedToDisk(seedPath, mnemonicState)
-
-            Server.httpSuccess(ujson.Null)
+            if (Files.exists(seedPath)) {
+              logger.warn(
+                s"Seed already exists at file path=$seedPath, ignoring import request")
+              Server.httpSuccess(ujson.Bool(false))
+            } else {
+              WalletStorage.writeSeedToDisk(seedPath, mnemonicState)
+              Server.httpSuccess(ujson.Bool(true))
+            }
           }
       }
 
