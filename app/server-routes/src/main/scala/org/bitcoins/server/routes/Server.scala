@@ -308,7 +308,7 @@ object Server extends BitcoinSLogger {
   }
 
   def httpBadRequest(ex: Throwable): HttpResponse = {
-    logger.error(s"Http bad request", ex)
+    logger.info(s"Http bad request", ex)
     val msg = ex.getMessage
     val entity = httpError(msg)
     HttpResponse(status = StatusCodes.BadRequest, entity = entity)
