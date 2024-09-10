@@ -74,7 +74,8 @@ case class DataMessageHandler(
                 // if query is timed out, we need to transition back to DoneSyncing
                 // to avoid getting stuck in a state when a peer does not respond to us
                 // see: https://github.com/bitcoin-s/bitcoin-s/issues/5429
-                logger.info(s"Query timed out with in state=$state, received payload=${payload.commandName}")
+                logger.info(
+                  s"Query timed out with in state=$state, received payload=${payload.commandName}")
                 copy(state = state.toDoneSyncing)
               } else {
                 this
