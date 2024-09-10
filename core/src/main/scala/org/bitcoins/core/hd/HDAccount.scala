@@ -1,6 +1,7 @@
 package org.bitcoins.core.hd
 
 import org.bitcoins.core.crypto.ExtKeyVersion
+import org.bitcoins.crypto.StringFactory
 
 /** Represents a
   * [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#Account BIP44]],
@@ -26,7 +27,7 @@ case class HDAccount(
     HDChain(chainType = chainType, account = this)
 }
 
-object HDAccount {
+object HDAccount extends StringFactory[HDAccount] {
 
   def fromPath(path: BIP32Path): Option[HDAccount] = {
 
@@ -38,6 +39,12 @@ object HDAccount {
         None
       }
     }
+  }
+
+  override def fromString(string: String): HDAccount = {
+    val path = BIP32Path.fromString(string)
+    fromPath(path).getOrElse(
+      sys.error(s"Could not parse HDAccount from string=$string"))
   }
 
   /** This method is meant to take in an arbitrary bip32 path and see if it has
