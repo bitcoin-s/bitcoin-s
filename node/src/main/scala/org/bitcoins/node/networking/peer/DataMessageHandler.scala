@@ -447,7 +447,7 @@ case class DataMessageHandler(
               .map(_.hashBE)
             newState = {
               logger.info(
-                s"Received invalid header from peer=$peer. Re-querying headers from peers=${state.peers}. invalidMessages=${peerData.getInvalidMessageCount} peers.size=${state.peers.size}"
+                s"Received invalid header from peer=$peer. Re-querying headers from peers=${state.peers}. invalidMessages=${peerData.getInvalidMessageCount} cachedHeader=${cachedHeaders.headOption}"
               )
               val _ = peerManager.gossipGetHeadersMessage(cachedHeaders)
               // switch to DoneSyncing state until we receive a valid header from our peers
