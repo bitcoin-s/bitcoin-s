@@ -1086,25 +1086,11 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
   }
 
   /** Returns information about the state of our wallet */
-  def getInfo: Future[Obj] = {
+  def getInfo: Future[Value] = {
     for {
       info <- wallet.getInfo()
     } yield {
-      Obj(
-        WalletAppConfig.moduleName ->
-          Obj(
-            KeyManagerAppConfig.moduleName -> Obj(
-              "rootXpub" -> Str(info.rootXpub.toString)
-            ),
-            "walletName" -> Str(info.walletName),
-            "xpub" -> Str(info.xpub.toString),
-            "hdPath" -> Str(info.hdAccount.toString),
-            "height" -> Num(info.height),
-            "blockHash" -> Str(info.blockHash.hex),
-            "rescan" -> info.rescan,
-            "imported" -> info.imported
-          )
-      )
+      upickle.default.writeJs(info)(Picklers.walletInfo)
     }
   }
 
