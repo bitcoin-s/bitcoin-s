@@ -695,9 +695,6 @@ case class DataMessageHandler(
         }
 
         if (count == HeadersMessage.MaxHeadersCount) {
-          logger.debug(
-            s"Received maximum amount of headers in one header message. This means we are not synced, requesting more"
-          )
           // ask for headers more from the same peer
           peerMessageSenderApi
             .sendGetHeadersMessage(lastHash.flip)
