@@ -74,7 +74,8 @@ case class DataMessageHandler(
                 // if query is timed out, we need to transition back to DoneSyncing
                 // to avoid getting stuck in a state when a peer does not respond to us
                 // see: https://github.com/bitcoin-s/bitcoin-s/issues/5429
-                logger.info(s"Query timed out with in state=$state")
+                logger.info(
+                  s"Query timed out with in state=$state, received payload=${payload.commandName}")
                 copy(state = state.toDoneSyncing)
               } else {
                 this
@@ -446,7 +447,7 @@ case class DataMessageHandler(
               .map(_.hashBE)
             newState = {
               logger.info(
-                s"Received invalid header from peer=$peer. Re-querying headers from peers=${state.peers}. invalidMessages=${peerData.getInvalidMessageCount} peers.size=${state.peers.size}"
+                s"Received invalid header from peer=$peer. Re-querying headers from peers=${state.peers}. invalidMessages=${peerData.getInvalidMessageCount} cachedHeader=${cachedHeaders.headOption}"
               )
               val _ = peerManager.gossipGetHeadersMessage(cachedHeaders)
               // switch to DoneSyncing state until we receive a valid header from our peers
@@ -694,9 +695,6 @@ case class DataMessageHandler(
         }
 
         if (count == HeadersMessage.MaxHeadersCount) {
-          logger.debug(
-            s"Received maximum amount of headers in one header message. This means we are not synced, requesting more"
-          )
           // ask for headers more from the same peer
           peerMessageSenderApi
             .sendGetHeadersMessage(lastHash.flip)
@@ -884,9 +882,6 @@ case class DataMessageHandler(
       bestBlockHash <- bestBlockHashF
       newState <-
         if (blockCount != filterHeaderCount) {
-          logger.debug(
-            s"Received maximum amount of filter headers in one header message. This means we are not synced, requesting more"
-          )
           sendNextGetCompactFilterHeadersCommand(
             peerMessageSenderApi = peerMessageSenderApi,
             prevStopHash = filterHeader.stopHashBE,
@@ -952,9 +947,6 @@ case class DataMessageHandler(
       }
       filterHeaderSyncStateOpt <-
         if (batchSizeFull && !isFiltersSynced) {
-          logger.debug(
-            s"Received maximum amount of filters in one batch. This means we are not synced, requesting more"
-          )
           for {
             bestBlockHash <- chainApi.getBestBlockHash()
             fssOpt <- sendNextGetCompactFilterCommand(
