@@ -882,9 +882,6 @@ case class DataMessageHandler(
       bestBlockHash <- bestBlockHashF
       newState <-
         if (blockCount != filterHeaderCount) {
-          logger.debug(
-            s"Received maximum amount of filter headers in one header message. This means we are not synced, requesting more"
-          )
           sendNextGetCompactFilterHeadersCommand(
             peerMessageSenderApi = peerMessageSenderApi,
             prevStopHash = filterHeader.stopHashBE,
@@ -950,9 +947,6 @@ case class DataMessageHandler(
       }
       filterHeaderSyncStateOpt <-
         if (batchSizeFull && !isFiltersSynced) {
-          logger.debug(
-            s"Received maximum amount of filters in one batch. This means we are not synced, requesting more"
-          )
           for {
             bestBlockHash <- chainApi.getBestBlockHash()
             fssOpt <- sendNextGetCompactFilterCommand(
