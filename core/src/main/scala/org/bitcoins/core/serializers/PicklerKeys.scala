@@ -171,4 +171,12 @@ object PicklerKeys {
 
   val errorKey: String = "error"
 
+  val walletKey: String = "wallet"
+  val keyManagerKey: String = "keymanager"
+  val rootXpubKey: String = "rootXpub"
+  val walletNameKey: String = "walletName"
+  val hdAccountKey: String = "hdAccount"
+  val xpubKey: String = "xpub"
+  val rescanKey: String = "rescan"
+  val importKey: String = "imported"
 }

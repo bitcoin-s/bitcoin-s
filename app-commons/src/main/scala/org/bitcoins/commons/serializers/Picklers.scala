@@ -6,14 +6,14 @@ import org.bitcoins.commons.jsonmodels.ws.WalletNotification.RescanComplete
 import org.bitcoins.commons.serializers.JsonReaders.jsToSatoshis
 import org.bitcoins.core.api.chain.db.{CompactFilterDb, CompactFilterHeaderDb}
 import org.bitcoins.core.api.dlc.wallet.db.{DLCContactDb, IncomingDLCOfferDb}
-import org.bitcoins.core.api.wallet.CoinSelectionAlgo
+import org.bitcoins.core.api.wallet.{CoinSelectionAlgo, WalletInfo}
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.config.DLC
 import org.bitcoins.core.crypto.*
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.dlc.accounting.DLCWalletAccounting
 import org.bitcoins.core.gcs.FilterType
-import org.bitcoins.core.hd.{AddressType, HDPath, HDPurpose}
+import org.bitcoins.core.hd.{AddressType, HDAccount, HDPath, HDPurpose}
 import org.bitcoins.core.number.{Int32, UInt16, UInt32, UInt64}
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.dlc.models.DLCStatus.*
@@ -1770,6 +1770,54 @@ object Picklers {
   implicit val hdPurpose: ReadWriter[HDPurpose] = {
     readwriter[ujson.Str]
       .bimap(_.toString, str => HDPurpose.fromString(str.str))
+  }
+
+  implicit val walletInfo: ReadWriter[WalletInfo] = {
+    readwriter[ujson.Obj].bimap(writeWalletInfo, readWalletInfo)
+  }
+
+  private def writeWalletInfo(info: WalletInfo): Obj = {
+    Obj(PicklerKeys.walletKey -> {
+      Obj(
+        PicklerKeys.keyManagerKey -> Obj(
+          PicklerKeys.rootXpubKey -> Str(info.rootXpub.toString)
+        ),
+        PicklerKeys.walletNameKey -> Str(info.walletName),
+        PicklerKeys.xpubKey -> Str(info.xpub.toString),
+        PicklerKeys.hdPathKey -> Str(info.hdAccount.toString),
+        PicklerKeys.heightKey -> Num(info.height),
+        PicklerKeys.blockHashKey -> Str(info.blockHash.hex),
+        PicklerKeys.rescanKey -> info.rescan,
+        PicklerKeys.importKey -> info.imported
+      )
+    })
+
+  }
+
+  private def readWalletInfo(walletObj: Obj): WalletInfo = {
+    val obj = walletObj(PicklerKeys.walletKey).obj
+    val walletName = obj(PicklerKeys.walletNameKey).str
+
+    val rootXpubObj =
+      obj(PicklerKeys.keyManagerKey).obj(PicklerKeys.rootXpubKey).str
+    val rootXpub = ExtPublicKey.fromString(rootXpubObj)
+    val xpubKey = ExtPublicKey.fromString(obj(PicklerKeys.xpubKey).str)
+    val hdAccount = HDAccount.fromString(obj(PicklerKeys.hdPathKey).str)
+    val height = obj(PicklerKeys.heightKey).num.toInt
+    val blockHash =
+      DoubleSha256DigestBE.fromHex(obj(PicklerKeys.blockHashKey).str)
+    val rescan = obj(PicklerKeys.rescanKey).bool
+    val imported = obj(PicklerKeys.importKey).bool
+    WalletInfo(
+      walletName = walletName,
+      rootXpub = rootXpub,
+      xpub = xpubKey,
+      hdAccount = hdAccount,
+      height = height,
+      blockHash = blockHash,
+      rescan = rescan,
+      imported = imported
+    )
   }
 
 }

@@ -110,7 +110,7 @@ class BitcoinSServerMainBitcoindTest
       // again switch to bob
       val imported2 =
         ConsoleCli.exec(ImportSeed(bob, mnemonic, None), cliConfig)
-      assert(imported2.isFailure)
+      assert(!upickle.default.read[Boolean](imported2.get))
       val bobLoaded2 =
         ConsoleCli.exec(LoadWallet(bob, None, None), cliConfig)
       assert(bobLoaded2.get == "bob")

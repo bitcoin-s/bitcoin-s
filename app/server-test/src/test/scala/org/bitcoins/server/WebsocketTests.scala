@@ -13,6 +13,8 @@ import org.apache.pekko.http.scaladsl.model.ws.{
 }
 import org.apache.pekko.http.scaladsl.model.{HttpHeader, StatusCodes}
 import org.apache.pekko.stream.scaladsl.{Flow, Keep, Sink, Source}
+import org.bitcoins.asyncutil.AsyncUtil
+import org.bitcoins.cli.CliCommand.WalletInfo
 import org.bitcoins.cli.ConsoleCli.exec
 import org.bitcoins.cli.{CliCommand, Config, ConsoleCli}
 import org.bitcoins.commons.jsonmodels.ws.ChainNotification.{
@@ -24,9 +26,9 @@ import org.bitcoins.commons.jsonmodels.ws.DLCNodeNotification.{
   DLCNodeConnectionFailed,
   DLCNodeConnectionInitiated
 }
-import org.bitcoins.commons.jsonmodels.ws.WalletNotification._
-import org.bitcoins.commons.jsonmodels.ws._
-import org.bitcoins.commons.rpc._
+import org.bitcoins.commons.jsonmodels.ws.WalletNotification.*
+import org.bitcoins.commons.jsonmodels.ws.*
+import org.bitcoins.commons.rpc.*
 import org.bitcoins.commons.serializers.{Picklers, WsPicklers}
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -187,7 +189,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       val expectedAddress = BitcoinAddress.fromString(expectedAddressStr)
 
       for {
-        _ <- PekkoUtil.nonBlockingSleep(500.millis)
+        _ <- PekkoUtil.nonBlockingSleep(1.second)
         _ = promise.success(None)
         notifications <- walletNotificationsF
       } yield {
@@ -304,7 +306,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
 
     val addressF = bitcoind.getNewAddress
     val timeout =
-      15.seconds // any way we can remove this timeout and just check?
+      5.seconds // any way we can remove this timeout and just check?
     for {
       address <- addressF
       hashes <- bitcoind.generateToAddress(1, address)
@@ -442,7 +444,11 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     )
     val _ = ConsoleCli.exec(cmd, cliConfig)
     for {
-      _ <- PekkoUtil.nonBlockingSleep(10.second)
+      _ <- AsyncUtil.retryUntilSatisfied({
+        val walletInfoStr = ConsoleCli.exec(WalletInfo, cliConfig)
+        val i = upickle.default.read(walletInfoStr.get)(Picklers.walletInfo)
+        !i.rescan
+      })
       _ = promise.success(None)
       notifications <- notificationsF
     } yield {
