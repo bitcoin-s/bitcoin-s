@@ -118,7 +118,7 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
       .log(
         "parseToNetworkMsgFlow",
         { case msgs: Vector[NetworkMessage] =>
-          s"received msgs=${msgs.map(_.payload.commandName)} from peer=$peer socket=$socket"
+          s"received msgs=${msgs.map(_.payload.commandName)} from peer=$peer"
         }
       )
       .withAttributes(Attributes.logLevels(onFailure = Logging.DebugLevel))
