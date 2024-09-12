@@ -5,7 +5,8 @@ import java.net.ConnectException
 import scala.util.{Failure, Success}
 
 object Cli extends App {
-
+  // see: https://github.com/qos-ch/slf4j/issues/422
+  System.setProperty("slf4j.internal.verbosity", "WARN")
   import System.err.{println => printerr}
 
   try {

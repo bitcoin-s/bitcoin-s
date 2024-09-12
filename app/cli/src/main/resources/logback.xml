@@ -1,4 +1,9 @@
 <configuration scan="true" scanPeriod="15 seconds" >
+    <!-- http://logback.qos.ch/manual/configuration.html#dumpingStatusData
+     This prints status of the logging configuration on startup
+     If you want to silence this output replace 'OnConsoleStatusListener'
+     with 'NopStatusListener' -->
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
     <appender name="STDOUT" target="System.out" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%date{ISO8601,UTC}UTC %level [%logger{0}] %msg%n</pattern>
