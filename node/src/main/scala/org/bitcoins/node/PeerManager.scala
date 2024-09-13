@@ -593,7 +593,15 @@ case class PeerManager(
               )
               state match {
                 case s: SyncNodeState =>
-                  syncHelper(s).map(_.getOrElse(s.toDoneSyncing))
+                  if (s.isQueryTimedOut(nodeAppConfig.queryWaitTime)) {
+                    // we don't want to re-request from our peer
+                    // unless the query is timed out. This can lead to
+                    // duplicate header requests.
+                    // see: https://github.com/bitcoin-s/bitcoin-s/issues/5665
+                    syncHelper(s).map(_.getOrElse(s.toDoneSyncing))
+                  } else {
+                    Future.successful(s)
+                  }
                 case d: DoneSyncing =>
                   val x = d.toHeaderSync(c.peer)
                   syncHelper(x).map(_.getOrElse(d))
