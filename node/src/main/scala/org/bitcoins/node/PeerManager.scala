@@ -252,23 +252,30 @@ case class PeerManager(
     val availableFilterSlot = hasCf && notCfPeers.nonEmpty
     val hasConnectionSlot =
       state.connectedPeerCount < nodeAppConfig.maxConnectedPeers
-    if (hasConnectionSlot) {
-      // we want to promote this peer, so pop from cache
-      val newState = state.addPeer(peer)
-      val persistentPeerData =
-        newState.peerDataMap.filter(_._1 == peer).head._2
-      _peerDataMap.put(peer, persistentPeerData)
-      connectPeer(peer).map(_ => newState)
-    } else if (availableFilterSlot) {
-      val newState = state.addPeer(peer)
-      val persistentPeerData =
-        newState.peerDataMap.filter(_._1 == peer).head._2
-      _peerDataMap.put(peer, persistentPeerData)
-      replacePeer(replacePeer = notCfPeers.head, withPeer = peer)
-        .map(_ => newState)
-    } else {
-      Future.successful(state)
+    val stateAndOfferF: (NodeRunningState, Future[Unit]) = {
+      if (hasConnectionSlot) {
+        // we want to promote this peer, so pop from cache
+        val newState = state.addPeer(peer)
+        val persistentPeerData =
+          newState.peerDataMap.filter(_._1 == peer).head._2
+        _peerDataMap.put(peer, persistentPeerData)
+        (newState, connectPeer(peer))
+      } else if (availableFilterSlot) {
+        val newState = state.addPeer(peer)
+        val persistentPeerData =
+          newState.peerDataMap.filter(_._1 == peer).head._2
+        _peerDataMap.put(peer, persistentPeerData)
+        (newState, replacePeer(replacePeer = notCfPeers.head, withPeer = peer))
+      } else {
+        (state, Future.unit)
+      }
     }
+
+    stateAndOfferF._2.failed.foreach(err =>
+      logger.error(s"Failed managePeerAfterInitialization() offer to queue",
+                   err))
+
+    Future.successful(stateAndOfferF._1)
   }
 
   private def onInitialization(
