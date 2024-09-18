@@ -32,7 +32,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         addresses <- wallet.listAddresses(account)
         _ = assert(addresses.nonEmpty)
 
-        _ <- wallet.clearUtxos(account)
+        _ <- wallet.accountHandling.clearUtxos(account)
 
         clearedUtxos <- wallet.listUtxos(account)
         clearedAddresses <- wallet.listAddresses(account)
@@ -79,7 +79,8 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
             initBalance > CurrencyUnits.zero,
             s"Cannot run rescan test if our init wallet balance is zero!"
           )
-        rescanState <- wallet.fullRescanNeutrinoWallet(DEFAULT_ADDR_BATCH_SIZE)
+        rescanState <- wallet.rescanHandling.fullRescanNeutrinoWallet(
+          DEFAULT_ADDR_BATCH_SIZE)
         _ = assert(rescanState.isInstanceOf[RescanState.RescanStarted])
         _ <- RescanState.awaitRescanDone(rescanState)
         balanceAfterRescan <- wallet.getBalance()
@@ -133,7 +134,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         _ <- wallet.clearAllUtxos()
         zeroBalance <- wallet.getBalance()
         _ = assert(zeroBalance == Satoshis.zero)
-        rescanState <- wallet.rescanNeutrinoWallet(
+        rescanState <- wallet.rescanHandling.rescanNeutrinoWallet(
           startOpt = txInBlockHeightOpt,
           endOpt = None,
           addressBatchSize = DEFAULT_ADDR_BATCH_SIZE,
@@ -200,8 +201,9 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         _ <- wallet.clearAllUtxos()
         _ <- wallet.clearAllAddresses()
         balanceAfterClear <- wallet.getBalance()
-        rescanState <- wallet.fullRescanNeutrinoWallet(addressBatchSize = 1,
-                                                       force = true)
+        rescanState <- wallet.rescanHandling.fullRescanNeutrinoWallet(
+          addressBatchSize = 1,
+          force = true)
 
         _ <- RescanState.awaitRescanDone(rescanState)
         _ <- AsyncUtil.awaitConditionF(
@@ -249,7 +251,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
       for {
         _ <- newTxWalletF
-        rescanState <- wallet.rescanNeutrinoWallet(
+        rescanState <- wallet.rescanHandling.rescanNeutrinoWallet(
           startOpt = None,
           endOpt = None,
           addressBatchSize = DEFAULT_ADDR_BATCH_SIZE,
@@ -293,7 +295,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
           )
         oldestUtxoHeight <- oldestHeightF
         end = Some(BlockStamp.BlockHeight(oldestUtxoHeight - 1))
-        rescanState <- wallet.rescanNeutrinoWallet(
+        rescanState <- wallet.rescanHandling.rescanNeutrinoWallet(
           startOpt = BlockStamp.height0Opt,
           endOpt = end,
           addressBatchSize = DEFAULT_ADDR_BATCH_SIZE,
@@ -313,7 +315,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
     (fixture: WalletWithBitcoindRpc) =>
       val wallet = fixture.wallet
       // do these in parallel on purpose to simulate multiple threads calling rescan
-      val startF = wallet.rescanNeutrinoWallet(
+      val startF = wallet.rescanHandling.rescanNeutrinoWallet(
         startOpt = None,
         endOpt = None,
         addressBatchSize = DEFAULT_ADDR_BATCH_SIZE,
@@ -324,7 +326,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
       // slight delay to make sure other rescan is started
       val alreadyStartedF =
         AsyncUtil.nonBlockingSleep(10.millis).flatMap { _ =>
-          wallet.rescanNeutrinoWallet(
+          wallet.rescanHandling.rescanNeutrinoWallet(
             startOpt = None,
             endOpt = None,
             addressBatchSize = DEFAULT_ADDR_BATCH_SIZE,
@@ -352,7 +354,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
       // start a rescan without sending payment to that address
       for {
         address <- addressNoFundsF
-        _ <- wallet.rescanNeutrinoWallet(
+        _ <- wallet.rescanHandling.rescanNeutrinoWallet(
           startOpt = None,
           endOpt = None,
           addressBatchSize = 10,
@@ -392,7 +394,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
       val bitcoind = fixture.bitcoind
       val amt = Bitcoins.one
       for {
-        _ <- wallet.rescanNeutrinoWallet(
+        _ <- wallet.rescanHandling.rescanNeutrinoWallet(
           startOpt = None,
           endOpt = None,
           addressBatchSize = 10,
@@ -401,7 +403,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         )
         addressNoFunds <- wallet.getNewChangeAddress()
         // rescan again
-        _ <- wallet.rescanNeutrinoWallet(
+        _ <- wallet.rescanHandling.rescanNeutrinoWallet(
           startOpt = None,
           endOpt = None,
           addressBatchSize = 10,
@@ -428,7 +430,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
           "Cannot be rescanning before we started the test"
         )
         // start the rescan
-        state <- wallet.rescanNeutrinoWallet(
+        state <- wallet.rescanHandling.rescanNeutrinoWallet(
           startOpt = None,
           endOpt = None,
           addressBatchSize = 10,
@@ -461,7 +463,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
           "Cannot be rescanning before we started the test"
         )
         // start the rescan
-        state <- wallet.rescanNeutrinoWallet(
+        state <- wallet.rescanHandling.rescanNeutrinoWallet(
           startOpt = None,
           endOpt = None,
           addressBatchSize = 10,
@@ -551,7 +553,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         _ <- wallet.clearAllUtxos()
         _ <- wallet.clearAllAddresses()
         balanceAfterClear <- wallet.getBalance()
-        rescanState <- wallet.fullRescanNeutrinoWallet(1, true)
+        rescanState <- wallet.rescanHandling.fullRescanNeutrinoWallet(1, true)
         _ <- RescanState.awaitRescanDone(rescanState)
         _ <- AsyncUtil.awaitConditionF(
           () => wallet.getBalance().map(_ == balanceAfterPayment1),
@@ -574,7 +576,8 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         // a fresh pool of addresses
         _ <- wallet.clearAllUtxos()
         _ <- wallet.clearAllAddresses()
-        rescanState <- wallet.fullRescanNeutrinoWallet(DEFAULT_ADDR_BATCH_SIZE)
+        rescanState <- wallet.rescanHandling.fullRescanNeutrinoWallet(
+          DEFAULT_ADDR_BATCH_SIZE)
         _ = assert(rescanState.isInstanceOf[RescanState.RescanStarted])
         _ <- RescanState.awaitRescanDone(rescanState)
         addresses <- wallet.listAddresses()

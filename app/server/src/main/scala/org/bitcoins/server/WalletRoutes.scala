@@ -1186,12 +1186,13 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
 
   /** Only call this if we know we are in a state */
   private def startRescan(rescan: Rescan): Future[RescanState] = {
-    val stateF = wallet
+    val rescanHandling = wallet.rescanHandling
+    val stateF = rescanHandling
       .rescanNeutrinoWallet(
         startOpt = rescan.startBlock,
         endOpt = rescan.endBlock,
         addressBatchSize =
-          rescan.batchSize.getOrElse(wallet.discoveryBatchSize()),
+          rescan.batchSize.getOrElse(rescanHandling.discoveryBatchSize()),
         useCreationTime = !rescan.ignoreCreationTime,
         force = false
       )

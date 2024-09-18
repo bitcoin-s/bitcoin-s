@@ -113,7 +113,8 @@ abstract class DLCWallet
     DLCActionBuilder(dlcWalletDAOs)
   }
 
-  override lazy val transactionProcessing: DLCTransactionProcessing = {
+  override protected lazy val transactionProcessing
+      : DLCTransactionProcessing = {
     val txProcessing = TransactionProcessing(
       walletApi = this,
       chainQueryApi = chainQueryApi,
@@ -123,10 +124,10 @@ abstract class DLCWallet
     DLCTransactionProcessing(
       txProcessing = txProcessing,
       dlcWalletDAOs = dlcWalletDAOs,
+      walletDAOs = walletDAOs,
       dlcDataManagement = dlcDataManagement,
       keyManager = keyManager,
       transactionDAO = transactionDAO,
-      rescanHandling = this,
       utxoHandling = utxoHandling,
       dlcWalletApi = this
     )

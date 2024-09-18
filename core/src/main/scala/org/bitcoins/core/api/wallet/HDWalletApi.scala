@@ -27,11 +27,12 @@ import scala.concurrent.{ExecutionContext, Future}
   * @see
   *   [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki BIP44]]
   */
-trait HDWalletApi extends WalletApi with AccountHandlingApi {
+trait HDWalletApi extends WalletApi {
 
   override def keyManager: BIP39KeyManagerApi
   def accountHandling: AccountHandlingApi
   def fundTxHandling: FundTransactionHandlingApi
+  def rescanHandling: RescanHandlingApi
 
   /** Gets the balance of the given account */
   def getBalance(account: HDAccount)(implicit
@@ -456,8 +457,6 @@ trait HDWalletApi extends WalletApi with AccountHandlingApi {
   def listUtxos(hdAccount: HDAccount): Future[Vector[SpendingInfoDb]]
 
   override def clearAllUtxos(): Future[HDWalletApi]
-
-  def clearUtxos(account: HDAccount): Future[HDWalletApi]
 
   /** Gets the address associated with the pubkey at the resulting `BIP32Path`
     * determined by the default account and the given chainType and addressIndex

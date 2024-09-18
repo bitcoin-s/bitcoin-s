@@ -7,6 +7,7 @@ import org.bitcoins.core.api.commons.ArgumentSource
 import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
+import org.bitcoins.core.api.wallet.RescanHandlingApi
 import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.crypto.AesPassword
@@ -114,7 +115,7 @@ sealed trait DLCWalletLoaderApi
   }
 
   protected def restartRescanIfNeeded(
-      wallet: DLCNeutrinoHDWalletApi
+      wallet: RescanHandlingApi
   )(implicit ec: ExecutionContext): Future[RescanState] = {
     for {
       isRescanning <- wallet.isRescanning()
@@ -311,7 +312,7 @@ case class DLCWalletNeutrinoBackendLoader(
         CallbackUtil.createNeutrinoNodeCallbacksForWallet(walletHolder)
       _ = nodeConf.replaceCallbacks(nodeCallbacks)
       _ <- updateWalletName(walletNameOpt)
-      rescanState <- restartRescanIfNeeded(walletHolder)
+      rescanState <- restartRescanIfNeeded(walletHolder.rescanHandling)
       _ = setRescanState(rescanState)
     } yield {
       logger.info(s"Done loading wallet=$walletNameOpt")
@@ -363,7 +364,7 @@ case class DLCWalletBitcoindBackendLoader(
       _ = nodeConf.replaceCallbacks(nodeCallbacks)
       _ <- walletHolder.replaceWallet(dlcWallet)
       // do something with possible rescan?
-      rescanState <- restartRescanIfNeeded(walletHolder)
+      rescanState <- restartRescanIfNeeded(walletHolder.rescanHandling)
       _ = setRescanState(rescanState)
     } yield {
       logger.info(s"Done loading wallet=$walletNameOpt")

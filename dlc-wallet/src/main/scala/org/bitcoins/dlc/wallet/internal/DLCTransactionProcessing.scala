@@ -5,7 +5,6 @@ import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
 import org.bitcoins.core.api.dlc.wallet.db.*
 import org.bitcoins.core.api.wallet.{
   ProcessTxResult,
-  RescanHandlingApi,
   TransactionProcessingApi,
   UtxoHandlingApi
 }
@@ -39,7 +38,7 @@ import org.bitcoins.db.SafeDatabase
 import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.dlc.wallet.models.*
 import org.bitcoins.keymanager.bip39.BIP39KeyManager
-import org.bitcoins.wallet.models.TransactionDAO
+import org.bitcoins.wallet.models.{TransactionDAO, WalletDAOs}
 
 import scala.concurrent.*
 
@@ -49,10 +48,10 @@ import scala.concurrent.*
 case class DLCTransactionProcessing(
     txProcessing: TransactionProcessingApi,
     dlcWalletDAOs: DLCWalletDAOs,
+    walletDAOs: WalletDAOs,
     dlcDataManagement: DLCDataManagement,
     keyManager: BIP39KeyManager,
     transactionDAO: TransactionDAO,
-    rescanHandling: RescanHandlingApi,
     utxoHandling: UtxoHandlingApi,
     dlcWalletApi: DLCWalletApi)(implicit
     dlcConfig: DLCAppConfig,
@@ -318,7 +317,7 @@ case class DLCTransactionProcessing(
 
       _ <- dlcDAO.updateAll(updated)
       dlcIds = updated.map(_.dlcId).distinct
-      isRescanning <- rescanHandling.isRescanning()
+      isRescanning <- walletDAOs.stateDescriptorDAO.isRescanning
       _ <- sendWsDLCStateChange(dlcIds, isRescanning)
     } yield {
       updated

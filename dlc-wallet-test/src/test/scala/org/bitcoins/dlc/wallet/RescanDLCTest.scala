@@ -55,7 +55,7 @@ class RescanDLCTest extends DualWalletTestCachedBitcoind {
 
       Vector(hash) <- bitcoind.generate(1)
 
-      _ <- wallet.rescanNeutrinoWallet(
+      _ <- wallet.rescanHandling.rescanNeutrinoWallet(
         startOpt = None,
         endOpt = Some(BlockHash(hash)),
         addressBatchSize = 20,
@@ -100,7 +100,7 @@ class RescanDLCTest extends DualWalletTestCachedBitcoind {
 
       Vector(hash) <- bitcoind.generate(1)
 
-      _ <- wallet.rescanNeutrinoWallet(
+      _ <- wallet.rescanHandling.rescanNeutrinoWallet(
         startOpt = None,
         endOpt = Some(BlockHash(hash)),
         addressBatchSize = 20,

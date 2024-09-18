@@ -49,7 +49,6 @@ import scala.util.{Failure, Random, Success}
 abstract class Wallet
     extends NeutrinoHDWalletApi
     with AddressHandling
-    with RescanHandling
     with WalletLogger {
 
   override def keyManager: BIP39KeyManager = {
@@ -66,8 +65,6 @@ abstract class Wallet
   val chainParams: ChainParams = walletConfig.chain
 
   val networkParameters: BitcoinNetwork = walletConfig.network
-
-  override val discoveryBatchSize: Int = walletConfig.discoveryBatchSize
 
   private[bitcoins] val addressDAO: AddressDAO = AddressDAO()
   private[bitcoins] val accountDAO: AccountDAO = AccountDAO()
@@ -105,16 +102,17 @@ abstract class Wallet
     UtxoHandling(spendingInfoDAO, transactionDAO, chainQueryApi)
 
   def fundTxHandling: FundTransactionHandling = FundTransactionHandling(
-    accountHandling = this,
+    accountHandling = accountHandling,
     utxoHandling = utxoHandling,
     addressHandling = this,
     spendingInfoDAO = spendingInfoDAO,
     transactionDAO = transactionDAO,
     keyManager = keyManager
   )
-  def accountHandling: AccountHandlingApi = AccountHandling(accountDAO)
+  def accountHandling: AccountHandlingApi =
+    AccountHandling(this, walletDAOs)
 
-  override lazy val transactionProcessing: TransactionProcessingApi = {
+  protected lazy val transactionProcessing: TransactionProcessingApi = {
     TransactionProcessing(
       walletApi = this,
       chainQueryApi = chainQueryApi,
@@ -122,6 +120,18 @@ abstract class Wallet
       walletDAOs = walletDAOs
     )
   }
+  override lazy val rescanHandling: RescanHandlingApi = {
+    RescanHandling(
+      transactionProcessing = transactionProcessing,
+      accountHandling = accountHandling,
+      addressHandling = this,
+      chainQueryApi = chainQueryApi,
+      nodeApi = nodeApi,
+      walletDAOs = walletDAOs
+    )
+  }
+
+  override def isRescanning(): Future[Boolean] = rescanHandling.isRescanning()
 
   def walletCallbacks: WalletCallbacks = walletConfig.callBacks
 
@@ -302,18 +312,6 @@ abstract class Wallet
       addressCount <- addressDAO.count()
       spendingInfoCount <- spendingInfoDAO.count()
     } yield addressCount == 0 && spendingInfoCount == 0
-
-  override def clearUtxos(account: HDAccount): Future[Wallet] = {
-    val aggregatedActions
-        : DBIOAction[Wallet, NoStream, Effect.Read with Effect.Write] = {
-      for {
-        accountUtxos <- spendingInfoDAO.findAllForAccountAction(account)
-        _ <- spendingInfoDAO.deleteSpendingInfoDbAllAction(accountUtxos)
-      } yield this
-    }
-
-    safeDatabase.run(aggregatedActions)
-  }
 
   override def clearAllUtxos(): Future[Wallet] = {
     val aggregatedActions
@@ -1008,7 +1006,7 @@ abstract class Wallet
     for {
       accountDb <- getDefaultAccount()
       walletState <- getSyncState()
-      rescan <- isRescanning()
+      rescan <- rescanHandling.isRescanning()
     } yield {
       WalletInfo(
         walletName = walletConfig.walletName,
@@ -1204,9 +1202,10 @@ object Wallet extends WalletLogger {
 
   def initialize(
       wallet: Wallet,
+      accountHandling: AccountHandlingApi,
       bip39PasswordOpt: Option[String]
   ): Future[Wallet] = {
-    implicit val walletAppConfig = wallet.walletConfig
+    implicit val walletAppConfig: WalletAppConfig = wallet.walletConfig
     import walletAppConfig.ec
     val passwordOpt = walletAppConfig.aesPasswordOpt
 
@@ -1260,7 +1259,7 @@ object Wallet extends WalletLogger {
         val threshold = Instant.now().minus(1, ChronoUnit.HOURS)
         val isOldCreationTime = creationTime.compareTo(threshold) <= 0
         if (isOldCreationTime) {
-          wallet
+          accountHandling
             .generateScriptPubKeys(
               account = walletAppConfig.defaultAccount,
               addressBatchSize = walletAppConfig.discoveryBatchSize,

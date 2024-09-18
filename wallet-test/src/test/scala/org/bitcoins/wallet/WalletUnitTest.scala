@@ -138,7 +138,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
         startHeight = 0,
         endHeight = height
       )
-      matched <- wallet.findMatches(
+      matched <- wallet.rescanHandling.findMatches(
         filters = filtersResponse,
         scripts = Vector(
           // this is a random address which is included into the test block
@@ -162,9 +162,13 @@ class WalletUnitTest extends BitcoinSWalletTest {
     (wallet: Wallet) =>
       val bip39PasswordOpt = wallet.walletConfig.bip39PasswordOpt
       val twiceF = Wallet
-        .initialize(wallet, bip39PasswordOpt)
+        .initialize(wallet = wallet,
+                    accountHandling = wallet.accountHandling,
+                    bip39PasswordOpt = bip39PasswordOpt)
         .flatMap { _ =>
-          Wallet.initialize(wallet, bip39PasswordOpt)
+          Wallet.initialize(wallet = wallet,
+                            accountHandling = wallet.accountHandling,
+                            bip39PasswordOpt = bip39PasswordOpt)
         }
 
       twiceF.map(_ => succeed)
@@ -176,11 +180,12 @@ class WalletUnitTest extends BitcoinSWalletTest {
       val bip39PasswordOpt = wallet.walletConfig.bip39PasswordOpt
       recoverToSucceededIf[RuntimeException] {
         Wallet
-          .initialize(wallet, bip39PasswordOpt)
+          .initialize(wallet, wallet.accountHandling, bip39PasswordOpt)
           .flatMap { _ =>
             // use a BIP39 password to make the key-managers different
             Wallet.initialize(
               wallet,
+              wallet.accountHandling,
               Some("random-password-to-make-key-managers-different")
             )
           }
@@ -206,7 +211,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
       recoverToSucceededIf[IllegalArgumentException] {
         walletDiffKeyManagerF.flatMap { walletDiffKeyManager =>
-          Wallet.initialize(walletDiffKeyManager, None)
+          Wallet.initialize(walletDiffKeyManager, wallet.accountHandling, None)
         }
       }
   }
@@ -373,6 +378,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
         // initialize it
         initOldWallet <- Wallet.initialize(
           wallet = wallet,
+          accountHandling = wallet.accountHandling,
           bip39PasswordOpt = wallet.walletConfig.bip39PasswordOpt
         )
         isOldWalletEmpty <- initOldWallet.isEmpty()

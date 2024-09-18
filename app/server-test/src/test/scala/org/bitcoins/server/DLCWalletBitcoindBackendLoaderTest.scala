@@ -59,13 +59,15 @@ class DLCWalletBitcoindBackendLoaderTest extends WalletLoaderFixtures {
         walletNameOpt = None,
         aesPasswordOpt = None
       ) // load wallet again
-      isRescanning <- loadWallet2.isRescanning()
+      isRescanning <- loadWallet2.rescanHandling.isRescanning()
       _ = assert(isRescanning)
       _ = assert(loader.isRescanStateDefined)
       // wait until rescanning is done
       _ <- AsyncUtil.retryUntilSatisfiedF(
         { () =>
-          loadWallet2.isRescanning().map(isRescanning => isRescanning == false)
+          loadWallet2.rescanHandling
+            .isRescanning()
+            .map(isRescanning => isRescanning == false)
         },
         1.second
       )
