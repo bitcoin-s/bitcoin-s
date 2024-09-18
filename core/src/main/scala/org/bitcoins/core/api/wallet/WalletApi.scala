@@ -56,8 +56,6 @@ trait WalletApi extends StartStopAsync[WalletApi] {
 
   def stop(): Future[WalletApi]
 
-  def isRescanning(): Future[Boolean]
-
   /** Processes the give block, updating our DB state if it's relevant to us.
     *
     * @param block
@@ -393,6 +391,8 @@ trait WalletApi extends StartStopAsync[WalletApi] {
   def isChange(output: TransactionOutput): Future[Boolean]
 
   def getSyncState(): Future[BlockSyncState]
+
+  def isRescanning(): Future[Boolean]
 
   def getSyncDescriptorOpt(): Future[Option[SyncHeightDescriptor]]
 

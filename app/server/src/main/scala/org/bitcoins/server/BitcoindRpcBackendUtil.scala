@@ -460,7 +460,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
           } else if (processingBitcoindBlocks.compareAndSet(false, true)) {
             val f = for {
               walletSyncState <- wallet.getSyncState()
-              rescanning <- wallet.getInfo().map(_.rescan)
+              rescanning <- wallet.isRescanning()
               res <-
                 if (!rescanning) {
                   val pollFOptF =
@@ -657,7 +657,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
     system.scheduler.scheduleWithFixedDelay(0.seconds, interval) { () =>
       {
         val f = for {
-          rescanning <- wallet.getInfo().map(_.rescan)
+          rescanning <- wallet.isRescanning()
           res <-
             if (!rescanning) {
               pollMempool()

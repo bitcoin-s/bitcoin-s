@@ -760,12 +760,6 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
   ): Future[NeutrinoHDWalletApi] =
     delegate(_.processCompactFilter(blockHash, blockFilter))
 
-  /*  override def fullRescanNeutrinoWallet(addressBatchSize: Int, force: Boolean)(
-      implicit ec: ExecutionContext
-  ): Future[RescanState] = delegate(
-    _.fullRescanNeutrinoWallet(addressBatchSize, force)
-  )*/
-
   override def getNewChangeAddress()(implicit
       ec: ExecutionContext
   ): Future[BitcoinAddress] =
