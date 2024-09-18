@@ -109,18 +109,18 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         bitcoindAddr <- bitcoindAddrF
         blockHashes <-
           bitcoind.generateToAddress(blocks = numBlocks, address = bitcoindAddr)
-        newTxWallet <- wallet.processTransaction(
+        _ <- wallet.processTransaction(
           transaction = tx,
           blockHashOpt = blockHashes.headOption
         )
-        balance <- newTxWallet.getBalance()
-        unconfirmedBalance <- newTxWallet.getUnconfirmedBalance()
+        balance <- wallet.getBalance()
+        unconfirmedBalance <- wallet.getUnconfirmedBalance()
       } yield {
         // balance doesn't have to exactly equal, as there was money in the
         // wallet before hand.
         assert(balance >= amt)
         assert(amt == unconfirmedBalance)
-        newTxWallet
+        ()
       }
 
       // let's clear the wallet and then do a rescan for the last numBlocks
@@ -170,12 +170,12 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         bitcoindAddr <- bitcoindAddrF
         blockHashes <-
           bitcoind.generateToAddress(blocks = numBlocks, address = bitcoindAddr)
-        newTxWallet <- wallet.processTransaction(
+        _ <- wallet.processTransaction(
           transaction = tx,
           blockHashOpt = blockHashes.headOption
         )
-        balance <- newTxWallet.getBalance()
-        unconfirmedBalance <- newTxWallet.getUnconfirmedBalance()
+        balance <- wallet.getBalance()
+        unconfirmedBalance <- wallet.getUnconfirmedBalance()
       } yield {
         // balance doesn't have to exactly equal, as there was money in the
         // wallet before hand.
@@ -200,7 +200,9 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         _ <- wallet.clearAllUtxos()
         _ <- wallet.clearAllAddresses()
         balanceAfterClear <- wallet.getBalance()
-        rescanState <- wallet.fullRescanNeutrinoWallet(1, true)
+        rescanState <- wallet.fullRescanNeutrinoWallet(addressBatchSize = 1,
+                                                       force = true)
+
         _ <- RescanState.awaitRescanDone(rescanState)
         _ <- AsyncUtil.awaitConditionF(
           () => wallet.getBalance().map(_ == balanceAfterPayment1),
@@ -231,18 +233,18 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         bitcoindAddr <- bitcoindAddrF
         blockHashes <-
           bitcoind.generateToAddress(blocks = numBlocks, address = bitcoindAddr)
-        newTxWallet <- wallet.processTransaction(
+        _ <- wallet.processTransaction(
           transaction = tx,
           blockHashOpt = blockHashes.headOption
         )
-        balance <- newTxWallet.getBalance()
-        unconfirmedBalance <- newTxWallet.getUnconfirmedBalance()
+        balance <- wallet.getBalance()
+        unconfirmedBalance <- wallet.getUnconfirmedBalance()
       } yield {
         // balance doesn't have to exactly equal, as there was money in the
         // wallet before hand.
         assert(balance >= amt)
         assert(amt == unconfirmedBalance)
-        newTxWallet
+        ()
       }
 
       for {
@@ -519,12 +521,12 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         bitcoindAddr <- bitcoindAddrF
         blockHashes <-
           bitcoind.generateToAddress(blocks = numBlocks, address = bitcoindAddr)
-        newTxWallet <- wallet.processTransaction(
+        _ <- wallet.processTransaction(
           transaction = tx,
           blockHashOpt = blockHashes.headOption
         )
-        balance <- newTxWallet.getBalance()
-        unconfirmedBalance <- newTxWallet.getUnconfirmedBalance()
+        balance <- wallet.getBalance()
+        unconfirmedBalance <- wallet.getUnconfirmedBalance()
       } yield {
         // balance doesn't have to exactly equal, as there was money in the
         // wallet before hand.

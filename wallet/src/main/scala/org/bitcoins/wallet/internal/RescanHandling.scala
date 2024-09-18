@@ -8,6 +8,10 @@ import org.bitcoins.core.api.chain.ChainQueryApi.{
   InvalidBlockRange
 }
 import org.bitcoins.core.api.wallet.NeutrinoWalletApi.BlockMatchingResponse
+import org.bitcoins.core.api.wallet.{
+  RescanHandlingApi,
+  TransactionProcessingApi
+}
 import org.bitcoins.core.gcs.SimpleFilterMatcher
 import org.bitcoins.core.hd.{HDAccount, HDChainType}
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
@@ -23,11 +27,15 @@ import slick.dbio.{DBIOAction, Effect, NoStream}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success}
 
-private[wallet] trait RescanHandling extends WalletLogger {
+private[wallet] trait RescanHandling
+    extends RescanHandlingApi
+    with WalletLogger {
   self: Wallet =>
 
   /////////////////////
   // Public facing API
+
+  def transactionProcessing: TransactionProcessingApi
 
   override def isRescanning(): Future[Boolean] = stateDescriptorDAO.isRescanning
 
@@ -224,7 +232,8 @@ private[wallet] trait RescanHandling extends WalletLogger {
       Flow[Int]
         .batch[Vector[Int]](filterBatchSize, seed)(aggregate)
         .via(fetchFiltersFlow)
-        .mapAsync(1) { case filterResponse =>
+        .mapAsync(1) { filterResponse =>
+          val heightRange = filterResponse.map(_.blockHeight)
           val f =
             scriptsF.flatMap { scripts =>
               searchFiltersForMatches(scripts, filterResponse, parallelism)(
@@ -232,15 +241,15 @@ private[wallet] trait RescanHandling extends WalletLogger {
               )
             }
 
-          val heightRange = filterResponse.map(_.blockHeight)
-
           f.onComplete {
             case Success(_) =>
               if (heightRange.lastOption == range.lastOption) {
                 // complete the stream if we processed the last filter
                 rescanCompletePromise.success(())
               }
-            case Failure(_) => // do nothing, the stream will fail on its own
+            case Failure(err) =>
+              // do nothing, the stream will fail on its own
+              logger.error(s"Failed to search filters for matches", err)
           }
           f
         }
@@ -297,7 +306,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
       account: HDAccount,
       forceGenerateSpks: Boolean,
       parallelismLevel: Int = Runtime.getRuntime.availableProcessors()
-  )(implicit ec: ExecutionContext): Future[RescanState.RescanStarted] = {
+  ): Future[RescanState.RescanStarted] = {
     require(addressBatchSize > 0, "batch size must be greater than zero")
     require(parallelismLevel > 0, "parallelism level must be greater than zero")
     for {
@@ -309,10 +318,11 @@ private[wallet] trait RescanHandling extends WalletLogger {
       endHeight <- endOpt.fold(chainQueryApi.getFilterCount())(
         chainQueryApi.getHeightByBlockStamp
       )
-      _ = if (startHeight > endHeight)
+      _ = if (startHeight > endHeight) {
         throw InvalidBlockRange(
           s"End position cannot precede start: $startHeight:$endHeight"
         )
+      }
       _ = logger.info(
         s"Beginning to search for matches between ${startHeight}:${endHeight}"
       )
@@ -441,12 +451,16 @@ private[wallet] trait RescanHandling extends WalletLogger {
   ): Future[Unit] = {
     logger.debug(s"Requesting ${blocks.size} block(s)")
     blocks.foldLeft(Future.unit) { (prevF, blockHash) =>
-      val completedF = subscribeForBlockProcessingCompletionSignal(blockHash)
+      val completedF =
+        transactionProcessing.subscribeForBlockProcessingCompletionSignal(
+          blockHash)
       for {
         _ <- prevF
         _ <- nodeApi.downloadBlocks(Vector(blockHash))
         _ <- completedF
-      } yield ()
+      } yield {
+        ()
+      }
     }
   }
 
@@ -464,7 +478,7 @@ private[wallet] trait RescanHandling extends WalletLogger {
         addressBatchSize = addressBatchSize,
         account = account,
         forceGenerateSpks = forceGenerateSpks
-      )(ExecutionContext.fromExecutor(walletConfig.rescanThreadPool))
+      )
     } yield {
       rescanState
     }

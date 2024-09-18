@@ -75,7 +75,6 @@ class WalletCallbackTest extends BitcoinSWalletTest {
       for {
         address <- wallet.getNewAddress()
         tx <- wallet.sendToAddress(address, Satoshis(1000), None)
-        _ <- wallet.processTransaction(tx, None)
         result <- resultP.future
       } yield assert(result == tx)
   }

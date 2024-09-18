@@ -17,7 +17,7 @@ import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
 import org.bitcoins.core.hd.*
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.blockchain.ChainParams
+import org.bitcoins.core.protocol.blockchain.{Block, ChainParams}
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.psbt.PSBT
@@ -49,7 +49,6 @@ import scala.util.{Failure, Random, Success}
 abstract class Wallet
     extends NeutrinoHDWalletApi
     with AddressHandling
-    with TransactionProcessing
     with RescanHandling
     with WalletLogger {
 
@@ -86,6 +85,16 @@ abstract class Wallet
   private[bitcoins] val stateDescriptorDAO: WalletStateDescriptorDAO =
     WalletStateDescriptorDAO()
 
+  private def walletDAOs: WalletDAOs = WalletDAOs(accountDAO,
+                                                  addressDAO,
+                                                  addressTagDAO,
+                                                  spendingInfoDAO,
+                                                  transactionDAO,
+                                                  incomingTxDAO,
+                                                  outgoingTxDAO,
+                                                  scriptPubKeyDAO,
+                                                  stateDescriptorDAO)
+
   protected lazy val safeDatabase: SafeDatabase = spendingInfoDAO.safeDatabase
 
   val nodeApi: NodeApi
@@ -104,6 +113,15 @@ abstract class Wallet
     keyManager = keyManager
   )
   def accountHandling: AccountHandlingApi = AccountHandling(accountDAO)
+
+  override lazy val transactionProcessing: TransactionProcessingApi = {
+    TransactionProcessing(
+      walletApi = this,
+      chainQueryApi = chainQueryApi,
+      utxoHandling = utxoHandling,
+      walletDAOs = walletDAOs
+    )
+  }
 
   def walletCallbacks: WalletCallbacks = walletConfig.callBacks
 
@@ -156,6 +174,35 @@ abstract class Wallet
       case None =>
         BlockSyncState(0, chainParams.genesisHashBE)
     }
+  }
+
+  override def processBlock(block: Block): Future[Unit] = {
+    transactionProcessing.processBlock(block)
+  }
+
+  override def processTransaction(
+      transaction: Transaction,
+      blockHashOpt: Option[DoubleSha256DigestBE]): Future[Unit] = {
+    transactionProcessing.processTransaction(transaction, blockHashOpt)
+  }
+
+  /** Processes TXs originating from our wallet. This is called right after
+    * we've signed a TX, updating our UTXO state.
+    */
+  override def processOurTransaction(
+      transaction: Transaction,
+      feeRate: FeeUnit,
+      inputAmount: CurrencyUnit,
+      sentAmount: CurrencyUnit,
+      blockHashOpt: Option[DoubleSha256DigestBE],
+      newTags: Vector[AddressTag]
+  ): Future[ProcessTxResult] = {
+    transactionProcessing.processOurTransaction(transaction,
+                                                feeRate,
+                                                inputAmount,
+                                                sentAmount,
+                                                blockHashOpt,
+                                                newTags)
   }
 
   override def processCompactFilters(
@@ -235,9 +282,20 @@ abstract class Wallet
   override def broadcastTransaction(transaction: Transaction): Future[Unit] =
     for {
       _ <- nodeApi.broadcastTransaction(transaction)
-      _ <- processTransaction(transaction, blockHashOpt = None)
+      _ <- transactionProcessing.processTransaction(transaction,
+                                                    blockHashOpt = None)
       _ <- walletCallbacks.executeOnTransactionBroadcast(transaction)
     } yield ()
+
+  override def getTransactionsToBroadcast: Future[Vector[Transaction]] = {
+    for {
+      mempoolUtxos <- spendingInfoDAO.findAllInMempool
+      txIds = mempoolUtxos.map { utxo =>
+        utxo.spendingTxIdOpt.getOrElse(utxo.txid)
+      }
+      txDbs <- transactionDAO.findByTxIdBEs(txIds)
+    } yield txDbs.map(_.transaction)
+  }
 
   override def isEmpty(): Future[Boolean] =
     for {
@@ -359,7 +417,7 @@ abstract class Wallet
       creditingAmount = rawTxHelper.scriptSigParams.foldLeft(
         CurrencyUnits.zero
       )(_ + _.amount)
-      _ <- processOurTransaction(
+      _ <- transactionProcessing.processOurTransaction(
         transaction = signed,
         feeRate = feeRate,
         inputAmount = creditingAmount,
@@ -999,6 +1057,9 @@ abstract class Wallet
 
   override def updateUtxoPendingStates(): Future[Vector[SpendingInfoDb]] =
     utxoHandling.updateUtxoPendingStates()
+
+  override def listTransactions(): Future[Vector[TransactionDb]] =
+    transactionProcessing.listTransactions()
 
   override def listUtxos(): Future[Vector[SpendingInfoDb]] =
     utxoHandling.listUtxos()

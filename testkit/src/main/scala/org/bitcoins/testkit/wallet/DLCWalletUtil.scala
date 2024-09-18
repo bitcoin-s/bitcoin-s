@@ -483,7 +483,6 @@ object DLCWalletUtil extends BitcoinSLogger {
       }
       _ <- dlcA.broadcastTransaction(tx)
       dlcDb <- dlcA.dlcDAO.findByContractId(contractId)
-
       _ <- verifyProperlySetTxIds(contractId = contractId, wallet = dlcA)
       _ <- verifyProperlySetTxIds(contractId = contractId, wallet = dlcB)
     } yield {

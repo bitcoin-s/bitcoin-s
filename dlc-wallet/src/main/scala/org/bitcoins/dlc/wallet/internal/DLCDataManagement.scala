@@ -700,7 +700,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     * @return
     *   the executor and setup if we still have CET signatures else return None
     */
-  private[wallet] def executorAndSetupFromDb(
+  def executorAndSetupFromDb(
       contractId: ByteVector,
       txDAO: TransactionDAO,
       fundingUtxoScriptSigParams: Vector[ScriptSignatureParams[InputInfo]],
@@ -750,7 +750,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
     }
   }
 
-  private[wallet] def executorAndSetupFromDb(
+  def executorAndSetupFromDb(
       dlcDb: DLCDb,
       refundSigsDb: DLCRefundSigsDb,
       fundingInputs: Vector[DLCFundingInputDb],

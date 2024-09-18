@@ -1013,10 +1013,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       val txDb = TransactionDbHelper.fromTransaction(tx, None)
 
       (mockWalletApi
-        .findTransaction(_: DoubleSha256DigestBE))
-        .expects(tx.txIdBE)
-        .returning(Future.successful(Some(txDb)))
-        .anyNumberOfTimes()
+        .findByTxIds(_: Vector[DoubleSha256DigestBE]))
+        .expects(Vector(tx.txIdBE))
+        .returning(Future.successful(Vector(txDb)))
 
       val route =
         walletRoutes.handleCommand(
