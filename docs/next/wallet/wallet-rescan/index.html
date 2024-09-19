@@ -139,7 +139,7 @@ You can download this with bitcoin-s by doing <code>sbt downloadBitcoind</code><
 <span class="hljs-keyword">val</span> rescannedBalanceF = <span class="hljs-keyword">for</span> {
   _ &lt;- clearedWalletF
   w &lt;- walletF
-  _ &lt;- w.fullRescanNeutrinoWallet(addrBatchSize)
+  _ &lt;- w.rescanHandling.fullRescanNeutrinoWallet(addrBatchSize)
   balanceAfterRescan &lt;- w.getBalance()
 } <span class="hljs-keyword">yield</span> {
   println(<span class="hljs-string">s"Wallet balance after rescan: <span class="hljs-subst">${balanceAfterRescan}</span>"</span>)
