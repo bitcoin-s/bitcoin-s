@@ -158,6 +158,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
         )(config)
       init <- Wallet.initialize(
         wallet = wallet,
+        accountHandling = wallet.accountHandling,
         bip39PasswordOpt = bip39PasswordOpt
       )
     } yield init

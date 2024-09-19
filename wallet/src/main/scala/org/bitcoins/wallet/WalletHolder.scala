@@ -28,14 +28,13 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
-import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.builder.{
   FundRawTxHelper,
   ShufflingNonInteractiveFinalizer
 }
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
-import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.core.wallet.utxo.{
   AddressTag,
   AddressTagName,
@@ -68,6 +67,8 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
   }
 
   override def accountHandling: AccountHandlingApi = wallet.accountHandling
+
+  override def rescanHandling: RescanHandlingApi = wallet.rescanHandling
 
   override def fundTxHandling: FundTransactionHandlingApi =
     wallet.fundTxHandling
@@ -141,24 +142,7 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
     delegate(_.processCompactFilters(blockFilters))
   }
 
-  override def rescanNeutrinoWallet(
-      startOpt: Option[BlockStamp],
-      endOpt: Option[BlockStamp],
-      addressBatchSize: Int,
-      useCreationTime: Boolean,
-      force: Boolean
-  )(implicit ec: ExecutionContext): Future[RescanState] =
-    delegate(
-      _.rescanNeutrinoWallet(
-        startOpt,
-        endOpt,
-        addressBatchSize,
-        useCreationTime,
-        force
-      )
-    )
-
-  override def discoveryBatchSize(): Int = wallet.discoveryBatchSize()
+  override def isRescanning(): Future[Boolean] = delegate(_.isRescanning())
 
   override lazy val nodeApi: NodeApi = wallet.nodeApi
   override lazy val chainQueryApi: ChainQueryApi = wallet.chainQueryApi
@@ -370,8 +354,6 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
   override def getSyncState(): Future[BlockSyncState] = delegate(
     _.getSyncState()
   )
-
-  override def isRescanning(): Future[Boolean] = delegate(_.isRescanning())
 
   override def createDLCOffer(
       contractInfo: ContractInfo,
@@ -649,10 +631,6 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
     _.clearAllUtxos()
   )
 
-  override def clearUtxos(account: HDAccount): Future[HDWalletApi] = delegate(
-    _.clearUtxos(account)
-  )
-
   override def clearAllAddresses(): Future[WalletApi] = {
     delegate(_.clearAllAddresses())
   }
@@ -781,12 +759,6 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
       blockFilter: GolombFilter
   ): Future[NeutrinoHDWalletApi] =
     delegate(_.processCompactFilter(blockHash, blockFilter))
-
-  override def fullRescanNeutrinoWallet(addressBatchSize: Int, force: Boolean)(
-      implicit ec: ExecutionContext
-  ): Future[RescanState] = delegate(
-    _.fullRescanNeutrinoWallet(addressBatchSize, force)
-  )
 
   override def getNewChangeAddress()(implicit
       ec: ExecutionContext

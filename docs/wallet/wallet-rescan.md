@@ -107,7 +107,7 @@ val addrBatchSize = 100
 val rescannedBalanceF = for {
   _ <- clearedWalletF
   w <- walletF
-  _ <- w.fullRescanNeutrinoWallet(addrBatchSize)
+  _ <- w.rescanHandling.fullRescanNeutrinoWallet(addrBatchSize)
   balanceAfterRescan <- w.getBalance()
 } yield {
   println(s"Wallet balance after rescan: ${balanceAfterRescan}")

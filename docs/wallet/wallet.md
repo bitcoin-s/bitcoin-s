@@ -152,7 +152,7 @@ val wallet = Wallet(new NodeApi {
     override def getConnectionCount: Future[Int] = Future.successful(0)
   }, chainApi, ConstantFeeRateProvider(SatoshisPerVirtualByte.one))
 val walletF: Future[WalletApi] = configF.flatMap { _ =>
-  Wallet.initialize(wallet, None)
+  Wallet.initialize(wallet, wallet.accountHandling, None)
 }
 
 // when this future completes, ww have sent a transaction

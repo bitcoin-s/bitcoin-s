@@ -1,28 +1,33 @@
 package org.bitcoins.server
 
-import org.apache.pekko.http.scaladsl.model.ContentTypes._
+import org.apache.pekko.http.scaladsl.model.ContentTypes.*
 import org.apache.pekko.http.scaladsl.model.StatusCodes
 import org.apache.pekko.http.scaladsl.testkit.{
   RouteTestTimeout,
   ScalatestRouteTest
 }
 import org.bitcoins.core.api.chain.ChainApi
-import org.bitcoins.core.api.chain.db._
-import org.bitcoins.core.api.wallet.db._
-import org.bitcoins.core.api.wallet.{AddressInfo, CoinSelectionAlgo}
+import org.bitcoins.core.api.chain.db.*
+import org.bitcoins.core.api.wallet.db.*
+import org.bitcoins.core.api.wallet.{
+  AccountHandlingApi,
+  AddressInfo,
+  CoinSelectionAlgo,
+  RescanHandlingApi
+}
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.dlc.accounting.DLCWalletAccounting
-import org.bitcoins.core.hd._
+import org.bitcoins.core.hd.*
 import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.protocol.BlockStamp.{BlockHash, BlockHeight, BlockTime}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.core.protocol.dlc.models.DLCMessage._
-import org.bitcoins.core.protocol.dlc.models._
+import org.bitcoins.core.protocol.dlc.models.DLCMessage.*
+import org.bitcoins.core.protocol.dlc.models.*
 import org.bitcoins.core.protocol.script.P2WPKHWitnessV0
-import org.bitcoins.core.protocol.tlv._
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.tlv.*
+import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.protocol.{
   Bech32Address,
   BitcoinAddress,
@@ -35,8 +40,8 @@ import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.util.sorted.OrderedSchnorrSignatures
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.rescan.RescanState
-import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.crypto._
+import org.bitcoins.core.wallet.utxo.*
+import org.bitcoins.crypto.*
 import org.bitcoins.feeprovider.ConstantFeeRateProvider
 import org.bitcoins.node.Node
 import org.bitcoins.server.routes.{CommonRoutes, ServerCommand}
@@ -47,7 +52,7 @@ import org.bitcoins.wallet.{MockWalletApi, WalletHolder}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.wordspec.AnyWordSpec
 import scodec.bits.ByteVector
-import ujson._
+import ujson.*
 
 import java.net.InetSocketAddress
 import java.time.{ZoneId, ZonedDateTime}
@@ -76,6 +81,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
   val nodeRoutes: NodeRoutes = NodeRoutes(mockNode)
 
   val mockWalletApi: MockWalletApi = mock[MockWalletApi]
+
+  val mockRescanHandlingApi: RescanHandlingApi = mock[RescanHandlingApi]
+
+  val mockAccountHandlingApi: AccountHandlingApi = mock[AccountHandlingApi]
 
   val walletHolder = new WalletHolder(Some(mockWalletApi))
 
@@ -652,9 +661,10 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
       (() => mockWalletApi.accountHandling)
         .expects()
-        .returning(mockWalletApi)
+        .returning(mockAccountHandlingApi)
+        .anyNumberOfTimes()
 
-      (() => mockWalletApi.listAccounts())
+      (() => mockWalletApi.accountHandling.listAccounts())
         .expects()
         .returning(Future.successful(Vector(accountDb)))
 
@@ -2021,19 +2031,25 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     "run wallet rescan" in {
       // positive cases
 
-      (() => mockWalletApi.discoveryBatchSize())
+      (() => mockWalletApi.rescanHandling)
+        .expects()
+        .returning(mockRescanHandlingApi)
+        .anyNumberOfTimes()
+
+      (() => mockWalletApi.rescanHandling.discoveryBatchSize())
         .expects()
         .returning(100)
         .atLeastOnce()
-      (mockWalletApi
+
+      (mockWalletApi.rescanHandling
         .rescanNeutrinoWallet(
           _: Option[BlockStamp],
           _: Option[BlockStamp],
           _: Int,
           _: Boolean,
           _: Boolean
-        )(_: ExecutionContext))
-        .expects(None, None, 100, false, false, executor)
+        ))
+        .expects(None, None, 100, false, false)
         .returning(
           Future.successful(
             RescanState
@@ -2058,14 +2074,14 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         )
       }
 
-      (mockWalletApi
+      (mockWalletApi.rescanHandling
         .rescanNeutrinoWallet(
           _: Option[BlockStamp],
           _: Option[BlockStamp],
           _: Int,
           _: Boolean,
           _: Boolean
-        )(_: ExecutionContext))
+        ))
         .expects(
           Some(
             BlockTime(
@@ -2075,8 +2091,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           None,
           100,
           false,
-          false,
-          executor
+          false
         )
         .returning(
           Future.successful(
@@ -2106,21 +2121,20 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
       }
 
-      (mockWalletApi
+      (mockWalletApi.rescanHandling
         .rescanNeutrinoWallet(
           _: Option[BlockStamp],
           _: Option[BlockStamp],
           _: Int,
           _: Boolean,
           _: Boolean
-        )(_: ExecutionContext))
+        ))
         .expects(
           None,
           Some(BlockHash(DoubleSha256DigestBE.empty)),
           100,
           false,
-          false,
-          executor
+          false
         )
         .returning(
           Future.successful(
@@ -2149,21 +2163,20 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         )
       }
 
-      (mockWalletApi
+      (mockWalletApi.rescanHandling
         .rescanNeutrinoWallet(
           _: Option[BlockStamp],
           _: Option[BlockStamp],
           _: Int,
           _: Boolean,
           _: Boolean
-        )(_: ExecutionContext))
+        ))
         .expects(
           Some(BlockHeight(12345)),
           Some(BlockHeight(67890)),
           100,
           false,
-          false,
-          executor
+          false
         )
         .returning(Future.successful(RescanState.RescanDone))
 
@@ -2234,15 +2247,15 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         )
       }
 
-      (mockWalletApi
+      (mockWalletApi.rescanHandling
         .rescanNeutrinoWallet(
           _: Option[BlockStamp],
           _: Option[BlockStamp],
           _: Int,
           _: Boolean,
           _: Boolean
-        )(_: ExecutionContext))
-        .expects(None, None, 55, false, false, executor)
+        ))
+        .expects(None, None, 55, false, false)
         .returning(Future.successful(RescanState.RescanDone))
 
       walletLoader.clearRescanState()

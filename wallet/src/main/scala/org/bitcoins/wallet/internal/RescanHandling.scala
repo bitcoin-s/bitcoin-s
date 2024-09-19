@@ -1,14 +1,17 @@
 package org.bitcoins.wallet.internal
 
 import org.apache.pekko.NotUsed
+import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.stream.scaladsl.{Flow, Keep, Merge, Sink, Source}
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.chain.ChainQueryApi.{
   FilterResponse,
   InvalidBlockRange
 }
+import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.wallet.NeutrinoWalletApi.BlockMatchingResponse
 import org.bitcoins.core.api.wallet.{
+  AccountHandlingApi,
   RescanHandlingApi,
   TransactionProcessingApi
 }
@@ -16,26 +19,44 @@ import org.bitcoins.core.gcs.SimpleFilterMatcher
 import org.bitcoins.core.hd.{HDAccount, HDChainType}
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
+import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.core.wallet.rescan.RescanState.RescanTerminatedEarly
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.wallet.{Wallet, WalletLogger}
-import slick.dbio.{DBIOAction, Effect, NoStream}
+import org.bitcoins.wallet.callback.WalletCallbacks
+import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.models.{
+  AddressDAO,
+  SpendingInfoDAO,
+  WalletDAOs,
+  WalletStateDescriptorDAO
+}
+import org.bitcoins.wallet.WalletLogger
 
+import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success}
 
-private[wallet] trait RescanHandling
+case class RescanHandling(
+    transactionProcessing: TransactionProcessingApi,
+    accountHandling: AccountHandlingApi,
+    addressHandling: AddressHandling,
+    chainQueryApi: ChainQueryApi,
+    nodeApi: NodeApi,
+    walletDAOs: WalletDAOs)(implicit
+    walletConfig: WalletAppConfig,
+    system: ActorSystem)
     extends RescanHandlingApi
     with WalletLogger {
-  self: Wallet =>
-
-  /////////////////////
-  // Public facing API
-
-  def transactionProcessing: TransactionProcessingApi
+  private implicit val rescanEC: ExecutionContext =
+    ExecutionContext.fromExecutor(walletConfig.rescanThreadPool)
+  private def walletCallbacks: WalletCallbacks = walletConfig.callBacks
+  private val stateDescriptorDAO: WalletStateDescriptorDAO =
+    walletDAOs.stateDescriptorDAO
+  private val addressDAO: AddressDAO = walletDAOs.addressDAO
+  private val spendingInfoDAO: SpendingInfoDAO = walletDAOs.utxoDAO
+  private val creationTime: Instant = walletConfig.creationTime
 
   override def isRescanning(): Future[Boolean] = stateDescriptorDAO.isRescanning
 
@@ -46,9 +67,9 @@ private[wallet] trait RescanHandling
       addressBatchSize: Int,
       useCreationTime: Boolean,
       force: Boolean
-  )(implicit ec: ExecutionContext): Future[RescanState] = {
+  ): Future[RescanState] = {
     for {
-      account <- getDefaultAccount()
+      account <- accountHandling.getDefaultAccount()
       state <- rescanNeutrinoWallet(
         account.hdAccount,
         startOpt,
@@ -98,7 +119,7 @@ private[wallet] trait RescanHandling
               case (None, false) =>
                 Future.successful(None)
             }
-            _ <- clearUtxos(account)
+            _ <- accountHandling.clearUtxos(account)
             state <- doNeutrinoRescan(
               account = account,
               startOpt = start,
@@ -150,6 +171,8 @@ private[wallet] trait RescanHandling
     }
   }
 
+  override def discoveryBatchSize(): Int = walletConfig.discoveryBatchSize
+
   /** Register callbacks to reset rescan flag in the database if there is a
     * rescan failure
     */
@@ -197,7 +220,7 @@ private[wallet] trait RescanHandling
       filterBatchSize: Int,
       forceGenerateSpks: Boolean
   ): RescanState.RescanStarted = {
-    val scriptsF = generateScriptPubKeys(
+    val scriptsF = accountHandling.generateScriptPubKeys(
       account = account,
       addressBatchSize = addressBatchSize,
       forceGenerateSpks = forceGenerateSpks
@@ -236,9 +259,7 @@ private[wallet] trait RescanHandling
           val heightRange = filterResponse.map(_.blockHeight)
           val f =
             scriptsF.flatMap { scripts =>
-              searchFiltersForMatches(scripts, filterResponse, parallelism)(
-                ExecutionContext.fromExecutor(walletConfig.rescanThreadPool)
-              )
+              searchFiltersForMatches(scripts, filterResponse, parallelism)
             }
 
           f.onComplete {
@@ -486,82 +507,6 @@ private[wallet] trait RescanHandling
     rescanStateF
   }
 
-  private def generateAddressesForRescanAction(
-      account: HDAccount,
-      addressBatchSize: Int
-  ): DBIOAction[Vector[
-                  BitcoinAddress
-                ],
-                NoStream,
-                Effect.Read with Effect.Write with Effect.Transactional] = {
-    val receiveAddressesA: DBIOAction[
-      Vector[
-        BitcoinAddress
-      ],
-      NoStream,
-      Effect.Read with Effect.Write with Effect.Transactional] = {
-      DBIOAction.sequence {
-        1.to(addressBatchSize)
-          .map(_ => getNewAddressAction(account))
-      }
-    }.map(_.toVector)
-
-    val changeAddressesA: DBIOAction[
-      Vector[
-        BitcoinAddress
-      ],
-      NoStream,
-      Effect.Read with Effect.Write with Effect.Transactional] = {
-      DBIOAction.sequence {
-        1.to(addressBatchSize)
-          .map(_ => getNewChangeAddressAction(account))
-      }
-    }.map(_.toVector)
-
-    for {
-      receiveAddresses <- receiveAddressesA
-      changeAddresses <- changeAddressesA
-    } yield receiveAddresses ++ changeAddresses
-  }
-
-  /** If forceGeneratSpks is true or addressCount == 0 we generate a new pool of
-    * scriptpubkeys
-    */
-  private def generateScriptPubKeysAction(
-      account: HDAccount,
-      addressBatchSize: Int,
-      forceGenerateSpks: Boolean
-  ): DBIOAction[Vector[
-                  ScriptPubKey
-                ],
-                NoStream,
-                Effect.Read with Effect.Write with Effect.Transactional] = {
-    val addressCountA = addressDAO.countAction
-    for {
-      addressCount <- addressCountA
-      addresses <- {
-        if (forceGenerateSpks || addressCount == 0) {
-          logger.info(
-            s"Generating $addressBatchSize fresh addresses for the rescan"
-          )
-          generateAddressesForRescanAction(account, addressBatchSize)
-        } else {
-          // we don't want to continously generate addresses
-          // if our wallet already has them, so just use what is in the
-          // database already
-          addressDAO.findAllAddressesAction().map(_.map(_.address))
-        }
-      }
-      spksDb <- scriptPubKeyDAO.findAllAction()
-    } yield {
-      val addrSpks =
-        addresses.map(_.scriptPubKey)
-      val otherSpks = spksDb.map(_.scriptPubKey)
-
-      (addrSpks ++ otherSpks).distinct
-    }
-  }
-
   /** Given a range of filter heights, we fetch the filters associated with
     * those heights and emit them downstream
     */
@@ -583,19 +528,6 @@ private[wallet] trait RescanHandling
     }
   }
 
-  def generateScriptPubKeys(
-      account: HDAccount,
-      addressBatchSize: Int,
-      forceGenerateSpks: Boolean
-  ): Future[Vector[ScriptPubKey]] = {
-    val action = generateScriptPubKeysAction(
-      account = account,
-      addressBatchSize = addressBatchSize,
-      forceGenerateSpks = forceGenerateSpks
-    )
-    safeDatabase.run(action)
-  }
-
   /** Searches the given block filters against the given scriptPubKeys for
     * matches. If there is a match, request the full block to search
     */
@@ -603,11 +535,11 @@ private[wallet] trait RescanHandling
       scripts: Vector[ScriptPubKey],
       filtersResponse: Vector[ChainQueryApi.FilterResponse],
       parallelismLevel: Int
-  )(implicit ec: ExecutionContext): Future[Vector[BlockMatchingResponse]] = {
+  ): Future[Vector[BlockMatchingResponse]] = {
     val startHeightOpt = filtersResponse.headOption.map(_.blockHeight)
     val endHeightOpt = filtersResponse.lastOption.map(_.blockHeight)
     for {
-      filtered <- findMatches(filtersResponse, scripts, parallelismLevel)(ec)
+      filtered <- findMatches(filtersResponse, scripts, parallelismLevel)
       _ <- downloadAndProcessBlocks(filtered.map(_.blockHash))
     } yield {
       logger.debug(
@@ -617,11 +549,11 @@ private[wallet] trait RescanHandling
     }
   }
 
-  private[wallet] def findMatches(
+  override def findMatches(
       filters: Vector[FilterResponse],
       scripts: Vector[ScriptPubKey],
       parallelismLevel: Int
-  )(implicit ec: ExecutionContext): Future[Vector[BlockMatchingResponse]] = {
+  ): Future[Vector[BlockMatchingResponse]] = {
     if (filters.isEmpty) {
       logger.info("No Filters to check against")
       Future.successful(Vector.empty)

@@ -426,6 +426,7 @@ object WalletAppConfig
 
         Wallet.initialize(
           wallet = unInitializedWallet,
+          accountHandling = unInitializedWallet.accountHandling,
           bip39PasswordOpt = bip39PasswordOpt
         )
       }
