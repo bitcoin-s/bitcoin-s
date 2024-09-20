@@ -1,8 +1,12 @@
 package org.bitcoins.wallet.internal
 
 import org.bitcoins.commons.util.BitcoinSLogger
+import org.bitcoins.core.api.keymanager.BIP39KeyManagerApi
 import org.bitcoins.core.api.wallet.AccountHandlingApi
-import org.bitcoins.core.api.wallet.db.AccountDb
+import org.bitcoins.core.api.wallet.db.{AccountDb, AddressDb, AddressDbHelper}
+import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.crypto.ExtPublicKey
+import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.AddressType.*
 import org.bitcoins.core.hd.*
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -15,6 +19,7 @@ import org.bitcoins.core.protocol.blockchain.{
 }
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.db.SafeDatabase
+import org.bitcoins.wallet.callback.WalletCallbacks
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models.{
   AccountDAO,
@@ -26,13 +31,14 @@ import org.bitcoins.wallet.models.{
 import slick.dbio.{DBIOAction, Effect, NoStream}
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 /** Provides functionality related enumerating accounts. Account creation does
   * not happen here, as that requires an unlocked wallet.
   */
 case class AccountHandling(
-    addressHandling: AddressHandling,
-    walletDAOs: WalletDAOs)(implicit
+    walletDAOs: WalletDAOs,
+    keyManager: BIP39KeyManagerApi)(implicit
     walletConfig: WalletAppConfig,
     ec: ExecutionContext)
     extends AccountHandlingApi
@@ -43,6 +49,49 @@ case class AccountHandling(
   private val scriptPubKeyDAO: ScriptPubKeyDAO = walletDAOs.scriptPubKeyDAO
   private val safeDatabase: SafeDatabase = spendingInfoDAO.safeDatabase
   private val chainParams: ChainParams = walletConfig.chain
+  private val networkParameters: NetworkParameters = walletConfig.network
+  private def walletCallbacks: WalletCallbacks = walletConfig.callBacks
+
+  override def createNewAccount(
+      hdAccount: HDAccount
+  ): Future[ExtPublicKey] = {
+    logger.info(
+      s"Creating new account at index ${hdAccount.index} for purpose ${hdAccount.purpose}"
+    )
+
+    val xpub: ExtPublicKey = {
+      keyManager.deriveXPub(hdAccount) match {
+        case Failure(exception) =>
+          // this won't happen, because we're deriving from a privkey
+          // this should really be changed in the method signature
+          logger.error(s"Unexpected error when deriving xpub: $exception")
+          throw exception
+        case Success(xpub) => xpub
+      }
+    }
+    val newAccountDb = AccountDb(xpub, hdAccount)
+    accountDAO.create(newAccountDb).map { created =>
+      logger.debug(s"Created new account ${created.hdAccount}")
+      created.xpub
+    }
+  }
+
+  /** Creates a new account my reading from our account database, finding the
+    * last account, and then incrementing the account index by one, and then
+    * creating that account
+    *
+    * @return
+    */
+  override def createNewAccount(purpose: HDPurpose): Future[ExtPublicKey] = {
+    getLastAccountOpt(purpose).flatMap {
+      case Some(accountDb) =>
+        val hdAccount = accountDb.hdAccount
+        val newAccount = hdAccount.copy(index = hdAccount.index + 1)
+        createNewAccount(newAccount)
+      case None =>
+        createNewAccount(walletConfig.defaultAccount)
+    }
+  }
 
   /** @inheritdoc */
   override def listAccounts(): Future[Vector[AccountDb]] =
@@ -168,7 +217,7 @@ case class AccountHandling(
       Effect.Read with Effect.Write with Effect.Transactional] = {
       DBIOAction.sequence {
         1.to(addressBatchSize)
-          .map(_ => addressHandling.getNewAddressAction(account))
+          .map(_ => getNewAddressAction(account))
       }
     }.map(_.toVector)
 
@@ -180,7 +229,7 @@ case class AccountHandling(
       Effect.Read with Effect.Write with Effect.Transactional] = {
       DBIOAction.sequence {
         1.to(addressBatchSize)
-          .map(_ => addressHandling.getNewChangeAddressAction(account))
+          .map(_ => getNewChangeAddressAction(account))
       }
     }.map(_.toVector)
 
@@ -188,6 +237,261 @@ case class AccountHandling(
       receiveAddresses <- receiveAddressesA
       changeAddresses <- changeAddressesA
     } yield receiveAddresses ++ changeAddresses
+  }
+
+  override def getNewChangeAddress(
+      account: HDAccount): Future[BitcoinAddress] = {
+    val accountDbOptF = findAccount(account)
+    accountDbOptF.flatMap {
+      case Some(accountDb) => getNewChangeAddress(accountDb)
+      case None =>
+        Future.failed(
+          new RuntimeException(s"No account found for given hdaccount=$account")
+        )
+    }
+  }
+
+  /** Queues a request to generate an address and returns a Future that will be
+    * completed when the request is processed in the queue. If the queue is full
+    * it throws an exception.
+    * @throws IllegalStateException
+    */
+  override def getNewAddress(
+      account: AccountDb,
+      chainType: HDChainType
+  ): Future[BitcoinAddress] = {
+    val action = getNewAddressHelperAction(account, chainType)
+    safeDatabase.run(action)
+  }
+
+  def getNewAddressAction(account: HDAccount): DBIOAction[
+    BitcoinAddress,
+    NoStream,
+    Effect.Read with Effect.Write with Effect.Transactional
+  ] = {
+    val accountDbOptA = findAccountAction(account)
+    accountDbOptA.flatMap {
+      case Some(accountDb) => getNewAddressAction(accountDb)
+      case None =>
+        DBIOAction.failed(
+          new RuntimeException(
+            s"No account found for given hdaccount=${account}"
+          )
+        )
+    }
+  }
+
+  def getNewChangeAddressAction(account: HDAccount): DBIOAction[
+    BitcoinAddress,
+    NoStream,
+    Effect.Read with Effect.Write with Effect.Transactional
+  ] = {
+    val accountDbOptA = findAccountAction(account)
+    accountDbOptA.flatMap {
+      case Some(accountDb) => getNewChangeAddressAction(accountDb)
+      case None =>
+        DBIOAction.failed(
+          new RuntimeException(
+            s"No account found for given hdaccount=${account}"
+          )
+        )
+    }
+  }
+
+  override def getNewAddress(account: HDAccount): Future[BitcoinAddress] = {
+    val accountDbOptF = findAccount(account)
+    accountDbOptF.flatMap {
+      case Some(accountDb) => getNewAddress(accountDb)
+      case None =>
+        Future.failed(
+          new RuntimeException(
+            s"No account found for given hdaccount=${account}"
+          )
+        )
+    }
+  }
+
+  def getNewAddressAction(account: AccountDb): DBIOAction[
+    BitcoinAddress,
+    NoStream,
+    Effect.Read with Effect.Write with Effect.Transactional
+  ] = {
+    getNewAddressHelperAction(account, HDChainType.External)
+  }
+
+  def getNewChangeAddressAction(account: AccountDb): DBIOAction[
+    BitcoinAddress,
+    NoStream,
+    Effect.Read with Effect.Write with Effect.Transactional
+  ] = {
+    getNewAddressHelperAction(account, HDChainType.Change)
+  }
+
+  private def findAccountAction(
+      account: HDAccount
+  ): DBIOAction[Option[AccountDb], NoStream, Effect.Read] = {
+    accountDAO.findByAccountAction(account)
+  }
+
+  override def findAccount(account: HDAccount): Future[Option[AccountDb]] = {
+    safeDatabase.run(findAccountAction(account))
+  }
+
+  override def listUnusedAddresses(
+      account: HDAccount): Future[Vector[AddressDb]] = {
+    val unusedAddressesF = addressDAO.getUnusedAddresses
+    unusedAddressesF.map { unusedAddresses =>
+      unusedAddresses.filter(addr =>
+        HDAccount.isSameAccount(addr.path, account))
+    }
+  }
+
+  override def listAddresses(account: HDAccount): Future[Vector[AddressDb]] = {
+    val allAddressesF: Future[Vector[AddressDb]] = addressDAO.findAllAddresses()
+
+    val accountAddressesF = {
+      allAddressesF.map { addresses =>
+        addresses.filter { a =>
+          logger.debug(s"a.path=${a.path} account=${account}")
+          HDAccount.isSameAccount(a.path, account)
+        }
+      }
+    }
+
+    accountAddressesF
+  }
+
+  override def listSpentAddresses(
+      account: HDAccount
+  ): Future[Vector[AddressDb]] = {
+    val spentAddressesF = addressDAO.getSpentAddresses
+
+    spentAddressesF.map { spentAddresses =>
+      spentAddresses.filter(addr => HDAccount.isSameAccount(addr.path, account))
+    }
+  }
+
+  override def listFundedAddresses(
+      account: HDAccount
+  ): Future[Vector[(AddressDb, CurrencyUnit)]] = {
+    val spentAddressesF = addressDAO.getFundedAddresses
+
+    spentAddressesF.map { spentAddresses =>
+      spentAddresses.filter(addr =>
+        HDAccount.isSameAccount(addr._1.path, account))
+    }
+  }
+
+  private def getNewAddressHelperAction(
+      account: AccountDb,
+      chainType: HDChainType
+  ): DBIOAction[
+    BitcoinAddress,
+    NoStream,
+    Effect.Read with Effect.Write with Effect.Transactional
+  ] = {
+    logger.debug(s"Processing $account $chainType in our address request queue")
+    val resultA: DBIOAction[
+      BitcoinAddress,
+      NoStream,
+      Effect.Read with Effect.Write with Effect.Transactional
+    ] = for {
+      addressDb <- getNewAddressDbAction(account, chainType)
+      writtenAddressDb <- addressDAO.createAction(addressDb)
+    } yield {
+      logger.info(
+        s"Generated new address=${addressDb.address} path=${addressDb.path} isChange=${addressDb.isChange}"
+      )
+      writtenAddressDb.address
+    }
+
+    val callbackExecuted = resultA.flatMap { address =>
+      val executedF =
+        walletCallbacks.executeOnNewAddressGenerated(address)
+      DBIOAction
+        .from(executedF)
+        .map(_ => address)
+    }
+
+    callbackExecuted
+  }
+
+  private def getNewAddressDbAction(
+      account: AccountDb,
+      chainType: HDChainType
+  ): DBIOAction[AddressDb, NoStream, Effect.Read] = {
+    logger.debug(s"Getting new $chainType adddress for ${account.hdAccount}")
+
+    val lastAddrOptA = chainType match {
+      case HDChainType.External =>
+        addressDAO.findMostRecentExternalAction(account.hdAccount)
+      case HDChainType.Change =>
+        addressDAO.findMostRecentChangeAction(account.hdAccount)
+    }
+
+    lastAddrOptA.map { lastAddrOpt =>
+      val addrPath: HDPath = lastAddrOpt match {
+        case Some(addr) =>
+          val next = addr.path.next
+          logger.debug(
+            s"Found previous address at path=${addr.path}, next=$next"
+          )
+          next
+        case None =>
+          val address = account.hdAccount
+            .toChain(chainType)
+            .toHDAddress(0)
+
+          val path = address.toPath
+          logger.debug(s"Did not find previous address, next=$path")
+          path
+      }
+
+      val pathDiff =
+        account.hdAccount.diff(addrPath) match {
+          case Some(value) => value
+          case None =>
+            throw new RuntimeException(
+              s"Could not diff ${account.hdAccount} and $addrPath"
+            )
+        }
+
+      val pubkey = account.xpub.deriveChildPubKey(pathDiff) match {
+        case Failure(exception) => throw exception
+        case Success(value)     => value.key
+      }
+
+      addrPath match {
+        case segwitPath: SegWitHDPath =>
+          AddressDbHelper
+            .getSegwitAddress(pubkey, segwitPath, networkParameters)
+        case legacyPath: LegacyHDPath =>
+          AddressDbHelper.getLegacyAddress(
+            pubkey,
+            legacyPath,
+            networkParameters
+          )
+        case nestedPath: NestedSegWitHDPath =>
+          AddressDbHelper.getNestedSegwitAddress(
+            pubkey,
+            nestedPath,
+            networkParameters
+          )
+      }
+    }
+  }
+
+  protected def getLastAccountOpt(
+      purpose: HDPurpose
+  ): Future[Option[AccountDb]] = {
+    accountDAO
+      .findAll()
+      .map(_.filter(_.hdAccount.purpose == purpose))
+      .map(_.sortBy(_.hdAccount.index))
+      // we want to the most recently created account,
+      // to know what the index of our new account
+      // should be.
+      .map(_.lastOption)
   }
 
   /** The default HD coin for this wallet, read from config */

@@ -5,10 +5,9 @@ import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.keymanager.KeyManagerApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.wallet.db.*
-import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.hd.{AddressType, HDAccount}
+import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.script.ScriptPubKey
@@ -17,19 +16,13 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
-import org.bitcoins.core.util.{FutureUtil, StartStopAsync}
+import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.core.wallet.utxo.{
-  AddressTag,
-  AddressTagName,
-  AddressTagType,
-  TxoState
-}
+import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
 
 /** API for the wallet project.
   *
@@ -108,20 +101,14 @@ trait WalletApi extends StartStopAsync[WalletApi] {
 
   def getConfirmedBalance(tag: AddressTag): Future[CurrencyUnit]
 
+  def getNewAddress(): Future[BitcoinAddress]
+
+  def getNewChangeAddress(): Future[BitcoinAddress]
+
   /** Gets the sum of all unconfirmed UTXOs in this wallet */
   def getUnconfirmedBalance(): Future[CurrencyUnit]
 
   def getUnconfirmedBalance(tag: AddressTag): Future[CurrencyUnit]
-
-  def listAddresses(): Future[Vector[AddressDb]]
-
-  def listSpentAddresses(): Future[Vector[AddressDb]]
-
-  def listFundedAddresses(): Future[Vector[(AddressDb, CurrencyUnit)]]
-
-  def listUnusedAddresses(): Future[Vector[AddressDb]]
-
-  def listScriptPubKeys(): Future[Vector[ScriptPubKeyDb]]
 
   def listTransactions(): Future[Vector[TransactionDb]]
 
@@ -130,8 +117,6 @@ trait WalletApi extends StartStopAsync[WalletApi] {
   def listUtxos(state: TxoState): Future[Vector[SpendingInfoDb]]
 
   def listUtxos(tag: AddressTag): Future[Vector[SpendingInfoDb]]
-
-  def watchScriptPubKey(scriptPubKey: ScriptPubKey): Future[ScriptPubKeyDb]
 
   /** Checks if the wallet contains any data */
   def isEmpty(): Future[Boolean]
@@ -142,86 +127,6 @@ trait WalletApi extends StartStopAsync[WalletApi] {
   def clearAllUtxos(): Future[WalletApi]
 
   def clearAllAddresses(): Future[WalletApi]
-
-  /** Gets a new external address with the specified type.
-    * @param addressType
-    */
-  def getNewAddress(addressType: AddressType): Future[BitcoinAddress]
-
-  /** Gets a new external address Calling this method multiple times will return
-    * the same address, until it has received funds.
-    */
-  def getNewAddress(): Future[BitcoinAddress]
-
-  def getNewAddress(
-      addressType: AddressType,
-      tags: Vector[AddressTag]): Future[BitcoinAddress]
-
-  def getNewAddress(tags: Vector[AddressTag]): Future[BitcoinAddress]
-
-  /** Gets a external address the given AddressType. Calling this method
-    * multiple times will return the same address, until it has received funds.
-    */
-  def getUnusedAddress(addressType: AddressType): Future[BitcoinAddress]
-
-  /** Gets a external address. Calling this method multiple times will return
-    * the same address, until it has received funds.
-    */
-  def getUnusedAddress: Future[BitcoinAddress]
-
-  /** Mimics the `getaddressinfo` RPC call in Bitcoin Core
-    *
-    * @param address
-    * @return
-    *   If the address is found in our database `Some(address)` is returned,
-    *   otherwise `None`
-    */
-  def getAddressInfo(address: BitcoinAddress): Future[Option[AddressInfo]]
-
-  def getAddressInfo(
-      spendingInfoDb: SpendingInfoDb,
-      networkParameters: NetworkParameters): Future[Option[AddressInfo]] = {
-    val addressT = BitcoinAddress.fromScriptPubKeyT(
-      spk = spendingInfoDb.output.scriptPubKey,
-      np = networkParameters)
-    addressT match {
-      case Success(addr) =>
-        getAddressInfo(addr)
-      case Failure(_) =>
-        FutureUtil.none
-    }
-  }
-
-  /** Tags the address with the address tag, updates the tag if one of tag's
-    * TagType already exists
-    */
-  def tagAddress(address: BitcoinAddress, tag: AddressTag): Future[AddressTagDb]
-
-  def getAddressTags(address: BitcoinAddress): Future[Vector[AddressTagDb]]
-
-  def getAddressTags(
-      address: BitcoinAddress,
-      tagType: AddressTagType): Future[Vector[AddressTagDb]]
-
-  def getAddressTags(): Future[Vector[AddressTagDb]]
-
-  def getAddressTags(tagType: AddressTagType): Future[Vector[AddressTagDb]]
-
-  def dropAddressTag(addressTagDb: AddressTagDb): Future[Int]
-
-  def dropAddressTagType(addressTagType: AddressTagType): Future[Int]
-
-  def dropAddressTagType(
-      address: BitcoinAddress,
-      addressTagType: AddressTagType): Future[Int]
-
-  def dropAddressTagName(
-      address: BitcoinAddress,
-      tagName: AddressTagName): Future[Int]
-
-  /** Generates a new change address */
-  protected[wallet] def getNewChangeAddress()(implicit
-      ec: ExecutionContext): Future[BitcoinAddress]
 
   def keyManager: KeyManagerApi
 

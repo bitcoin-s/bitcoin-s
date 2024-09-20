@@ -167,10 +167,10 @@ class WalletRoutesSpec
       val extPubKey = extPrivKey.extPublicKey
       val hdAccount = HDAccount.fromExtKeyVersion(version = keyVersion, idx = 0)
       val accountDb = AccountDb(extPubKey, hdAccount = hdAccount)
-      (mockWalletApi
+      (mockWalletApi.accountHandling
         .createNewAccount(_: HDPurpose))
         .expects(HDPurpose.default)
-        .returning(Future.successful(mockWalletApi))
+        .returning(Future.successful(extPubKey))
 
       (() => mockWalletApi.listAccounts())
         .expects()

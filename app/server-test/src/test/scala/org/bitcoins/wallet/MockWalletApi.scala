@@ -3,7 +3,6 @@ package org.bitcoins.wallet
 import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
 import org.bitcoins.core.api.wallet.db.AccountDb
 import org.bitcoins.core.hd.AddressType
-import org.bitcoins.core.protocol.BitcoinAddress
 
 import scala.concurrent.Future
 
@@ -11,9 +10,6 @@ import scala.concurrent.Future
   * manually.
   */
 abstract class MockWalletApi extends DLCNeutrinoHDWalletApi {
-
-  override def getNewChangeAddress(account: AccountDb): Future[BitcoinAddress] =
-    stub
 
   override def getDefaultAccount(): Future[AccountDb] = stub
 

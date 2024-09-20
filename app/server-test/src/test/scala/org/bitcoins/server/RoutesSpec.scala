@@ -11,6 +11,7 @@ import org.bitcoins.core.api.chain.db.*
 import org.bitcoins.core.api.wallet.db.*
 import org.bitcoins.core.api.wallet.{
   AccountHandlingApi,
+  AddressHandlingApi,
   AddressInfo,
   CoinSelectionAlgo,
   RescanHandlingApi
@@ -85,6 +86,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
   val mockRescanHandlingApi: RescanHandlingApi = mock[RescanHandlingApi]
 
   val mockAccountHandlingApi: AccountHandlingApi = mock[AccountHandlingApi]
+
+  val mockAddressHandlingApi: AddressHandlingApi = mock[AddressHandlingApi]
 
   val walletHolder = new WalletHolder(Some(mockWalletApi))
 
@@ -553,7 +556,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         testAddress.scriptPubKey
       )
 
-      (() => mockWalletApi.listAddresses())
+      (() => mockWalletApi.addressHandling.listAddresses())
         .expects()
         .returning(Future.successful(Vector(addressDb)))
 
@@ -579,7 +582,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         testAddress.scriptPubKey
       )
 
-      (() => mockWalletApi.listSpentAddresses())
+      (() => mockWalletApi.addressHandling.listSpentAddresses())
         .expects()
         .returning(Future.successful(Vector(addressDb)))
 
@@ -605,7 +608,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         testAddress.scriptPubKey
       )
 
-      (() => mockWalletApi.listFundedAddresses())
+      (() => mockWalletApi.addressHandling.listFundedAddresses())
         .expects()
         .returning(Future.successful(Vector((addressDb, Satoshis.zero))))
 
@@ -630,7 +633,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         testAddress.scriptPubKey
       )
 
-      (() => mockWalletApi.listUnusedAddresses())
+      (() => mockWalletApi.addressHandling.listUnusedAddresses())
         .expects()
         .returning(Future.successful(Vector(addressDb)))
 
@@ -704,7 +707,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       val key = ECPublicKey.freshPublicKey
       val hdPath = HDPath.fromString("m/84'/1'/0'/0/0")
 
-      (mockWalletApi
+      (mockWalletApi.addressHandling
         .getAddressInfo(_: BitcoinAddress))
         .expects(testAddress)
         .returning(Future.successful(Some(AddressInfo(key, RegTest, hdPath))))
@@ -725,7 +728,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "return a new address with a label" in {
-      (mockWalletApi
+      (mockWalletApi.addressHandling
         .getNewAddress(_: Vector[AddressTag]))
         .expects(Vector(testLabel))
         .returning(Future.successful(testAddress))
@@ -816,7 +819,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "label an address" in {
-      (mockWalletApi
+      (mockWalletApi.addressHandling
         .tagAddress(_: BitcoinAddress, _: AddressTag))
         .expects(testAddress, testLabel)
         .returning(Future.successful(AddressTagDb(testAddress, testLabel)))
@@ -840,7 +843,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "get address tags" in {
-      (mockWalletApi
+      (mockWalletApi.addressHandling
         .getAddressTags(_: BitcoinAddress))
         .expects(testAddress)
         .returning(
@@ -863,7 +866,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "get address label" in {
-      (mockWalletApi
+      (mockWalletApi.addressHandling
         .getAddressTags(_: BitcoinAddress, _: AddressTagType))
         .expects(testAddress, AddressLabelTagType)
         .returning(
@@ -886,7 +889,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "get address labels" in {
-      (() => mockWalletApi.getAddressTags())
+      (() => mockWalletApi.addressHandling.getAddressTags())
         .expects()
         .returning(
           Future.successful(Vector(AddressTagDb(testAddress, testLabel)))
@@ -905,7 +908,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
     "drop address label" in {
       val labelName = "label"
-      (mockWalletApi
+      (mockWalletApi.addressHandling
         .dropAddressTagName(_: BitcoinAddress, _: AddressTagName))
         .expects(testAddress, AddressLabelTagName(labelName))
         .returning(Future.successful(1))
@@ -929,7 +932,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "drop address labels with no labels" in {
-      (mockWalletApi
+      (mockWalletApi.addressHandling
         .dropAddressTagType(_: BitcoinAddress, _: AddressTagType))
         .expects(testAddress, AddressLabelTagType)
         .returning(Future.successful(0))
@@ -948,7 +951,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "drop address labels with 1 label" in {
-      (mockWalletApi
+      (mockWalletApi.addressHandling
         .dropAddressTagType(_: BitcoinAddress, _: AddressTagType))
         .expects(testAddress, AddressLabelTagType)
         .returning(Future.successful(1))
@@ -969,7 +972,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "drop address labels with 2 labels" in {
-      (mockWalletApi
+      (mockWalletApi.addressHandling
         .dropAddressTagType(_: BitcoinAddress, _: AddressTagType))
         .expects(testAddress, AddressLabelTagType)
         .returning(Future.successful(2))

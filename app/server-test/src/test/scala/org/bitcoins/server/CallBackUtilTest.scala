@@ -24,7 +24,7 @@ class CallBackUtilTest extends BitcoinSWalletTest {
   it must "have the kill switch kill messages to the createBitcoindNodeCallbacksForWallet callback" in {
     fundedWallet =>
       val wallet = fundedWallet.wallet
-      val addressF = wallet.getNewAddress()
+      val addressF = wallet.addressHandling.getNewAddress()
       val initBalanceF = wallet.getBalance()
       val tx1F = addressF.map { addr =>
         TransactionGenerators
@@ -65,7 +65,7 @@ class CallBackUtilTest extends BitcoinSWalletTest {
   it must "have the kill switch kill messages to the createNeutrinoNodeCallbacksForWallet callback" in {
     fundedWallet =>
       val wallet = fundedWallet.wallet
-      val addressF = wallet.getNewAddress()
+      val addressF = wallet.addressHandling.getNewAddress()
       val initBalanceF = wallet.getBalance()
       val tx1F = addressF.map { addr =>
         TransactionGenerators

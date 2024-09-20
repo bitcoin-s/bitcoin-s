@@ -21,10 +21,10 @@ class AddressLabelTest extends BitcoinSWalletTest {
     val tag1 = UnknownAddressTag("test_tag_name_1", "test_tag_type_1")
     val tag2 = UnknownAddressTag("test_tag_name_2", "test_tag_type_2")
     val addressF = for {
-      address <- wallet.getNewAddress(Vector(tag1))
+      address <- wallet.addressHandling.getNewAddress(Vector(tag1))
       // add another tag to address
-      tagDb1 <- wallet.getAddressTags(address)
-      tagDb2 <- wallet.tagAddress(address, tag2)
+      tagDb1 <- wallet.addressHandling.getAddressTags(address)
+      tagDb2 <- wallet.addressHandling.tagAddress(address, tag2)
     } yield {
       assert(tagDb1.head.address == address)
       assert(tagDb1.head.tagName == tag1.tagName)
@@ -50,8 +50,8 @@ class AddressLabelTest extends BitcoinSWalletTest {
       val resultF = for {
         address <- wallet.getNewAddress()
         // add another tag to address
-        _ <- wallet.tagAddress(address, tag1)
-        _ <- wallet.tagAddress(address, tag2)
+        _ <- wallet.addressHandling.tagAddress(address, tag1)
+        _ <- wallet.addressHandling.tagAddress(address, tag2)
       } yield ()
 
       recoverToSucceededIf[SQLException](resultF)

@@ -392,10 +392,10 @@ object BitcoinSWalletTest extends WalletLogger {
     for {
       wallet <- defaultWalletF
       account1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
-      newAccountWallet <- wallet.createNewAccount(
+      _ <- wallet.accountHandling.createNewAccount(
         hdAccount = account1
       )
-    } yield newAccountWallet
+    } yield wallet
 
   }
 
@@ -411,10 +411,10 @@ object BitcoinSWalletTest extends WalletLogger {
         chainQueryApi = chainQueryApi
       )
       account1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
-      newAccountWallet <- wallet.createNewAccount(
+      _ <- wallet.accountHandling.createNewAccount(
         hdAccount = account1
       )
-    } yield newAccountWallet.asInstanceOf[DLCWallet]
+    } yield wallet
   }
 
   /** Pairs the given wallet with a bitcoind instance that has money in the

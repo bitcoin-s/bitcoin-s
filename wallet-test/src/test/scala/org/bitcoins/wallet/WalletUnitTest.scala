@@ -37,7 +37,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
   it should "create a new wallet" in { (wallet: Wallet) =>
     for {
       accounts <- wallet.listAccounts()
-      addresses <- wallet.listAddresses()
+      addresses <- wallet.addressHandling.listAddresses()
     } yield {
       assert(accounts.length == 3) // legacy, segwit and nested segwit
       assert(addresses.isEmpty)
@@ -48,7 +48,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
     for {
       addr <- wallet.getNewAddress()
       otherAddr <- wallet.getNewAddress()
-      allAddrs <- wallet.listAddresses()
+      allAddrs <- wallet.addressHandling.listAddresses()
     } yield {
       assert(allAddrs.length == 2)
       assert(allAddrs.exists(_.address == addr))
@@ -221,7 +221,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
     for {
       accountDb <- wallet.accountDAO.findAll().map(_.head)
-      addr <- wallet.getNewAddress(accountDb)
+      addr <- wallet.accountHandling.getNewAddress(accountDb)
       addrDb <- wallet.addressDAO.findAddress(addr).map(_.get)
       walletKey = addrDb.ecPublicKey
       walletPath = addrDb.path
@@ -247,7 +247,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
   it must "be able to sign a psbt with our own p2pkh utxo" in {
     (wallet: Wallet) =>
       for {
-        addr <- wallet.getNewAddress(AddressType.Legacy)
+        addr <- wallet.addressHandling.getNewAddress(AddressType.Legacy)
         addrDb <- wallet.addressDAO.findAddress(addr).map(_.get)
         walletKey = addrDb.ecPublicKey
 
@@ -271,7 +271,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
   it must "be able to sign a psbt with our own p2sh segwit utxo" in {
     (wallet: Wallet) =>
       for {
-        addr <- wallet.getNewAddress(AddressType.NestedSegWit)
+        addr <- wallet.addressHandling.getNewAddress(AddressType.NestedSegWit)
         addrDb <- wallet.addressDAO.findAddress(addr).map(_.get)
         walletKey = addrDb.ecPublicKey
 
@@ -295,7 +295,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
   it must "be able to sign a psbt with our own p2wpkh utxo" in {
     (wallet: Wallet) =>
       for {
-        addr <- wallet.getNewAddress(AddressType.SegWit)
+        addr <- wallet.addressHandling.getNewAddress(AddressType.SegWit)
         addrDb <- wallet.addressDAO.findAddress(addr).map(_.get)
         walletKey = addrDb.ecPublicKey
 
@@ -326,7 +326,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
   it must "get correct txs to broadcast" in { (wallet: Wallet) =>
     for {
-      addr <- wallet.getNewAddress(AddressType.SegWit)
+      addr <- wallet.addressHandling.getNewAddress(AddressType.SegWit)
       addrDb <- wallet.addressDAO.findAddress(addr).map(_.get)
       walletKey = addrDb.ecPublicKey
 

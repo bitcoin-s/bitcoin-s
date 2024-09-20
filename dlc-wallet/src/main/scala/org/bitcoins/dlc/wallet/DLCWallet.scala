@@ -301,8 +301,8 @@ abstract class DLCWallet
       index: Int
   ): Future[Vector[AddressDb]] = {
     for {
-      zero <- getAddress(account, chainType, index)
-      one <- getAddress(account, chainType, index + 1)
+      zero <- addressHandling.getAddress(account, chainType, index)
+      one <- addressHandling.getAddress(account, chainType, index + 1)
     } yield {
       logger.debug(s"Wrote DLC key addresses to database using index $index")
       Vector(zero, one)
@@ -432,7 +432,7 @@ abstract class DLCWallet
       chainType = HDChainType.External
 
       account <- getDefaultAccountForType(AddressType.SegWit)
-      nextIndex <- getNextAvailableIndex(account, chainType)
+      nextIndex <- addressHandling.getNextAvailableIndex(account, chainType)
       _ <- writeDLCKeysToAddressDb(account, chainType, nextIndex)
 
       fundRawTxHelper <- fundTxHandling.fundRawTransactionInternal(
@@ -636,7 +636,8 @@ abstract class DLCWallet
             Future.successful(initAccept)
         }
       case None =>
-        val nextIndexF = getNextAvailableIndex(account, chainType)
+        val nextIndexF =
+          addressHandling.getNextAvailableIndex(account, chainType)
         val acceptWithoutSigsWithKeysF
             : Future[(DLCAcceptWithoutSigs, DLCPublicKeys)] =
           nextIndexF.map { nextIndex =>
