@@ -196,7 +196,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
     val accountsToCreate = existing.length until testVectors.length
     FutureUtil
       .sequentially(accountsToCreate) { _ =>
-        wallet.createNewAccount(keyManagerParams.purpose)
+        wallet.accountHandling.createNewAccount(keyManagerParams.purpose)
       }
       .map(_ => ())
   }
@@ -212,9 +212,10 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
       val addrFutures: Future[Seq[AddressDb]] =
         FutureUtil.sequentially(vec.addresses) { vector =>
           val addrFut = vector.chain match {
-            case HDChainType.Change => wallet.getNewChangeAddress(acc)
+            case HDChainType.Change =>
+              wallet.accountHandling.getNewChangeAddress(acc)
             case HDChainType.External =>
-              wallet.getNewAddress(acc)
+              wallet.accountHandling.getNewAddress(acc)
           }
           addrFut.flatMap(wallet.addressDAO.findAddress).map {
             case Some(addr) => addr

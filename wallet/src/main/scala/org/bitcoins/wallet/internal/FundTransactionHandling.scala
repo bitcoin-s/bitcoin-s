@@ -19,9 +19,9 @@ import slick.dbio.{DBIO, DBIOAction, Effect, NoStream}
 import scala.concurrent.Future
 
 case class FundTransactionHandling(
-    accountHandling: AccountHandlingApi,
+    accountHandling: AccountHandling,
     utxoHandling: UtxoHandling,
-    addressHandling: AddressHandling,
+    addressHandling: AddressHandlingApi,
     spendingInfoDAO: SpendingInfoDAO,
     transactionDAO: TransactionDAO,
     keyManager: BIP39KeyManagerApi)(implicit
@@ -191,7 +191,7 @@ case class FundTransactionHandling(
 
     for {
       (selectedUtxos, callbackF) <- selectedUtxosA
-      change <- addressHandling.getNewChangeAddressAction(fromAccount)
+      change <- accountHandling.getNewChangeAddressAction(fromAccount)
       utxoSpendingInfos = {
         selectedUtxos.map { case (utxo, prevTx) =>
           utxo.toUTXOInfo(keyManager = keyManager, prevTx)

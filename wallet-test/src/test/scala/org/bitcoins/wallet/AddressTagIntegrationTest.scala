@@ -41,7 +41,7 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
       IncomingTransactionDAO()(system.dispatcher, walletConfig)
     for {
       addr <- wallet.getNewAddress()
-      taggedAddr <- wallet.getNewAddress(Vector(exampleTag))
+      taggedAddr <- wallet.addressHandling.getNewAddress(Vector(exampleTag))
       txId <- bitcoind.sendMany(
         Map(addr -> valueFromBitcoind, taggedAddr -> valueFromBitcoind)
       )
@@ -132,7 +132,7 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
 
       val bitcoindAddrF = bitcoind.getNewAddress
       val walletAddr1F = wallet.getNewAddress()
-      val taggedAddrF = wallet.getNewAddress(Vector(exampleTag))
+      val taggedAddrF = wallet.addressHandling.getNewAddress(Vector(exampleTag))
       for {
         walletAddr1 <- walletAddr1F
         txid <- bitcoind.sendToAddress(walletAddr1, Bitcoins.two)

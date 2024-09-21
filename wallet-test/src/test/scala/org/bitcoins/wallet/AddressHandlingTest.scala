@@ -27,11 +27,11 @@ class AddressHandlingTest extends BitcoinSWalletTest {
   it must "generate a new address for the default account and then find it" in {
     (fundedWallet: FundedWallet) =>
       val wallet = fundedWallet.wallet
-      val addressF = wallet.getNewAddress()
+      val addressF = wallet.addressHandling.getNewAddress()
 
       for {
         address <- addressF
-        exists <- wallet.contains(address, None)
+        exists <- wallet.addressHandling.contains(address, None)
       } yield {
         assert(exists, s"Wallet must contain address after generating it")
       }
@@ -41,12 +41,14 @@ class AddressHandlingTest extends BitcoinSWalletTest {
     (fundedWallet: FundedWallet) =>
       val wallet = fundedWallet.wallet
       val account1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
-      val addressF = wallet.getNewAddress(account1)
+      val addressF = wallet.accountHandling.getNewAddress(account1)
       for {
         address <- addressF
-        listAddressesForAcct <- wallet.listAddresses(account1)
-        exists <- wallet.contains(address, Some(account1))
-        doesNotExist <- wallet.contains(address, None)
+        listAddressesForAcct <- wallet.accountHandling.listAddresses(account1)
+        exists <- wallet.addressHandling.contains(
+          address,
+          Some((wallet.accountHandling, account1)))
+        doesNotExist <- wallet.addressHandling.contains(address, None)
       } yield {
         assert(listAddressesForAcct.nonEmpty)
         assert(listAddressesForAcct.map(_.address).contains(address))
@@ -66,13 +68,13 @@ class AddressHandlingTest extends BitcoinSWalletTest {
       val wallet = fundedWallet.wallet
 
       for {
-        address1 <- wallet.getUnusedAddress
-        exists <- wallet.contains(address1, None)
+        address1 <- wallet.addressHandling.getUnusedAddress
+        exists <- wallet.addressHandling.contains(address1, None)
         _ = assert(exists, s"Wallet must contain address after generating it")
-        address2 <- wallet.getUnusedAddress
+        address2 <- wallet.addressHandling.getUnusedAddress
         _ = assert(address1 == address2, "Must generate same address")
         _ <- wallet.sendToAddress(address1, Satoshis(10000), None)
-        address3 <- wallet.getUnusedAddress
+        address3 <- wallet.addressHandling.getUnusedAddress
       } yield {
         assert(address1 != address3, "Must generate a new address")
         assert(address2 != address3, "Must generate a new address")
@@ -83,7 +85,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
     (fundedWallet: FundedWallet) =>
       val wallet = fundedWallet.wallet
       val addressesF = Future.sequence {
-        Vector.fill(10)(wallet.getNewAddress())
+        Vector.fill(10)(wallet.addressHandling.getNewAddress())
       }
 
       for {
@@ -102,16 +104,16 @@ class AddressHandlingTest extends BitcoinSWalletTest {
     val wallet = fundedWallet.wallet
 
     for {
-      emptySpentAddresses <- wallet.listSpentAddresses()
+      emptySpentAddresses <- wallet.addressHandling.listSpentAddresses()
       _ = assert(
         emptySpentAddresses.isEmpty,
         s"Wallet did not start with empty spent addresses, got $emptySpentAddresses"
       )
 
-      tempAddress <- wallet.getNewAddress()
+      tempAddress <- wallet.addressHandling.getNewAddress()
       tx <- wallet.sendToAddress(tempAddress, Bitcoins(1), None)
       spentDbs <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
-      spentAddresses <- wallet.listSpentAddresses()
+      spentAddresses <- wallet.addressHandling.listSpentAddresses()
     } yield {
       val diff = spentDbs
         .map(_.output.scriptPubKey)
@@ -126,7 +128,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
 
       for {
         unspentDbs <- wallet.spendingInfoDAO.findAllUnspent()
-        fundedAddresses <- wallet.listFundedAddresses()
+        fundedAddresses <- wallet.addressHandling.listFundedAddresses()
       } yield {
         val diff = unspentDbs
           .map(_.output)
@@ -144,7 +146,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
 
       for {
         addrDbs <- wallet.spendingInfoDAO.findAllSpendingInfos()
-        fundedAddresses <- wallet.listUnusedAddresses()
+        fundedAddresses <- wallet.addressHandling.listUnusedAddresses()
       } yield {
         val intersect = addrDbs
           .map(_.output.scriptPubKey)
@@ -157,13 +159,13 @@ class AddressHandlingTest extends BitcoinSWalletTest {
     val wallet = fundedWallet.wallet
 
     for {
-      addr <- wallet.getNewAddress()
-      initTags <- wallet.getAddressTags(addr)
+      addr <- wallet.addressHandling.getNewAddress()
+      initTags <- wallet.addressHandling.getAddressTags(addr)
       _ = assert(initTags.isEmpty)
 
       tag = AddressLabelTag("for test")
-      _ <- wallet.tagAddress(addr, tag)
-      tags <- wallet.getAddressTags(addr)
+      _ <- wallet.addressHandling.tagAddress(addr, tag)
+      tags <- wallet.addressHandling.getAddressTags(addr)
     } yield {
       assert(tags.size == 1)
       val tagDb = tags.head
@@ -176,19 +178,19 @@ class AddressHandlingTest extends BitcoinSWalletTest {
     val wallet = fundedWallet.wallet
 
     for {
-      addr <- wallet.getNewAddress()
-      initTags <- wallet.getAddressTags(addr)
+      addr <- wallet.addressHandling.getNewAddress()
+      initTags <- wallet.addressHandling.getAddressTags(addr)
       _ = assert(initTags.isEmpty)
 
       tag = AddressLabelTag("no one knows the supply of eth")
-      _ <- wallet.tagAddress(addr, tag)
-      tags <- wallet.getAddressTags(addr)
+      _ <- wallet.addressHandling.tagAddress(addr, tag)
+      tags <- wallet.addressHandling.getAddressTags(addr)
       _ = assert(tags.size == 1)
       tagDb = tags.head
       _ = assert(tagDb.address == addr)
       _ = assert(tagDb.addressTag == tag)
 
-      num <- wallet.dropAddressTag(tagDb)
+      num <- wallet.addressHandling.dropAddressTag(tagDb)
     } yield assert(num == 1)
   }
 
@@ -198,16 +200,16 @@ class AddressHandlingTest extends BitcoinSWalletTest {
     for {
       addr <- wallet.getNewAddress()
       addr1 <- wallet.getNewAddress()
-      initTags <- wallet.getAddressTags(addr)
-      initTags1 <- wallet.getAddressTags(addr1)
+      initTags <- wallet.addressHandling.getAddressTags(addr)
+      initTags1 <- wallet.addressHandling.getAddressTags(addr1)
       _ = assert(initTags.isEmpty)
       _ = assert(initTags1.isEmpty)
 
       tag = AddressLabelTag("no one knows the supply of eth")
-      _ <- wallet.tagAddress(addr, tag)
-      _ <- wallet.tagAddress(addr, HotStorage)
-      _ <- wallet.tagAddress(addr1, tag)
-      tags <- wallet.getAddressTags(AddressLabelTagType)
+      _ <- wallet.addressHandling.tagAddress(addr, tag)
+      _ <- wallet.addressHandling.tagAddress(addr, HotStorage)
+      _ <- wallet.addressHandling.tagAddress(addr1, tag)
+      tags <- wallet.addressHandling.getAddressTags(AddressLabelTagType)
       _ = assert(tags.size == 2)
       tagDb = tags.head
       _ = assert(tagDb.address == addr)
@@ -216,8 +218,10 @@ class AddressHandlingTest extends BitcoinSWalletTest {
       _ = assert(tagDb1.address == addr1)
       _ = assert(tagDb1.addressTag == tag)
 
-      numDropped <- wallet.dropAddressTagType(AddressLabelTagType)
-      hotStorageTags <- wallet.getAddressTags(StorageLocationTagType)
+      numDropped <- wallet.addressHandling.dropAddressTagType(
+        AddressLabelTagType)
+      hotStorageTags <- wallet.addressHandling.getAddressTags(
+        StorageLocationTagType)
     } yield {
       assert(numDropped == 2)
       assert(hotStorageTags.size == 1)
@@ -229,9 +233,9 @@ class AddressHandlingTest extends BitcoinSWalletTest {
     val wallet = fundedWallet.wallet
     val spk = EmptyScriptPubKey
     for {
-      before <- wallet.listScriptPubKeys()
-      spkDb <- wallet.watchScriptPubKey(spk)
-      after <- wallet.listScriptPubKeys()
+      before <- wallet.addressHandling.listScriptPubKeys()
+      spkDb <- wallet.addressHandling.watchScriptPubKey(spk)
+      after <- wallet.addressHandling.listScriptPubKeys()
     } yield {
       assert(before.size + 1 == after.size)
       assert(spkDb.scriptPubKey == spk)

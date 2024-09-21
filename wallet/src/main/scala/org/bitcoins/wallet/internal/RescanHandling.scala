@@ -12,6 +12,7 @@ import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.wallet.NeutrinoWalletApi.BlockMatchingResponse
 import org.bitcoins.core.api.wallet.{
   AccountHandlingApi,
+  AddressHandlingApi,
   RescanHandlingApi,
   TransactionProcessingApi
 }
@@ -41,7 +42,7 @@ import scala.util.{Failure, Success}
 case class RescanHandling(
     transactionProcessing: TransactionProcessingApi,
     accountHandling: AccountHandlingApi,
-    addressHandling: AddressHandling,
+    addressHandling: AddressHandlingApi,
     chainQueryApi: ChainQueryApi,
     nodeApi: NodeApi,
     walletDAOs: WalletDAOs)(implicit

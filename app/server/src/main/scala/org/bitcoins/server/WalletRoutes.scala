@@ -177,9 +177,9 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
           complete {
             val addressF = labelOpt match {
               case Some(label) =>
-                wallet.getNewAddress(Vector(label))
+                wallet.addressHandling.getNewAddress(Vector(label))
               case None =>
-                wallet.getNewAddress()
+                wallet.addressHandling.getNewAddress()
             }
             addressF.map(address => Server.httpSuccess(address))
           }
@@ -231,7 +231,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
       withValidServerCommand(LabelAddress.fromJsArr(arr)) {
         case LabelAddress(address, label) =>
           complete {
-            wallet.tagAddress(address, label).map { tagDb =>
+            wallet.addressHandling.tagAddress(address, label).map { tagDb =>
               Server.httpSuccess(
                 s"Added label \'${tagDb.tagName.name}\' to ${tagDb.address.value}"
               )
@@ -243,7 +243,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
       withValidServerCommand(GetAddressTags.fromJsArr(arr)) {
         case GetAddressTags(address) =>
           complete {
-            wallet.getAddressTags(address).map { tagDbs =>
+            wallet.addressHandling.getAddressTags(address).map { tagDbs =>
               val retStr = tagDbs.map(_.tagName.name)
               Server.httpSuccess(retStr)
             }
@@ -254,16 +254,18 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
       withValidServerCommand(GetAddressLabel.fromJsArr(arr)) {
         case GetAddressLabel(address) =>
           complete {
-            wallet.getAddressTags(address, AddressLabelTagType).map { tagDbs =>
-              val retStr = tagDbs.map(_.tagName.name)
-              Server.httpSuccess(retStr)
-            }
+            wallet.addressHandling
+              .getAddressTags(address, AddressLabelTagType)
+              .map { tagDbs =>
+                val retStr = tagDbs.map(_.tagName.name)
+                Server.httpSuccess(retStr)
+              }
           }
       }
 
     case ServerCommand("getaddresslabels", _) =>
       complete {
-        val allTagsF = wallet.getAddressTags()
+        val allTagsF = wallet.addressHandling.getAddressTags()
         for {
           allTags <- allTagsF
           grouped = allTags.groupBy(_.address)
@@ -284,7 +286,8 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
         case DropAddressLabel(address, label) =>
           complete {
             val tagName = AddressLabelTagName(label)
-            val droppedF = wallet.dropAddressTagName(address, tagName)
+            val droppedF =
+              wallet.addressHandling.dropAddressTagName(address, tagName)
             droppedF.map(handleTagResponse)
           }
       }
@@ -293,7 +296,8 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
         case DropAddressLabels(address) =>
           complete {
             val droppedF =
-              wallet.dropAddressTagType(address, AddressLabelTagType)
+              wallet.addressHandling.dropAddressTagType(address,
+                                                        AddressLabelTagType)
             droppedF.map(handleTagResponse)
           }
       }
@@ -803,7 +807,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
 
     case ServerCommand("getaddresses", _) =>
       complete {
-        wallet.listAddresses().map { addressDbs =>
+        wallet.addressHandling.listAddresses().map { addressDbs =>
           val addresses = addressDbs.map(_.address)
           Server.httpSuccess(addresses)
         }
@@ -811,7 +815,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
 
     case ServerCommand("getspentaddresses", _) =>
       complete {
-        wallet.listSpentAddresses().map { addressDbs =>
+        wallet.addressHandling.listSpentAddresses().map { addressDbs =>
           val addresses = addressDbs.map(_.address)
           Server.httpSuccess(addresses)
         }
@@ -819,7 +823,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
 
     case ServerCommand("getfundedaddresses", _) =>
       complete {
-        wallet.listFundedAddresses().map { addressDbs =>
+        wallet.addressHandling.listFundedAddresses().map { addressDbs =>
           val addressAndValues = addressDbs.map { case (addressDb, value) =>
             Obj(
               "address" -> Str(addressDb.address.value),
@@ -833,7 +837,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
 
     case ServerCommand("getunusedaddresses", _) =>
       complete {
-        wallet.listUnusedAddresses().map { addressDbs =>
+        wallet.addressHandling.listUnusedAddresses().map { addressDbs =>
           val addresses = addressDbs.map(_.address)
           Server.httpSuccess(addresses)
         }
@@ -851,7 +855,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
       withValidServerCommand(GetAddressInfo.fromJsArr(arr)) {
         case GetAddressInfo(address) =>
           complete {
-            wallet.getAddressInfo(address).map {
+            wallet.addressHandling.getAddressInfo(address).map {
               case Some(addressInfo) =>
                 val json = Obj(
                   "pubkey" -> Str(addressInfo.pubkey.hex),
@@ -869,8 +873,8 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
         case CreateNewAccount(purpose) =>
           complete {
             for {
-              newWallet <- wallet.createNewAccount(purpose)
-              accounts <- newWallet.listAccounts()
+              _ <- wallet.accountHandling.createNewAccount(purpose)
+              accounts <- wallet.accountHandling.listAccounts()
             } yield {
               val xpubs = accounts.map(_.xpub)
               val json =

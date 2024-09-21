@@ -68,7 +68,7 @@ trait FundWalletUtil extends BitcoinSLogger {
   )(implicit ec: ExecutionContext): Future[Wallet] = {
 
     val addressesF: Future[Vector[BitcoinAddress]] = Future.sequence {
-      Vector.fill(3)(wallet.getNewAddress(account))
+      Vector.fill(3)(wallet.accountHandling.getNewAddress(account))
     }
 
     // construct three txs that send money to these addresses
@@ -100,7 +100,7 @@ trait FundWalletUtil extends BitcoinSLogger {
   )(implicit ec: ExecutionContext): Future[HDWalletApi] = {
 
     val addressesF: Future[Vector[BitcoinAddress]] = Future.sequence {
-      Vector.fill(3)(wallet.getNewAddress(account))
+      Vector.fill(3)(wallet.accountHandling.getNewAddress(account))
     }
 
     val txAndHashF = for {

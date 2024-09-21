@@ -1,9 +1,9 @@
 package org.bitcoins.core.api.wallet
 
 import org.bitcoins.core.api.keymanager.BIP39KeyManagerApi
-import org.bitcoins.core.api.wallet.db.{AccountDb, AddressDb, SpendingInfoDb}
+import org.bitcoins.core.api.wallet.db.{AccountDb, SpendingInfoDb}
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.hd.{AddressType, HDAccount, HDChainType, HDPurpose}
+import org.bitcoins.core.hd.{AddressType, HDAccount, HDPurpose}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
@@ -33,6 +33,7 @@ trait HDWalletApi extends WalletApi {
   def accountHandling: AccountHandlingApi
   def fundTxHandling: FundTransactionHandlingApi
   def rescanHandling: RescanHandlingApi
+  def addressHandling: AddressHandlingApi
 
   /** Gets the balance of the given account */
   def getBalance(account: HDAccount)(implicit
@@ -50,21 +51,6 @@ trait HDWalletApi extends WalletApi {
   def getConfirmedBalance(account: HDAccount): Future[CurrencyUnit]
 
   def getUnconfirmedBalance(account: HDAccount): Future[CurrencyUnit]
-
-  def getNewAddress(account: HDAccount): Future[BitcoinAddress]
-
-  def getNewAddress(account: AccountDb): Future[BitcoinAddress]
-
-  /** Generates a new change address */
-  def getNewChangeAddress(account: AccountDb): Future[BitcoinAddress]
-
-  override def getNewChangeAddress()(implicit
-      ec: ExecutionContext): Future[BitcoinAddress] = {
-    for {
-      account <- getDefaultAccount()
-      addr <- getNewChangeAddress(account)
-    } yield addr
-  }
 
   /** Fetches the default account from the DB
     * @return
@@ -443,39 +429,11 @@ trait HDWalletApi extends WalletApi {
     } yield tx
   }
 
-  def listAddresses(account: HDAccount): Future[Vector[AddressDb]]
-
-  def listSpentAddresses(account: HDAccount): Future[Vector[AddressDb]]
-
-  def listFundedAddresses(
-      account: HDAccount): Future[Vector[(AddressDb, CurrencyUnit)]]
-
-  def listUnusedAddresses(account: HDAccount): Future[Vector[AddressDb]]
-
   def listDefaultAccountUtxos(): Future[Vector[SpendingInfoDb]]
 
   def listUtxos(hdAccount: HDAccount): Future[Vector[SpendingInfoDb]]
 
   override def clearAllUtxos(): Future[HDWalletApi]
-
-  /** Gets the address associated with the pubkey at the resulting `BIP32Path`
-    * determined by the default account and the given chainType and addressIndex
-    */
-  def getAddress(chainType: HDChainType, addressIndex: Int)(implicit
-      ec: ExecutionContext): Future[AddressDb] = {
-    for {
-      account <- getDefaultAccount()
-      address <- getAddress(account, chainType, addressIndex)
-    } yield address
-  }
-
-  /** Gets the address associated with the pubkey at the resulting `BIP32Path`
-    * determined the given account, chainType, and addressIndex
-    */
-  def getAddress(
-      account: AccountDb,
-      chainType: HDChainType,
-      addressIndex: Int): Future[AddressDb]
 
   def listAccounts(): Future[Vector[AccountDb]] = {
     accountHandling.listAccounts()
@@ -490,19 +448,6 @@ trait HDWalletApi extends WalletApi {
       ec: ExecutionContext): Future[Vector[AccountDb]] = {
     accountHandling.listAccounts().map(_.filter(_.hdAccount.purpose == purpose))
   }
-
-  /** Creates a new account with the given purpose */
-  def createNewAccount(purpose: HDPurpose): Future[HDWalletApi]
-
-  /** Tries to create a new account in this wallet. Fails if the most recent
-    * account has no transaction history, as per BIP44
-    *
-    * @see
-    *   [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki#account BIP44 account section]]
-    */
-  def createNewAccount(hdAccount: HDAccount): Future[HDWalletApi]
-
-  def findAccount(account: HDAccount): Future[Option[AccountDb]]
 
   def fundRawTransaction(
       destinations: Vector[TransactionOutput],

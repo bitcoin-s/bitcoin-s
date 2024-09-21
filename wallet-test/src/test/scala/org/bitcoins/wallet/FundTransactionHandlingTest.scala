@@ -169,7 +169,7 @@ class FundTransactionHandlingTest
       val wallet = fundedWallet.wallet
       val walletConfig = fundedWallet.walletConfig
       val account1 = WalletTestUtil.getHdAccount1(walletConfig)
-      val account1DbF = wallet.findAccount(account1)
+      val account1DbF = wallet.accountHandling.findAccount(account1)
       for {
         feeRate <- wallet.getFeeRate()
         account1DbOpt <- account1DbF
@@ -195,7 +195,7 @@ class FundTransactionHandlingTest
       val wallet = fundedWallet.wallet
       val walletConfig = fundedWallet.walletConfig
       val account1 = WalletTestUtil.getHdAccount1(walletConfig)
-      val account1DbF = wallet.findAccount(account1)
+      val account1DbF = wallet.accountHandling.findAccount(account1)
       val fundedTxF = for {
         feeRate <- wallet.getFeeRate()
         account1DbOpt <- account1DbF
@@ -218,11 +218,12 @@ class FundTransactionHandlingTest
       val bitcoind = fundedWallet.bitcoind
       val fundedTxF = for {
         feeRate <- wallet.getFeeRate()
-        _ <- wallet.createNewAccount(wallet.keyManager.kmParams.purpose)
+        _ <- wallet.accountHandling.createNewAccount(
+          wallet.keyManager.kmParams.purpose)
         accounts <- wallet.listAccounts()
         account2 = accounts.find(_.hdAccount.index == 2).get
 
-        addr <- wallet.getNewAddress(account2)
+        addr <- wallet.accountHandling.getNewAddress(account2)
 
         hash <- bitcoind.generateToAddress(1, addr).map(_.head)
         block <- bitcoind.getBlockRaw(hash)
@@ -273,7 +274,7 @@ class FundTransactionHandlingTest
   ): Future[Assertion] = {
     for {
       feeRate <- wallet.getFeeRate()
-      taggedAddr <- wallet.getNewAddress(Vector(tag))
+      taggedAddr <- wallet.addressHandling.getNewAddress(Vector(tag))
       _ <-
         wallet.sendToAddress(taggedAddr, destination.value * 2, Some(feeRate))
       taggedBalance <- wallet.getBalance(tag)

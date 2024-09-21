@@ -184,7 +184,7 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoindNewest {
         UInt32.zero
       )
 
-      addrDb <- wallet.getAddressInfo(recvAddr).map(_.get)
+      addrDb <- wallet.addressHandling.getAddressInfo(recvAddr).map(_.get)
       path = addrDb.path
       coin = path.coin
       accountDb <- accountDAO

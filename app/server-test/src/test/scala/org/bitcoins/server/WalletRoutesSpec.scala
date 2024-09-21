@@ -4,6 +4,7 @@ import org.apache.pekko.http.scaladsl.model.ContentTypes.*
 import org.apache.pekko.http.scaladsl.testkit.ScalatestRouteTest
 import org.bitcoins.commons.serializers.Picklers
 import org.bitcoins.core.api.chain.ChainApi
+import org.bitcoins.core.api.wallet.AccountHandlingApi
 import org.bitcoins.core.api.wallet.db.AccountDb
 import org.bitcoins.core.crypto.ExtKeyVersion.SegWitMainNetPriv
 import org.bitcoins.core.crypto.ExtPrivateKey
@@ -39,6 +40,7 @@ class WalletRoutesSpec
 
   val mockNode: Node = mock[Node]
   val mockWalletApi: MockWalletApi = mock[MockWalletApi]
+  val mockAccountHandlingApi: AccountHandlingApi = mock[AccountHandlingApi]
 
   val walletHolder = new WalletHolder(Some(mockWalletApi))
 
@@ -167,12 +169,18 @@ class WalletRoutesSpec
       val extPubKey = extPrivKey.extPublicKey
       val hdAccount = HDAccount.fromExtKeyVersion(version = keyVersion, idx = 0)
       val accountDb = AccountDb(extPubKey, hdAccount = hdAccount)
-      (mockWalletApi
+
+      (() => mockWalletApi.accountHandling)
+        .expects()
+        .returning(mockAccountHandlingApi)
+        .anyNumberOfTimes()
+
+      (mockWalletApi.accountHandling
         .createNewAccount(_: HDPurpose))
         .expects(HDPurpose.default)
-        .returning(Future.successful(mockWalletApi))
+        .returning(Future.successful(extPubKey))
 
-      (() => mockWalletApi.listAccounts())
+      (() => mockWalletApi.accountHandling.listAccounts())
         .expects()
         .returning(Future.successful(Vector(accountDb)))
 

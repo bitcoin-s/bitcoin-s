@@ -49,7 +49,7 @@ class WalletCallbackTest extends BitcoinSWalletTest {
 
       for {
         address <- wallet.getNewAddress()
-        exists <- wallet.contains(address, None)
+        exists <- wallet.addressHandling.contains(address, None)
         _ = assert(exists, "Wallet must contain address after generating it")
         result <- resultP.future
       } yield assert(result == address)

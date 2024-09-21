@@ -44,12 +44,9 @@ import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
-import scala.util.{Failure, Random, Success}
+import scala.util.Random
 
-abstract class Wallet
-    extends NeutrinoHDWalletApi
-    with AddressHandling
-    with WalletLogger {
+abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
 
   override def keyManager: BIP39KeyManager = {
     walletConfig.kmConf.toBip39KeyManager
@@ -104,13 +101,16 @@ abstract class Wallet
   def fundTxHandling: FundTransactionHandling = FundTransactionHandling(
     accountHandling = accountHandling,
     utxoHandling = utxoHandling,
-    addressHandling = this,
+    addressHandling = addressHandling,
     spendingInfoDAO = spendingInfoDAO,
     transactionDAO = transactionDAO,
     keyManager = keyManager
   )
-  def accountHandling: AccountHandlingApi =
-    AccountHandling(this, walletDAOs)
+  def accountHandling: AccountHandling =
+    AccountHandling(walletDAOs, keyManager)
+
+  def addressHandling: AddressHandling =
+    AddressHandling(accountHandling, walletDAOs)
 
   protected lazy val transactionProcessing: TransactionProcessingApi = {
     TransactionProcessing(
@@ -124,7 +124,7 @@ abstract class Wallet
     RescanHandling(
       transactionProcessing = transactionProcessing,
       accountHandling = accountHandling,
-      addressHandling = this,
+      addressHandling = addressHandling,
       chainQueryApi = chainQueryApi,
       nodeApi = nodeApi,
       walletDAOs = walletDAOs
@@ -173,6 +173,14 @@ abstract class Wallet
     Future.successful(this)
   }
 
+  override def getNewAddress(): Future[BitcoinAddress] = {
+    addressHandling.getNewAddress()
+  }
+
+  override def getNewChangeAddress(): Future[BitcoinAddress] = {
+    addressHandling.getNewChangeAddress()
+  }
+
   override def getSyncDescriptorOpt(): Future[Option[SyncHeightDescriptor]] = {
     stateDescriptorDAO.getSyncHeight()
   }
@@ -219,7 +227,7 @@ abstract class Wallet
       blockFilters: Vector[(DoubleSha256DigestBE, GolombFilter)]
   ): Future[Wallet] = {
     val utxosF = utxoHandling.listUtxos()
-    val spksF = listScriptPubKeys()
+    val spksF = addressHandling.listScriptPubKeys()
     val blockHashOpt = blockFilters.lastOption.map(_._1)
     val heightOptF = blockHashOpt match {
       case Some(blockHash) =>
@@ -411,7 +419,7 @@ abstract class Wallet
     val signed = rawTxHelper.signedTx
 
     val processedTxF = for {
-      ourOuts <- findOurOuts(signed)
+      ourOuts <- addressHandling.findOurOutputs(signed)
       creditingAmount = rawTxHelper.scriptSigParams.foldLeft(
         CurrencyUnits.zero
       )(_ + _.amount)
@@ -540,7 +548,7 @@ abstract class Wallet
           .zip(prevTxs)
           .map(info => info._1.toUTXOInfo(keyManager, info._2))
 
-      changeAddr <- getNewChangeAddress(fromAccount.hdAccount)
+      changeAddr <- accountHandling.getNewChangeAddress(fromAccount.hdAccount)
 
       output = TransactionOutput(amount, address.scriptPubKey)
       txBuilder = ShufflingNonInteractiveFinalizer.txBuilderFrom(
@@ -862,7 +870,7 @@ abstract class Wallet
           Random.shuffle(spendingInfos).head
         }
 
-      addr <- getNewChangeAddress()
+      addr <- addressHandling.getNewChangeAddress()
       childTx <- sendFromOutPoints(Vector(spendingInfo.outPoint), addr, feeRate)
     } yield childTx
   }
@@ -939,62 +947,6 @@ abstract class Wallet
         logger.warn("Did not find any keys or utxos that belong to this wallet")
       }
       signed
-    }
-  }
-
-  protected def getLastAccountOpt(
-      purpose: HDPurpose
-  ): Future[Option[AccountDb]] = {
-    accountDAO
-      .findAll()
-      .map(_.filter(_.hdAccount.purpose == purpose))
-      .map(_.sortBy(_.hdAccount.index))
-      // we want to the most recently created account,
-      // to know what the index of our new account
-      // should be.
-      .map(_.lastOption)
-  }
-
-  /** Creates a new account my reading from our account database, finding the
-    * last account, and then incrementing the account index by one, and then
-    * creating that account
-    *
-    * @return
-    */
-  override def createNewAccount(purpose: HDPurpose): Future[Wallet] = {
-    getLastAccountOpt(purpose).flatMap {
-      case Some(accountDb) =>
-        val hdAccount = accountDb.hdAccount
-        val newAccount = hdAccount.copy(index = hdAccount.index + 1)
-        createNewAccount(newAccount)
-      case None =>
-        createNewAccount(walletConfig.defaultAccount)
-    }
-  }
-
-  // todo: check if there's addresses in the most recent
-  // account before creating new
-  override def createNewAccount(
-      hdAccount: HDAccount
-  ): Future[Wallet] = {
-    logger.info(
-      s"Creating new account at index ${hdAccount.index} for purpose ${hdAccount.purpose}"
-    )
-
-    val xpub: ExtPublicKey = {
-      keyManager.deriveXPub(hdAccount) match {
-        case Failure(exception) =>
-          // this won't happen, because we're deriving from a privkey
-          // this should really be changed in the method signature
-          logger.error(s"Unexpected error when deriving xpub: $exception")
-          throw exception
-        case Success(xpub) => xpub
-      }
-    }
-    val newAccountDb = AccountDb(xpub, hdAccount)
-    accountDAO.create(newAccountDb).map { created =>
-      logger.debug(s"Created new account ${created.hdAccount}")
-      this
     }
   }
 
