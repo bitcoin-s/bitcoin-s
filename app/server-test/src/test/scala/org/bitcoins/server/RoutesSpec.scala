@@ -2040,12 +2040,12 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
       val message = "Never gonna give you up, never gonna let you down"
 
-      (() => mockWalletApi.fundTxHandling)
+      (() => mockWalletApi.sendFundsHandling)
         .expects()
-        .returning(mockFundTxHandlingApi)
+        .returning(mockSendFundsHandlingApi)
         .anyNumberOfTimes()
 
-      (mockWalletApi.fundTxHandling
+      (mockWalletApi.sendFundsHandling
         .makeOpReturnCommitment(_: String, _: Boolean, _: Option[FeeUnit]))
         .expects(message, false, *)
         .returning(Future.successful(EmptyTransaction))

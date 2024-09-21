@@ -13,10 +13,11 @@ import org.bitcoins.core.api.wallet.{
   UtxoHandlingApi
 }
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
+import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.hd.HDPath
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{
   InputUtil,
   Transaction,
@@ -25,7 +26,9 @@ import org.bitcoins.core.protocol.transaction.{
   TxUtil
 }
 import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.script.constant.ScriptConstant
+import org.bitcoins.core.script.control.OP_RETURN
+import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil}
 import org.bitcoins.core.wallet.builder.{
   AddWitnessDataFinalizer,
   FundRawTxHelper,
@@ -44,7 +47,7 @@ import org.bitcoins.core.wallet.fee.{
   SatoshisPerVirtualByte
 }
 import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
-import org.bitcoins.crypto.DoubleSha256DigestBE
+import org.bitcoins.crypto.{CryptoUtil, DoubleSha256DigestBE}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models.{
   AccountDAO,
@@ -53,6 +56,7 @@ import org.bitcoins.wallet.models.{
   TransactionDAO,
   WalletDAOs
 }
+import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Random
@@ -224,6 +228,79 @@ case class SendFundsHandlingHandling(
       addr <- addressHandling.getNewChangeAddress()
       childTx <- sendFromOutPoints(Vector(spendingInfo.outPoint), addr, feeRate)
     } yield childTx
+  }
+
+  override def makeOpReturnCommitment(
+      message: String,
+      hashMessage: Boolean,
+      feeRate: FeeUnit,
+      fromAccount: AccountDb
+  ): Future[Transaction] = {
+    val messageToUse = if (hashMessage) {
+      CryptoUtil.sha256(ByteVector(message.getBytes)).bytes
+    } else {
+      if (message.length > 80) {
+        throw new IllegalArgumentException(
+          s"Message cannot be greater than 80 characters, it should be hashed, got $message"
+        )
+      } else ByteVector(message.getBytes)
+    }
+
+    val asm = Seq(OP_RETURN) ++ BitcoinScriptUtil.calculatePushOp(
+      messageToUse
+    ) :+ ScriptConstant(messageToUse)
+
+    val scriptPubKey = ScriptPubKey(asm)
+
+    val output = TransactionOutput(Satoshis.zero, scriptPubKey)
+
+    for {
+      fundRawTxHelper <- fundTxHandling.fundRawTransactionInternal(
+        destinations = Vector(output),
+        feeRate = feeRate,
+        fromAccount = fromAccount,
+        coinSelectionAlgo = CoinSelectionAlgo.RandomSelection,
+        fromTagOpt = None,
+        markAsReserved = true
+      )
+      tx <- finishSend(
+        fundRawTxHelper,
+        CurrencyUnits.zero,
+        feeRate,
+        Vector.empty
+      )
+    } yield tx
+  }
+
+  override def makeOpReturnCommitment(
+      message: String,
+      hashMessage: Boolean,
+      feeRateOpt: Option[FeeUnit],
+      fromAccount: AccountDb): Future[Transaction] = {
+    for {
+      feeRate <- determineFeeRate(feeRateOpt)
+      tx <- makeOpReturnCommitment(message, hashMessage, feeRate, fromAccount)
+    } yield tx
+  }
+
+  override def makeOpReturnCommitment(
+      message: String,
+      hashMessage: Boolean,
+      feeRate: FeeUnit): Future[Transaction] = {
+    for {
+      account <- accountHandling.getDefaultAccount()
+      tx <- makeOpReturnCommitment(message, hashMessage, feeRate, account)
+    } yield tx
+  }
+
+  override def makeOpReturnCommitment(
+      message: String,
+      hashMessage: Boolean,
+      feeRateOpt: Option[FeeUnit]): Future[Transaction] = {
+    for {
+      feeRate <- determineFeeRate(feeRateOpt)
+      tx <- makeOpReturnCommitment(message, hashMessage, feeRate)
+    } yield tx
   }
 
   override def sendWithAlgo(
@@ -538,4 +615,12 @@ case class SendFundsHandlingHandling(
       utxoHandling.unmarkUTXOsAsReserved(signed).flatMap(_ => processedTxF)
     }
   }
+
+  private def determineFeeRate(feeRateOpt: Option[FeeUnit]): Future[FeeUnit] =
+    feeRateOpt match {
+      case None =>
+        feeRateApi.getFeeRate()
+      case Some(feeRate) =>
+        Future.successful(feeRate)
+    }
 }

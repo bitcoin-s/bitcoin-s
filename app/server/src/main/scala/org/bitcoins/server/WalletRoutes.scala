@@ -745,7 +745,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
         case OpReturnCommit(message, hashMessage, satoshisPerVirtualByteOpt) =>
           complete {
             for {
-              tx <- wallet.fundTxHandling.makeOpReturnCommitment(
+              tx <- wallet.sendFundsHandling.makeOpReturnCommitment(
                 message,
                 hashMessage,
                 satoshisPerVirtualByteOpt

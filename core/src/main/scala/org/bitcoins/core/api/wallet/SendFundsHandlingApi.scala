@@ -29,6 +29,30 @@ trait SendFundsHandlingApi {
   def bumpFeeCPFP(
       txId: DoubleSha256DigestBE,
       feeRate: FeeUnit): Future[Transaction]
+
+  def makeOpReturnCommitment(
+      message: String,
+      hashMessage: Boolean,
+      feeRate: FeeUnit,
+      fromAccount: AccountDb
+  ): Future[Transaction]
+
+  def makeOpReturnCommitment(
+      message: String,
+      hashMessage: Boolean,
+      feeRateOpt: Option[FeeUnit],
+      fromAccount: AccountDb): Future[Transaction]
+
+  def makeOpReturnCommitment(
+      message: String,
+      hashMessage: Boolean,
+      feeRate: FeeUnit): Future[Transaction]
+
+  def makeOpReturnCommitment(
+      message: String,
+      hashMessage: Boolean,
+      feeRateOpt: Option[FeeUnit]): Future[Transaction]
+
   def sendWithAlgo(
       address: BitcoinAddress,
       amount: CurrencyUnit,

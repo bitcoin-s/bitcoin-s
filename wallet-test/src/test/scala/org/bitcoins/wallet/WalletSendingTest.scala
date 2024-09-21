@@ -118,7 +118,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
   ): Future[Assertion] = {
     val message = "ben was here"
     for {
-      tx <- wallet.fundTxHandling.makeOpReturnCommitment(
+      tx <- wallet.sendFundsHandling.makeOpReturnCommitment(
         message = message,
         hashMessage = hashMessage,
         feeRateOpt = None
@@ -169,7 +169,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
     fundedWallet =>
       val wallet = fundedWallet.wallet
       recoverToSucceededIf[IllegalArgumentException] {
-        wallet.fundTxHandling.makeOpReturnCommitment(
+        wallet.sendFundsHandling.makeOpReturnCommitment(
           "This message is much too long and is over 80 bytes, the limit for OP_RETURN. It should cause an error.",
           hashMessage = false,
           None
