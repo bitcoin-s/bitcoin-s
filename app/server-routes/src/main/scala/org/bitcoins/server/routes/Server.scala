@@ -75,7 +75,7 @@ case class Server(
   }
 
   /** HTTP directive that handles both exceptions and rejections */
-  def withErrorHandling(route: Route): Route = {
+  private def withErrorHandling(route: Route): Route = {
 
     val rejectionHandler =
       RejectionHandler
