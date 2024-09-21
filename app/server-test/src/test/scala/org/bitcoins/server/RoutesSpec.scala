@@ -8,6 +8,7 @@ import org.apache.pekko.http.scaladsl.testkit.{
 }
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.db.*
+import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
 import org.bitcoins.core.api.wallet.db.*
 import org.bitcoins.core.api.wallet.{
   AccountHandlingApi,
@@ -52,7 +53,7 @@ import org.bitcoins.server.routes.{CommonRoutes, ServerCommand}
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.wallet.DLCWalletUtil
 import org.bitcoins.testkitcore.util.TransactionTestUtil
-import org.bitcoins.wallet.{MockWalletApi, WalletHolder}
+import org.bitcoins.wallet.WalletHolder
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.wordspec.AnyWordSpec
 import scodec.bits.ByteVector
@@ -84,7 +85,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
   val nodeRoutes: NodeRoutes = NodeRoutes(mockNode)
 
-  val mockWalletApi: MockWalletApi = mock[MockWalletApi]
+  val mockWalletApi: DLCNeutrinoHDWalletApi = mock[DLCNeutrinoHDWalletApi]
 
   val mockRescanHandlingApi: RescanHandlingApi = mock[RescanHandlingApi]
 

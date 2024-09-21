@@ -4,6 +4,7 @@ import org.apache.pekko.http.scaladsl.model.ContentTypes.*
 import org.apache.pekko.http.scaladsl.testkit.ScalatestRouteTest
 import org.bitcoins.commons.serializers.Picklers
 import org.bitcoins.core.api.chain.ChainApi
+import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
 import org.bitcoins.core.api.wallet.AccountHandlingApi
 import org.bitcoins.core.api.wallet.db.AccountDb
 import org.bitcoins.core.crypto.ExtKeyVersion.SegWitMainNetPriv
@@ -21,7 +22,7 @@ import org.bitcoins.server.routes.ServerCommand
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkitcore.Implicits.GeneratorOps
 import org.bitcoins.testkitcore.gen.TLVGen
-import org.bitcoins.wallet.{MockWalletApi, WalletHolder}
+import org.bitcoins.wallet.WalletHolder
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -39,7 +40,7 @@ class WalletRoutesSpec
   val mockChainApi: ChainApi = mock[ChainApi]
 
   val mockNode: Node = mock[Node]
-  val mockWalletApi: MockWalletApi = mock[MockWalletApi]
+  val mockWalletApi: DLCNeutrinoHDWalletApi = mock[DLCNeutrinoHDWalletApi]
   val mockAccountHandlingApi: AccountHandlingApi = mock[AccountHandlingApi]
 
   val walletHolder = new WalletHolder(Some(mockWalletApi))
