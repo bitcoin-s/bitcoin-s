@@ -29,5 +29,4 @@ trait FundTransactionHandlingApi {
       fromTagOpt: Option[AddressTag],
       markAsReserved: Boolean)
       : Future[FundRawTxHelper[ShufflingNonInteractiveFinalizer]]
-
 }

@@ -160,7 +160,7 @@ trait SendFundsHandlingApi {
                       fromAccount,
                       Vector.empty)
 
-  def sendFromOutPoints(
+  final def sendFromOutPoints(
       outPoints: Vector[TransactionOutPoint],
       address: BitcoinAddress,
       amount: CurrencyUnit,
@@ -173,7 +173,7 @@ trait SendFundsHandlingApi {
     } yield tx
   }
 
-  def sendFromOutPoints(
+  final def sendFromOutPoints(
       outPoints: Vector[TransactionOutPoint],
       address: BitcoinAddress,
       amount: CurrencyUnit,
@@ -185,7 +185,7 @@ trait SendFundsHandlingApi {
     } yield tx
   }
 
-  def sendFromOutPoints(
+  final def sendFromOutPoints(
       outPoints: Vector[TransactionOutPoint],
       address: BitcoinAddress,
       amount: CurrencyUnit,
@@ -196,7 +196,7 @@ trait SendFundsHandlingApi {
     } yield tx
   }
 
-  def sendFromOutPoints(
+  final def sendFromOutPoints(
       outPoints: Vector[TransactionOutPoint],
       address: BitcoinAddress,
       amount: CurrencyUnit,
@@ -226,14 +226,14 @@ trait SendFundsHandlingApi {
       newTags
     )
 
-  def sendToAddress(
+  final def sendToAddress(
       address: BitcoinAddress,
       amount: CurrencyUnit,
       feeRate: FeeUnit,
       fromAccount: AccountDb): Future[Transaction] =
     sendToAddress(address, amount, feeRate, fromAccount, Vector.empty)
 
-  def sendToAddress(
+  final def sendToAddress(
       address: BitcoinAddress,
       amount: CurrencyUnit,
       feeRateOpt: Option[FeeUnit],
@@ -245,7 +245,7 @@ trait SendFundsHandlingApi {
     } yield tx
   }
 
-  def sendToAddress(
+  final def sendToAddress(
       address: BitcoinAddress,
       amount: CurrencyUnit,
       feeRateOpt: Option[FeeUnit]
@@ -256,7 +256,7 @@ trait SendFundsHandlingApi {
     } yield tx
   }
 
-  def sendToAddress(
+  final def sendToAddress(
       address: BitcoinAddress,
       amount: CurrencyUnit,
       feeRate: FeeUnit)(implicit ec: ExecutionContext): Future[Transaction] = {
@@ -266,7 +266,7 @@ trait SendFundsHandlingApi {
     } yield tx
   }
 
-  def sendToAddress(
+  final def sendToAddress(
       address: BitcoinAddress,
       amount: CurrencyUnit,
       feeRate: FeeUnit,
@@ -329,7 +329,7 @@ trait SendFundsHandlingApi {
     } yield tx
   }
 
-  def sendToAddresses(
+  final def sendToAddresses(
       addresses: Vector[BitcoinAddress],
       amounts: Vector[CurrencyUnit],
       feeRate: FeeUnit,

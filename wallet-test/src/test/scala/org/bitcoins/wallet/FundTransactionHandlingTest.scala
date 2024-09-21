@@ -218,8 +218,6 @@ class FundTransactionHandlingTest
       val bitcoind = fundedWallet.bitcoind
       val fundedTxF = for {
         feeRate <- wallet.getFeeRate()
-//        _ <- wallet.accountHandling.createNewAccount(
-//          wallet.kmParams.purpose)
         accounts <- wallet.accountHandling.listAccounts()
         account2 = accounts.find(_.hdAccount.index == 2).get
 
