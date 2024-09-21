@@ -51,7 +51,7 @@ class BitcoindBlockPollingTest
           wallet,
           bitcoind,
           None
-        )(wallet.processBlock(_).map(_ => ()))
+        )(wallet.transactionProcessing.processBlock(_).map(_ => ()))
         _ <- bitcoind.generateToAddress(6, bech32Address)
 
         // Wait for it to process

@@ -41,10 +41,10 @@ class MultiWalletTest extends BitcoinSAsyncTest with EmbeddedPg {
 
     val assertionF: Future[Assertion] = for {
       walletA <- walletAF
-      accountA <- walletA.getDefaultAccount()
+      accountA <- walletA.accountHandling.getDefaultAccount()
 
       walletB <- walletBF
-      accountB <- walletB.getDefaultAccount()
+      accountB <- walletB.accountHandling.getDefaultAccount()
       _ <- walletA.walletConfig.stop()
       _ <- walletB.walletConfig.stop()
     } yield assert(accountA.xpub != accountB.xpub)

@@ -442,7 +442,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         bitcoind <- bitcoindF
         walletHolder = result._1
         callback = BitcoindCallbacks.onBlockReceived(
-          walletHolder.processBlock(_).map(_ => ()))
+          walletHolder.transactionProcessing.processBlock(_).map(_ => ()))
         _ = bitcoind.bitcoindRpcAppConfig.addCallbacks(callback)
       } yield result
     }

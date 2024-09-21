@@ -44,7 +44,7 @@ trait WalletSync extends BitcoinSLogger {
       blocksToSync <- blocksToSyncF
       syncedWallet <- FutureUtil.foldLeftAsync(wallet, blocksToSync) {
         case (wallet, nextBlock) =>
-          wallet
+          wallet.transactionProcessing
             .processBlock(nextBlock)
             .map(_ => wallet)
       }

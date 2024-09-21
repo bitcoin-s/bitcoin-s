@@ -70,7 +70,7 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
           .map(unconfirmed => assert(unconfirmed == 0.bitcoin))
 
       // after this, tx is unconfirmed in wallet
-      _ <- wallet.processTransaction(tx, None)
+      _ <- wallet.transactionProcessing.processTransaction(tx, None)
 
       // we should now have one UTXO in the wallet
       // it should not be confirmed
@@ -92,7 +92,7 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
       rawTx <- bitcoind.getRawTransaction(txId)
 
       // after this, tx should be confirmed
-      _ <- wallet.processTransaction(tx, rawTx.blockhash)
+      _ <- wallet.transactionProcessing.processTransaction(tx, rawTx.blockhash)
       _ <-
         wallet
           .listUtxos()
@@ -176,7 +176,8 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
       txId <- bitcoind.sendToAddress(addr, valueFromBitcoind)
       rawTx <- bitcoind.getRawTransaction(txId)
       _ <- bitcoind.generate(6)
-      _ <- wallet.processTransaction(rawTx.hex, rawTx.blockhash)
+      _ <- wallet.transactionProcessing.processTransaction(rawTx.hex,
+                                                           rawTx.blockhash)
 
       // Verify we funded the wallet
       balance <- wallet.getBalance()
@@ -239,7 +240,8 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
       txId <- bitcoind.sendToAddress(addr, valueFromBitcoind)
       _ <- bitcoind.generate(6)
       rawTx <- bitcoind.getRawTransaction(txId)
-      _ <- wallet.processTransaction(rawTx.hex, rawTx.blockhash)
+      _ <- wallet.transactionProcessing.processTransaction(rawTx.hex,
+                                                           rawTx.blockhash)
 
       // Verify we funded the wallet
       balance <- wallet.getBalance()
@@ -255,7 +257,8 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
       _ <- bitcoind.generate(1)
       rawTx1 <- bitcoind.getRawTransaction(rbf.txIdBE)
       _ = require(rawTx1.blockhash.isDefined)
-      _ <- wallet.processTransaction(rbf, rawTx1.blockhash)
+      _ <- wallet.transactionProcessing.processTransaction(rbf,
+                                                           rawTx1.blockhash)
 
       // fail to RBF confirmed tx
       res <- recoverToSucceededIf[IllegalArgumentException] {
@@ -274,7 +277,8 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
       txId <- bitcoind.sendToAddress(addr, valueFromBitcoind)
       rawTx <- bitcoind.getRawTransaction(txId)
       _ <- bitcoind.generate(6)
-      _ <- wallet.processTransaction(rawTx.hex, rawTx.blockhash)
+      _ <- wallet.transactionProcessing.processTransaction(rawTx.hex,
+                                                           rawTx.blockhash)
 
       // Verify we funded the wallet
       balance <- wallet.getBalance()
@@ -325,7 +329,7 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
           coinbaseTx.outputs.exists(_.scriptPubKey == addr.scriptPubKey)
         )
 
-        _ <- wallet.processBlock(block)
+        _ <- wallet.transactionProcessing.processBlock(block)
 
         // Verify we funded the wallet
         allUtxos <- wallet.listUtxos()
@@ -350,7 +354,7 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
         }
 
         _ <- recoverToSucceededIf[RuntimeException](
-          wallet.processTransaction(spendingTx, None)
+          wallet.transactionProcessing.processTransaction(spendingTx, None)
         )
 
         // Make coinbase mature
@@ -365,7 +369,7 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
           .get
 
         // Process tx, validate correctly moved to
-        _ <- wallet.processTransaction(signedTx, None)
+        _ <- wallet.transactionProcessing.processTransaction(signedTx, None)
         newCoinbaseUtxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
         _ = assert(newCoinbaseUtxos.isEmpty)
         spentUtxos <- wallet.listUtxos(TxoState.BroadcastSpent)

@@ -87,7 +87,8 @@ trait FundWalletUtil extends BitcoinSLogger {
 
     val fundedWalletF =
       txsF.flatMap(txs =>
-        FutureUtil.sequentially(txs)(tx => wallet.processTransaction(tx, None)))
+        FutureUtil.sequentially(txs)(tx =>
+          wallet.transactionProcessing.processTransaction(tx, None)))
 
     fundedWalletF.map(_ => wallet)
   }
@@ -107,7 +108,7 @@ trait FundWalletUtil extends BitcoinSLogger {
       addresses <- addressesF
       addressAmountMap = addresses.zip(amts).toMap
       (tx, blockHash) <- fundAddressesWithBitcoind(addressAmountMap, bitcoind)
-      _ <- wallet.processTransaction(tx, Some(blockHash))
+      _ <- wallet.transactionProcessing.processTransaction(tx, Some(blockHash))
     } yield (tx, blockHash)
 
     txAndHashF.map(_ => wallet)
@@ -154,13 +155,14 @@ trait FundWalletUtil extends BitcoinSLogger {
     // sanity check to make sure we have money
     for {
       fundedWallet <- fundedAccount1WalletF
-      balance <- fundedWallet.getBalance(defaultAccount)
+      accountHandling = fundedWallet.accountHandling
+      balance <- accountHandling.getBalance(defaultAccount)
       _ = require(
         balance == BitcoinSWalletTest.expectedDefaultAmt,
         s"Funding wallet fixture failed to fund the wallet, got balance=${balance} expected=${BitcoinSWalletTest.expectedDefaultAmt}"
       )
 
-      account1Balance <- fundedWallet.getBalance(hdAccount1)
+      account1Balance <- accountHandling.getBalance(hdAccount1)
       _ = require(
         account1Balance == BitcoinSWalletTest.expectedAccount1Amt,
         s"Funding wallet fixture failed to fund account 1, " +

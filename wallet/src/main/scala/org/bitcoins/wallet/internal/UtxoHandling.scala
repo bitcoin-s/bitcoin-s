@@ -18,7 +18,7 @@ import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.SafeDatabase
 import org.bitcoins.wallet.callback.WalletCallbacks
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.models.{SpendingInfoDAO, TransactionDAO}
+import org.bitcoins.wallet.models.{AddressDAO, SpendingInfoDAO, TransactionDAO}
 import slick.dbio.{DBIOAction, Effect, NoStream}
 
 import scala.concurrent.Future
@@ -30,6 +30,7 @@ import scala.concurrent.Future
 case class UtxoHandling(
     spendingInfoDAO: SpendingInfoDAO,
     transactionDAO: TransactionDAO,
+    addressDAO: AddressDAO,
     chainQueryApi: ChainQueryApi)(implicit
     walletConfig: WalletAppConfig,
     system: ActorSystem)
@@ -39,6 +40,30 @@ case class UtxoHandling(
 
   private val walletCallbacks: WalletCallbacks = walletConfig.callBacks
   private val safeDatabase: SafeDatabase = spendingInfoDAO.safeDatabase
+
+  override def clearAllUtxos(): Future[Unit] = {
+    val aggregatedActions
+        : DBIOAction[Unit, NoStream, Effect.Write with Effect.Transactional] =
+      spendingInfoDAO.deleteAllAction().map(_ => ())
+
+    val resultedF = safeDatabase.run(aggregatedActions)
+    resultedF.failed.foreach(err =>
+      logger.error(
+        s"Failed to clear utxos, addresses and scripts from the database",
+        err
+      ))
+
+    resultedF.map(_ => ())
+  }
+
+  override def clearAllAddresses(): Future[Unit] = {
+    val action = addressDAO
+      .deleteAllAction()
+      .map(_ => ())
+    safeDatabase
+      .run(action)
+      .map(_ => ())
+  }
 
   /** @inheritdoc */
   override def listUtxos(): Future[Vector[SpendingInfoDb]] = {

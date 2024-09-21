@@ -742,7 +742,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
         case OpReturnCommit(message, hashMessage, satoshisPerVirtualByteOpt) =>
           complete {
             for {
-              tx <- wallet.makeOpReturnCommitment(
+              tx <- wallet.fundTxHandling.makeOpReturnCommitment(
                 message,
                 hashMessage,
                 satoshisPerVirtualByteOpt
@@ -845,7 +845,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
 
     case ServerCommand("getaccounts", _) =>
       complete {
-        wallet.listAccounts().map { accounts =>
+        wallet.accountHandling.listAccounts().map { accounts =>
           val xpubs = accounts.map(_.xpub)
           Server.httpSuccess(xpubs)
         }

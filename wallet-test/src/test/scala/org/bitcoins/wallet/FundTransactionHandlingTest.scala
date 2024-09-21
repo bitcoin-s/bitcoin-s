@@ -173,7 +173,7 @@ class FundTransactionHandlingTest
       for {
         feeRate <- wallet.getFeeRate()
         account1DbOpt <- account1DbF
-        fundRawTxHelper <- wallet.fundRawTransaction(
+        fundRawTxHelper <- wallet.fundTxHandling.fundRawTransaction(
           Vector(newDestination),
           feeRate,
           account1DbOpt.get,
@@ -199,7 +199,7 @@ class FundTransactionHandlingTest
       val fundedTxF = for {
         feeRate <- wallet.getFeeRate()
         account1DbOpt <- account1DbF
-        fundedTx <- wallet.fundRawTransaction(
+        fundedTx <- wallet.fundTxHandling.fundRawTransaction(
           destinations = Vector(newDestination),
           feeRate = feeRate,
           fromAccount = account1DbOpt.get,
@@ -220,20 +220,20 @@ class FundTransactionHandlingTest
         feeRate <- wallet.getFeeRate()
         _ <- wallet.accountHandling.createNewAccount(
           wallet.keyManager.kmParams.purpose)
-        accounts <- wallet.listAccounts()
+        accounts <- wallet.accountHandling.listAccounts()
         account2 = accounts.find(_.hdAccount.index == 2).get
 
         addr <- wallet.accountHandling.getNewAddress(account2)
 
         hash <- bitcoind.generateToAddress(1, addr).map(_.head)
         block <- bitcoind.getBlockRaw(hash)
-        _ <- wallet.processBlock(block)
+        _ <- wallet.transactionProcessing.processBlock(block)
 
-        utxos <- wallet.listUtxos(account2.hdAccount)
+        utxos <- wallet.utxoHandling.listUtxos(account2.hdAccount)
         _ = assert(utxos.size == 1)
 
         fundedTx <-
-          wallet.fundRawTransaction(
+          wallet.fundTxHandling.fundRawTransaction(
             destinations = Vector(destination),
             feeRate = feeRate,
             fromAccount = account2,

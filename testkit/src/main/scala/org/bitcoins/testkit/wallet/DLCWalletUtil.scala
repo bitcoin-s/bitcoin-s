@@ -401,7 +401,7 @@ object DLCWalletUtil extends BitcoinSLogger {
       sigs <- walletA.signDLC(accept)
       _ <- walletB.addDLCSigs(sigs)
       tx <- walletB.broadcastDLCFundingTx(sigs.contractId)
-      _ <- walletA.processTransaction(tx, None)
+      _ <- walletA.transactionProcessing.processTransaction(tx, None)
     } yield {
       (
         InitializedDLCWallet(FundedDLCWallet(walletA)),
@@ -478,8 +478,8 @@ object DLCWalletUtil extends BitcoinSLogger {
           func(dlcB)
         }
       _ <- {
-        if (asInitiator) dlcB.processTransaction(tx, None)
-        else dlcA.processTransaction(tx, None)
+        if (asInitiator) dlcB.transactionProcessing.processTransaction(tx, None)
+        else dlcA.transactionProcessing.processTransaction(tx, None)
       }
       _ <- dlcA.broadcastTransaction(tx)
       dlcDb <- dlcA.dlcDAO.findByContractId(contractId)

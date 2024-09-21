@@ -9,7 +9,6 @@ import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
@@ -32,6 +31,12 @@ import scala.concurrent.{ExecutionContext, Future}
   *   [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki BIP44]]
   */
 trait WalletApi extends StartStopAsync[WalletApi] {
+  def accountHandling: AccountHandlingApi
+  def fundTxHandling: FundTransactionHandlingApi
+  def rescanHandling: RescanHandlingApi
+  def addressHandling: AddressHandlingApi
+  def utxoHandling: UtxoHandlingApi
+  def transactionProcessing: TransactionProcessingApi
 
   val nodeApi: NodeApi
   val chainQueryApi: ChainQueryApi
@@ -48,30 +53,6 @@ trait WalletApi extends StartStopAsync[WalletApi] {
   def start(): Future[WalletApi]
 
   def stop(): Future[WalletApi]
-
-  /** Processes the give block, updating our DB state if it's relevant to us.
-    *
-    * @param block
-    *   The block we're processing
-    */
-  def processBlock(block: Block): Future[Unit]
-
-  def processTransaction(
-      transaction: Transaction,
-      blockHashOpt: Option[DoubleSha256DigestBE]
-  ): Future[Unit]
-
-  /** Processes TXs originating from our wallet. This is called right after
-    * we've signed a TX, updating our UTXO state.
-    */
-  def processOurTransaction(
-      transaction: Transaction,
-      feeRate: FeeUnit,
-      inputAmount: CurrencyUnit,
-      sentAmount: CurrencyUnit,
-      blockHashOpt: Option[DoubleSha256DigestBE],
-      newTags: Vector[AddressTag]
-  ): Future[ProcessTxResult]
 
   /** Gets the sum of all UTXOs in this wallet */
   def getBalance()(implicit ec: ExecutionContext): Future[CurrencyUnit] = {
@@ -120,13 +101,6 @@ trait WalletApi extends StartStopAsync[WalletApi] {
 
   /** Checks if the wallet contains any data */
   def isEmpty(): Future[Boolean]
-
-  /** Removes all utxos from the wallet. Don't call this unless you are sure you
-    * can recover your wallet
-    */
-  def clearAllUtxos(): Future[WalletApi]
-
-  def clearAllAddresses(): Future[WalletApi]
 
   def keyManager: KeyManagerApi
 
@@ -273,22 +247,6 @@ trait WalletApi extends StartStopAsync[WalletApi] {
   def bumpFeeCPFP(
       txId: DoubleSha256DigestBE,
       feeRate: FeeUnit): Future[Transaction]
-
-  def makeOpReturnCommitment(
-      message: String,
-      hashMessage: Boolean,
-      feeRate: FeeUnit)(implicit ec: ExecutionContext): Future[Transaction]
-
-  def makeOpReturnCommitment(
-      message: String,
-      hashMessage: Boolean,
-      feeRateOpt: Option[FeeUnit])(implicit
-      ec: ExecutionContext): Future[Transaction] = {
-    for {
-      feeRate <- determineFeeRate(feeRateOpt)
-      tx <- makeOpReturnCommitment(message, hashMessage, feeRate)
-    } yield tx
-  }
 
   /** Determines if the given output is from this wallet and is a change output
     * from this wallet

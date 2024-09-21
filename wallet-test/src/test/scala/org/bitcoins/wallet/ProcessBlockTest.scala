@@ -50,7 +50,7 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoindNewest {
           .map(_.head)
       block <- bitcoind.getBlockRaw(hash)
 
-      _ <- wallet.processBlock(block)
+      _ <- wallet.transactionProcessing.processBlock(block)
       utxos <- wallet.listUtxos()
       height <- bitcoind.getBlockCount()
       bestHash <- bitcoind.getBestBlockHash()
@@ -78,7 +78,8 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoindNewest {
       addr <- wallet.getNewAddress()
       hashes <- bitcoind.generateToAddress(101, addr)
       blocks <- FutureUtil.sequentially(hashes)(bitcoind.getBlockRaw)
-      _ <- FutureUtil.sequentially(blocks)(wallet.processBlock)
+      _ <- FutureUtil.sequentially(blocks)(
+        wallet.transactionProcessing.processBlock)
       coinbaseUtxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
       confirmedUtxos <- wallet.listUtxos(TxoState.ConfirmedReceived)
       balance <- wallet.getConfirmedBalance()
@@ -212,7 +213,7 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoindNewest {
       hash <- bitcoind.generateToAddress(1, bitcoindAddr).map(_.head)
       block <- bitcoind.getBlockRaw(hash)
 
-      _ <- wallet.processBlock(block)
+      _ <- wallet.transactionProcessing.processBlock(block)
 
       balance <- wallet.getBalance()
     } yield assert(balance == output0.value)

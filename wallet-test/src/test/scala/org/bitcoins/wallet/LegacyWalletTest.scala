@@ -15,7 +15,7 @@ class LegacyWalletTest extends BitcoinSWalletTest {
   it should "generate legacy addresses" in { (wallet: Wallet) =>
     for {
       addr <- wallet.getNewAddress()
-      account <- wallet.getDefaultAccount()
+      account <- wallet.accountHandling.getDefaultAccount()
       otherAddr <- wallet.getNewAddress()
       thirdAddr <- wallet.addressHandling.getNewAddress(AddressType.Legacy)
       allAddrs <- wallet.addressHandling.listAddresses()
@@ -31,7 +31,8 @@ class LegacyWalletTest extends BitcoinSWalletTest {
 
   it should "generate segwit addresses" in { wallet =>
     for {
-      account <- wallet.getDefaultAccountForType(AddressType.SegWit)
+      account <- wallet.accountHandling.getDefaultAccountForType(
+        AddressType.SegWit)
       addr <- wallet.addressHandling.getNewAddress(AddressType.SegWit)
     } yield {
       assert(account.hdAccount.purpose == HDPurpose.SegWit)

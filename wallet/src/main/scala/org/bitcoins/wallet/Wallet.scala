@@ -17,13 +17,11 @@ import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
 import org.bitcoins.core.hd.*
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.blockchain.{Block, ChainParams}
+import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.core.script.constant.ScriptConstant
-import org.bitcoins.core.script.control.OP_RETURN
-import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil, HDUtil}
+import org.bitcoins.core.util.{FutureUtil, HDUtil}
 import org.bitcoins.core.wallet.builder.*
 import org.bitcoins.core.wallet.fee.*
 import org.bitcoins.core.wallet.utxo.*
@@ -36,7 +34,6 @@ import org.bitcoins.wallet.callback.WalletCallbacks
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.internal.*
 import org.bitcoins.wallet.models.*
-import scodec.bits.ByteVector
 import slick.dbio.{DBIOAction, Effect, NoStream}
 
 import java.time.Instant
@@ -96,15 +93,17 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
   val creationTime: Instant = keyManager.creationTime
 
   def utxoHandling: UtxoHandling =
-    UtxoHandling(spendingInfoDAO, transactionDAO, chainQueryApi)
+    UtxoHandling(spendingInfoDAO, transactionDAO, addressDAO, chainQueryApi)
 
   def fundTxHandling: FundTransactionHandling = FundTransactionHandling(
     accountHandling = accountHandling,
     utxoHandling = utxoHandling,
     addressHandling = addressHandling,
+    transactionProcessing = transactionProcessing,
     spendingInfoDAO = spendingInfoDAO,
     transactionDAO = transactionDAO,
-    keyManager = keyManager
+    keyManager = keyManager,
+    feeRateApi = feeRateApi
   )
   def accountHandling: AccountHandling =
     AccountHandling(walletDAOs, keyManager)
@@ -112,7 +111,7 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
   def addressHandling: AddressHandling =
     AddressHandling(accountHandling, walletDAOs)
 
-  protected lazy val transactionProcessing: TransactionProcessingApi = {
+  override lazy val transactionProcessing: TransactionProcessingApi = {
     TransactionProcessing(
       walletApi = this,
       chainQueryApi = chainQueryApi,
@@ -192,35 +191,6 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
       case None =>
         BlockSyncState(0, chainParams.genesisHashBE)
     }
-  }
-
-  override def processBlock(block: Block): Future[Unit] = {
-    transactionProcessing.processBlock(block)
-  }
-
-  override def processTransaction(
-      transaction: Transaction,
-      blockHashOpt: Option[DoubleSha256DigestBE]): Future[Unit] = {
-    transactionProcessing.processTransaction(transaction, blockHashOpt)
-  }
-
-  /** Processes TXs originating from our wallet. This is called right after
-    * we've signed a TX, updating our UTXO state.
-    */
-  override def processOurTransaction(
-      transaction: Transaction,
-      feeRate: FeeUnit,
-      inputAmount: CurrencyUnit,
-      sentAmount: CurrencyUnit,
-      blockHashOpt: Option[DoubleSha256DigestBE],
-      newTags: Vector[AddressTag]
-  ): Future[ProcessTxResult] = {
-    transactionProcessing.processOurTransaction(transaction,
-                                                feeRate,
-                                                inputAmount,
-                                                sentAmount,
-                                                blockHashOpt,
-                                                newTags)
   }
 
   override def processCompactFilters(
@@ -321,30 +291,6 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
       spendingInfoCount <- spendingInfoDAO.count()
     } yield addressCount == 0 && spendingInfoCount == 0
 
-  override def clearAllUtxos(): Future[Wallet] = {
-    val aggregatedActions
-        : DBIOAction[Unit, NoStream, Effect.Write with Effect.Transactional] =
-      spendingInfoDAO.deleteAllAction().map(_ => ())
-
-    val resultedF = safeDatabase.run(aggregatedActions)
-    resultedF.failed.foreach(err =>
-      logger.error(
-        s"Failed to clear utxos, addresses and scripts from the database",
-        err
-      ))
-
-    resultedF.map(_ => this)
-  }
-
-  override def clearAllAddresses(): Future[Wallet] = {
-    val action = addressDAO
-      .deleteAllAction()
-      .map(_ => ())
-    safeDatabase
-      .run(action)
-      .map(_ => this)
-  }
-
   override def getBalance()(implicit
       ec: ExecutionContext
   ): Future[CurrencyUnit] = {
@@ -354,11 +300,6 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
   override def getConfirmedBalance(): Future[CurrencyUnit] = {
     safeDatabase.run(spendingInfoDAO.getConfirmedBalanceAction())
   }
-
-  override def getConfirmedBalance(account: HDAccount): Future[CurrencyUnit] = {
-    safeDatabase.run(spendingInfoDAO.getConfirmedBalanceAction(Some(account)))
-  }
-
   override def getConfirmedBalance(tag: AddressTag): Future[CurrencyUnit] = {
     spendingInfoDAO.findAllUnspentForTag(tag).map { allUnspent =>
       val confirmed = allUnspent.filter(_.state == ConfirmedReceived)
@@ -368,12 +309,6 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
 
   override def getUnconfirmedBalance(): Future[CurrencyUnit] = {
     safeDatabase.run(spendingInfoDAO.getUnconfirmedBalanceAction())
-  }
-
-  override def getUnconfirmedBalance(
-      account: HDAccount
-  ): Future[CurrencyUnit] = {
-    safeDatabase.run(spendingInfoDAO.getUnconfirmedBalanceAction(Some(account)))
   }
 
   override def getUnconfirmedBalance(tag: AddressTag): Future[CurrencyUnit] = {
@@ -401,10 +336,6 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
   ): Future[Vector[SpendingInfoDb]] = {
     spendingInfoDAO.findOutputsBeingSpent(tx)
   }
-
-  /** Enumerates all the TX outpoints in the wallet */
-  protected[wallet] def listOutpoints(): Future[Vector[TransactionOutPoint]] =
-    spendingInfoDAO.findAllOutpoints()
 
   /** Takes a [[RawTxBuilderWithFinalizer]] for a transaction to be sent, and
     * completes it by: finalizing and signing the transaction, then correctly
@@ -759,48 +690,6 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
     sendToOutputs(destinations, feeRate, fromAccount, newTags)
   }
 
-  override def makeOpReturnCommitment(
-      message: String,
-      hashMessage: Boolean,
-      feeRate: FeeUnit,
-      fromAccount: AccountDb
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
-    val messageToUse = if (hashMessage) {
-      CryptoUtil.sha256(ByteVector(message.getBytes)).bytes
-    } else {
-      if (message.length > 80) {
-        throw new IllegalArgumentException(
-          s"Message cannot be greater than 80 characters, it should be hashed, got $message"
-        )
-      } else ByteVector(message.getBytes)
-    }
-
-    val asm = Seq(OP_RETURN) ++ BitcoinScriptUtil.calculatePushOp(
-      messageToUse
-    ) :+ ScriptConstant(messageToUse)
-
-    val scriptPubKey = ScriptPubKey(asm)
-
-    val output = TransactionOutput(0.satoshis, scriptPubKey)
-
-    for {
-      fundRawTxHelper <- fundTxHandling.fundRawTransactionInternal(
-        destinations = Vector(output),
-        feeRate = feeRate,
-        fromAccount = fromAccount,
-        coinSelectionAlgo = CoinSelectionAlgo.RandomSelection,
-        fromTagOpt = None,
-        markAsReserved = true
-      )
-      tx <- finishSend(
-        fundRawTxHelper,
-        CurrencyUnits.zero,
-        feeRate,
-        Vector.empty
-      )
-    } yield tx
-  }
-
   override def sendToOutputs(
       outputs: Vector[TransactionOutput],
       feeRate: FeeUnit,
@@ -956,7 +845,7 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
 
   override def getInfo(): Future[WalletInfo] = {
     for {
-      accountDb <- getDefaultAccount()
+      accountDb <- accountHandling.getDefaultAccount()
       walletState <- getSyncState()
       rescan <- rescanHandling.isRescanning()
     } yield {
@@ -1017,18 +906,10 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
   override def listUtxos(state: TxoState): Future[Vector[SpendingInfoDb]] =
     utxoHandling.listUtxos(state)
 
-  override def listUtxos(
-      hdAccount: HDAccount): Future[Vector[SpendingInfoDb]] = {
-    utxoHandling.listUtxos(hdAccount)
-  }
-
   override def listUtxos(tag: AddressTag): Future[Vector[SpendingInfoDb]] = {
     utxoHandling.listUtxos(tag)
   }
 
-  override def listDefaultAccountUtxos(): Future[Vector[SpendingInfoDb]] = {
-    utxoHandling.listDefaultAccountUtxos()
-  }
   def markUTXOsAsReserved(
       utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
     utxoHandling.markUTXOsAsReserved(utxos)
@@ -1051,11 +932,6 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
   override def unmarkUTXOsAsReserved(
       tx: Transaction): Future[Vector[SpendingInfoDb]] = {
     utxoHandling.unmarkUTXOsAsReserved(tx)
-  }
-
-  override def getDefaultAccountForType(
-      addressType: AddressType): Future[AccountDb] = {
-    accountHandling.getDefaultAccountForType(addressType)
   }
 }
 

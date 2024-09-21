@@ -93,6 +93,16 @@ case class AccountHandling(
     }
   }
 
+  override def getUnconfirmedBalance(
+      account: HDAccount
+  ): Future[CurrencyUnit] = {
+    safeDatabase.run(spendingInfoDAO.getUnconfirmedBalanceAction(Some(account)))
+  }
+
+  override def getConfirmedBalance(account: HDAccount): Future[CurrencyUnit] = {
+    safeDatabase.run(spendingInfoDAO.getConfirmedBalanceAction(Some(account)))
+  }
+
   /** @inheritdoc */
   override def listAccounts(): Future[Vector[AccountDb]] =
     accountDAO.findAll()

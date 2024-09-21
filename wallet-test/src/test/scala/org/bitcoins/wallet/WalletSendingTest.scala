@@ -116,7 +116,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
   ): Future[Assertion] = {
     val message = "ben was here"
     for {
-      tx <- wallet.makeOpReturnCommitment(
+      tx <- wallet.fundTxHandling.makeOpReturnCommitment(
         message = message,
         hashMessage = hashMessage,
         feeRateOpt = None
@@ -167,7 +167,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
     fundedWallet =>
       val wallet = fundedWallet.wallet
       recoverToSucceededIf[IllegalArgumentException] {
-        wallet.makeOpReturnCommitment(
+        wallet.fundTxHandling.makeOpReturnCommitment(
           "This message is much too long and is over 80 bytes, the limit for OP_RETURN. It should cause an error.",
           hashMessage = false,
           None
@@ -361,7 +361,9 @@ class WalletSendingTest extends BitcoinSWalletTest {
 
     for {
       tx <- wallet.sendToAddress(testAddress, amountToSend, feeRate)
-      _ <- wallet.processTransaction(tx, Some(DoubleSha256DigestBE.empty))
+      _ <- wallet.transactionProcessing.processTransaction(
+        tx,
+        Some(DoubleSha256DigestBE.empty))
 
       res <- recoverToSucceededIf[IllegalArgumentException] {
         wallet.bumpFeeRBF(tx.txIdBE, newFeeRate)
@@ -391,7 +393,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
       // Have wallet sign and process transaction
       signedPSBT <- wallet.signPSBT(psbt)
       signedTx = signedPSBT.finalizePSBT.get.extractTransactionAndValidate.get
-      _ <- wallet.processTransaction(signedTx, None)
+      _ <- wallet.transactionProcessing.processTransaction(signedTx, None)
 
       res <- recoverToSucceededIf[IllegalArgumentException] {
         wallet.bumpFeeRBF(signedTx.txIdBE, SatoshisPerVirtualByte.fromLong(100))
@@ -443,7 +445,9 @@ class WalletSendingTest extends BitcoinSWalletTest {
 
     for {
       tx <- wallet.sendToAddress(testAddress, amountToSend, feeRate)
-      _ <- wallet.processTransaction(tx, Some(DoubleSha256DigestBE.empty))
+      _ <- wallet.transactionProcessing.processTransaction(
+        tx,
+        Some(DoubleSha256DigestBE.empty))
 
       res <- recoverToSucceededIf[IllegalArgumentException] {
         wallet.bumpFeeCPFP(tx.txIdBE, feeRate)
@@ -487,9 +491,9 @@ class WalletSendingTest extends BitcoinSWalletTest {
       algo: CoinSelectionAlgo
   ): Future[Assertion] = {
     for {
-      account <- wallet.getDefaultAccount()
+      account <- wallet.accountHandling.getDefaultAccount()
       feeRate <- wallet.getFeeRate()
-      allUtxos <- wallet
+      allUtxos <- wallet.utxoHandling
         .listUtxos(account.hdAccount)
         .map(_.map(CoinSelectorUtxo.fromSpendingInfoDb))
 

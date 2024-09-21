@@ -96,7 +96,7 @@ class DLCWalletCallbackTest extends BitcoinSDualWalletTest {
       _ <- initF
       contractId <- DLCWalletUtil.getContractId(wallets._1.wallet)
       fundingTx <- walletA.getDLCFundingTx(contractId)
-      _ <- walletA.processTransaction(
+      _ <- walletA.transactionProcessing.processTransaction(
         transaction = fundingTx,
         blockHashOpt = Some(CryptoGenerators.doubleSha256DigestBE.sample.get)
       )
@@ -107,7 +107,7 @@ class DLCWalletCallbackTest extends BitcoinSDualWalletTest {
         }
       }
       transaction <- walletA.executeDLC(contractId, sigs._1).map(_.get)
-      _ <- walletB.processTransaction(transaction, None)
+      _ <- walletB.transactionProcessing.processTransaction(transaction, None)
     } yield ()
 
     for {
@@ -207,12 +207,12 @@ class DLCWalletCallbackTest extends BitcoinSDualWalletTest {
       _ <- initF
       contractId <- DLCWalletUtil.getContractId(wallets._1.wallet)
       fundingTx <- walletA.getDLCFundingTx(contractId)
-      _ <- walletA.processTransaction(
+      _ <- walletA.transactionProcessing.processTransaction(
         transaction = fundingTx,
         blockHashOpt = Some(CryptoGenerators.doubleSha256DigestBE.sample.get)
       )
       transaction <- walletA.executeDLCRefund(contractId)
-      _ <- walletB.processTransaction(transaction, None)
+      _ <- walletB.transactionProcessing.processTransaction(transaction, None)
     } yield ()
 
     for {

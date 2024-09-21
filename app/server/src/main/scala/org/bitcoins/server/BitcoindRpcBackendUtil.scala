@@ -244,7 +244,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
       val rawTxListener: Option[Transaction => Unit] = Some {
         { (tx: Transaction) =>
           logger.debug(s"Received tx ${tx.txIdBE.hex}, processing")
-          val f = wallet.processTransaction(tx, None)
+          val f = wallet.transactionProcessing.processTransaction(tx, None)
           f.failed.foreach { err =>
             logger.error("failed to process raw tx zmq message", err)
           }
@@ -267,7 +267,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
           logger.info(
             s"Received block ${block.blockHeader.hashBE.hex}, processing"
           )
-          val f = wallet.processBlock(block)
+          val f = wallet.transactionProcessing.processBlock(block)
           f.failed.foreach { err =>
             logger.error("failed to process raw block zmq message", err)
           }
@@ -364,7 +364,8 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
           walletF.map { wallet =>
             Sink.foreachAsync(1) {
               case (block: Block, blockHeaderResult: GetBlockHeaderResult) =>
-                val blockProcessedF = wallet.processBlock(block)
+                val blockProcessedF =
+                  wallet.transactionProcessing.processBlock(block)
                 val executeCallbackF: Future[Unit] = {
                   for {
                     wallet <- blockProcessedF

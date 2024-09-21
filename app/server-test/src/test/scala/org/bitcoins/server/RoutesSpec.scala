@@ -14,6 +14,7 @@ import org.bitcoins.core.api.wallet.{
   AddressHandlingApi,
   AddressInfo,
   CoinSelectionAlgo,
+  FundTransactionHandlingApi,
   RescanHandlingApi
 }
 import org.bitcoins.core.config.RegTest
@@ -88,6 +89,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
   val mockAccountHandlingApi: AccountHandlingApi = mock[AccountHandlingApi]
 
   val mockAddressHandlingApi: AddressHandlingApi = mock[AddressHandlingApi]
+
+  val mockFundTxHandlingApi: FundTransactionHandlingApi =
+    mock[FundTransactionHandlingApi]
 
   val walletHolder = new WalletHolder(Some(mockWalletApi))
 
@@ -1995,11 +1999,14 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
       val message = "Never gonna give you up, never gonna let you down"
 
-      (mockWalletApi
-        .makeOpReturnCommitment(_: String, _: Boolean, _: Option[FeeUnit])(
-          _: ExecutionContext
-        ))
-        .expects(message, false, *, executor)
+      (() => mockWalletApi.fundTxHandling)
+        .expects()
+        .returning(mockFundTxHandlingApi)
+        .anyNumberOfTimes()
+
+      (mockWalletApi.fundTxHandling
+        .makeOpReturnCommitment(_: String, _: Boolean, _: Option[FeeUnit]))
+        .expects(message, false, *)
         .returning(Future.successful(EmptyTransaction))
 
       (mockWalletApi.broadcastTransaction _)

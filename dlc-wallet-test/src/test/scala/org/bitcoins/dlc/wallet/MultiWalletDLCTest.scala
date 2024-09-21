@@ -45,10 +45,10 @@ class MultiWalletDLCTest extends BitcoinSWalletTest {
     )(configB, system)
 
     for {
-      accountA <- walletA.getDefaultAccount()
+      accountA <- walletA.accountHandling.getDefaultAccount()
 
       walletB <- walletBF
-      accountB <- walletB.getDefaultAccount()
+      accountB <- walletB.accountHandling.getDefaultAccount()
 
       _ = assert(accountA.xpub != accountB.xpub)
 

@@ -79,7 +79,7 @@ class UTXOLifeCycleTest
 
       // Give tx a fake hash so it can appear as it's in a block
       hash <- bitcoind.getBestBlockHash()
-      _ <- wallet.processTransaction(tx, Some(hash))
+      _ <- wallet.transactionProcessing.processTransaction(tx, Some(hash))
 
       _ <- wallet.updateUtxoPendingStates()
       pendingCoins <- wallet.findOutputsBeingSpent(tx)
@@ -150,9 +150,9 @@ class UTXOLifeCycleTest
       _ = assert(oldUtxos == utxos)
 
       // process the transactions from mempool
-      _ <- wallet.processTransaction(tx1.get, None)
-      _ <- wallet.processTransaction(tx2.get, None)
-      _ <- wallet.processTransaction(tx3.get, None)
+      _ <- wallet.transactionProcessing.processTransaction(tx1.get, None)
+      _ <- wallet.transactionProcessing.processTransaction(tx2.get, None)
+      _ <- wallet.transactionProcessing.processTransaction(tx3.get, None)
 
       utxos <- wallet.listUtxos()
       _ = assert(oldUtxos.size + 3 == utxos.size)
@@ -166,7 +166,7 @@ class UTXOLifeCycleTest
       _ = assert(blockHashes.size == 1)
       blockHash = blockHashes.head
       block <- bitcoind.getBlockRaw(blockHash)
-      _ <- wallet.processBlock(block)
+      _ <- wallet.transactionProcessing.processBlock(block)
       _ <- wallet.updateUtxoPendingStates()
 
       utxos <- wallet.listUtxos()
@@ -177,7 +177,7 @@ class UTXOLifeCycleTest
       _ = assert(blockHashes.size == 1)
       blockHash = blockHashes.head
       block <- bitcoind.getBlockRaw(blockHash)
-      _ <- wallet.processBlock(block)
+      _ <- wallet.transactionProcessing.processBlock(block)
       _ <- wallet.updateUtxoPendingStates()
 
       utxos <- wallet.listUtxos()
@@ -196,7 +196,7 @@ class UTXOLifeCycleTest
       _ = assert(blockHashes.size == 1)
       blockHash = blockHashes.head
       block <- bitcoind.getBlockRaw(blockHash)
-      _ <- wallet.processBlock(block)
+      _ <- wallet.transactionProcessing.processBlock(block)
       _ <- wallet.updateUtxoPendingStates()
 
       utxos <- wallet.listUtxos()
@@ -215,7 +215,7 @@ class UTXOLifeCycleTest
       _ = assert(blockHashes.size == 1)
       blockHash = blockHashes.head
       block <- bitcoind.getBlockRaw(blockHash)
-      _ <- wallet.processBlock(block)
+      _ <- wallet.transactionProcessing.processBlock(block)
       _ <- wallet.updateUtxoPendingStates()
 
       utxos <- wallet.listUtxos()
@@ -234,7 +234,7 @@ class UTXOLifeCycleTest
       _ = assert(blockHashes.size == 1)
       blockHash = blockHashes.head
       block <- bitcoind.getBlockRaw(blockHash)
-      _ <- wallet.processBlock(block)
+      _ <- wallet.transactionProcessing.processBlock(block)
       _ <- wallet.updateUtxoPendingStates()
 
       utxos <- wallet.listUtxos()
@@ -253,7 +253,7 @@ class UTXOLifeCycleTest
       _ = assert(blockHashes.size == 1)
       blockHash = blockHashes.head
       block <- bitcoind.getBlockRaw(blockHash)
-      _ <- wallet.processBlock(block)
+      _ <- wallet.transactionProcessing.processBlock(block)
       _ <- wallet.updateUtxoPendingStates()
 
       utxos <- wallet.listUtxos()
@@ -285,7 +285,7 @@ class UTXOLifeCycleTest
       _ = assert(coins.forall(_.spendingTxIdOpt.contains(tx.txIdBE)))
 
       rbf <- wallet.bumpFeeRBF(tx.txIdBE, SatoshisPerByte.fromLong(3))
-      _ <- wallet.processTransaction(rbf, None)
+      _ <- wallet.transactionProcessing.processTransaction(rbf, None)
       rbfCoins <- wallet.findOutputsBeingSpent(rbf)
     } yield {
       assert(rbfCoins.forall(_.state == BroadcastSpent))
@@ -315,7 +315,7 @@ class UTXOLifeCycleTest
       }
 
       res <- recoverToSucceededIf[RuntimeException](
-        wallet.processTransaction(newTx, None)
+        wallet.transactionProcessing.processTransaction(newTx, None)
       )
     } yield res
   }
@@ -336,7 +336,7 @@ class UTXOLifeCycleTest
 
       // Give tx a fake hash so it can appear as it's in a block
       hash <- bitcoind.getBestBlockHash()
-      _ <- wallet.processTransaction(tx, Some(hash))
+      _ <- wallet.transactionProcessing.processTransaction(tx, Some(hash))
 
       _ <- wallet.updateUtxoPendingStates()
       pendingCoins <- wallet.findOutputsBeingSpent(tx)
@@ -361,7 +361,7 @@ class UTXOLifeCycleTest
       }
 
       res <- recoverToSucceededIf[RuntimeException](
-        wallet.processTransaction(newTx, None)
+        wallet.transactionProcessing.processTransaction(newTx, None)
       )
     } yield res
   }
@@ -376,7 +376,7 @@ class UTXOLifeCycleTest
 
       txId <- bitcoind.sendToAddress(addr, Satoshis(3000))
       tx <- bitcoind.getRawTransactionRaw(txId)
-      _ <- wallet.processOurTransaction(
+      _ <- wallet.transactionProcessing.processOurTransaction(
         transaction = tx,
         feeRate = SatoshisPerByte(Satoshis(3)),
         inputAmount = Satoshis(4000),
@@ -405,7 +405,7 @@ class UTXOLifeCycleTest
 
       txId <- bitcoind.sendToAddress(addr, Satoshis(3000))
       tx <- bitcoind.getRawTransactionRaw(txId)
-      _ <- wallet.processOurTransaction(
+      _ <- wallet.transactionProcessing.processOurTransaction(
         transaction = tx,
         feeRate = SatoshisPerByte(Satoshis(3)),
         inputAmount = Satoshis(4000),
@@ -422,7 +422,7 @@ class UTXOLifeCycleTest
       hash <- bitcoind.getNewAddress
         .flatMap(bitcoind.generateToAddress(1, _))
         .map(_.head)
-      _ <- wallet.processTransaction(tx, Some(hash))
+      _ <- wallet.transactionProcessing.processTransaction(tx, Some(hash))
 
       pendingCoins <-
         wallet.findByScriptPubKey(addr.scriptPubKey)
@@ -447,7 +447,7 @@ class UTXOLifeCycleTest
 
       txId <- bitcoind.sendToAddress(addr, Satoshis(3000))
       tx <- bitcoind.getRawTransactionRaw(txId)
-      _ <- wallet.processOurTransaction(
+      _ <- wallet.transactionProcessing.processOurTransaction(
         transaction = tx,
         feeRate = SatoshisPerByte(Satoshis(3)),
         inputAmount = Satoshis(4000),
@@ -575,11 +575,11 @@ class UTXOLifeCycleTest
           Satoshis(100000),
           P2PKHScriptPubKey(ECPublicKey.freshPublicKey)
         )
-      val accountF = wallet.getDefaultAccount()
+      val accountF = wallet.accountHandling.getDefaultAccount()
       for {
         oldTransactions <- wallet.listTransactions()
         account <- accountF
-        rawTxHelper <- wallet.fundRawTransaction(
+        rawTxHelper <- wallet.fundTxHandling.fundRawTransaction(
           destinations = Vector(dummyOutput),
           feeRate = SatoshisPerVirtualByte.one,
           fromAccount = account,
@@ -604,7 +604,7 @@ class UTXOLifeCycleTest
             .flatMap(bitcoind.generateToAddress(1, _))
             .map(_.head)
         block <- bitcoind.getBlockRaw(hash)
-        _ <- wallet.processBlock(block)
+        _ <- wallet.transactionProcessing.processBlock(block)
 
         newReserved <- wallet.listUtxos(TxoState.Reserved)
         newTransactions <- wallet.listTransactions()
@@ -656,7 +656,7 @@ class UTXOLifeCycleTest
         _ <- bitcoind.sendRawTransaction(tx)
         hash <- bitcoind.generateToAddress(1, testAddr).map(_.head)
         block <- bitcoind.getBlockRaw(hash)
-        _ <- wallet.processBlock(block)
+        _ <- wallet.transactionProcessing.processBlock(block)
 
         updatedCoins <- wallet.findOutputsBeingSpent(tx)
       } yield {
@@ -714,7 +714,7 @@ class UTXOLifeCycleTest
         throwAwayAddr <- throwAwayAddrF
         hashes <- bitcoind.generateToAddress(blocks = 1, throwAwayAddr)
         block <- bitcoind.getBlockRaw(hashes.head)
-        _ <- wallet.processBlock(block)
+        _ <- wallet.transactionProcessing.processBlock(block)
 
         // make sure the utxo is pending confirmations received
         utxos <- wallet.listUtxos(TxoState.PendingConfirmationsReceived)
@@ -733,7 +733,7 @@ class UTXOLifeCycleTest
         // now process another block
         hashes2 <- bitcoind.generateToAddress(blocks = 1, throwAwayAddr)
         block2 <- bitcoind.getBlockRaw(hashes2.head)
-        _ <- wallet.processBlock(block2)
+        _ <- wallet.transactionProcessing.processBlock(block2)
 
         // the utxo should still be reserved
         reservedUtxos <- wallet.listUtxos(TxoState.Reserved)
@@ -775,7 +775,7 @@ class UTXOLifeCycleTest
         _ = assert(newReservedUtxos.length == utxoCount.length)
         blockHash <- bitcoind.generateToAddress(1, bitcoindAdr).map(_.head)
         block <- bitcoind.getBlockRaw(blockHash)
-        _ <- wallet.processBlock(block)
+        _ <- wallet.transactionProcessing.processBlock(block)
         broadcastSpentUtxo <- wallet.listUtxos(
           TxoState.PendingConfirmationsSpent
         )
@@ -807,7 +807,7 @@ class UTXOLifeCycleTest
         walletAddress <- wallet.getNewAddress()
         txId <- bitcoind.sendToAddress(walletAddress, receiveValue)
         receiveTx <- bitcoind.getRawTransactionRaw(txId)
-        _ <- wallet.processTransaction(receiveTx, None)
+        _ <- wallet.transactionProcessing.processTransaction(receiveTx, None)
         receiveOutPointPair = receiveTx.outputs.zipWithIndex
           .find(_._1.value == receiveValue)
           .map(out => (receiveTx.txId, out._2))
@@ -839,7 +839,7 @@ class UTXOLifeCycleTest
         // confirm receive and spend
         blockHashes <- bitcoind.generate(1)
         block <- bitcoind.getBlockRaw(blockHashes.head)
-        _ <- wallet.processBlock(block)
+        _ <- wallet.transactionProcessing.processBlock(block)
 
         receivedUtxo <- wallet.findByOutPoints(Vector(receiveOutPoint))
       } yield {
@@ -861,7 +861,7 @@ class UTXOLifeCycleTest
         walletAddress <- wallet.getNewAddress()
         txId <- bitcoind.sendToAddress(walletAddress, receiveValue)
         receiveTx <- bitcoind.getRawTransactionRaw(txId)
-        _ <- wallet.processTransaction(receiveTx, None)
+        _ <- wallet.transactionProcessing.processTransaction(receiveTx, None)
         receiveOutPointPair = receiveTx.outputs.zipWithIndex
           .find(_._1.value == receiveValue)
           .map(out => (receiveTx.txId, out._2))
@@ -892,7 +892,7 @@ class UTXOLifeCycleTest
         // confirm receive
         blockHashes <- bitcoind.generate(1)
         block <- bitcoind.getBlockRaw(blockHashes.head)
-        _ <- wallet.processBlock(block)
+        _ <- wallet.transactionProcessing.processBlock(block)
 
         receivedUtxo <- wallet.findByOutPoints(Vector(receiveOutPoint))
         _ = assert(receivedUtxo.size == 1)
@@ -902,7 +902,7 @@ class UTXOLifeCycleTest
         _ <- wallet.broadcastTransaction(sendTx)
         blockHashes <- bitcoind.generate(1)
         block <- bitcoind.getBlockRaw(blockHashes.head)
-        _ <- wallet.processBlock(block)
+        _ <- wallet.transactionProcessing.processBlock(block)
 
         receivedUtxo <- wallet.findByOutPoints(Vector(receiveOutPoint))
       } yield {
