@@ -204,7 +204,7 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoindNewest {
         .addUTXOToInput(recvTx, 0)
         .addKeyPathToInput(accountDb.xpub, bip32Path, addrDb.pubkey, 0)
 
-      signed <- wallet.signPSBT(psbt)
+      signed <- wallet.sendFundsHandling.signPSBT(psbt)
       tx <- Future.fromTry(
         signed.finalizePSBT.flatMap(_.extractTransactionAndValidate)
       )

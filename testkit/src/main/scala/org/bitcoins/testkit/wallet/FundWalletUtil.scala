@@ -4,7 +4,7 @@ import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.node.NodeApi
-import org.bitcoins.core.api.wallet.HDWalletApi
+import org.bitcoins.core.api.wallet.NeutrinoHDWalletApi
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -96,9 +96,9 @@ trait FundWalletUtil extends BitcoinSLogger {
   def fundAccountForWalletWithBitcoind(
       amts: Vector[CurrencyUnit],
       account: HDAccount,
-      wallet: HDWalletApi,
+      wallet: NeutrinoHDWalletApi,
       bitcoind: BitcoindRpcClient
-  )(implicit ec: ExecutionContext): Future[HDWalletApi] = {
+  )(implicit ec: ExecutionContext): Future[NeutrinoHDWalletApi] = {
 
     val addressesF: Future[Vector[BitcoinAddress]] = Future.sequence {
       Vector.fill(3)(wallet.accountHandling.getNewAddress(account))

@@ -139,7 +139,7 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
         tx <- bitcoind.getRawTransaction(txid)
         _ <- wallet.transactionProcessing.processTransaction(tx.hex, None)
         taggedAddress <- taggedAddrF
-        tx <- wallet.sendToAddress(
+        tx <- wallet.sendFundsHandling.sendToAddress(
           taggedAddress,
           Satoshis(100000),
           SatoshisPerVirtualByte.one,

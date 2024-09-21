@@ -51,7 +51,9 @@ class UTXOLifeCycleTest
 
     for {
       oldTransactions <- wallet.listTransactions()
-      tx <- wallet.sendToAddress(testAddr, Satoshis(3000), None)
+      tx <- wallet.sendFundsHandling.sendToAddress(testAddr,
+                                                   Satoshis(3000),
+                                                   None)
 
       updatedCoins <- wallet.findOutputsBeingSpent(tx)
       newTransactions <- wallet.listTransactions()
@@ -69,7 +71,9 @@ class UTXOLifeCycleTest
     val walletConfig = param.walletConfig
     for {
       oldTransactions <- wallet.listTransactions()
-      tx <- wallet.sendToAddress(testAddr, Satoshis(3000), None)
+      tx <- wallet.sendFundsHandling.sendToAddress(testAddr,
+                                                   Satoshis(3000),
+                                                   None)
 
       updatedCoins <- wallet.findOutputsBeingSpent(tx)
       newTransactions <- wallet.listTransactions()
@@ -274,7 +278,7 @@ class UTXOLifeCycleTest
     val wallet = param.wallet
 
     for {
-      tx <- wallet.sendToAddress(
+      tx <- wallet.sendFundsHandling.sendToAddress(
         testAddr,
         Satoshis(3000),
         Some(SatoshisPerByte.one)
@@ -284,7 +288,8 @@ class UTXOLifeCycleTest
       _ = assert(coins.forall(_.state == BroadcastSpent))
       _ = assert(coins.forall(_.spendingTxIdOpt.contains(tx.txIdBE)))
 
-      rbf <- wallet.bumpFeeRBF(tx.txIdBE, SatoshisPerByte.fromLong(3))
+      rbf <- wallet.sendFundsHandling.bumpFeeRBF(tx.txIdBE,
+                                                 SatoshisPerByte.fromLong(3))
       _ <- wallet.transactionProcessing.processTransaction(rbf, None)
       rbfCoins <- wallet.findOutputsBeingSpent(rbf)
     } yield {
@@ -299,7 +304,9 @@ class UTXOLifeCycleTest
     val spendingInfoDAO =
       SpendingInfoDAO()(system.dispatcher, param.walletConfig)
     for {
-      tx <- wallet.sendToAddress(testAddr, Satoshis(3000), None)
+      tx <- wallet.sendFundsHandling.sendToAddress(testAddr,
+                                                   Satoshis(3000),
+                                                   None)
 
       coins <- wallet.findOutputsBeingSpent(tx)
 
@@ -326,7 +333,9 @@ class UTXOLifeCycleTest
     val walletConfig = param.walletConfig
     for {
       oldTransactions <- wallet.listTransactions()
-      tx <- wallet.sendToAddress(testAddr, Satoshis(3000), None)
+      tx <- wallet.sendFundsHandling.sendToAddress(testAddr,
+                                                   Satoshis(3000),
+                                                   None)
 
       updatedCoins <- wallet.findOutputsBeingSpent(tx)
       newTransactions <- wallet.listTransactions()
@@ -646,7 +655,7 @@ class UTXOLifeCycleTest
           PSBT.fromUnsignedTx(tx)
         }
 
-        psbt <- wallet.signPSBT(unsignedPSBT)
+        psbt <- wallet.sendFundsHandling.signPSBT(unsignedPSBT)
 
         tx <- Future.fromTry(
           psbt.finalizePSBT.flatMap(_.extractTransactionAndValidate)
@@ -755,7 +764,9 @@ class UTXOLifeCycleTest
         bitcoindAdr <- bitcoindAddrF
         utxoCount <- utxoCountF
         // build a spending transaction
-        tx <- wallet.sendToAddress(bitcoindAdr, amt, SatoshisPerVirtualByte.one)
+        tx <- wallet.sendFundsHandling.sendToAddress(bitcoindAdr,
+                                                     amt,
+                                                     SatoshisPerVirtualByte.one)
         c <- wallet.listUtxos()
         _ = assert(c.length == utxoCount.length)
         txIdBE <- bitcoind.sendRawTransaction(tx)
@@ -824,7 +835,7 @@ class UTXOLifeCycleTest
 
         // spend and broadcast unconfirmed
         feeRate <- wallet.feeRateApi.getFeeRate()
-        sendTx <- wallet.sendWithAlgo(
+        sendTx <- wallet.sendFundsHandling.sendWithAlgo(
           testAddr,
           sendValue,
           feeRate,
@@ -878,7 +889,7 @@ class UTXOLifeCycleTest
 
         // spend unconfirmed
         feeRate <- wallet.feeRateApi.getFeeRate()
-        sendTx <- wallet.sendWithAlgo(
+        sendTx <- wallet.sendFundsHandling.sendWithAlgo(
           testAddr,
           sendValue,
           feeRate,

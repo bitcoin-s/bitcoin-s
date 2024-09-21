@@ -15,7 +15,9 @@ import org.bitcoins.core.api.wallet.{
   AddressInfo,
   CoinSelectionAlgo,
   FundTransactionHandlingApi,
-  RescanHandlingApi
+  RescanHandlingApi,
+  SendFundsHandlingApi,
+  UtxoHandlingApi
 }
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.ExtPublicKey
@@ -92,6 +94,11 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
   val mockFundTxHandlingApi: FundTransactionHandlingApi =
     mock[FundTransactionHandlingApi]
+
+  val mockSendFundsHandlingApi: SendFundsHandlingApi =
+    mock[SendFundsHandlingApi]
+
+  val mockUtxoHandlingApi: UtxoHandlingApi = mock[UtxoHandlingApi]
 
   val walletHolder = new WalletHolder(Some(mockWalletApi))
 
@@ -1621,7 +1628,12 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     "send to an address" in {
       // positive cases
 
-      (mockWalletApi
+      (() => mockWalletApi.sendFundsHandling)
+        .expects()
+        .returning(mockSendFundsHandlingApi)
+        .anyNumberOfTimes()
+
+      (mockWalletApi.sendFundsHandling
         .sendToAddress(_: BitcoinAddress, _: CurrencyUnit, _: Option[FeeUnit])(
           _: ExecutionContext
         ))
@@ -1712,7 +1724,12 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     "send from outpoints" in {
       // positive cases
 
-      (mockWalletApi
+      (() => mockWalletApi.sendFundsHandling)
+        .expects()
+        .returning(mockSendFundsHandlingApi)
+        .anyNumberOfTimes()
+
+      (mockWalletApi.sendFundsHandling
         .sendFromOutPoints(
           _: Vector[TransactionOutPoint],
           _: BitcoinAddress,
@@ -1826,11 +1843,25 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "sweep wallet" in {
-      (mockWalletApi
-        .sweepWallet(_: BitcoinAddress, _: Option[FeeUnit])(
-          _: ExecutionContext
-        ))
-        .expects(testAddress, *, executor)
+      (() => mockWalletApi.sendFundsHandling)
+        .expects()
+        .returning(mockSendFundsHandlingApi)
+        .anyNumberOfTimes()
+
+      (() => mockWalletApi.sendFundsHandling.utxoHandling)
+        .expects()
+        .returning(mockUtxoHandlingApi)
+        .anyNumberOfTimes()
+
+      (() => mockWalletApi.sendFundsHandling.utxoHandling.listUtxos())
+        .expects()
+        .returning(Future.successful(Vector.empty))
+
+      (mockWalletApi.sendFundsHandling
+        .sendFromOutPoints(_: Vector[TransactionOutPoint],
+                           _: BitcoinAddress,
+                           _: FeeUnit))
+        .expects(Vector.empty, testAddress, SatoshisPerVirtualByte(Satoshis(4)))
         .returning(Future.successful(EmptyTransaction))
 
       (mockWalletApi.broadcastTransaction _)
@@ -1853,7 +1884,12 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     "send with algo" in {
       // positive cases
 
-      (mockWalletApi
+      (() => mockWalletApi.sendFundsHandling)
+        .expects()
+        .returning(mockSendFundsHandlingApi)
+        .anyNumberOfTimes()
+
+      (mockWalletApi.sendFundsHandling
         .sendWithAlgo(
           _: BitcoinAddress,
           _: CurrencyUnit,
@@ -1976,7 +2012,12 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         "020000000258e87a21b56daf0c23be8e7070456c336f7cbaa5c8757924f545887bb2abdd750000000000ffffffff838d0427d0ec650a68aa46bb0b098aea4422c071b2ca78352a077959d07cea1d0100000000ffffffff0270aaf00800000000160014d85c2b71d0060b09c9886aeb815e50991dda124d00e1f5050000000016001400aea9a2e5f0f876a588df5546e8742d1d87008f00000000"
       )
 
-      (mockWalletApi
+      (() => mockWalletApi.sendFundsHandling)
+        .expects()
+        .returning(mockSendFundsHandlingApi)
+        .anyNumberOfTimes()
+
+      (mockWalletApi.sendFundsHandling
         .signPSBT(_: PSBT)(_: ExecutionContext))
         .expects(PSBT.empty, executor)
         .returning(Future.successful(PSBT.fromUnsignedTx(tx)))
@@ -2027,7 +2068,13 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "bump fee with rbf" in {
-      (mockWalletApi
+
+      (() => mockWalletApi.sendFundsHandling)
+        .expects()
+        .returning(mockSendFundsHandlingApi)
+        .anyNumberOfTimes()
+
+      (mockWalletApi.sendFundsHandling
         .bumpFeeRBF(_: DoubleSha256DigestBE, _: FeeUnit))
         .expects(DoubleSha256DigestBE.empty, SatoshisPerVirtualByte.one)
         .returning(Future.successful(EmptyTransaction))
@@ -2053,7 +2100,12 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "bump fee with CPFP" in {
-      (mockWalletApi
+      (() => mockWalletApi.sendFundsHandling)
+        .expects()
+        .returning(mockSendFundsHandlingApi)
+        .anyNumberOfTimes()
+
+      (mockWalletApi.sendFundsHandling
         .bumpFeeCPFP(_: DoubleSha256DigestBE, _: FeeUnit))
         .expects(DoubleSha256DigestBE.empty, SatoshisPerVirtualByte.one)
         .returning(Future.successful(EmptyTransaction))

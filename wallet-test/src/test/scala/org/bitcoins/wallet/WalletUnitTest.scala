@@ -234,7 +234,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
       psbt = dummyPSBT(prevTxId = dummyPrevTx.txId)
         .addKeyPathToInput(accountDb.xpub, walletPath, walletKey, 0)
 
-      signed <- wallet.signPSBT(psbt)
+      signed <- wallet.sendFundsHandling.signPSBT(psbt)
     } yield {
       assert(signed != psbt)
       assert(
@@ -260,7 +260,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
         psbt = dummyPSBT(prevTxId = dummyPrevTx.txId)
 
-        signed <- wallet.signPSBT(psbt)
+        signed <- wallet.sendFundsHandling.signPSBT(psbt)
       } yield {
         assert(signed != psbt)
         assert(
@@ -286,7 +286,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
         psbt = dummyPSBT(prevTxId = dummyPrevTx.txId)
 
-        signed <- wallet.signPSBT(psbt)
+        signed <- wallet.sendFundsHandling.signPSBT(psbt)
       } yield {
         assert(signed != psbt)
         assert(
@@ -313,7 +313,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
         psbt = dummyPSBT(prevTxId = dummyPrevTx.txId)
           .addUTXOToInput(dummyPrevTx, 0)
 
-        signed <- wallet.signPSBT(psbt)
+        signed <- wallet.sendFundsHandling.signPSBT(psbt)
       } yield {
         assert(signed != psbt)
         assert(
@@ -326,7 +326,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
   it must "be able to sign a psbt with no wallet utxos" in { (wallet: Wallet) =>
     val psbt = dummyPSBT()
     for {
-      signed <- wallet.signPSBT(psbt)
+      signed <- wallet.sendFundsHandling.signPSBT(psbt)
     } yield assert(signed == psbt)
   }
 

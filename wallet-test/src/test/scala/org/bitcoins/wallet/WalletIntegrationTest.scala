@@ -116,7 +116,7 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
           .map(unconfirmed => assert(unconfirmed == 0.satoshis))
 
       signedTx <- bitcoind.getNewAddress.flatMap {
-        wallet.sendToAddress(_, valueToBitcoind, None)
+        wallet.sendFundsHandling.sendToAddress(_, valueToBitcoind, None)
       }
 
       feeRate =
@@ -185,7 +185,9 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
       // Create first tx
       tx1 <- bitcoind.getNewAddress.flatMap {
-        wallet.sendToAddress(_, valueToBitcoind, SatoshisPerVirtualByte.one)
+        wallet.sendFundsHandling.sendToAddress(_,
+                                               valueToBitcoind,
+                                               SatoshisPerVirtualByte.one)
       }
       _ <- bitcoind.sendRawTransaction(tx1)
 
@@ -197,7 +199,8 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
       // Create replacement tx
       newFeeRate = SatoshisPerVirtualByte.fromLong(20)
-      replacementTx <- wallet.bumpFeeRBF(tx1.txIdBE, newFeeRate)
+      replacementTx <- wallet.sendFundsHandling.bumpFeeRBF(tx1.txIdBE,
+                                                           newFeeRate)
 
       // Check tx being replaced exists
       tx1Info <- bitcoind.getRawTransaction(tx1.txIdBE)
@@ -249,7 +252,9 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
       // Create rbf tx
       rbf <- bitcoind.getNewAddress.flatMap {
-        wallet.sendToAddress(_, valueToBitcoind, SatoshisPerVirtualByte.one)
+        wallet.sendFundsHandling.sendToAddress(_,
+                                               valueToBitcoind,
+                                               SatoshisPerVirtualByte.one)
       }
       _ <- bitcoind.sendRawTransaction(rbf)
 
@@ -262,7 +267,8 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
       // fail to RBF confirmed tx
       res <- recoverToSucceededIf[IllegalArgumentException] {
-        wallet.bumpFeeRBF(rbf.txIdBE, SatoshisPerVirtualByte.fromLong(20))
+        wallet.sendFundsHandling.bumpFeeRBF(rbf.txIdBE,
+                                            SatoshisPerVirtualByte.fromLong(20))
       }
     } yield res
   }
@@ -286,7 +292,7 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
       // Create parent tx
       parentTx <- bitcoind.getNewAddress.flatMap {
-        wallet.sendToAddress(_, valueToBitcoind, None)
+        wallet.sendFundsHandling.sendToAddress(_, valueToBitcoind, None)
       }
       _ <- bitcoind.sendRawTransaction(parentTx)
 
@@ -298,7 +304,8 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
       // Create child tx
       childFeeRate <- wallet.feeRateApi.getFeeRate()
-      childTx <- wallet.bumpFeeCPFP(parentTx.txIdBE, childFeeRate)
+      childTx <- wallet.sendFundsHandling.bumpFeeCPFP(parentTx.txIdBE,
+                                                      childFeeRate)
       _ <- bitcoind.sendRawTransaction(childTx)
 
       // Check we didn't send again to bitcoind
@@ -341,7 +348,9 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
         // Attempt to spend utxo
         _ <- recoverToSucceededIf[RuntimeException](
-          wallet.sendToAddress(bitcoindAddr, valueToBitcoind, None)
+          wallet.sendFundsHandling.sendToAddress(bitcoindAddr,
+                                                 valueToBitcoind,
+                                                 None)
         )
 
         spendingTx = {
@@ -363,7 +372,7 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
         // Create valid spending tx
         psbt = PSBT.fromUnsignedTx(spendingTx)
-        signedPSBT <- wallet.signPSBT(psbt)
+        signedPSBT <- wallet.sendFundsHandling.signPSBT(psbt)
         signedTx = signedPSBT.finalizePSBT
           .flatMap(_.extractTransactionAndValidate)
           .get

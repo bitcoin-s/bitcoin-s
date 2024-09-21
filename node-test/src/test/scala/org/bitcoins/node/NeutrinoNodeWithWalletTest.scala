@@ -97,7 +97,9 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
     for {
       // send
       addr <- bitcoind.getNewAddress
-      _ <- wallet.sendToAddress(addr, TestAmount, Some(FeeRate))
+      _ <- wallet.sendFundsHandling.sendToAddress(addr,
+                                                  TestAmount,
+                                                  Some(FeeRate))
 
       _ <- wallet.getConfirmedBalance()
       _ <- wallet.getUnconfirmedBalance()
@@ -148,7 +150,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       _ <- wallet.addressHandling.watchScriptPubKey(spk)
 
       // send
-      txSent <- wallet.sendToOutputs(Vector(output), FeeRate)
+      txSent <- wallet.sendFundsHandling.sendToOutputs(Vector(output), FeeRate)
       _ <- node.broadcastTransaction(txSent)
 
       // confirm
@@ -282,7 +284,9 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       stoppedNode <- stopF
 
       // create a transaction that spends to bitcoind with our wallet
-      tx <- wallet.sendToAddress(bitcoindAddr, sendAmt, SatoshisPerByte.one)
+      tx <- wallet.sendFundsHandling.sendToAddress(bitcoindAddr,
+                                                   sendAmt,
+                                                   SatoshisPerByte.one)
       // broadcast tx
       _ <- bitcoind.sendRawTransaction(tx)
       _ <- bitcoind.generateToAddress(1, bitcoindAddr)
