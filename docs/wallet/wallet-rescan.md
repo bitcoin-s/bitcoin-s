@@ -90,11 +90,11 @@ val initBalanceF = for {
 val clearedWalletF = for {
   w <- walletF
   _ <- initBalanceF
-  clearedWallet <- w.clearAllUtxos()
-  zeroBalance <- clearedWallet.getBalance()
+  _<- w.utxoHandling.clearAllUtxos()
+  zeroBalance <- w.getBalance()
 } yield {
   println(s"Balance after clearing utxos: ${zeroBalance}")
-  clearedWallet
+  w
 }
 
 //we need to pick how many addresses we want to generate off of our keychain
