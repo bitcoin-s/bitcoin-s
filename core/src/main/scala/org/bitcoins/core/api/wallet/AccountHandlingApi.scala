@@ -7,7 +7,7 @@ import org.bitcoins.core.hd.{AddressType, HDAccount, HDChainType, HDPurpose}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 trait AccountHandlingApi {
 
@@ -31,15 +31,35 @@ trait AccountHandlingApi {
       chainType: HDChainType
   ): Future[BitcoinAddress]
 
-  def getNewAddress(account: HDAccount): Future[BitcoinAddress]
-  final def getNewAddress(accountDb: AccountDb): Future[BitcoinAddress] = {
-    getNewAddress(accountDb.hdAccount)
+  final def getNewAddress(account: HDAccount)(implicit
+      ec: ExecutionContext): Future[BitcoinAddress] = {
+    val accountDbOptF = findAccount(account)
+    accountDbOptF.flatMap {
+      case Some(accountDb) => getNewAddress(accountDb)
+      case None =>
+        Future.failed(
+          new RuntimeException(
+            s"No account found for given hdaccount=${account}"
+          )
+        )
+    }
   }
-  def getNewChangeAddress(account: HDAccount): Future[BitcoinAddress]
-  final def getNewChangeAddress(
-      accountDb: AccountDb): Future[BitcoinAddress] = {
-    getNewChangeAddress(accountDb.hdAccount)
+  def getNewAddress(accountDb: AccountDb): Future[BitcoinAddress]
+
+  final def getNewChangeAddress(account: HDAccount)(implicit
+      ec: ExecutionContext): Future[BitcoinAddress] = {
+    val accountDbOptF = findAccount(account)
+    accountDbOptF.flatMap {
+      case Some(accountDb) => getNewChangeAddress(accountDb)
+      case None =>
+        Future.failed(
+          new RuntimeException(
+            s"No account found for given hdaccount=${account}"
+          )
+        )
+    }
   }
+  def getNewChangeAddress(accountDb: AccountDb): Future[BitcoinAddress]
   def clearUtxos(account: HDAccount): Future[Unit]
   def findAccount(account: HDAccount): Future[Option[AccountDb]]
   def generateScriptPubKeys(

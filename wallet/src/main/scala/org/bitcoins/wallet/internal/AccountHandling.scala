@@ -240,15 +240,9 @@ case class AccountHandling(
   }
 
   override def getNewChangeAddress(
-      account: HDAccount): Future[BitcoinAddress] = {
-    val accountDbOptF = findAccount(account)
-    accountDbOptF.flatMap {
-      case Some(accountDb) => getNewChangeAddress(accountDb)
-      case None =>
-        Future.failed(
-          new RuntimeException(s"No account found for given hdaccount=$account")
-        )
-    }
+      account: AccountDb): Future[BitcoinAddress] = {
+    val action = getNewChangeAddressAction(account)
+    safeDatabase.run(action)
   }
 
   /** Queues a request to generate an address and returns a Future that will be
@@ -298,17 +292,9 @@ case class AccountHandling(
     }
   }
 
-  override def getNewAddress(account: HDAccount): Future[BitcoinAddress] = {
-    val accountDbOptF = findAccount(account)
-    accountDbOptF.flatMap {
-      case Some(accountDb) => getNewAddress(accountDb)
-      case None =>
-        Future.failed(
-          new RuntimeException(
-            s"No account found for given hdaccount=${account}"
-          )
-        )
-    }
+  override def getNewAddress(account: AccountDb): Future[BitcoinAddress] = {
+    val action = getNewAddressAction(account)
+    safeDatabase.run(action)
   }
 
   def getNewAddressAction(account: AccountDb): DBIOAction[
