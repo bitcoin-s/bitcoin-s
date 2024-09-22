@@ -77,6 +77,17 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
   val testAddress: BitcoinAddress = BitcoinAddress.fromString(testAddressStr)
   val testLabel: AddressLabelTag = AddressLabelTag("test")
 
+  val xpub = ExtPublicKey
+    .fromString(
+      "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8"
+    )
+
+  val accountDb =
+    AccountDb(
+      xpub = xpub,
+      hdAccount = HDAccount(HDCoin(HDPurpose.Legacy, HDCoinType.Testnet), 0)
+    )
+
   val mockChainApi: ChainApi = mock[ChainApi]
 
   val mockNode: Node = mock[Node]
@@ -105,6 +116,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
   val feeRateApi = ConstantFeeRateProvider(SatoshisPerVirtualByte.one)
 
+  val fee = SatoshisPerVirtualByte(Satoshis(4))
   val walletLoader: DLCWalletNeutrinoBackendLoader = {
     DLCWalletNeutrinoBackendLoader(
       walletHolder,
@@ -683,16 +695,6 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "return the wallet accounts" in {
-      val xpub = ExtPublicKey
-        .fromString(
-          "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8"
-        )
-
-      val accountDb =
-        AccountDb(
-          xpub = xpub,
-          hdAccount = HDAccount(HDCoin(HDPurpose.Legacy, HDCoinType.Testnet), 0)
-        )
 
       (() => mockWalletApi.accountHandling)
         .expects()
@@ -1634,11 +1636,30 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .returning(mockSendFundsHandlingApi)
         .anyNumberOfTimes()
 
+      (() => mockWalletApi.sendFundsHandling.accountHandling)
+        .expects()
+        .returning(mockAccountHandlingApi)
+        .anyNumberOfTimes()
+
+      (() =>
+        mockWalletApi.sendFundsHandling.accountHandling.getDefaultAccount())
+        .expects()
+        .returning(Future.successful(accountDb))
+        .anyNumberOfTimes()
+
       (mockWalletApi.sendFundsHandling
-        .sendToAddress(_: BitcoinAddress, _: CurrencyUnit, _: Option[FeeUnit])(
-          _: ExecutionContext
-        ))
-        .expects(testAddress, Bitcoins(100), *, executor)
+        .sendWithAlgo(_: BitcoinAddress,
+                      _: CurrencyUnit,
+                      _: FeeUnit,
+                      _: CoinSelectionAlgo,
+                      _: AccountDb,
+                      _: Vector[AddressTag]))
+        .expects(testAddress,
+                 Bitcoins(100),
+                 fee,
+                 CoinSelectionAlgo.LeastWaste,
+                 accountDb,
+                 Vector.empty)
         .returning(Future.successful(EmptyTransaction))
 
       (mockWalletApi.broadcastTransaction _)
@@ -1730,19 +1751,33 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .returning(mockSendFundsHandlingApi)
         .anyNumberOfTimes()
 
+      (() => mockWalletApi.sendFundsHandling.accountHandling)
+        .expects()
+        .returning(mockAccountHandlingApi)
+        .anyNumberOfTimes()
+
+      (() =>
+        mockWalletApi.sendFundsHandling.accountHandling.getDefaultAccount())
+        .expects()
+        .returning(Future.successful(accountDb))
+        .anyNumberOfTimes()
+
       (mockWalletApi.sendFundsHandling
         .sendFromOutPoints(
           _: Vector[TransactionOutPoint],
           _: BitcoinAddress,
           _: CurrencyUnit,
-          _: Option[FeeUnit]
-        )(_: ExecutionContext))
+          _: FeeUnit,
+          _: AccountDb,
+          _: Vector[AddressTag]
+        ))
         .expects(
           Vector.empty[TransactionOutPoint],
           testAddress,
           Bitcoins(100),
-          *,
-          executor
+          fee,
+          accountDb,
+          Vector.empty
         )
         .returning(Future.successful(EmptyTransaction))
 
@@ -1862,7 +1897,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .sendFromOutPoints(_: Vector[TransactionOutPoint],
                            _: BitcoinAddress,
                            _: FeeUnit))
-        .expects(Vector.empty, testAddress, SatoshisPerVirtualByte(Satoshis(4)))
+        .expects(Vector.empty, testAddress, fee)
         .returning(Future.successful(EmptyTransaction))
 
       (mockWalletApi.broadcastTransaction _)
@@ -1900,7 +1935,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .expects(
           testAddress,
           Bitcoins(100),
-          Some(SatoshisPerVirtualByte(Satoshis(4))),
+          Some(fee),
           CoinSelectionAlgo.AccumulateSmallestViable,
           executor
         )
