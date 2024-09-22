@@ -9,16 +9,14 @@ import org.bitcoins.core.api.dlc.wallet.db.{
   IncomingDLCOfferDb
 }
 import org.bitcoins.core.api.feeprovider.FeeRateApi
-import org.bitcoins.core.api.keymanager.BIP39KeyManagerApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.wallet.*
 import org.bitcoins.core.api.wallet.db.*
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.dlc.accounting.DLCWalletAccounting
 import org.bitcoins.core.gcs.GolombFilter
-import org.bitcoins.core.hd.{AddressType, HDAccount, HDPurpose}
+import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.dlc.models.*
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.tlv.*
@@ -28,11 +26,6 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.core.wallet.builder.{
-  FundRawTxHelper,
-  ShufflingNonInteractiveFinalizer
-}
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
 import org.bitcoins.crypto.{DoubleSha256DigestBE, Sha256Digest}
@@ -67,7 +60,15 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
   override def fundTxHandling: FundTransactionHandlingApi =
     wallet.fundTxHandling
 
+  override def utxoHandling: UtxoHandlingApi = wallet.utxoHandling
+
   override def addressHandling: AddressHandlingApi = wallet.addressHandling
+
+  override def transactionProcessing: TransactionProcessingApi =
+    wallet.transactionProcessing
+
+  override def sendFundsHandling: SendFundsHandlingApi =
+    wallet.sendFundsHandling
   def isInitialized: Boolean = synchronized {
     walletOpt.isDefined
   }
@@ -108,34 +109,6 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
 
   override def getNewChangeAddress(): Future[BitcoinAddress] = delegate(
     _.getNewChangeAddress())
-  override def processBlock(block: Block): Future[Unit] =
-    delegate(_.processBlock(block))
-
-  override def processTransaction(
-      transaction: Transaction,
-      blockHashOpt: Option[DoubleSha256DigestBE]): Future[Unit] = {
-    delegate(_.processTransaction(transaction, blockHashOpt))
-  }
-
-  /** Processes TXs originating from our wallet. This is called right after
-    * we've signed a TX, updating our UTXO state.
-    */
-  override def processOurTransaction(
-      transaction: Transaction,
-      feeRate: FeeUnit,
-      inputAmount: CurrencyUnit,
-      sentAmount: CurrencyUnit,
-      blockHashOpt: Option[DoubleSha256DigestBE],
-      newTags: Vector[AddressTag]
-  ): Future[ProcessTxResult] = {
-    delegate(
-      _.processOurTransaction(transaction,
-                              feeRate,
-                              inputAmount,
-                              sentAmount,
-                              blockHashOpt,
-                              newTags))
-  }
 
   override def processCompactFilters(
       blockFilters: Vector[(DoubleSha256DigestBE, GolombFilter)]
@@ -164,17 +137,6 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
     res
   }
 
-  override def fundRawTransaction(
-      destinations: Vector[TransactionOutput],
-      feeRate: FeeUnit,
-      fromAccount: AccountDb,
-      markAsReserved: Boolean
-  ): Future[FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
-    delegate(
-      _.fundRawTransaction(destinations, feeRate, fromAccount, markAsReserved)
-    )
-  }
-
   override def updateUtxoPendingStates(): Future[Vector[SpendingInfoDb]] =
     delegate(_.updateUtxoPendingStates())
 
@@ -192,21 +154,12 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
   override def getUnconfirmedBalance(tag: AddressTag): Future[CurrencyUnit] =
     delegate(_.getUnconfirmedBalance(tag))
 
-  override def listDefaultAccountUtxos(): Future[Vector[SpendingInfoDb]] = {
-    delegate(_.listDefaultAccountUtxos())
-  }
-
   override def listTransactions(): Future[Vector[TransactionDb]] = {
     delegate(_.listTransactions())
   }
   override def listUtxos(): Future[Vector[SpendingInfoDb]] = delegate(
     _.listUtxos()
   )
-
-  override def listUtxos(
-      hdAccount: HDAccount): Future[Vector[SpendingInfoDb]] = {
-    delegate(_.listUtxos(hdAccount))
-  }
 
   override def listUtxos(state: TxoState): Future[Vector[SpendingInfoDb]] =
     delegate(_.listUtxos(state))
@@ -232,27 +185,6 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
   ): Future[Vector[SpendingInfoDb]] = delegate(_.unmarkUTXOsAsReserved(tx))
 
   override def isEmpty(): Future[Boolean] = delegate(_.isEmpty())
-
-  override def sendFromOutPoints(
-      outPoints: Vector[TransactionOutPoint],
-      address: BitcoinAddress,
-      feeRate: FeeUnit
-  )(implicit ec: ExecutionContext): Future[Transaction] =
-    delegate(_.sendFromOutPoints(outPoints, address, feeRate))
-
-  override def sweepWallet(address: BitcoinAddress, feeRate: FeeUnit)(implicit
-      ec: ExecutionContext
-  ): Future[Transaction] = delegate(_.sweepWallet(address, feeRate))
-
-  override def bumpFeeRBF(
-      txId: DoubleSha256DigestBE,
-      newFeeRate: FeeUnit
-  ): Future[Transaction] = delegate(_.bumpFeeRBF(txId, newFeeRate))
-
-  override def bumpFeeCPFP(
-      txId: DoubleSha256DigestBE,
-      feeRate: FeeUnit
-  ): Future[Transaction] = delegate(_.bumpFeeCPFP(txId, feeRate))
 
   override def isChange(output: TransactionOutput): Future[Boolean] = delegate(
     _.isChange(output)
@@ -427,100 +359,11 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
       address: InetSocketAddress
   ): Future[Vector[DLCStatus]] = delegate(_.listDLCsByContact(address))
 
-  override def keyManager: BIP39KeyManagerApi = wallet.keyManager
+  def getConfirmedBalance(account: HDAccount): Future[CurrencyUnit] =
+    delegate(_.accountHandling.getConfirmedBalance(account))
 
-  override def getConfirmedBalance(account: HDAccount): Future[CurrencyUnit] =
-    delegate(_.getConfirmedBalance(account))
-
-  override def getUnconfirmedBalance(account: HDAccount): Future[CurrencyUnit] =
-    delegate(_.getUnconfirmedBalance(account))
-
-  override def getDefaultAccount(): Future[AccountDb] = delegate(
-    _.getDefaultAccount()
-  )
-
-  override def getDefaultAccountForType(
-      addressType: AddressType
-  ): Future[AccountDb] = delegate(_.getDefaultAccountForType(addressType))
-
-  override def sendWithAlgo(
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRate: FeeUnit,
-      algo: CoinSelectionAlgo,
-      fromAccount: AccountDb,
-      newTags: Vector[AddressTag]
-  )(implicit ec: ExecutionContext): Future[Transaction] = delegate(
-    _.sendWithAlgo(address, amount, feeRate, algo, fromAccount, newTags)
-  )
-
-  override def sendFromOutPoints(
-      outPoints: Vector[TransactionOutPoint],
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRate: FeeUnit,
-      fromAccount: AccountDb,
-      newTags: Vector[AddressTag]
-  )(implicit ec: ExecutionContext): Future[Transaction] = delegate(
-    _.sendFromOutPoints(
-      outPoints,
-      address,
-      amount,
-      feeRate,
-      fromAccount,
-      newTags
-    )
-  )
-
-  override def sendToAddress(
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRate: FeeUnit,
-      fromAccount: AccountDb,
-      newTags: Vector[AddressTag]
-  )(implicit ec: ExecutionContext): Future[Transaction] = delegate(
-    _.sendToAddress(address, amount, feeRate, fromAccount, newTags)
-  )
-
-  override def sendToAddresses(
-      addresses: Vector[BitcoinAddress],
-      amounts: Vector[CurrencyUnit],
-      feeRate: FeeUnit,
-      fromAccount: AccountDb,
-      newTags: Vector[AddressTag]
-  )(implicit ec: ExecutionContext): Future[Transaction] = delegate(
-    _.sendToAddresses(addresses, amounts, feeRate, fromAccount, newTags)
-  )
-
-  override def sendToOutputs(
-      outputs: Vector[TransactionOutput],
-      feeRate: FeeUnit,
-      fromAccount: AccountDb,
-      newTags: Vector[AddressTag]
-  )(implicit ec: ExecutionContext): Future[Transaction] = delegate(
-    _.sendToOutputs(outputs, feeRate, fromAccount, newTags)
-  )
-
-  override def signPSBT(psbt: PSBT)(implicit
-      ec: ExecutionContext
-  ): Future[PSBT] = delegate(_.signPSBT(psbt))
-
-  override def makeOpReturnCommitment(
-      message: String,
-      hashMessage: Boolean,
-      feeRate: FeeUnit,
-      fromAccount: AccountDb
-  )(implicit ec: ExecutionContext): Future[Transaction] = delegate(
-    _.makeOpReturnCommitment(message, hashMessage, feeRate, fromAccount)
-  )
-
-  override def clearAllUtxos(): Future[HDWalletApi] = delegate(
-    _.clearAllUtxos()
-  )
-
-  override def clearAllAddresses(): Future[WalletApi] = {
-    delegate(_.clearAllAddresses())
-  }
+  def getUnconfirmedBalance(account: HDAccount): Future[CurrencyUnit] =
+    delegate(_.accountHandling.getUnconfirmedBalance(account))
 
   override def getSyncDescriptorOpt(): Future[Option[SyncHeightDescriptor]] =
     delegate(_.getSyncDescriptorOpt())
@@ -546,268 +389,15 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
       ec: ExecutionContext
   ): Future[CurrencyUnit] = delegate(_.getBalance(tag))
 
-  override def sendFromOutPoints(
-      outPoints: Vector[TransactionOutPoint],
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRateOpt: Option[FeeUnit]
-  )(implicit ec: ExecutionContext): Future[Transaction] = delegate(
-    _.sendFromOutPoints(outPoints, address, amount, feeRateOpt)
-  )
-
-  override def sendFromOutPoints(
-      outPoints: Vector[TransactionOutPoint],
-      address: BitcoinAddress,
-      feeRateOpt: Option[FeeUnit]
-  )(implicit ec: ExecutionContext): Future[Transaction] = delegate(
-    _.sendFromOutPoints(outPoints, address, feeRateOpt)
-  )
-
-  override def sweepWallet(address: BitcoinAddress)(implicit
+  def getBalance(account: HDAccount)(implicit
       ec: ExecutionContext
-  ): Future[Transaction] = delegate(_.sweepWallet(address))
-
-  override def sweepWallet(
-      address: BitcoinAddress,
-      feeRateOpt: Option[FeeUnit]
-  )(implicit ec: ExecutionContext): Future[Transaction] = delegate(
-    _.sweepWallet(address, feeRateOpt)
-  )
-
-  override def sendWithAlgo(
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRateOpt: Option[FeeUnit],
-      algo: CoinSelectionAlgo
-  )(implicit ec: ExecutionContext): Future[Transaction] = delegate(
-    _.sendWithAlgo(address, amount, feeRateOpt, algo)
-  )
-
-  override def sendToAddress(
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRateOpt: Option[FeeUnit]
-  )(implicit ec: ExecutionContext): Future[Transaction] = delegate(
-    _.sendToAddress(address, amount, feeRateOpt)
-  )
-
-  override def sendToOutputs(
-      outputs: Vector[TransactionOutput],
-      feeRateOpt: Option[FeeUnit]
-  )(implicit ec: ExecutionContext): Future[Transaction] = delegate(
-    _.sendToOutputs(outputs, feeRateOpt)
-  )
-
-  override def sendToAddresses(
-      addresses: Vector[BitcoinAddress],
-      amounts: Vector[CurrencyUnit],
-      feeRateOpt: Option[FeeUnit]
-  )(implicit ec: ExecutionContext): Future[Transaction] = delegate(
-    _.sendToAddresses(addresses, amounts, feeRateOpt)
-  )
-
-  override def makeOpReturnCommitment(
-      message: String,
-      hashMessage: Boolean,
-      feeRateOpt: Option[FeeUnit]
-  )(implicit ec: ExecutionContext): Future[Transaction] = delegate(
-    _.makeOpReturnCommitment(message, hashMessage, feeRateOpt)
-  )
-
-  override def getBalance(account: HDAccount)(implicit
-      ec: ExecutionContext
-  ): Future[CurrencyUnit] = delegate(_.getBalance(account))
+  ): Future[CurrencyUnit] = delegate(_.accountHandling.getBalance(account))
 
   override def processCompactFilter(
       blockHash: DoubleSha256DigestBE,
       blockFilter: GolombFilter
   ): Future[NeutrinoHDWalletApi] =
     delegate(_.processCompactFilter(blockHash, blockFilter))
-
-  override def sendWithAlgo(
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRate: FeeUnit,
-      algo: CoinSelectionAlgo,
-      fromAccount: AccountDb
-  )(implicit ec: ExecutionContext): Future[Transaction] =
-    delegate(_.sendWithAlgo(address, amount, feeRate, algo, fromAccount))
-
-  override def sendWithAlgo(
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRateOpt: Option[FeeUnit],
-      algo: CoinSelectionAlgo,
-      fromAccount: AccountDb
-  )(implicit ec: ExecutionContext): Future[Transaction] =
-    delegate(_.sendWithAlgo(address, amount, feeRateOpt, algo, fromAccount))
-
-  override def sendWithAlgo(
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRate: FeeUnit,
-      algo: CoinSelectionAlgo
-  )(implicit ec: ExecutionContext): Future[Transaction] =
-    delegate(_.sendWithAlgo(address, amount, feeRate, algo))
-
-  override def sendWithAlgo(
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRate: FeeUnit,
-      algo: CoinSelectionAlgo,
-      newTags: Vector[AddressTag]
-  )(implicit ec: ExecutionContext): Future[Transaction] =
-    delegate(_.sendWithAlgo(address, amount, feeRate, algo, newTags))
-
-  override def sendFromOutPoints(
-      outPoints: Vector[TransactionOutPoint],
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRate: FeeUnit,
-      fromAccount: AccountDb
-  )(implicit ec: ExecutionContext): Future[Transaction] =
-    delegate(
-      _.sendFromOutPoints(outPoints, address, amount, feeRate, fromAccount)
-    )
-
-  override def sendFromOutPoints(
-      outPoints: Vector[TransactionOutPoint],
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRateOpt: Option[FeeUnit],
-      fromAccount: AccountDb
-  )(implicit ec: ExecutionContext): Future[Transaction] =
-    delegate(
-      _.sendFromOutPoints(outPoints, address, amount, feeRateOpt, fromAccount)
-    )
-
-  override def sendFromOutPoints(
-      outPoints: Vector[TransactionOutPoint],
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRate: FeeUnit
-  )(implicit ec: ExecutionContext): Future[Transaction] =
-    delegate(_.sendFromOutPoints(outPoints, address, amount, feeRate))
-
-  override def sendFromOutPoints(
-      outPoints: Vector[TransactionOutPoint],
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRate: FeeUnit,
-      newTags: Vector[AddressTag]
-  )(implicit ec: ExecutionContext): Future[Transaction] =
-    delegate(_.sendFromOutPoints(outPoints, address, amount, feeRate, newTags))
-
-  override def sendToAddress(
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRate: FeeUnit,
-      fromAccount: AccountDb
-  )(implicit ec: ExecutionContext): Future[Transaction] =
-    delegate(_.sendToAddress(address, amount, feeRate, fromAccount))
-
-  override def sendToAddress(
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRateOpt: Option[FeeUnit],
-      fromAccount: AccountDb
-  )(implicit ec: ExecutionContext): Future[Transaction] =
-    delegate(_.sendToAddress(address, amount, feeRateOpt, fromAccount))
-
-  override def sendToAddress(
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRate: FeeUnit
-  )(implicit ec: ExecutionContext): Future[Transaction] =
-    delegate(_.sendToAddress(address, amount, feeRate))
-
-  override def sendToAddress(
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRate: FeeUnit,
-      newTags: Vector[AddressTag]
-  )(implicit ec: ExecutionContext): Future[Transaction] =
-    delegate(_.sendToAddress(address, amount, feeRate, newTags))
-
-  override def sendToAddresses(
-      addresses: Vector[BitcoinAddress],
-      amounts: Vector[CurrencyUnit],
-      feeRate: FeeUnit,
-      fromAccount: AccountDb
-  )(implicit ec: ExecutionContext): Future[Transaction] =
-    delegate(_.sendToAddresses(addresses, amounts, feeRate, fromAccount))
-
-  override def sendToAddresses(
-      addresses: Vector[BitcoinAddress],
-      amounts: Vector[CurrencyUnit],
-      feeRateOpt: Option[FeeUnit],
-      fromAccount: AccountDb
-  )(implicit ec: ExecutionContext): Future[Transaction] =
-    delegate(_.sendToAddresses(addresses, amounts, feeRateOpt, fromAccount))
-
-  override def sendToAddresses(
-      addresses: Vector[BitcoinAddress],
-      amounts: Vector[CurrencyUnit],
-      feeRate: FeeUnit
-  )(implicit ec: ExecutionContext): Future[Transaction] =
-    delegate(_.sendToAddresses(addresses, amounts, feeRate))
-
-  override def sendToAddresses(
-      addresses: Vector[BitcoinAddress],
-      amounts: Vector[CurrencyUnit],
-      feeRate: FeeUnit,
-      newTags: Vector[AddressTag]
-  )(implicit ec: ExecutionContext): Future[Transaction] =
-    delegate(_.sendToAddresses(addresses, amounts, feeRate, newTags))
-
-  override def sendToOutputs(
-      outputs: Vector[TransactionOutput],
-      feeRate: FeeUnit,
-      fromAccount: AccountDb
-  )(implicit ec: ExecutionContext): Future[Transaction] =
-    delegate(_.sendToOutputs(outputs, feeRate, fromAccount))
-
-  override def sendToOutputs(
-      outputs: Vector[TransactionOutput],
-      feeRateOpt: Option[FeeUnit],
-      fromAccount: AccountDb
-  )(implicit ec: ExecutionContext): Future[Transaction] =
-    delegate(_.sendToOutputs(outputs, feeRateOpt, fromAccount))
-
-  override def sendToOutputs(
-      outputs: Vector[TransactionOutput],
-      feeRate: FeeUnit,
-      newTags: Vector[AddressTag]
-  )(implicit ec: ExecutionContext): Future[Transaction] =
-    delegate(_.sendToOutputs(outputs, feeRate, newTags))
-
-  override def sendToOutputs(
-      outputs: Vector[TransactionOutput],
-      feeRate: FeeUnit
-  )(implicit ec: ExecutionContext): Future[Transaction] =
-    delegate(_.sendToOutputs(outputs, feeRate))
-
-  override def makeOpReturnCommitment(
-      message: String,
-      hashMessage: Boolean,
-      feeRateOpt: Option[FeeUnit],
-      fromAccount: AccountDb
-  )(implicit ec: ExecutionContext): Future[Transaction] =
-    delegate(
-      _.makeOpReturnCommitment(message, hashMessage, feeRateOpt, fromAccount)
-    )
-
-  override def makeOpReturnCommitment(
-      message: String,
-      hashMessage: Boolean,
-      feeRate: FeeUnit
-  )(implicit ec: ExecutionContext): Future[Transaction] =
-    delegate(_.makeOpReturnCommitment(message, hashMessage, feeRate))
-
-  override def listAccounts(purpose: HDPurpose)(implicit
-      ec: ExecutionContext
-  ): Future[Vector[AccountDb]] =
-    delegate(_.listAccounts(purpose))
 
   override def createDLCOffer(
       contractInfoTLV: ContractInfoTLV,

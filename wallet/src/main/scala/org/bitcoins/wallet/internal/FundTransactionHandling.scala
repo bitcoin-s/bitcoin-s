@@ -1,6 +1,7 @@
 package org.bitcoins.wallet.internal
 
 import org.apache.pekko.actor.ActorSystem
+import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.keymanager.BIP39KeyManagerApi
 import org.bitcoins.core.api.wallet.*
 import org.bitcoins.core.api.wallet.db.AccountDb
@@ -22,9 +23,11 @@ case class FundTransactionHandling(
     accountHandling: AccountHandling,
     utxoHandling: UtxoHandling,
     addressHandling: AddressHandlingApi,
+    transactionProcessing: TransactionProcessingApi,
     spendingInfoDAO: SpendingInfoDAO,
     transactionDAO: TransactionDAO,
-    keyManager: BIP39KeyManagerApi)(implicit
+    keyManager: BIP39KeyManagerApi,
+    feeRateApi: FeeRateApi)(implicit
     walletConfig: WalletAppConfig,
     system: ActorSystem)
     extends FundTransactionHandlingApi

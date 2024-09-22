@@ -9,6 +9,15 @@ import scala.concurrent.Future
 
 trait UtxoHandlingApi {
 
+  /** Removes all utxos from the wallet. Don't call this unless you are sure you
+    * can recover your wallet
+    */
+  def clearAllUtxos(): Future[Unit]
+
+  def clearAllAddresses(): Future[Unit]
+
+  def listDefaultAccountUtxos(): Future[Vector[SpendingInfoDb]]
+
   /** Lists unspent transaction outputs in the wallet
     * @return
     *   Vector[SpendingInfoDb]
@@ -18,6 +27,8 @@ trait UtxoHandlingApi {
   def listUtxos(tag: AddressTag): Future[Vector[SpendingInfoDb]]
 
   def listUtxos(state: TxoState): Future[Vector[SpendingInfoDb]]
+
+  def listUtxos(account: HDAccount): Future[Vector[SpendingInfoDb]]
 
   def listUtxos(
       hdAccount: HDAccount,

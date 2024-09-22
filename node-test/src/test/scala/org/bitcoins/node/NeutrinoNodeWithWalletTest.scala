@@ -60,7 +60,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       for {
         balance <- wallet.getBalance()
         addresses <- wallet.addressHandling.listAddresses()
-        utxos <- wallet.listDefaultAccountUtxos()
+        utxos <- wallet.utxoHandling.listDefaultAccountUtxos()
       } yield {
         // +- fee rate because signatures could vary in size
         (expectedBalance === balance +- FeeRate.currencyUnit) &&
@@ -97,7 +97,9 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
     for {
       // send
       addr <- bitcoind.getNewAddress
-      _ <- wallet.sendToAddress(addr, TestAmount, Some(FeeRate))
+      _ <- wallet.sendFundsHandling.sendToAddress(addr,
+                                                  TestAmount,
+                                                  Some(FeeRate))
 
       _ <- wallet.getConfirmedBalance()
       _ <- wallet.getUnconfirmedBalance()
@@ -148,7 +150,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       _ <- wallet.addressHandling.watchScriptPubKey(spk)
 
       // send
-      txSent <- wallet.sendToOutputs(Vector(output), FeeRate)
+      txSent <- wallet.sendFundsHandling.sendToOutputs(Vector(output), FeeRate)
       _ <- node.broadcastTransaction(txSent)
 
       // confirm
@@ -169,7 +171,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
         rescan <- wallet.isRescanning()
         balance <- wallet.getBalance()
         addresses <- wallet.addressHandling.listAddresses()
-        utxos <- wallet.listDefaultAccountUtxos()
+        utxos <- wallet.utxoHandling.listDefaultAccountUtxos()
         spks = utxos
           .map(_.output.scriptPubKey)
       } yield {
@@ -182,7 +184,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
 
     for {
       addresses <- wallet.addressHandling.listAddresses()
-      utxos <- wallet.listDefaultAccountUtxos()
+      utxos <- wallet.utxoHandling.listDefaultAccountUtxos()
       _ = assert(addresses.size == 6)
       _ = assert(utxos.size == 3)
 
@@ -192,7 +194,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
           .sendToAddress(address, TestAmount)
 
       addresses <- wallet.addressHandling.listAddresses()
-      utxos <- wallet.listDefaultAccountUtxos()
+      utxos <- wallet.utxoHandling.listDefaultAccountUtxos()
       _ = assert(addresses.size == 7)
       _ = assert(utxos.size == 3)
       _ <-
@@ -206,9 +208,9 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
           .getSyncDescriptorOpt()
           .map(_.get.height == bitcoindHeight)
       })
-      _ <- wallet.clearAllUtxos()
+      _ <- wallet.utxoHandling.clearAllUtxos()
       addresses <- wallet.addressHandling.listAddresses()
-      utxos <- wallet.listDefaultAccountUtxos()
+      utxos <- wallet.utxoHandling.listDefaultAccountUtxos()
       _ = assert(addresses.nonEmpty)
       _ = assert(utxos.isEmpty)
 
@@ -282,7 +284,9 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       stoppedNode <- stopF
 
       // create a transaction that spends to bitcoind with our wallet
-      tx <- wallet.sendToAddress(bitcoindAddr, sendAmt, SatoshisPerByte.one)
+      tx <- wallet.sendFundsHandling.sendToAddress(bitcoindAddr,
+                                                   sendAmt,
+                                                   SatoshisPerByte.one)
       // broadcast tx
       _ <- bitcoind.sendRawTransaction(tx)
       _ <- bitcoind.generateToAddress(1, bitcoindAddr)

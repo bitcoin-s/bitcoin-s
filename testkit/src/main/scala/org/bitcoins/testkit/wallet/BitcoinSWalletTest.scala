@@ -599,8 +599,9 @@ object BitcoinSWalletTest extends WalletLogger {
     val hdAccount1 = WalletTestUtil.getHdAccount1(config)
     val expectedDefaultAmt = BitcoinSWalletTest.expectedDefaultAmt
     val expectedAccount1Amt = BitcoinSWalletTest.expectedAccount1Amt
-    val defaultBalanceF = fundedWallet.wallet.getBalance(defaultAccount)
-    val account1BalanceF = fundedWallet.wallet.getBalance(hdAccount1)
+    val accountHandling = fundedWallet.wallet.accountHandling
+    val defaultBalanceF = accountHandling.getBalance(defaultAccount)
+    val account1BalanceF = accountHandling.getBalance(hdAccount1)
     for {
       balance <- defaultBalanceF
       account1Balance <- account1BalanceF

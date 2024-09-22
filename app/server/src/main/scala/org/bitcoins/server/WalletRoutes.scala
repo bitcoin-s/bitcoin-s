@@ -669,7 +669,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
             ) =>
           complete {
             for {
-              tx <- wallet.sendToAddress(
+              tx <- wallet.sendFundsHandling.sendToAddress(
                 address,
                 bitcoins,
                 satoshisPerVirtualByteOpt
@@ -690,7 +690,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
             ) =>
           complete {
             for {
-              tx <- wallet.sendFromOutPoints(
+              tx <- wallet.sendFundsHandling.sendFromOutPoints(
                 outPoints,
                 address,
                 bitcoins,
@@ -705,10 +705,13 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
       withValidServerCommand(SweepWallet.fromJsArr(arr)) {
         case SweepWallet(address, feeRateOpt) =>
           complete {
-            for {
-              tx <- wallet.sweepWallet(address, feeRateOpt)
+            val f = for {
+              tx <- wallet.sendFundsHandling.sweepWallet(address, feeRateOpt)
               _ <- wallet.broadcastTransaction(tx)
             } yield Server.httpSuccess(tx.txIdBE)
+
+            f.failed.foreach(err => logger.error(s"f.err", err))
+            f
           }
       }
 
@@ -717,7 +720,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
         case SendWithAlgo(address, bitcoins, satoshisPerVirtualByteOpt, algo) =>
           complete {
             for {
-              tx <- wallet.sendWithAlgo(
+              tx <- wallet.sendFundsHandling.sendWithAlgo(
                 address,
                 bitcoins,
                 satoshisPerVirtualByteOpt,
@@ -731,7 +734,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
     case ServerCommand("signpsbt", arr) =>
       withValidServerCommand(SignPSBT.fromJsArr(arr)) { case SignPSBT(psbt) =>
         complete {
-          wallet.signPSBT(psbt).map { signed =>
+          wallet.sendFundsHandling.signPSBT(psbt).map { signed =>
             Server.httpSuccess(signed.base64)
           }
         }
@@ -742,7 +745,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
         case OpReturnCommit(message, hashMessage, satoshisPerVirtualByteOpt) =>
           complete {
             for {
-              tx <- wallet.makeOpReturnCommitment(
+              tx <- wallet.sendFundsHandling.makeOpReturnCommitment(
                 message,
                 hashMessage,
                 satoshisPerVirtualByteOpt
@@ -759,7 +762,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
         case BumpFee(txId, feeRate) =>
           complete {
             for {
-              tx <- wallet.bumpFeeRBF(txId, feeRate)
+              tx <- wallet.sendFundsHandling.bumpFeeRBF(txId, feeRate)
               _ <- wallet.broadcastTransaction(tx)
             } yield Server.httpSuccess(tx.txIdBE)
           }
@@ -770,7 +773,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
         case BumpFee(txId, feeRate) =>
           complete {
             for {
-              tx <- wallet.bumpFeeCPFP(txId, feeRate)
+              tx <- wallet.sendFundsHandling.bumpFeeCPFP(txId, feeRate)
               _ <- wallet.broadcastTransaction(tx)
             } yield Server.httpSuccess(tx.txIdBE)
           }
@@ -845,7 +848,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
 
     case ServerCommand("getaccounts", _) =>
       complete {
-        wallet.listAccounts().map { accounts =>
+        wallet.accountHandling.listAccounts().map { accounts =>
           val xpubs = accounts.map(_.xpub)
           Server.httpSuccess(xpubs)
         }

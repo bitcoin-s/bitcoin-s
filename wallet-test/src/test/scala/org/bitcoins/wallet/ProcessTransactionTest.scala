@@ -64,16 +64,16 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
         tx =
           TransactionTestUtil.buildTransactionTo(output, outPoint)
 
-        _ <- wallet.processTransaction(tx, None)
+        _ <- wallet.transactionProcessing.processTransaction(tx, None)
         oldConfirmed <- wallet.getConfirmedBalance()
         oldUnconfirmed <- wallet.getUnconfirmedBalance()
 
         // repeating the action should not make a difference
         _ <- checkUtxosAndBalance(wallet) {
-          wallet.processTransaction(tx, None)
+          wallet.transactionProcessing.processTransaction(tx, None)
         }
 
-        _ <- wallet.processTransaction(
+        _ <- wallet.transactionProcessing.processTransaction(
           tx,
           Some(MockChainQueryApi.testBlockHash)
         )
@@ -83,7 +83,9 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
 
         // repeating the action should not make a difference
         _ <- checkUtxosAndBalance(wallet) {
-          wallet.processTransaction(tx, Some(MockChainQueryApi.testBlockHash))
+          wallet.transactionProcessing.processTransaction(
+            tx,
+            Some(MockChainQueryApi.testBlockHash))
         }
       } yield {
         val ourOutputs =
@@ -104,23 +106,23 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
             .transactionTo(address.scriptPubKey)
             .sampleSome
 
-        _ <- wallet.processTransaction(tx, None)
+        _ <- wallet.transactionProcessing.processTransaction(tx, None)
         oldConfirmed <- wallet.getConfirmedBalance()
         oldUnconfirmed <- wallet.getUnconfirmedBalance()
 
         // repeating the action should not make a difference
         _ <- checkUtxosAndBalance(wallet) {
-          wallet.processTransaction(tx, None)
+          wallet.transactionProcessing.processTransaction(tx, None)
         }
 
-        _ <- wallet.processTransaction(tx, None)
+        _ <- wallet.transactionProcessing.processTransaction(tx, None)
         newConfirmed <- wallet.getConfirmedBalance()
         newUnconfirmed <- wallet.getUnconfirmedBalance()
         utxosPostAdd <- wallet.listUtxos()
 
         // repeating the action should not make a difference
         _ <- checkUtxosAndBalance(wallet) {
-          wallet.processTransaction(tx, None)
+          wallet.transactionProcessing.processTransaction(tx, None)
         }
       } yield {
         val ourOutputs =
@@ -137,7 +139,7 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
       val unrelated = TransactionGenerators.transaction.sampleSome
       for {
         _ <- checkUtxosAndBalance(wallet) {
-          wallet.processTransaction(unrelated, None)
+          wallet.transactionProcessing.processTransaction(unrelated, None)
         }
 
         balance <- wallet.getBalance()
@@ -173,7 +175,8 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
         // make sure wallet is empty
         balance <- wallet.getBalance()
         _ = assert(balance == Bitcoins.zero)
-        processed <- wallet.processTransaction(fundingTx, None)
+        processed <- wallet.transactionProcessing.processTransaction(fundingTx,
+                                                                     None)
         balance <- wallet.getBalance()
         _ = assert(balance == amtWithFee)
       } yield processed
@@ -191,7 +194,7 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
           fromTagOpt = None,
           markAsReserved = true
         )
-        _ <- wallet.processTransaction(
+        _ <- wallet.transactionProcessing.processTransaction(
           transaction = rawTxHelper.signedTx,
           blockHashOpt = None
         )
@@ -210,8 +213,8 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
           .transactionTo(address.scriptPubKey)
           .sampleSome
 
-      _ <- wallet.processTransaction(tx, None)
-      accountBalance <- wallet.getUnconfirmedBalance(account1)
+      _ <- wallet.transactionProcessing.processTransaction(tx, None)
+      accountBalance <- wallet.accountHandling.getUnconfirmedBalance(account1)
     } yield {
       assert(accountBalance == CurrencyUnits.zero)
     }

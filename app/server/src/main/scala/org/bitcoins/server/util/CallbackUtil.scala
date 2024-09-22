@@ -24,7 +24,7 @@ object CallbackUtil extends BitcoinSLogger {
     import system.dispatcher
     val txSink = Sink.foreachAsync[Transaction](1) { case tx: Transaction =>
       logger.debug(s"Receiving transaction txid=${tx.txIdBE.hex} as a callback")
-      wallet
+      wallet.transactionProcessing
         .processTransaction(tx, blockHashOpt = None)
         .map(_ => ())
     }
@@ -46,7 +46,9 @@ object CallbackUtil extends BitcoinSLogger {
         logger.debug(
           s"Executing onBlock callback=${block.blockHeader.hashBE.hex}"
         )
-        wallet.processBlock(block).map(_ => ())
+        wallet.transactionProcessing
+          .processBlock(block)
+          .map(_ => ())
       }
     }
 
@@ -106,7 +108,7 @@ object CallbackUtil extends BitcoinSLogger {
     import system.dispatcher
     val txSink = Sink.foreachAsync[Transaction](1) { case tx: Transaction =>
       logger.debug(s"Receiving transaction txid=${tx.txIdBE.hex} as a callback")
-      wallet
+      wallet.transactionProcessing
         .processTransaction(tx, blockHashOpt = None)
         .map(_ => ())
     }
@@ -118,7 +120,7 @@ object CallbackUtil extends BitcoinSLogger {
     }
 
     val blockSink = Sink.foreachAsync[Block](1) { block =>
-      wallet
+      wallet.transactionProcessing
         .processBlock(block)
         .map(_ => ())
     }

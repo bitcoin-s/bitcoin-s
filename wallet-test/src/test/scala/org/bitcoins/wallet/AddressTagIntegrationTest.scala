@@ -56,7 +56,7 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
           .map(unconfirmed => assert(unconfirmed == 0.bitcoin))
 
       // after this, tx is unconfirmed in wallet
-      _ <- wallet.processTransaction(tx, None)
+      _ <- wallet.transactionProcessing.processTransaction(tx, None)
 
       // we should now have one UTXO in the wallet
       // it should not be confirmed
@@ -93,7 +93,7 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
           )
       }
       signedTx = rawTxHelper.signedTx
-      _ <- wallet.processTransaction(signedTx, None)
+      _ <- wallet.transactionProcessing.processTransaction(signedTx, None)
 
       utxos <- wallet.listUtxos()
       balancePostSend <- wallet.getBalance()
@@ -137,15 +137,15 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
         walletAddr1 <- walletAddr1F
         txid <- bitcoind.sendToAddress(walletAddr1, Bitcoins.two)
         tx <- bitcoind.getRawTransaction(txid)
-        _ <- wallet.processTransaction(tx.hex, None)
+        _ <- wallet.transactionProcessing.processTransaction(tx.hex, None)
         taggedAddress <- taggedAddrF
-        tx <- wallet.sendToAddress(
+        tx <- wallet.sendFundsHandling.sendToAddress(
           taggedAddress,
           Satoshis(100000),
           SatoshisPerVirtualByte.one,
           Vector(exampleTag)
         )
-        _ <- wallet.processTransaction(tx, None)
+        _ <- wallet.transactionProcessing.processTransaction(tx, None)
         _ <- bitcoind.sendRawTransaction(tx)
         bitcoindAddr <- bitcoindAddrF
         _ <- PekkoUtil.nonBlockingSleep(1.second)

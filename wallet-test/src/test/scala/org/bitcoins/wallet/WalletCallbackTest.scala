@@ -74,7 +74,9 @@ class WalletCallbackTest extends BitcoinSWalletTest {
 
       for {
         address <- wallet.getNewAddress()
-        tx <- wallet.sendToAddress(address, Satoshis(1000), None)
+        tx <- wallet.sendFundsHandling.sendToAddress(address,
+                                                     Satoshis(1000),
+                                                     None)
         result <- resultP.future
       } yield assert(result == tx)
   }
@@ -108,7 +110,7 @@ class WalletCallbackTest extends BitcoinSWalletTest {
 
       for {
         txno <- wallet.listTransactions().map(_.size)
-        _ <- wallet.processTransaction(tx, None)
+        _ <- wallet.transactionProcessing.processTransaction(tx, None)
         _ <- AsyncUtil.nonBlockingSleep(50.millis)
         txs <- wallet.listTransactions()
       } yield {
@@ -211,7 +213,7 @@ class WalletCallbackTest extends BitcoinSWalletTest {
       val wallet = fundedWallet.wallet
 
       for {
-        _ <- wallet.processBlock(block)
+        _ <- wallet.transactionProcessing.processBlock(block)
         result <- resultP.future
       } yield assert(result == block)
   }

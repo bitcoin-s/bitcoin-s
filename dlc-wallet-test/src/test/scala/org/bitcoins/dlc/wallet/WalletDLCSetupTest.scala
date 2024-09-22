@@ -714,7 +714,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
         tx <- walletB.broadcastDLCFundingTx(sign.contractId)
         // make sure other wallet sees it
-        _ <- walletA.processTransaction(tx, None)
+        _ <- walletA.transactionProcessing.processTransaction(tx, None)
 
         dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
 
@@ -752,7 +752,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
         tx <- walletB.broadcastDLCFundingTx(sign.contractId)
         // make sure other wallet sees it
-        _ <- walletA.processTransaction(tx, None)
+        _ <- walletA.transactionProcessing.processTransaction(tx, None)
 
         dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
 
@@ -884,7 +884,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         }
 
         tx <- walletB.broadcastDLCFundingTx(sign.contractId)
-        _ <- walletA.processTransaction(tx, None)
+        _ <- walletA.transactionProcessing.processTransaction(tx, None)
 
         func = (wallet: DLCWallet) =>
           wallet.executeDLC(sign.contractId, sig).map(_.get)

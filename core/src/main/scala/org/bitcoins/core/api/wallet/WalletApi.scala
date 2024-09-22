@@ -2,14 +2,12 @@ package org.bitcoins.core.api.wallet
 
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
-import org.bitcoins.core.api.keymanager.KeyManagerApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.wallet.db.*
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
@@ -32,6 +30,13 @@ import scala.concurrent.{ExecutionContext, Future}
   *   [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki BIP44]]
   */
 trait WalletApi extends StartStopAsync[WalletApi] {
+  def accountHandling: AccountHandlingApi
+  def fundTxHandling: FundTransactionHandlingApi
+  def rescanHandling: RescanHandlingApi
+  def addressHandling: AddressHandlingApi
+  def utxoHandling: UtxoHandlingApi
+  def transactionProcessing: TransactionProcessingApi
+  def sendFundsHandling: SendFundsHandlingApi
 
   val nodeApi: NodeApi
   val chainQueryApi: ChainQueryApi
@@ -48,30 +53,6 @@ trait WalletApi extends StartStopAsync[WalletApi] {
   def start(): Future[WalletApi]
 
   def stop(): Future[WalletApi]
-
-  /** Processes the give block, updating our DB state if it's relevant to us.
-    *
-    * @param block
-    *   The block we're processing
-    */
-  def processBlock(block: Block): Future[Unit]
-
-  def processTransaction(
-      transaction: Transaction,
-      blockHashOpt: Option[DoubleSha256DigestBE]
-  ): Future[Unit]
-
-  /** Processes TXs originating from our wallet. This is called right after
-    * we've signed a TX, updating our UTXO state.
-    */
-  def processOurTransaction(
-      transaction: Transaction,
-      feeRate: FeeUnit,
-      inputAmount: CurrencyUnit,
-      sentAmount: CurrencyUnit,
-      blockHashOpt: Option[DoubleSha256DigestBE],
-      newTags: Vector[AddressTag]
-  ): Future[ProcessTxResult]
 
   /** Gets the sum of all UTXOs in this wallet */
   def getBalance()(implicit ec: ExecutionContext): Future[CurrencyUnit] = {
@@ -121,15 +102,6 @@ trait WalletApi extends StartStopAsync[WalletApi] {
   /** Checks if the wallet contains any data */
   def isEmpty(): Future[Boolean]
 
-  /** Removes all utxos from the wallet. Don't call this unless you are sure you
-    * can recover your wallet
-    */
-  def clearAllUtxos(): Future[WalletApi]
-
-  def clearAllAddresses(): Future[WalletApi]
-
-  def keyManager: KeyManagerApi
-
   protected def determineFeeRate(feeRateOpt: Option[FeeUnit]): Future[FeeUnit] =
     feeRateOpt match {
       case None =>
@@ -137,158 +109,6 @@ trait WalletApi extends StartStopAsync[WalletApi] {
       case Some(feeRate) =>
         Future.successful(feeRate)
     }
-
-  def sendFromOutPoints(
-      outPoints: Vector[TransactionOutPoint],
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRate: FeeUnit)(implicit ec: ExecutionContext): Future[Transaction]
-
-  def sendFromOutPoints(
-      outPoints: Vector[TransactionOutPoint],
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRateOpt: Option[FeeUnit]
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
-    for {
-      feeRate <- determineFeeRate(feeRateOpt)
-      tx <- sendFromOutPoints(outPoints, address, amount, feeRate)
-    } yield tx
-  }
-
-  def sendFromOutPoints(
-      outPoints: Vector[TransactionOutPoint],
-      address: BitcoinAddress,
-      feeRate: FeeUnit)(implicit ec: ExecutionContext): Future[Transaction]
-
-  def sendFromOutPoints(
-      outPoints: Vector[TransactionOutPoint],
-      address: BitcoinAddress,
-      feeRateOpt: Option[FeeUnit]
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
-    for {
-      feeRate <- determineFeeRate(feeRateOpt)
-      tx <- sendFromOutPoints(outPoints, address, feeRate)
-    } yield tx
-  }
-
-  /** Sends the entire wallet balance to the given address */
-  def sweepWallet(address: BitcoinAddress)(implicit
-      ec: ExecutionContext): Future[Transaction] = sweepWallet(address, None)
-
-  /** Sends the entire wallet balance to the given address */
-  def sweepWallet(address: BitcoinAddress, feeRateOpt: Option[FeeUnit])(implicit
-      ec: ExecutionContext): Future[Transaction] = {
-    for {
-      feeRate <- determineFeeRate(feeRateOpt)
-      tx <- sweepWallet(address, feeRate)
-    } yield tx
-  }
-
-  /** Sends the entire wallet balance to the given address */
-  def sweepWallet(address: BitcoinAddress, feeRate: FeeUnit)(implicit
-      ec: ExecutionContext): Future[Transaction]
-
-  def sendWithAlgo(
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRate: FeeUnit,
-      algo: CoinSelectionAlgo)(implicit
-      ec: ExecutionContext): Future[Transaction]
-
-  def sendWithAlgo(
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRateOpt: Option[FeeUnit],
-      algo: CoinSelectionAlgo
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
-    for {
-      feeRate <- determineFeeRate(feeRateOpt)
-      tx <- sendWithAlgo(address, amount, feeRate, algo)
-    } yield tx
-  }
-
-  /** Sends money to the address
-    *
-    * todo: add error handling to signature
-    */
-  def sendToAddress(
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRate: FeeUnit)(implicit ec: ExecutionContext): Future[Transaction]
-
-  def sendToAddress(
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRateOpt: Option[FeeUnit]
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
-    for {
-      feeRate <- determineFeeRate(feeRateOpt)
-      tx <- sendToAddress(address, amount, feeRate)
-    } yield tx
-  }
-
-  /** Sends funds using the specified outputs
-    *
-    * todo: add error handling to signature
-    */
-  def sendToOutputs(
-      outputs: Vector[TransactionOutput],
-      feeRateOpt: Option[FeeUnit])(implicit
-      ec: ExecutionContext): Future[Transaction] = {
-    for {
-      feeRate <- determineFeeRate(feeRateOpt)
-      tx <- sendToOutputs(outputs, feeRate)
-    } yield tx
-  }
-
-  def sendToOutputs(outputs: Vector[TransactionOutput], feeRate: FeeUnit)(
-      implicit ec: ExecutionContext): Future[Transaction]
-
-  /** Sends funds to each address
-    */
-  def sendToAddresses(
-      addresses: Vector[BitcoinAddress],
-      amounts: Vector[CurrencyUnit],
-      feeRateOpt: Option[FeeUnit])(implicit
-      ec: ExecutionContext): Future[Transaction] = {
-    for {
-      feeRate <- determineFeeRate(feeRateOpt)
-      tx <- sendToAddresses(addresses, amounts, feeRate)
-    } yield tx
-  }
-
-  def sendToAddresses(
-      addresses: Vector[BitcoinAddress],
-      amounts: Vector[CurrencyUnit],
-      feeRate: FeeUnit)(implicit ec: ExecutionContext): Future[Transaction]
-
-  def bumpFeeRBF(
-      txId: DoubleSha256DigestBE,
-      newFeeRate: FeeUnit): Future[Transaction]
-
-  /** Bumps the fee of the parent transaction with a new child transaction with
-    * the given fee rate
-    */
-  def bumpFeeCPFP(
-      txId: DoubleSha256DigestBE,
-      feeRate: FeeUnit): Future[Transaction]
-
-  def makeOpReturnCommitment(
-      message: String,
-      hashMessage: Boolean,
-      feeRate: FeeUnit)(implicit ec: ExecutionContext): Future[Transaction]
-
-  def makeOpReturnCommitment(
-      message: String,
-      hashMessage: Boolean,
-      feeRateOpt: Option[FeeUnit])(implicit
-      ec: ExecutionContext): Future[Transaction] = {
-    for {
-      feeRate <- determineFeeRate(feeRateOpt)
-      tx <- makeOpReturnCommitment(message, hashMessage, feeRate)
-    } yield tx
-  }
 
   /** Determines if the given output is from this wallet and is a change output
     * from this wallet
@@ -365,4 +185,4 @@ case class WalletInfo(
     imported: Boolean)
 
 /** An HDWallet that uses Neutrino to sync */
-trait NeutrinoHDWalletApi extends HDWalletApi with NeutrinoWalletApi
+trait NeutrinoHDWalletApi extends WalletApi with NeutrinoWalletApi

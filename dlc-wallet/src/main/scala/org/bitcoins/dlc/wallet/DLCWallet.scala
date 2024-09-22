@@ -113,8 +113,7 @@ abstract class DLCWallet
     DLCActionBuilder(dlcWalletDAOs)
   }
 
-  override protected lazy val transactionProcessing
-      : DLCTransactionProcessing = {
+  override lazy val transactionProcessing: DLCTransactionProcessing = {
     val txProcessing = TransactionProcessing(
       walletApi = this,
       chainQueryApi = chainQueryApi,
@@ -431,7 +430,7 @@ abstract class DLCWallet
       _ <- oracleNonceDAO.createAll(nonceDbs)
       chainType = HDChainType.External
 
-      account <- getDefaultAccountForType(AddressType.SegWit)
+      account <- accountHandling.getDefaultAccountForType(AddressType.SegWit)
       nextIndex <- addressHandling.getNextAvailableIndex(account, chainType)
       _ <- writeDLCKeysToAddressDb(account, chainType, nextIndex)
 
@@ -880,7 +879,7 @@ abstract class DLCWallet
         s"Creating DLC Accept for tempContractId ${offer.tempContractId.hex}"
       )
       val result = for {
-        account <- getDefaultAccountForType(AddressType.SegWit)
+        account <- accountHandling.getDefaultAccountForType(AddressType.SegWit)
         fundRawTxHelper <- fundDLCAcceptMsg(
           offer = offer,
           collateral = collateral,

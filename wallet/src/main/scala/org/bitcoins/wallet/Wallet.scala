@@ -15,16 +15,11 @@ import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.currency.*
 import org.bitcoins.core.gcs.{GolombFilter, SimpleFilterMatcher}
 import org.bitcoins.core.hd.*
-import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.blockchain.{Block, ChainParams}
+import org.bitcoins.core.protocol.blockchain.ChainParams
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.*
-import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.core.script.constant.ScriptConstant
-import org.bitcoins.core.script.control.OP_RETURN
-import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil, HDUtil}
-import org.bitcoins.core.wallet.builder.*
+import org.bitcoins.core.util.{FutureUtil, HDUtil}
 import org.bitcoins.core.wallet.fee.*
 import org.bitcoins.core.wallet.utxo.*
 import org.bitcoins.core.wallet.utxo.TxoState.*
@@ -36,7 +31,6 @@ import org.bitcoins.wallet.callback.WalletCallbacks
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.internal.*
 import org.bitcoins.wallet.models.*
-import scodec.bits.ByteVector
 import slick.dbio.{DBIOAction, Effect, NoStream}
 
 import java.time.Instant
@@ -44,11 +38,10 @@ import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
-import scala.util.Random
 
 abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
 
-  override def keyManager: BIP39KeyManager = {
+  def keyManager: BIP39KeyManager = {
     walletConfig.kmConf.toBip39KeyManager
   }
   implicit val walletConfig: WalletAppConfig
@@ -96,15 +89,17 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
   val creationTime: Instant = keyManager.creationTime
 
   def utxoHandling: UtxoHandling =
-    UtxoHandling(spendingInfoDAO, transactionDAO, chainQueryApi)
+    UtxoHandling(spendingInfoDAO, transactionDAO, addressDAO, chainQueryApi)
 
   def fundTxHandling: FundTransactionHandling = FundTransactionHandling(
     accountHandling = accountHandling,
     utxoHandling = utxoHandling,
     addressHandling = addressHandling,
+    transactionProcessing = transactionProcessing,
     spendingInfoDAO = spendingInfoDAO,
     transactionDAO = transactionDAO,
-    keyManager = keyManager
+    keyManager = keyManager,
+    feeRateApi = feeRateApi
   )
   def accountHandling: AccountHandling =
     AccountHandling(walletDAOs, keyManager)
@@ -112,7 +107,7 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
   def addressHandling: AddressHandling =
     AddressHandling(accountHandling, walletDAOs)
 
-  protected lazy val transactionProcessing: TransactionProcessingApi = {
+  override lazy val transactionProcessing: TransactionProcessingApi = {
     TransactionProcessing(
       walletApi = this,
       chainQueryApi = chainQueryApi,
@@ -127,6 +122,19 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
       addressHandling = addressHandling,
       chainQueryApi = chainQueryApi,
       nodeApi = nodeApi,
+      walletDAOs = walletDAOs
+    )
+  }
+
+  override def sendFundsHandling: SendFundsHandlingApi = {
+    SendFundsHandlingHandling(
+      accountHandling = accountHandling,
+      feeRateApi = feeRateApi,
+      fundTxHandling = fundTxHandling,
+      addressHandling = addressHandling,
+      transactionProcessing = transactionProcessing,
+      utxoHandling = utxoHandling,
+      keyManager = keyManager,
       walletDAOs = walletDAOs
     )
   }
@@ -192,35 +200,6 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
       case None =>
         BlockSyncState(0, chainParams.genesisHashBE)
     }
-  }
-
-  override def processBlock(block: Block): Future[Unit] = {
-    transactionProcessing.processBlock(block)
-  }
-
-  override def processTransaction(
-      transaction: Transaction,
-      blockHashOpt: Option[DoubleSha256DigestBE]): Future[Unit] = {
-    transactionProcessing.processTransaction(transaction, blockHashOpt)
-  }
-
-  /** Processes TXs originating from our wallet. This is called right after
-    * we've signed a TX, updating our UTXO state.
-    */
-  override def processOurTransaction(
-      transaction: Transaction,
-      feeRate: FeeUnit,
-      inputAmount: CurrencyUnit,
-      sentAmount: CurrencyUnit,
-      blockHashOpt: Option[DoubleSha256DigestBE],
-      newTags: Vector[AddressTag]
-  ): Future[ProcessTxResult] = {
-    transactionProcessing.processOurTransaction(transaction,
-                                                feeRate,
-                                                inputAmount,
-                                                sentAmount,
-                                                blockHashOpt,
-                                                newTags)
   }
 
   override def processCompactFilters(
@@ -321,30 +300,6 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
       spendingInfoCount <- spendingInfoDAO.count()
     } yield addressCount == 0 && spendingInfoCount == 0
 
-  override def clearAllUtxos(): Future[Wallet] = {
-    val aggregatedActions
-        : DBIOAction[Unit, NoStream, Effect.Write with Effect.Transactional] =
-      spendingInfoDAO.deleteAllAction().map(_ => ())
-
-    val resultedF = safeDatabase.run(aggregatedActions)
-    resultedF.failed.foreach(err =>
-      logger.error(
-        s"Failed to clear utxos, addresses and scripts from the database",
-        err
-      ))
-
-    resultedF.map(_ => this)
-  }
-
-  override def clearAllAddresses(): Future[Wallet] = {
-    val action = addressDAO
-      .deleteAllAction()
-      .map(_ => ())
-    safeDatabase
-      .run(action)
-      .map(_ => this)
-  }
-
   override def getBalance()(implicit
       ec: ExecutionContext
   ): Future[CurrencyUnit] = {
@@ -354,11 +309,6 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
   override def getConfirmedBalance(): Future[CurrencyUnit] = {
     safeDatabase.run(spendingInfoDAO.getConfirmedBalanceAction())
   }
-
-  override def getConfirmedBalance(account: HDAccount): Future[CurrencyUnit] = {
-    safeDatabase.run(spendingInfoDAO.getConfirmedBalanceAction(Some(account)))
-  }
-
   override def getConfirmedBalance(tag: AddressTag): Future[CurrencyUnit] = {
     spendingInfoDAO.findAllUnspentForTag(tag).map { allUnspent =>
       val confirmed = allUnspent.filter(_.state == ConfirmedReceived)
@@ -368,12 +318,6 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
 
   override def getUnconfirmedBalance(): Future[CurrencyUnit] = {
     safeDatabase.run(spendingInfoDAO.getUnconfirmedBalanceAction())
-  }
-
-  override def getUnconfirmedBalance(
-      account: HDAccount
-  ): Future[CurrencyUnit] = {
-    safeDatabase.run(spendingInfoDAO.getUnconfirmedBalanceAction(Some(account)))
   }
 
   override def getUnconfirmedBalance(tag: AddressTag): Future[CurrencyUnit] = {
@@ -402,551 +346,11 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
     spendingInfoDAO.findOutputsBeingSpent(tx)
   }
 
-  /** Enumerates all the TX outpoints in the wallet */
-  protected[wallet] def listOutpoints(): Future[Vector[TransactionOutPoint]] =
-    spendingInfoDAO.findAllOutpoints()
-
-  /** Takes a [[RawTxBuilderWithFinalizer]] for a transaction to be sent, and
-    * completes it by: finalizing and signing the transaction, then correctly
-    * processing and logging it
-    */
-  private def finishSend[F <: RawTxFinalizer](
-      rawTxHelper: FundRawTxHelper[F],
-      sentAmount: CurrencyUnit,
-      feeRate: FeeUnit,
-      newTags: Vector[AddressTag]
-  ): Future[Transaction] = {
-    val signed = rawTxHelper.signedTx
-
-    val processedTxF = for {
-      ourOuts <- addressHandling.findOurOutputs(signed)
-      creditingAmount = rawTxHelper.scriptSigParams.foldLeft(
-        CurrencyUnits.zero
-      )(_ + _.amount)
-      _ <- transactionProcessing.processOurTransaction(
-        transaction = signed,
-        feeRate = feeRate,
-        inputAmount = creditingAmount,
-        sentAmount = sentAmount,
-        blockHashOpt = None,
-        newTags = newTags
-      )
-    } yield {
-      logger.debug(
-        s"Signed transaction=${signed.txIdBE.hex} with outputs=${signed.outputs.length}, inputs=${signed.inputs.length}"
-      )
-
-      logger.trace(s"Change output(s) for transaction=${signed.txIdBE.hex}")
-      ourOuts.foreach { out =>
-        logger.trace(s"    $out")
-      }
-      signed
-    }
-
-    processedTxF.recoverWith { case _ =>
-      // if something fails, we need to unreserve the utxos associated with this tx
-      // and then propogate the failed future upwards
-      utxoHandling.unmarkUTXOsAsReserved(signed).flatMap(_ => processedTxF)
-    }
-  }
-
-  override def sendFromOutPoints(
-      outPoints: Vector[TransactionOutPoint],
-      address: BitcoinAddress,
-      feeRate: FeeUnit
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
-    require(
-      address.networkParameters.isSameNetworkBytes(networkParameters),
-      s"Cannot send to address on other network, got ${address.networkParameters}"
-    )
-    logger.info(s"Sending to $address at feerate $feeRate")
-    for {
-      utxoDbs <- spendingInfoDAO.findByOutPoints(outPoints)
-      diff = utxoDbs.map(_.outPoint).diff(outPoints)
-      _ = require(
-        diff.isEmpty,
-        s"Not all OutPoints belong to this wallet, diff $diff"
-      )
-      spentUtxos =
-        utxoDbs.filterNot(utxo => TxoState.receivedStates.contains(utxo.state))
-      _ = require(
-        spentUtxos.isEmpty,
-        s"Some out points given have already been spent, ${spentUtxos.map(_.outPoint)}"
-      )
-
-      utxos <- Future.sequence {
-        utxoDbs.map(utxo =>
-          transactionDAO
-            .findByOutPoint(utxo.outPoint)
-            .map(txDb => utxo.toUTXOInfo(keyManager, txDb.get.transaction)))
-      }
-      inputInfos = utxos.map(_.inputInfo)
-
-      utxoAmount = utxoDbs.map(_.output.value).sum
-      dummyOutput = TransactionOutput(utxoAmount, address.scriptPubKey)
-      inputs = InputUtil.calcSequenceForInputs(utxos)
-
-      txBuilder = RawTxBuilder() ++= inputs += dummyOutput
-      finalizer = SubtractFeeFromOutputsFinalizer(
-        inputInfos,
-        feeRate,
-        Vector(address.scriptPubKey)
-      )
-        .andThen(ShuffleFinalizer)
-        .andThen(AddWitnessDataFinalizer(inputInfos))
-
-      withFinalizer = txBuilder.setFinalizer(finalizer)
-
-      tmp = withFinalizer.buildTx()
-
-      _ = require(
-        tmp.outputs.size == 1,
-        s"Created tx is not as expected, does not have 1 output, got $tmp"
-      )
-      rawTxHelper = FundRawTxHelper(withFinalizer, utxos, feeRate, Future.unit)
-      tx <- finishSend(
-        rawTxHelper,
-        tmp.outputs.head.value,
-        feeRate,
-        Vector.empty
-      )
-    } yield tx
-  }
-
-  override def sendFromOutPoints(
-      outPoints: Vector[TransactionOutPoint],
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRate: FeeUnit,
-      fromAccount: AccountDb,
-      newTags: Vector[AddressTag]
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
-    require(
-      address.networkParameters.isSameNetworkBytes(networkParameters),
-      s"Cannot send to address on other network, got ${address.networkParameters}"
-    )
-    logger.info(s"Sending $amount to $address at feerate $feeRate")
-    for {
-      utxoDbs <- spendingInfoDAO.findByOutPoints(outPoints)
-      diff = utxoDbs.map(_.outPoint).diff(outPoints)
-      _ = require(
-        diff.isEmpty,
-        s"Not all OutPoints belong to this wallet, diff $diff"
-      )
-      spentUtxos =
-        utxoDbs.filterNot(utxo => TxoState.receivedStates.contains(utxo.state))
-      _ = require(
-        spentUtxos.isEmpty,
-        s"Some out points given have already been spent, ${spentUtxos.map(_.outPoint)}"
-      )
-
-      prevTxFs = utxoDbs.map(utxo =>
-        transactionDAO.findByOutPoint(utxo.outPoint).map(_.get.transaction))
-      prevTxs <- FutureUtil.collect(prevTxFs)
-      utxos =
-        utxoDbs
-          .zip(prevTxs)
-          .map(info => info._1.toUTXOInfo(keyManager, info._2))
-
-      changeAddr <- accountHandling.getNewChangeAddress(fromAccount.hdAccount)
-
-      output = TransactionOutput(amount, address.scriptPubKey)
-      txBuilder = ShufflingNonInteractiveFinalizer.txBuilderFrom(
-        Vector(output),
-        utxos,
-        feeRate,
-        changeAddr.scriptPubKey
-      )
-      rawTxHelper = FundRawTxHelper(txBuilder, utxos, feeRate, Future.unit)
-      tx <- finishSend(rawTxHelper, amount, feeRate, newTags)
-    } yield tx
-  }
-
-  /** Sends the entire wallet balance to the given address */
-  override def sweepWallet(address: BitcoinAddress, feeRate: FeeUnit)(implicit
-      ec: ExecutionContext
-  ): Future[Transaction] = {
-    for {
-      utxos <- utxoHandling.listUtxos()
-      balance = utxos.foldLeft(CurrencyUnits.zero)(_ + _.output.value)
-      _ = logger.info(s"Sweeping wallet balance=$balance to address=$address")
-      outpoints = utxos.map(_.outPoint)
-      tx <- sendFromOutPoints(outpoints, address, feeRate)
-    } yield tx
-  }
-
-  override def bumpFeeRBF(
-      txId: DoubleSha256DigestBE,
-      newFeeRate: FeeUnit
-  ): Future[Transaction] = {
-    for {
-      txDbOpt <- transactionDAO.findByTxId(txId)
-      txDb <- txDbOpt match {
-        case Some(db) => Future.successful(db)
-        case None =>
-          Future.failed(
-            new RuntimeException(s"Unable to find transaction ${txId.hex}")
-          )
-      }
-      tx = txDb.transaction
-
-      _ = require(TxUtil.isRBFEnabled(tx), "Transaction is not signaling RBF")
-
-      outPoints = tx.inputs.map(_.previousOutput).toVector
-      spks = tx.outputs.map(_.scriptPubKey).toVector
-
-      utxos <- spendingInfoDAO.findByOutPoints(outPoints)
-      _ = require(utxos.nonEmpty, "Can only bump fee for our own transaction")
-      _ = require(
-        utxos.size == tx.inputs.size,
-        "Can only bump fee for a transaction we own all the inputs"
-      )
-
-      _ = require(
-        txDb.blockHashOpt.isEmpty,
-        s"Cannot replace a confirmed transaction, ${txDb.blockHashOpt.get.hex}"
-      )
-
-      spendingInfos <- FutureUtil.sequentially(utxos) { utxo =>
-        transactionDAO
-          .findByOutPoint(utxo.outPoint)
-          .map(txDbOpt =>
-            utxo.toUTXOInfo(keyManager = keyManager, txDbOpt.get.transaction))
-      }
-
-      _ = {
-        val inputAmount = utxos.foldLeft(CurrencyUnits.zero)(_ + _.output.value)
-
-        val oldFeeRate = newFeeRate match {
-          case _: SatoshisPerByte =>
-            SatoshisPerByte.calc(inputAmount, tx)
-          case _: SatoshisPerKiloByte =>
-            SatoshisPerKiloByte.calc(inputAmount, tx)
-          case _: SatoshisPerVirtualByte =>
-            SatoshisPerVirtualByte.calc(inputAmount, tx)
-          case _: SatoshisPerKW =>
-            SatoshisPerKW.calc(inputAmount, tx)
-        }
-
-        require(
-          oldFeeRate.currencyUnit < newFeeRate.currencyUnit,
-          s"Cannot bump to a lower fee ${oldFeeRate.currencyUnit} < ${newFeeRate.currencyUnit}"
-        )
-      }
-
-      myAddrs <- addressDAO.findByScriptPubKeys(spks)
-      _ = require(myAddrs.nonEmpty, "Must have an output we own")
-
-      changeSpks = myAddrs.flatMap { db =>
-        if (db.isChange) {
-          Some(db.scriptPubKey)
-        } else None
-      }
-
-      changeSpk =
-        if (changeSpks.nonEmpty) {
-          // Pick a random change spk
-          Random.shuffle(changeSpks).head
-        } else {
-          // If none are explicit change, pick a random one we own
-          Random.shuffle(myAddrs.map(_.scriptPubKey)).head
-        }
-
-      oldOutputs <- spendingInfoDAO.findDbsForTx(txId)
-      // delete old outputs
-      _ <- spendingInfoDAO.deleteAll(oldOutputs)
-
-      sequence = tx.inputs.head.sequence + UInt32.one
-      outputs = tx.outputs.filterNot(_.scriptPubKey == changeSpk)
-      txBuilder = StandardNonInteractiveFinalizer.txBuilderFrom(
-        outputs,
-        spendingInfos,
-        newFeeRate,
-        changeSpk,
-        sequence
-      )
-
-      amount = outputs.foldLeft(CurrencyUnits.zero)(_ + _.value)
-      rawTxHelper = FundRawTxHelper(
-        txBuilder,
-        spendingInfos,
-        newFeeRate,
-        Future.unit
-      )
-      tx <-
-        finishSend(rawTxHelper, amount, newFeeRate, Vector.empty)
-    } yield tx
-  }
-
-  override def sendWithAlgo(
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRate: FeeUnit,
-      algo: CoinSelectionAlgo,
-      fromAccount: AccountDb,
-      newTags: Vector[AddressTag]
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
-    require(
-      address.networkParameters.isSameNetworkBytes(networkParameters),
-      s"Cannot send to address on other network, got ${address.networkParameters}"
-    )
-    logger.info(s"Sending $amount to $address at feerate $feeRate")
-    val destination = TransactionOutput(amount, address.scriptPubKey)
-    for {
-      rawTxHelper <- fundTxHandling.fundRawTransactionInternal(
-        destinations = Vector(destination),
-        feeRate = feeRate,
-        fromAccount = fromAccount,
-        coinSelectionAlgo = algo,
-        fromTagOpt = None,
-        markAsReserved = true
-      )
-      tx <- finishSend(rawTxHelper, amount, feeRate, newTags)
-    } yield tx
-  }
-
-  override def sendToAddress(
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRate: FeeUnit,
-      fromAccount: AccountDb
-  )(implicit ec: ExecutionContext): Future[Transaction] =
-    sendWithAlgo(
-      address,
-      amount,
-      feeRate,
-      CoinSelectionAlgo.LeastWaste,
-      fromAccount
-    )
-
-  override def sendToAddress(
-      address: BitcoinAddress,
-      amount: CurrencyUnit,
-      feeRate: FeeUnit,
-      fromAccount: AccountDb,
-      newTags: Vector[AddressTag]
-  )(implicit ec: ExecutionContext): Future[Transaction] =
-    sendWithAlgo(
-      address,
-      amount,
-      feeRate,
-      CoinSelectionAlgo.LeastWaste,
-      fromAccount,
-      newTags
-    )
-
-  override def sendToAddresses(
-      addresses: Vector[BitcoinAddress],
-      amounts: Vector[CurrencyUnit],
-      feeRate: FeeUnit,
-      fromAccount: AccountDb,
-      newTags: Vector[AddressTag]
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
-    require(
-      amounts.size == addresses.size,
-      "Must have an amount for every address"
-    )
-    require(
-      addresses.forall(
-        _.networkParameters.isSameNetworkBytes(networkParameters)
-      ),
-      s"Cannot send to address on other network, got ${addresses.map(_.networkParameters)}"
-    )
-    val destinations = addresses.zip(amounts).map { case (address, amount) =>
-      logger.info(s"Sending $amount to $address at feerate $feeRate")
-      TransactionOutput(amount, address.scriptPubKey)
-    }
-    sendToOutputs(destinations, feeRate, fromAccount, newTags)
-  }
-
-  override def makeOpReturnCommitment(
-      message: String,
-      hashMessage: Boolean,
-      feeRate: FeeUnit,
-      fromAccount: AccountDb
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
-    val messageToUse = if (hashMessage) {
-      CryptoUtil.sha256(ByteVector(message.getBytes)).bytes
-    } else {
-      if (message.length > 80) {
-        throw new IllegalArgumentException(
-          s"Message cannot be greater than 80 characters, it should be hashed, got $message"
-        )
-      } else ByteVector(message.getBytes)
-    }
-
-    val asm = Seq(OP_RETURN) ++ BitcoinScriptUtil.calculatePushOp(
-      messageToUse
-    ) :+ ScriptConstant(messageToUse)
-
-    val scriptPubKey = ScriptPubKey(asm)
-
-    val output = TransactionOutput(0.satoshis, scriptPubKey)
-
-    for {
-      fundRawTxHelper <- fundTxHandling.fundRawTransactionInternal(
-        destinations = Vector(output),
-        feeRate = feeRate,
-        fromAccount = fromAccount,
-        coinSelectionAlgo = CoinSelectionAlgo.RandomSelection,
-        fromTagOpt = None,
-        markAsReserved = true
-      )
-      tx <- finishSend(
-        fundRawTxHelper,
-        CurrencyUnits.zero,
-        feeRate,
-        Vector.empty
-      )
-    } yield tx
-  }
-
-  override def sendToOutputs(
-      outputs: Vector[TransactionOutput],
-      feeRate: FeeUnit,
-      fromAccount: AccountDb,
-      newTags: Vector[AddressTag]
-  )(implicit ec: ExecutionContext): Future[Transaction] = {
-    for {
-      fundRawTxHelper <- fundTxHandling.fundRawTransactionInternal(
-        destinations = outputs,
-        feeRate = feeRate,
-        fromAccount = fromAccount,
-        fromTagOpt = None,
-        markAsReserved = true
-      )
-      sentAmount = outputs.foldLeft(CurrencyUnits.zero)(_ + _.value)
-      tx <- finishSend(fundRawTxHelper, sentAmount, feeRate, newTags)
-    } yield tx
-  }
-
   /** @inheritdoc */
   override def isChange(output: TransactionOutput): Future[Boolean] = {
     addressDAO.findByScriptPubKey(output.scriptPubKey).map {
       case Some(db) => db.isChange
       case None     => false
-    }
-  }
-
-  /** @inheritdoc */
-  override def bumpFeeCPFP(
-      txId: DoubleSha256DigestBE,
-      feeRate: FeeUnit
-  ): Future[Transaction] = {
-    for {
-      txDbOpt <- transactionDAO.findByTxId(txId)
-      txDb <- txDbOpt match {
-        case Some(db) => Future.successful(db)
-        case None =>
-          Future.failed(
-            new RuntimeException(s"Unable to find transaction ${txId.hex}")
-          )
-      }
-      tx = txDb.transaction
-
-      spendingInfos <- spendingInfoDAO.findTx(tx)
-      _ = require(
-        spendingInfos.nonEmpty,
-        s"Transaction ${txId.hex} must have an output we own"
-      )
-
-      _ = require(
-        txDb.blockHashOpt.isEmpty,
-        s"Cannot replace a confirmed transaction, ${txDb.blockHashOpt.get.hex}"
-      )
-
-      changeSpendingInfos = spendingInfos.flatMap { db =>
-        if (db.isChange) {
-          Some(db)
-        } else None
-      }
-
-      spendingInfo =
-        if (changeSpendingInfos.nonEmpty) {
-          // Pick a random change spendingInfo
-          Random.shuffle(changeSpendingInfos).head
-        } else {
-          // If none are explicit change, pick a random one we own
-          Random.shuffle(spendingInfos).head
-        }
-
-      addr <- addressHandling.getNewChangeAddress()
-      childTx <- sendFromOutPoints(Vector(spendingInfo.outPoint), addr, feeRate)
-    } yield childTx
-  }
-
-  override def signPSBT(
-      psbt: PSBT
-  )(implicit ec: ExecutionContext): Future[PSBT] = {
-    val inputTxIds = psbt.transaction.inputs.zipWithIndex.map {
-      case (input, index) =>
-        input.previousOutput.txIdBE -> index
-    }.toMap
-    for {
-      accountDbs <- accountDAO.findAll()
-      ourXpubs = accountDbs.map(_.xpub)
-      utxos <- spendingInfoDAO.findAll()
-      txs <- transactionDAO.findByTxIds(inputTxIds.keys.toVector)
-    } yield {
-      val updated = txs.foldLeft(psbt) { (accum, tx) =>
-        val index = inputTxIds(tx.txIdBE)
-        accum.addUTXOToInput(tx.transaction, index)
-      }
-
-      val signed =
-        updated.inputMaps.zipWithIndex.foldLeft(updated) {
-          case (unsigned, (input, index)) =>
-            val xpubKeyPaths = input.BIP32DerivationPaths
-              .filter { path =>
-                ourXpubs.exists(_.fingerprint == path.masterFingerprint)
-              }
-              .map(bip32Path =>
-                HDPath.fromString(
-                  bip32Path.path.toString
-                )) // TODO add a way to get a HDPath from a BIP32 Path
-
-            val (utxoPath, withData) = {
-              val outPoint = unsigned.transaction.inputs(index).previousOutput
-              utxos.find(_.outpoint == outPoint) match {
-                case Some(utxo) =>
-                  val psbtWithUtxoData = utxo.redeemScript match {
-                    case Some(redeemScript) =>
-                      unsigned.addRedeemOrWitnessScriptToInput(
-                        redeemScript,
-                        index
-                      )
-                    case None => unsigned
-                  }
-
-                  (Vector(utxo.path), psbtWithUtxoData)
-                case None => (Vector.empty, unsigned)
-              }
-            }
-
-            val keyPaths = xpubKeyPaths ++ utxoPath
-
-            keyPaths.foldLeft(withData) { (accum, hdPath) =>
-              val sign = keyManager.toSign(hdPath)
-              // Only sign if that key doesn't have a signature yet
-              if (
-                !input.partialSignatures.exists(
-                  _.pubKey.toPublicKey == sign.publicKey
-                )
-              ) {
-                logger.debug(
-                  s"Signing input $index with key ${sign.publicKey.hex}"
-                )
-                accum.sign(index, sign)
-              } else {
-                accum
-              }
-            }
-        }
-
-      if (updated == signed) {
-        logger.warn("Did not find any keys or utxos that belong to this wallet")
-      }
-      signed
     }
   }
 
@@ -956,7 +360,7 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
 
   override def getInfo(): Future[WalletInfo] = {
     for {
-      accountDb <- getDefaultAccount()
+      accountDb <- accountHandling.getDefaultAccount()
       walletState <- getSyncState()
       rescan <- rescanHandling.isRescanning()
     } yield {
@@ -1017,18 +421,10 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
   override def listUtxos(state: TxoState): Future[Vector[SpendingInfoDb]] =
     utxoHandling.listUtxos(state)
 
-  override def listUtxos(
-      hdAccount: HDAccount): Future[Vector[SpendingInfoDb]] = {
-    utxoHandling.listUtxos(hdAccount)
-  }
-
   override def listUtxos(tag: AddressTag): Future[Vector[SpendingInfoDb]] = {
     utxoHandling.listUtxos(tag)
   }
 
-  override def listDefaultAccountUtxos(): Future[Vector[SpendingInfoDb]] = {
-    utxoHandling.listDefaultAccountUtxos()
-  }
   def markUTXOsAsReserved(
       utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
     utxoHandling.markUTXOsAsReserved(utxos)
@@ -1051,11 +447,6 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
   override def unmarkUTXOsAsReserved(
       tx: Transaction): Future[Vector[SpendingInfoDb]] = {
     utxoHandling.unmarkUTXOsAsReserved(tx)
-  }
-
-  override def getDefaultAccountForType(
-      addressType: AddressType): Future[AccountDb] = {
-    accountHandling.getDefaultAccountForType(addressType)
   }
 }
 

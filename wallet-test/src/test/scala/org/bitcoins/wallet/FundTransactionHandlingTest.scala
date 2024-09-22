@@ -1,10 +1,10 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.core.api.wallet.HDWalletApi
+import org.bitcoins.core.api.wallet.NeutrinoHDWalletApi
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.utxo.StorageLocationTag.HotStorage
-import org.bitcoins.core.wallet.utxo._
+import org.bitcoins.core.wallet.utxo.*
 import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTestCachedBitcoindNewest,
   WalletTestUtil,
@@ -173,7 +173,7 @@ class FundTransactionHandlingTest
       for {
         feeRate <- wallet.getFeeRate()
         account1DbOpt <- account1DbF
-        fundRawTxHelper <- wallet.fundRawTransaction(
+        fundRawTxHelper <- wallet.fundTxHandling.fundRawTransaction(
           Vector(newDestination),
           feeRate,
           account1DbOpt.get,
@@ -199,7 +199,7 @@ class FundTransactionHandlingTest
       val fundedTxF = for {
         feeRate <- wallet.getFeeRate()
         account1DbOpt <- account1DbF
-        fundedTx <- wallet.fundRawTransaction(
+        fundedTx <- wallet.fundTxHandling.fundRawTransaction(
           destinations = Vector(newDestination),
           feeRate = feeRate,
           fromAccount = account1DbOpt.get,
@@ -218,22 +218,20 @@ class FundTransactionHandlingTest
       val bitcoind = fundedWallet.bitcoind
       val fundedTxF = for {
         feeRate <- wallet.getFeeRate()
-        _ <- wallet.accountHandling.createNewAccount(
-          wallet.keyManager.kmParams.purpose)
-        accounts <- wallet.listAccounts()
+        accounts <- wallet.accountHandling.listAccounts()
         account2 = accounts.find(_.hdAccount.index == 2).get
 
         addr <- wallet.accountHandling.getNewAddress(account2)
 
         hash <- bitcoind.generateToAddress(1, addr).map(_.head)
         block <- bitcoind.getBlockRaw(hash)
-        _ <- wallet.processBlock(block)
+        _ <- wallet.transactionProcessing.processBlock(block)
 
-        utxos <- wallet.listUtxos(account2.hdAccount)
+        utxos <- wallet.utxoHandling.listUtxos(account2.hdAccount)
         _ = assert(utxos.size == 1)
 
         fundedTx <-
-          wallet.fundRawTransaction(
+          wallet.fundTxHandling.fundRawTransaction(
             destinations = Vector(destination),
             feeRate = feeRate,
             fromAccount = account2,
@@ -269,14 +267,16 @@ class FundTransactionHandlingTest
   }
 
   def testAddressTagFunding(
-      wallet: HDWalletApi,
+      wallet: NeutrinoHDWalletApi,
       tag: AddressTag
   ): Future[Assertion] = {
     for {
       feeRate <- wallet.getFeeRate()
       taggedAddr <- wallet.addressHandling.getNewAddress(Vector(tag))
       _ <-
-        wallet.sendToAddress(taggedAddr, destination.value * 2, Some(feeRate))
+        wallet.sendFundsHandling.sendToAddress(taggedAddr,
+                                               destination.value * 2,
+                                               Some(feeRate))
       taggedBalance <- wallet.getBalance(tag)
       _ = assert(taggedBalance == destination.value * 2)
 

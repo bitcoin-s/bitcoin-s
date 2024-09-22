@@ -23,8 +23,29 @@ trait AccountHandlingApi {
 
   def createNewAccount(purpose: HDPurpose): Future[ExtPublicKey]
 
+  /** Gets the balance of the given account */
+  def getBalance(account: HDAccount)(implicit
+      ec: ExecutionContext): Future[CurrencyUnit] = {
+    val confirmedF = getConfirmedBalance(account)
+    val unconfirmedF = getUnconfirmedBalance(account)
+    for {
+      confirmed <- confirmedF
+      unconfirmed <- unconfirmedF
+    } yield {
+      confirmed + unconfirmed
+    }
+  }
+
+  def getConfirmedBalance(account: HDAccount): Future[CurrencyUnit]
+
+  def getUnconfirmedBalance(account: HDAccount): Future[CurrencyUnit]
+
   def getDefaultAccount(): Future[AccountDb]
   def listAccounts(): Future[Vector[AccountDb]]
+  def listAccounts(purpose: HDPurpose)(implicit
+      ec: ExecutionContext): Future[Vector[AccountDb]] = {
+    listAccounts().map(_.filter(_.hdAccount.purpose == purpose))
+  }
   def getDefaultAccountForType(addressType: AddressType): Future[AccountDb]
   def getNewAddress(
       account: AccountDb,

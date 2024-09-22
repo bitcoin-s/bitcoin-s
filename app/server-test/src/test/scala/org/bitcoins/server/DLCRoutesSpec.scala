@@ -2,6 +2,7 @@ package org.bitcoins.server
 
 import org.apache.pekko.http.scaladsl.model.ContentTypes
 import org.apache.pekko.http.scaladsl.testkit.ScalatestRouteTest
+import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
 import org.bitcoins.core.api.dlc.wallet.db.DLCContactDb
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.dlc.models.ContractInfo
@@ -11,7 +12,6 @@ import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.dlc.node.DLCNode
 import org.bitcoins.server.routes.ServerCommand
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.wallet.MockWalletApi
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -26,7 +26,7 @@ class DLCRoutesSpec
   implicit val conf: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getNeutrinoTestConfig()
 
-  val mockWallet = mock[MockWalletApi]
+  val mockWallet = mock[DLCNeutrinoHDWalletApi]
 
   val mockNodeApi = DLCNode(mockWallet)(system, conf.dlcNodeConf)
 
