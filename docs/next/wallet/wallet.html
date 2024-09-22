@@ -174,7 +174,7 @@ val transactionF: Future[(Transaction, Option[DoubleSha256DigestBE])] = for {
 val balanceF: Future[CurrencyUnit] = for {
     wallet &lt;- walletF
     (tx, blockhash) &lt;- transactionF
-    _ &lt;- wallet.processTransaction(tx, blockhash)
+    _ &lt;- wallet.transactionProcessing.processTransaction(tx, blockhash)
     balance &lt;- wallet.getBalance()
 } yield balance
 

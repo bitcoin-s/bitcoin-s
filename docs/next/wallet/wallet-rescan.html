@@ -122,11 +122,11 @@ You can download this with bitcoin-s by doing <code>sbt downloadBitcoind</code><
 <span class="hljs-keyword">val</span> clearedWalletF = <span class="hljs-keyword">for</span> {
   w &lt;- walletF
   _ &lt;- initBalanceF
-  clearedWallet &lt;- w.clearAllUtxos()
-  zeroBalance &lt;- clearedWallet.getBalance()
+  _&lt;- w.utxoHandling.clearAllUtxos()
+  zeroBalance &lt;- w.getBalance()
 } <span class="hljs-keyword">yield</span> {
   println(<span class="hljs-string">s"Balance after clearing utxos: <span class="hljs-subst">${zeroBalance}</span>"</span>)
-  clearedWallet
+  w
 }
 
 <span class="hljs-comment">//we need to pick how many addresses we want to generate off of our keychain</span>
