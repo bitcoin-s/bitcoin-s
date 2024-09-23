@@ -439,7 +439,7 @@ object WalletAppConfig
 
     override def run(): Unit = {
       val f = for {
-        txs <- wallet.getTransactionsToBroadcast
+        txs <- wallet.sendFundsHandling.getTransactionsToBroadcast
 
         _ = {
           if (txs.size > 1)

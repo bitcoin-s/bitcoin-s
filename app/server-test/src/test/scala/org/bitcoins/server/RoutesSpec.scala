@@ -18,6 +18,7 @@ import org.bitcoins.core.api.wallet.{
   FundTransactionHandlingApi,
   RescanHandlingApi,
   SendFundsHandlingApi,
+  TransactionProcessingApi,
   UtxoHandlingApi
 }
 import org.bitcoins.core.config.RegTest
@@ -103,6 +104,9 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
   val mockAccountHandlingApi: AccountHandlingApi = mock[AccountHandlingApi]
 
   val mockAddressHandlingApi: AddressHandlingApi = mock[AddressHandlingApi]
+
+  val mockTransactionProcessingApi: TransactionProcessingApi =
+    mock[TransactionProcessingApi]
 
   val mockFundTxHandlingApi: FundTransactionHandlingApi =
     mock[FundTransactionHandlingApi]
@@ -453,6 +457,12 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     val spendingInfoDb = TransactionTestUtil.spendingInfoDb
 
     "return the wallet's balances in bitcoin" in {
+
+      (() => mockWalletApi.utxoHandling)
+        .expects()
+        .returning(mockUtxoHandlingApi)
+        .anyNumberOfTimes()
+
       (() => mockWalletApi.getConfirmedBalance())
         .expects()
         .returning(Future.successful(Bitcoins(50)))
@@ -461,7 +471,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .expects()
         .returning(Future.successful(Bitcoins(50)))
 
-      (mockWalletApi
+      (mockWalletApi.utxoHandling
         .listUtxos(_: TxoState))
         .expects(TxoState.Reserved)
         .returning(Future.successful(Vector(spendingInfoDb)))
@@ -488,7 +498,12 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .expects()
         .returning(Future.successful(Bitcoins(50)))
 
-      (mockWalletApi
+      (() => mockWalletApi.utxoHandling)
+        .expects()
+        .returning(mockUtxoHandlingApi)
+        .anyNumberOfTimes()
+
+      (mockWalletApi.utxoHandling
         .listUtxos(_: TxoState))
         .expects(TxoState.Reserved)
         .returning(Future.successful(Vector(spendingInfoDb)))
@@ -537,8 +552,12 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "return the wallet utxos" in {
+      (() => mockWalletApi.utxoHandling)
+        .expects()
+        .returning(mockUtxoHandlingApi)
+        .anyNumberOfTimes()
 
-      (() => mockWalletApi.listUtxos())
+      (() => mockWalletApi.utxoHandling.listUtxos())
         .expects()
         .returning(Future.successful(Vector(spendingInfoDb)))
 
@@ -554,8 +573,11 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "return the reserved wallet utxos" in {
-
-      (mockWalletApi
+      (() => mockWalletApi.utxoHandling)
+        .expects()
+        .returning(mockUtxoHandlingApi)
+        .anyNumberOfTimes()
+      (mockWalletApi.utxoHandling
         .listUtxos(_: TxoState))
         .expects(TxoState.Reserved)
         .returning(Future.successful(Vector(spendingInfoDb)))
@@ -799,24 +821,34 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     }
 
     "lock unspent" in {
-      (() => mockWalletApi.listUtxos())
+      (() => mockWalletApi.utxoHandling)
+        .expects()
+        .returning(mockUtxoHandlingApi)
+        .anyNumberOfTimes()
+
+      (() => mockWalletApi.utxoHandling.listUtxos())
         .expects()
         .returning(Future.successful(Vector(spendingInfoDb)))
         .anyNumberOfTimes()
 
-      (mockWalletApi
+      (mockWalletApi.utxoHandling
         .listUtxos(_: TxoState))
         .expects(TxoState.Reserved)
         .returning(Future.successful(Vector(spendingInfoDb)))
         .anyNumberOfTimes()
 
-      (mockWalletApi
+      (() => mockWalletApi.utxoHandling)
+        .expects()
+        .returning(mockUtxoHandlingApi)
+        .anyNumberOfTimes()
+
+      (mockWalletApi.utxoHandling
         .markUTXOsAsReserved(_: Vector[SpendingInfoDb]))
         .expects(Vector(spendingInfoDb))
         .returning(Future.successful(Vector(spendingInfoDb)))
         .anyNumberOfTimes()
 
-      (mockWalletApi
+      (mockWalletApi.utxoHandling
         .unmarkUTXOsAsReserved(_: Vector[SpendingInfoDb]))
         .expects(Vector(spendingInfoDb))
         .returning(Future.successful(Vector(spendingInfoDb)))
@@ -1116,7 +1148,12 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
       val txDb = TransactionDbHelper.fromTransaction(tx, None)
 
-      (mockWalletApi
+      (() => mockWalletApi.transactionProcessing)
+        .expects()
+        .returning(mockTransactionProcessingApi)
+        .anyNumberOfTimes()
+
+      (mockWalletApi.transactionProcessing
         .findByTxIds(_: Vector[DoubleSha256DigestBE]))
         .expects(Vector(tx.txIdBE))
         .returning(Future.successful(Vector(txDb)))

@@ -230,6 +230,16 @@ case class SendFundsHandlingHandling(
     } yield childTx
   }
 
+  override def getTransactionsToBroadcast: Future[Vector[Transaction]] = {
+    for {
+      mempoolUtxos <- spendingInfoDAO.findAllInMempool
+      txIds = mempoolUtxos.map { utxo =>
+        utxo.spendingTxIdOpt.getOrElse(utxo.txid)
+      }
+      txDbs <- transactionDAO.findByTxIdBEs(txIds)
+    } yield txDbs.map(_.transaction)
+  }
+
   override def makeOpReturnCommitment(
       message: String,
       hashMessage: Boolean,

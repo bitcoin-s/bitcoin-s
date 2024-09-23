@@ -109,10 +109,10 @@ class WalletCallbackTest extends BitcoinSWalletTest {
       )
 
       for {
-        txno <- wallet.listTransactions().map(_.size)
+        txno <- wallet.transactionProcessing.listTransactions().map(_.size)
         _ <- wallet.transactionProcessing.processTransaction(tx, None)
         _ <- AsyncUtil.nonBlockingSleep(50.millis)
-        txs <- wallet.listTransactions()
+        txs <- wallet.transactionProcessing.listTransactions()
       } yield {
         assert(txs.size == txno)
         assert(!resultP.isCompleted)
@@ -160,8 +160,8 @@ class WalletCallbackTest extends BitcoinSWalletTest {
       val wallet = fundedWallet.wallet
 
       for {
-        utxos <- wallet.listUtxos()
-        _ <- wallet.markUTXOsAsReserved(Vector(utxos.head))
+        utxos <- wallet.utxoHandling.listUtxos()
+        _ <- wallet.utxoHandling.markUTXOsAsReserved(Vector(utxos.head))
         result <- resultP.future
       } yield assert(
         // just compare outPoints because states will be changed so they won't be equal
@@ -185,11 +185,11 @@ class WalletCallbackTest extends BitcoinSWalletTest {
       val wallet = fundedWallet.wallet
 
       for {
-        utxos <- wallet.listUtxos()
-        reserved <- wallet.markUTXOsAsReserved(Vector(utxos.head))
+        utxos <- wallet.utxoHandling.listUtxos()
+        reserved <- wallet.utxoHandling.markUTXOsAsReserved(Vector(utxos.head))
         _ = fundedWallet.wallet.walletConfig.addCallbacks(callbacks)
 
-        _ <- wallet.unmarkUTXOsAsReserved(reserved)
+        _ <- wallet.utxoHandling.unmarkUTXOsAsReserved(reserved)
         result <- resultP.future
         // just compare outPoints because states will be changed so they won't be equal
       } yield assert(result.map(_.outPoint) == reserved.map(_.outPoint))

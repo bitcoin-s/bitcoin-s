@@ -256,10 +256,10 @@ class FundTransactionHandlingTest
           markAsReserved = true
         )
 
-        spendingInfos <- wallet.findOutputsBeingSpent(
+        spendingInfos <- wallet.utxoHandling.findOutputsBeingSpent(
           fundRawTxHelper.unsignedTx
         )
-        reserved <- wallet.listUtxos(TxoState.Reserved)
+        reserved <- wallet.utxoHandling.listUtxos(TxoState.Reserved)
       } yield {
         assert(spendingInfos.exists(_.state == TxoState.Reserved))
         assert(reserved.size == spendingInfos.size)
@@ -277,10 +277,10 @@ class FundTransactionHandlingTest
         wallet.sendFundsHandling.sendToAddress(taggedAddr,
                                                destination.value * 2,
                                                Some(feeRate))
-      taggedBalance <- wallet.getBalance(tag)
+      taggedBalance <- wallet.utxoHandling.getBalance(tag)
       _ = assert(taggedBalance == destination.value * 2)
 
-      expectedUtxos <- wallet.listUtxos(tag)
+      expectedUtxos <- wallet.utxoHandling.listUtxos(tag)
       fundRawTxHelper <-
         wallet.fundTxHandling
           .fundRawTransaction(

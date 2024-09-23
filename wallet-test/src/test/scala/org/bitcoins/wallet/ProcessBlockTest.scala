@@ -39,7 +39,7 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoindNewest {
     val bitcoind = param.bitcoind
 
     for {
-      startingUtxos <- wallet.listUtxos()
+      startingUtxos <- wallet.utxoHandling.listUtxos()
       _ = assert(startingUtxos.isEmpty)
 
       addr <- wallet.getNewAddress()
@@ -51,11 +51,11 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoindNewest {
       block <- bitcoind.getBlockRaw(hash)
 
       _ <- wallet.transactionProcessing.processBlock(block)
-      utxos <- wallet.listUtxos()
+      utxos <- wallet.utxoHandling.listUtxos()
       height <- bitcoind.getBlockCount()
       bestHash <- bitcoind.getBestBlockHash()
       syncHeightOpt <- wallet.getSyncDescriptorOpt()
-      txDbOpt <- wallet.findByTxId(txId)
+      txDbOpt <- wallet.transactionProcessing.findByTxId(txId)
     } yield {
       assert(syncHeightOpt.contains(SyncHeightDescriptor(bestHash, height)))
       assert(txDbOpt.isDefined)
@@ -71,7 +71,7 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoindNewest {
     val wallet = param.wallet
     val bitcoind = param.bitcoind
     for {
-      startingUtxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
+      startingUtxos <- wallet.utxoHandling.listUtxos(TxoState.ImmatureCoinbase)
       startingBalance <- wallet.getBalance()
       _ = assert(startingUtxos.isEmpty)
       _ = assert(startingBalance == Satoshis.zero)
@@ -80,8 +80,9 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoindNewest {
       blocks <- FutureUtil.sequentially(hashes)(bitcoind.getBlockRaw)
       _ <- FutureUtil.sequentially(blocks)(
         wallet.transactionProcessing.processBlock)
-      coinbaseUtxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
-      confirmedUtxos <- wallet.listUtxos(TxoState.ConfirmedReceived)
+      coinbaseUtxos <- wallet.utxoHandling.listUtxos(TxoState.ImmatureCoinbase)
+      confirmedUtxos <- wallet.utxoHandling.listUtxos(
+        TxoState.ConfirmedReceived)
       balance <- wallet.getConfirmedBalance()
 
       height <- bitcoind.getBlockCount()
@@ -104,7 +105,7 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoindNewest {
     val bitcoind = param.bitcoind
 
     for {
-      startingUtxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
+      startingUtxos <- wallet.utxoHandling.listUtxos(TxoState.ImmatureCoinbase)
       startingBalance <- wallet.getBalance()
       _ = assert(startingUtxos.isEmpty)
       _ = assert(startingBalance == Satoshis.zero)
@@ -115,8 +116,9 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoindNewest {
       )
       filtersWithBlockHash = hashes.zip(filters.map(_.filter))
       _ <- wallet.processCompactFilters(filtersWithBlockHash)
-      coinbaseUtxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
-      confirmedUtxos <- wallet.listUtxos(TxoState.ConfirmedReceived)
+      coinbaseUtxos <- wallet.utxoHandling.listUtxos(TxoState.ImmatureCoinbase)
+      confirmedUtxos <- wallet.utxoHandling.listUtxos(
+        TxoState.ConfirmedReceived)
       balance <- wallet.getConfirmedBalance()
 
       height <- bitcoind.getBlockCount()

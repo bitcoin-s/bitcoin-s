@@ -1,11 +1,13 @@
 package org.bitcoins.core.api.wallet
 
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
+import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.HDAccount
+import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 trait UtxoHandlingApi {
 
@@ -15,6 +17,33 @@ trait UtxoHandlingApi {
   def clearAllUtxos(): Future[Unit]
 
   def clearAllAddresses(): Future[Unit]
+
+  /** Finds all the outputs in our wallet being spent in the given transaction
+    */
+  def findOutputsBeingSpent(tx: Transaction): Future[Vector[SpendingInfoDb]]
+
+  def findByScriptPubKey(
+      scriptPubKey: ScriptPubKey): Future[Vector[SpendingInfoDb]]
+
+  def findByOutPoints(
+      outPoints: Vector[TransactionOutPoint]): Future[Vector[SpendingInfoDb]]
+
+  final def findByOutPoint(outPoint: TransactionOutPoint)(implicit
+      ec: ExecutionContext): Future[Option[SpendingInfoDb]] = {
+    findByOutPoints(Vector(outPoint)).map(_.headOption)
+  }
+
+  def getUnconfirmedBalance(tag: AddressTag): Future[CurrencyUnit]
+  def getConfirmedBalance(tag: AddressTag): Future[CurrencyUnit]
+  final def getBalance(tag: AddressTag)(implicit
+      ec: ExecutionContext): Future[CurrencyUnit] = {
+    val uF = getUnconfirmedBalance(tag)
+    val cF = getConfirmedBalance(tag)
+    for {
+      u <- uF
+      c <- cF
+    } yield u + c
+  }
 
   def listDefaultAccountUtxos(): Future[Vector[SpendingInfoDb]]
 

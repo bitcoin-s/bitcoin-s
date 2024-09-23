@@ -49,7 +49,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
       for {
         balance <- wallet.getBalance()
         _ = assert(balance != Satoshis.zero)
-        utxos <- wallet.listUtxos()
+        utxos <- wallet.utxoHandling.listUtxos()
         _ = assert(utxos.nonEmpty)
 
         addresses <- wallet.addressHandling.listAddresses()
@@ -57,7 +57,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
         _ <- wallet.utxoHandling.clearAllUtxos()
 
-        clearedUtxos <- wallet.listUtxos()
+        clearedUtxos <- wallet.utxoHandling.listUtxos()
         clearedAddresses <- wallet.addressHandling.listAddresses()
       } yield {
         assert(clearedUtxos.isEmpty)
@@ -194,7 +194,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
           wallet.utxoHandling
             .listUtxos(account.hdAccount)
             .map(_.map(_.txid))
-        _ <- wallet
+        _ <- wallet.transactionProcessing
           .findByTxIds(txIds)
           .map(_.flatMap(_.blockHashOpt))
 
@@ -274,10 +274,10 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
       val initBalanceF = wallet.getBalance()
 
       // find the first block a utxo was created in
-      val utxosF = wallet.listUtxos()
+      val utxosF = wallet.utxoHandling.listUtxos()
       val oldestHeightF = for {
         utxos <- utxosF
-        blockhashes <- wallet
+        blockhashes <- wallet.transactionProcessing
           .findByTxIds(utxos.map(_.txid))
           .map(_.flatMap(_.blockHashOpt))
         heights <- FutureUtil.sequentially(blockhashes) { hash =>
@@ -373,7 +373,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         block <- bitcoind.getBlockRaw(hashes.head)
         _ <- wallet.transactionProcessing.processBlock(block)
         fundedAddresses <- wallet.addressHandling.listFundedAddresses()
-        utxos <- wallet.listUtxos(TxoState.ImmatureCoinbase)
+        utxos <- wallet.utxoHandling.listUtxos(TxoState.ImmatureCoinbase)
       } yield {
         // note 25 bitcoin reward from coinbase tx here
         // if we we move this test case in the future it may need to change
@@ -546,7 +546,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
           wallet.utxoHandling
             .listUtxos(account.hdAccount)
             .map(_.map(_.txid))
-        _ <- wallet
+        _ <- wallet.transactionProcessing
           .findByTxIds(txIds)
           .map(_.flatMap(_.blockHashOpt))
 

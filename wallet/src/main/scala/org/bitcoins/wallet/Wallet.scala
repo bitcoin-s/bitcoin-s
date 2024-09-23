@@ -4,11 +4,7 @@ import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
-import org.bitcoins.core.api.wallet.db.{
-  AccountDb,
-  SpendingInfoDb,
-  TransactionDb
-}
+import org.bitcoins.core.api.wallet.db.AccountDb
 import org.bitcoins.core.api.wallet.*
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.crypto.ExtPublicKey
@@ -21,8 +17,6 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.util.{FutureUtil, HDUtil}
 import org.bitcoins.core.wallet.fee.*
-import org.bitcoins.core.wallet.utxo.*
-import org.bitcoins.core.wallet.utxo.TxoState.*
 import org.bitcoins.crypto.*
 import org.bitcoins.db.SafeDatabase
 import org.bitcoins.db.models.MasterXPubDAO
@@ -284,16 +278,6 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
       _ <- walletCallbacks.executeOnTransactionBroadcast(transaction)
     } yield ()
 
-  override def getTransactionsToBroadcast: Future[Vector[Transaction]] = {
-    for {
-      mempoolUtxos <- spendingInfoDAO.findAllInMempool
-      txIds = mempoolUtxos.map { utxo =>
-        utxo.spendingTxIdOpt.getOrElse(utxo.txid)
-      }
-      txDbs <- transactionDAO.findByTxIdBEs(txIds)
-    } yield txDbs.map(_.transaction)
-  }
-
   override def isEmpty(): Future[Boolean] =
     for {
       addressCount <- addressDAO.count()
@@ -309,49 +293,9 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
   override def getConfirmedBalance(): Future[CurrencyUnit] = {
     safeDatabase.run(spendingInfoDAO.getConfirmedBalanceAction())
   }
-  override def getConfirmedBalance(tag: AddressTag): Future[CurrencyUnit] = {
-    spendingInfoDAO.findAllUnspentForTag(tag).map { allUnspent =>
-      val confirmed = allUnspent.filter(_.state == ConfirmedReceived)
-      confirmed.foldLeft(CurrencyUnits.zero)(_ + _.output.value)
-    }
-  }
 
   override def getUnconfirmedBalance(): Future[CurrencyUnit] = {
     safeDatabase.run(spendingInfoDAO.getUnconfirmedBalanceAction())
-  }
-
-  override def getUnconfirmedBalance(tag: AddressTag): Future[CurrencyUnit] = {
-    spendingInfoDAO.findAllUnspentForTag(tag).map { allUnspent =>
-      val confirmed = allUnspent
-        .filter(utxo => TxoState.pendingReceivedStates.contains(utxo.state))
-      confirmed.foldLeft(CurrencyUnits.zero)(_ + _.output.value)
-    }
-  }
-
-  override def findByOutPoints(
-      outPoints: Vector[TransactionOutPoint]
-  ): Future[Vector[SpendingInfoDb]] = {
-    spendingInfoDAO.findByOutPoints(outPoints)
-  }
-
-  override def findByTxIds(
-      txIds: Vector[DoubleSha256DigestBE]
-  ): Future[Vector[TransactionDb]] = {
-    transactionDAO.findByTxIds(txIds)
-  }
-
-  override def findOutputsBeingSpent(
-      tx: Transaction
-  ): Future[Vector[SpendingInfoDb]] = {
-    spendingInfoDAO.findOutputsBeingSpent(tx)
-  }
-
-  /** @inheritdoc */
-  override def isChange(output: TransactionOutput): Future[Boolean] = {
-    addressDAO.findByScriptPubKey(output.scriptPubKey).map {
-      case Some(db) => db.isChange
-      case None     => false
-    }
   }
 
   override def getWalletName(): Future[String] = {
@@ -375,12 +319,6 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
         imported = keyManager.imported
       )
     }
-  }
-
-  override def findByScriptPubKey(
-      scriptPubKey: ScriptPubKey
-  ): Future[Vector[SpendingInfoDb]] = {
-    spendingInfoDAO.findByScriptPubKey(scriptPubKey)
   }
 
   def startFeeRateCallbackScheduler(): Unit = {
@@ -407,46 +345,6 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
       walletConfig.feeRatePollInterval.toSeconds,
       TimeUnit.SECONDS
     )
-  }
-
-  override def updateUtxoPendingStates(): Future[Vector[SpendingInfoDb]] =
-    utxoHandling.updateUtxoPendingStates()
-
-  override def listTransactions(): Future[Vector[TransactionDb]] =
-    transactionProcessing.listTransactions()
-
-  override def listUtxos(): Future[Vector[SpendingInfoDb]] =
-    utxoHandling.listUtxos()
-
-  override def listUtxos(state: TxoState): Future[Vector[SpendingInfoDb]] =
-    utxoHandling.listUtxos(state)
-
-  override def listUtxos(tag: AddressTag): Future[Vector[SpendingInfoDb]] = {
-    utxoHandling.listUtxos(tag)
-  }
-
-  def markUTXOsAsReserved(
-      utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
-    utxoHandling.markUTXOsAsReserved(utxos)
-  }
-
-  /** Marks all utxos that are ours in this transactions as reserved */
-  override def markUTXOsAsReserved(
-      tx: Transaction): Future[Vector[SpendingInfoDb]] = {
-    utxoHandling.markUTXOsAsReserved(tx)
-  }
-
-  override def unmarkUTXOsAsReserved(
-      utxos: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
-    utxoHandling.unmarkUTXOsAsReserved(utxos)
-  }
-
-  /** Unmarks all utxos that are ours in this transactions indicating they are
-    * no longer reserved
-    */
-  override def unmarkUTXOsAsReserved(
-      tx: Transaction): Future[Vector[SpendingInfoDb]] = {
-    utxoHandling.unmarkUTXOsAsReserved(tx)
   }
 }
 
