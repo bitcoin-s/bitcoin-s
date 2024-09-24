@@ -6,9 +6,7 @@ import org.bitcoins.core.crypto.{ExtPublicKey, MnemonicCode}
 import org.bitcoins.core.hd._
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.keymanagement.KeyManagerParams
-import org.bitcoins.feeprovider.ConstantFeeRateProvider
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.chain.MockChainQueryApi
 import org.bitcoins.testkit.fixtures.EmptyFixture
@@ -153,8 +151,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
       wallet =
         Wallet(
           MockNodeApi,
-          MockChainQueryApi,
-          ConstantFeeRateProvider(SatoshisPerVirtualByte.one)
+          MockChainQueryApi
         )(config)
       init <- Wallet.initialize(
         wallet = wallet,

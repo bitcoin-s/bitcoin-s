@@ -6,7 +6,6 @@ import org.bitcoins.commons.config.{AppConfigFactoryBase, ConfigOps}
 import org.bitcoins.core.api.CallbackConfig
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.dlc.wallet.db.DLCDb
-import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.protocol.dlc.models.DLCState.{
   AdaptorSigComputationState,
@@ -144,13 +143,11 @@ case class DLCAppConfig(
 
   def createDLCWallet(
       nodeApi: NodeApi,
-      chainQueryApi: ChainQueryApi,
-      feeRateApi: FeeRateApi
+      chainQueryApi: ChainQueryApi
   )(implicit walletConf: WalletAppConfig): Future[DLCWallet] = {
     DLCAppConfig.createDLCWallet(
       nodeApi = nodeApi,
-      chainQueryApi = chainQueryApi,
-      feeRateApi = feeRateApi
+      chainQueryApi = chainQueryApi
     )(walletConf, this)
   }
 
@@ -327,8 +324,7 @@ object DLCAppConfig
   /** Creates a wallet based on the given [[WalletAppConfig]] */
   def createDLCWallet(
       nodeApi: NodeApi,
-      chainQueryApi: ChainQueryApi,
-      feeRateApi: FeeRateApi
+      chainQueryApi: ChainQueryApi
   )(implicit
       walletConf: WalletAppConfig,
       dlcConf: DLCAppConfig
@@ -339,12 +335,12 @@ object DLCAppConfig
       if (walletExists) {
         logger.info(s"Using pre-existing wallet")
         val wallet =
-          DLCWallet(nodeApi, chainQueryApi, feeRateApi)
+          DLCWallet(nodeApi, chainQueryApi)
         Future.successful(wallet)
       } else {
         logger.info(s"Creating new wallet")
         val unInitializedWallet =
-          DLCWallet(nodeApi, chainQueryApi, feeRateApi)
+          DLCWallet(nodeApi, chainQueryApi)
 
         Wallet
           .initialize(

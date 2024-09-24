@@ -50,7 +50,6 @@ sealed trait DLCWalletLoaderApi
   protected def loadWallet(
       chainQueryApi: ChainQueryApi,
       nodeApi: NodeApi,
-      feeProviderApi: FeeRateApi,
       walletNameOpt: Option[String],
       aesPasswordOpt: Option[AesPassword]
   )(implicit
@@ -71,8 +70,7 @@ sealed trait DLCWalletLoaderApi
       _ <- dlcConfig.start()
       dlcWallet <- dlcConfig.createDLCWallet(
         nodeApi = nodeApi,
-        chainQueryApi = chainQueryApi,
-        feeRateApi = feeProviderApi
+        chainQueryApi = chainQueryApi
       )(walletConfig)
     } yield (dlcWallet, walletConfig, dlcConfig)
   }
@@ -271,8 +269,7 @@ sealed trait DLCWalletLoaderApi
 case class DLCWalletNeutrinoBackendLoader(
     walletHolder: WalletHolder,
     chainQueryApi: ChainQueryApi,
-    nodeApi: NodeApi,
-    feeRateApi: FeeRateApi
+    nodeApi: NodeApi
 )(implicit
     override val conf: BitcoinSAppConfig,
     override val system: ActorSystem
@@ -301,7 +298,6 @@ case class DLCWalletNeutrinoBackendLoader(
       (dlcWallet, walletConfig, dlcConfig) <- loadWallet(
         chainQueryApi = chainQueryApi,
         nodeApi = nodeApi,
-        feeProviderApi = feeRateApi,
         walletNameOpt = walletNameOpt,
         aesPasswordOpt = aesPasswordOpt
       )
@@ -351,7 +347,6 @@ case class DLCWalletBitcoindBackendLoader(
       (dlcWallet, walletConfig, dlcConfig) <- loadWallet(
         chainQueryApi = bitcoind,
         nodeApi = nodeApi,
-        feeProviderApi = feeProvider,
         walletNameOpt = walletNameOpt,
         aesPasswordOpt = aesPasswordOpt
       )

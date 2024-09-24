@@ -285,7 +285,7 @@ object BitcoinSWalletTest extends WalletLogger {
 
       walletConfig.start().flatMap { _ =>
         val wallet =
-          Wallet(nodeApi, chainQueryApi, new RandomFeeProvider)(walletConfig)
+          Wallet(nodeApi, chainQueryApi)(walletConfig)
         Wallet.initialize(wallet,
                           wallet.accountHandling,
                           walletConfig.bip39PasswordOpt)
@@ -310,7 +310,7 @@ object BitcoinSWalletTest extends WalletLogger {
 
     initConfs.flatMap { _ =>
       val wallet =
-        DLCWallet(nodeApi, chainQueryApi, new RandomFeeProvider)(
+        DLCWallet(nodeApi, chainQueryApi)(
           config.walletConf,
           config.dlcConf
         )
@@ -351,8 +351,7 @@ object BitcoinSWalletTest extends WalletLogger {
       walletWithCallback = Wallet(
         nodeApi =
           SyncUtil.getNodeApiWalletCallback(bitcoind, walletCallbackP.future),
-        chainQueryApi = bitcoind,
-        feeRateApi = new RandomFeeProvider
+        chainQueryApi = bitcoind
       )(wallet.walletConfig)
       // complete the walletCallbackP so we can handle the callbacks when they are
       // called without hanging forever.

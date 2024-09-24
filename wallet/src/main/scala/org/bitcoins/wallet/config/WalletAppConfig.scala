@@ -8,14 +8,16 @@ import org.bitcoins.core.api.CallbackConfig
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
-import org.bitcoins.core.hd._
+import org.bitcoins.core.hd.*
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.core.wallet.keymanagement._
+import org.bitcoins.core.wallet.keymanagement.*
 import org.bitcoins.crypto.AesPassword
 import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
-import org.bitcoins.db._
+import org.bitcoins.db.*
 import org.bitcoins.db.models.MasterXPubDAO
 import org.bitcoins.db.util.{DBMasterXPubApi, MasterXPubUtil}
+import org.bitcoins.feeprovider.{FeeProviderFactory, MempoolSpaceProvider}
+import org.bitcoins.feeprovider.MempoolSpaceTarget.HourFeeTarget
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
 import org.bitcoins.tor.config.TorAppConfig
 import org.bitcoins.wallet.callback.{
@@ -29,7 +31,7 @@ import org.bitcoins.wallet.{Wallet, WalletLogger}
 
 import java.nio.file.{Files, Path, Paths}
 import java.time.Instant
-import java.util.concurrent._
+import java.util.concurrent.*
 import scala.concurrent.duration.{
   Duration,
   DurationInt,
@@ -37,6 +39,7 @@ import scala.concurrent.duration.{
   FiniteDuration
 }
 import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.util.control.NonFatal
 
 /** Configuration for the Bitcoin-S wallet
   * @param directory
@@ -57,6 +60,18 @@ case class WalletAppConfig(
 
   implicit override val ec: ExecutionContext = system.dispatcher
 
+  private val defaultApi =
+    MempoolSpaceProvider(HourFeeTarget, network, torConf.socks5ProxyParams)
+  def feeRateApi: FeeRateApi = {
+    FeeProviderFactory.getFeeProviderOrElse(
+      defaultApi,
+      feeProviderNameOpt,
+      feeProviderTargetOpt,
+      torConf.socks5ProxyParams,
+      network
+    )
+  }
+
   override protected[bitcoins] def moduleName: String =
     WalletAppConfig.moduleName
 
@@ -65,7 +80,7 @@ case class WalletAppConfig(
   override protected[bitcoins] def newConfigOfType(
       configs: Vector[Config]
   ): WalletAppConfig =
-    WalletAppConfig(baseDatadir, configs)
+    WalletAppConfig(baseDatadir, configs, kmConfOpt)
 
   override def appConfig: WalletAppConfig = this
 
@@ -325,13 +340,11 @@ case class WalletAppConfig(
   /** Creates a wallet based on this [[WalletAppConfig]] */
   def createHDWallet(
       nodeApi: NodeApi,
-      chainQueryApi: ChainQueryApi,
-      feeRateApi: FeeRateApi
+      chainQueryApi: ChainQueryApi
   )(implicit system: ActorSystem): Future[Wallet] = {
     WalletAppConfig.createHDWallet(
       nodeApi = nodeApi,
-      chainQueryApi = chainQueryApi,
-      feeRateApi = feeRateApi
+      chainQueryApi = chainQueryApi
     )(this, system)
   }
 
@@ -382,6 +395,33 @@ case class WalletAppConfig(
   def creationTime: Instant = {
     kmConf.creationTime
   }
+
+  def startFeeRateCallbackScheduler(): Unit = {
+    val feeRateChangedRunnable = new Runnable {
+      override def run(): Unit = {
+        feeRateApi
+          .getFeeRate()
+          .map(feeRate => Some(feeRate))
+          .recover { case NonFatal(_) =>
+            // logger.error("Cannot get fee rate ", ex)
+            None
+          }
+          .foreach { feeRateOpt =>
+            callBacks.executeOnFeeRateChanged(
+              feeRateOpt.getOrElse(SatoshisPerVirtualByte.negativeOne)
+            )
+          }
+        ()
+      }
+    }
+
+    val _ = scheduler.scheduleAtFixedRate(
+      feeRateChangedRunnable,
+      feeRatePollDelay.toSeconds,
+      feeRatePollInterval.toSeconds,
+      TimeUnit.SECONDS
+    )
+  }
 }
 
 object WalletAppConfig
@@ -404,8 +444,7 @@ object WalletAppConfig
   /** Creates a wallet based on the given [[WalletAppConfig]] */
   def createHDWallet(
       nodeApi: NodeApi,
-      chainQueryApi: ChainQueryApi,
-      feeRateApi: FeeRateApi
+      chainQueryApi: ChainQueryApi
   )(implicit
       walletConf: WalletAppConfig,
       system: ActorSystem
@@ -417,12 +456,12 @@ object WalletAppConfig
       if (walletExists) {
         logger.info(s"Using pre-existing wallet")
         val wallet =
-          Wallet(nodeApi, chainQueryApi, feeRateApi)
+          Wallet(nodeApi, chainQueryApi)
         Future.successful(wallet)
       } else {
         logger.info(s"Creating new wallet")
         val unInitializedWallet =
-          Wallet(nodeApi, chainQueryApi, feeRateApi)
+          Wallet(nodeApi, chainQueryApi)
 
         Wallet.initialize(
           wallet = unInitializedWallet,
