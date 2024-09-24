@@ -1,15 +1,15 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.core.currency._
+import org.bitcoins.core.currency.*
 import org.bitcoins.core.hd.HDChainType
-import org.bitcoins.core.number._
+import org.bitcoins.core.number.*
 import org.bitcoins.core.protocol.script.EmptyScriptSignature
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.TxoState
+import org.bitcoins.feeprovider.RandomFeeProvider
 import org.bitcoins.rpc.BitcoindException.InvalidAddressOrKey
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest.RandomFeeProvider
 import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTestCachedBitcoindNewest,
   WalletTestUtil,
