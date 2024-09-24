@@ -1,19 +1,19 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.core.api.wallet._
-import org.bitcoins.core.currency._
+import org.bitcoins.core.api.wallet.*
+import org.bitcoins.core.currency.*
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.EmptyScriptSignature
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptConstant}
 import org.bitcoins.core.script.control.OP_RETURN
-import org.bitcoins.core.wallet.fee._
+import org.bitcoins.core.wallet.fee.*
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.crypto.{CryptoUtil, DoubleSha256DigestBE}
+import org.bitcoins.feeprovider.RandomFeeProvider
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest.RandomFeeProvider
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
 import org.bitcoins.testkitcore.Implicits.GeneratorOps
 import org.bitcoins.testkitcore.gen.FeeUnitGen

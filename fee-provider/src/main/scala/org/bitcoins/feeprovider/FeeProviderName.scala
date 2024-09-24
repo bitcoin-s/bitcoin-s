@@ -14,6 +14,8 @@ object FeeProviderName extends StringFactory[FeeProviderName] {
 
   final case object MempoolSpace extends FeeProviderName
 
+  case object Random extends FeeProviderName
+
   val all: Vector[FeeProviderName] =
     Vector(BitcoinerLive, BitGo, Constant, MempoolSpace)
 

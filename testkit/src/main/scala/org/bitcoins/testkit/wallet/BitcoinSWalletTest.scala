@@ -5,12 +5,11 @@ import com.typesafe.config.{Config, ConfigFactory}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.core.api.chain.ChainQueryApi
-import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.wallet.WalletApi
-import org.bitcoins.core.currency._
-import org.bitcoins.core.wallet.fee._
+import org.bitcoins.core.currency.*
 import org.bitcoins.dlc.wallet.{DLCAppConfig, DLCWallet}
+import org.bitcoins.feeprovider.RandomFeeProvider
 import org.bitcoins.node.NodeCallbacks
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.server.BitcoinSAppConfig
@@ -25,15 +24,15 @@ import org.bitcoins.testkit.wallet.FundWalletUtil.{
   FundedWallet
 }
 import org.bitcoins.testkitcore.Implicits.GeneratorOps
-import org.bitcoins.testkitcore.gen._
+import org.bitcoins.testkitcore.gen.*
 import org.bitcoins.wallet.callback.WalletCallbacks
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.{Wallet, WalletLogger}
-import org.scalatest._
+import org.scalatest.*
 
 import java.util.UUID
-import scala.concurrent._
-import scala.concurrent.duration._
+import scala.concurrent.*
+import scala.concurrent.duration.*
 
 trait BitcoinSWalletTest
     extends BitcoinSFixture
@@ -232,18 +231,6 @@ object BitcoinSWalletTest extends WalletLogger {
     account1Amt.fold(CurrencyUnits.zero)(_ + _)
 
   lazy val initialFunds: CurrencyUnit = expectedDefaultAmt + expectedAccount1Amt
-
-  private[bitcoins] class RandomFeeProvider extends FeeRateApi {
-    // Useful for tests
-    var lastFeeRate: Option[FeeUnit] = None
-
-    override def getFeeRate(): Future[FeeUnit] = {
-      val feeRate = FeeUnitGen.feeUnit.sampleSome
-
-      lastFeeRate = Some(feeRate)
-      Future.successful(feeRate)
-    }
-  }
 
   def createWalletAppConfig(
       pgUrl: () => Option[String],

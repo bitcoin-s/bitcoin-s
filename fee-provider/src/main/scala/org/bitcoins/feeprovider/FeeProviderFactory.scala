@@ -53,6 +53,9 @@ object FeeProviderFactory extends BitcoinSLogger {
           MempoolSpaceProvider.fromBlockTarget(target, network, proxyParamsOpt)
         case (Some(Constant), Some(num)) =>
           ConstantFeeRateProvider(SatoshisPerVirtualByte.fromLong(num))
+        case (Some(FeeProviderName.Random), None) |
+            (Some(FeeProviderName.Random), Some(_)) =>
+          new RandomFeeProvider
         case (Some(Constant), None) =>
           throw new IllegalArgumentException(
             "Missing a target for a ConstantFeeRateProvider"
