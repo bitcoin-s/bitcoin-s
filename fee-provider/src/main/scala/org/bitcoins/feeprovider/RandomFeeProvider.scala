@@ -6,7 +6,7 @@ import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 
 import scala.concurrent.Future
 
-/** Generates a uniformly distributed random fee between [1,10,0000]
+/** Generates a uniformly distributed random fee between [1-10,000]
   * satoshis/vbyte This should not be used in production.
   */
 class RandomFeeProvider extends FeeRateApi {
