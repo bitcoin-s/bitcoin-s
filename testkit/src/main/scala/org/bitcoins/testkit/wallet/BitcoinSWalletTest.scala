@@ -74,9 +74,8 @@ trait BitcoinSWalletTest
       makeDependentFixture[Wallet](
         build =
           createNewWallet(nodeApi = nodeApi, chainQueryApi = chainQueryApi),
-        destroy = { wallet =>
+        destroy = { (_: WalletApi) =>
           for {
-            _ <- destroyWallet(wallet)
             _ <- destroyWalletAppConfig(newWalletConf)
           } yield ()
         }
@@ -92,9 +91,8 @@ trait BitcoinSWalletTest
   )(implicit walletAppConfig: WalletAppConfig): FutureOutcome = {
     makeDependentFixture(
       build = () => FundWalletUtil.createFundedWallet(nodeApi, chainQueryApi),
-      destroy = { (funded: FundedWallet) =>
+      destroy = { (_: FundedWallet) =>
         for {
-          _ <- destroyWallet(funded.wallet)
           _ <- destroyWalletAppConfig(walletAppConfig)
         } yield ()
       }
@@ -106,9 +104,8 @@ trait BitcoinSWalletTest
   )(implicit walletAppConfig: WalletAppConfig): FutureOutcome = {
     makeDependentFixture(
       build = () => FundWalletUtil.createFundedWallet(nodeApi, chainQueryApi),
-      destroy = { (funded: FundedWallet) =>
+      destroy = { (_: FundedWallet) =>
         for {
-          _ <- destroyWallet(funded.wallet)
           _ <- destroyWalletAppConfig(walletAppConfig)
         } yield ()
       }
@@ -151,9 +148,8 @@ trait BitcoinSWalletTest
       build = { () =>
         createDefaultWallet(nodeApi, chainQueryApi)
       },
-      destroy = { wallet =>
+      destroy = { (_: WalletApi) =>
         for {
-          _ <- destroyWallet(wallet)
           _ <- destroyWalletAppConfig(walletAppConfig)
         } yield ()
       }
@@ -167,7 +163,7 @@ trait BitcoinSWalletTest
       build = { () =>
         createWallet2Accounts(nodeApi, chainQueryApi)
       },
-      destroy = destroyWallet
+      destroy = { (_: WalletApi) => Future.unit }
     )(test)
   }
 
@@ -521,23 +517,13 @@ object BitcoinSWalletTest extends WalletLogger {
       walletWithBitcoind: WalletWithBitcoind[_]
   )(implicit ec: ExecutionContext): Future[Unit] = {
     for {
-      _ <- destroyWallet(walletWithBitcoind.wallet)
       _ <- destroyWalletAppConfig(walletWithBitcoind.walletConfig)
-    } yield ()
-  }
-
-  def destroyWallet(
-      wallet: WalletApi
-  )(implicit ec: ExecutionContext): Future[Unit] = {
-    for {
-      _ <- wallet.stop()
     } yield ()
   }
 
   def destroyDLCWallet(wallet: DLCWallet): Future[Unit] = {
     import wallet.ec
     for {
-      _ <- destroyWallet(wallet)
       _ <- destroyWalletAppConfig(wallet.walletConfig)
       _ <- wallet.dlcConfig.stop()
     } yield ()

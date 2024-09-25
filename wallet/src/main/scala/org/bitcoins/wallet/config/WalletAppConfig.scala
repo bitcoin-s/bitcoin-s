@@ -232,6 +232,8 @@ case class WalletAppConfig(
       Files.createDirectories(datadir)
     }
 
+    startFeeRateCallbackScheduler()
+
     for {
       _ <- super.start()
       _ <- kmConf.start()
@@ -273,6 +275,7 @@ case class WalletAppConfig(
     stopCallbacksF.flatMap { _ =>
       clearCallbacks()
       stopRebroadcastTxsScheduler()
+      stopFeeRateScheduler()
       // this eagerly shuts down all scheduled tasks on the scheduler
       // in the future, we should actually cancel all things that are scheduled
       // manually, and then shutdown the scheduler
@@ -350,30 +353,32 @@ case class WalletAppConfig(
   }
 
   private[this] var rebroadcastTransactionsCancelOpt
-      : Option[ScheduledFuture[_]] = None
+      : Option[ScheduledFuture[?]] = None
+  private var feeRateCancelOpt: Option[ScheduledFuture[?]] = None
 
   /** Starts the wallet's rebroadcast transaction scheduler */
-  def startRebroadcastTxsScheduler(wallet: Wallet): Unit = synchronized {
-    rebroadcastTransactionsCancelOpt match {
-      case Some(_) =>
-        // already scheduled, do nothing
-        ()
-      case None =>
-        logger.info(s"Starting wallet rebroadcast task")
+  private def startRebroadcastTxsScheduler(wallet: Wallet): Unit =
+    synchronized {
+      rebroadcastTransactionsCancelOpt match {
+        case Some(_) =>
+          // already scheduled, do nothing
+          ()
+        case None =>
+          logger.info(s"Starting wallet rebroadcast task")
 
-        val interval = rebroadcastFrequency.toSeconds
-        val initDelay = interval
-        val future =
-          scheduler.scheduleAtFixedRate(
-            RebroadcastTransactionsRunnable(wallet),
-            initDelay,
-            interval,
-            TimeUnit.SECONDS
-          )
-        rebroadcastTransactionsCancelOpt = Some(future)
-        ()
+          val interval = rebroadcastFrequency.toSeconds
+          val initDelay = interval
+          val future =
+            scheduler.scheduleAtFixedRate(
+              RebroadcastTransactionsRunnable(wallet),
+              initDelay,
+              interval,
+              TimeUnit.SECONDS
+            )
+          rebroadcastTransactionsCancelOpt = Some(future)
+          ()
+      }
     }
-  }
 
   /** Kills the wallet's rebroadcast transaction scheduler */
   def stopRebroadcastTxsScheduler(): Unit = synchronized {
@@ -382,11 +387,22 @@ case class WalletAppConfig(
         if (!cancel.isCancelled) {
           logger.info(s"Stopping wallet rebroadcast task")
           cancel.cancel(true)
-        } else {
-          rebroadcastTransactionsCancelOpt = None
         }
+        rebroadcastTransactionsCancelOpt = None
         ()
       case None => ()
+    }
+  }
+
+  private def stopFeeRateScheduler(): Unit = synchronized {
+    feeRateCancelOpt match {
+      case Some(cancel) =>
+        if (!cancel.isCancelled) {
+          cancel.cancel(true)
+        }
+        feeRateCancelOpt = None
+      case None =>
+        ()
     }
   }
 
@@ -397,7 +413,7 @@ case class WalletAppConfig(
     kmConf.creationTime
   }
 
-  def startFeeRateCallbackScheduler(): Unit = {
+  private def startFeeRateCallbackScheduler(): Unit = {
     val feeRateChangedRunnable = new Runnable {
       override def run(): Unit = {
         feeRateApi
@@ -416,12 +432,14 @@ case class WalletAppConfig(
       }
     }
 
-    val _ = scheduler.scheduleAtFixedRate(
+    val cancel: ScheduledFuture[?] = scheduler.scheduleAtFixedRate(
       feeRateChangedRunnable,
       feeRatePollDelay.toSeconds,
       feeRatePollInterval.toSeconds,
       TimeUnit.SECONDS
     )
+    feeRateCancelOpt = Some(cancel)
+
   }
 }
 
@@ -451,7 +469,7 @@ object WalletAppConfig
       system: ActorSystem
   ): Future[Wallet] = {
     import system.dispatcher
-    walletConf.hasWallet().flatMap { walletExists =>
+    val walletF = walletConf.hasWallet().flatMap { walletExists =>
       val bip39PasswordOpt = walletConf.bip39PasswordOpt
 
       if (walletExists) {
@@ -470,6 +488,11 @@ object WalletAppConfig
           bip39PasswordOpt = bip39PasswordOpt
         )
       }
+    }
+
+    walletF.map { wallet =>
+      walletConf.startRebroadcastTxsScheduler(wallet)
+      wallet
     }
   }
 

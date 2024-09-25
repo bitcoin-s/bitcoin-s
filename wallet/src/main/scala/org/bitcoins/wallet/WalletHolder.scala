@@ -70,26 +70,8 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
       newWallet: DLCNeutrinoHDWalletApi
   ): Future[DLCNeutrinoHDWalletApi] =
     synchronized {
-      val oldWalletOpt = walletOpt
-      walletOpt = None
-      val res = for {
-        _ <- {
-          oldWalletOpt match {
-            case Some(oldWallet) => oldWallet.stop()
-            case None            => Future.unit
-          }
-        }
-        _ <- newWallet.start()
-      } yield {
-        synchronized {
-          walletOpt = Some(newWallet)
-          newWallet
-        }
-      }
-
-      res.failed.foreach(ex => logger.error("Cannot start wallet ", ex))
-
-      res
+      walletOpt = Some(newWallet)
+      Future.successful(newWallet)
     }
 
   private def delegate[T]
@@ -116,19 +98,6 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
   override lazy val feeRateApi: FeeRateApi = wallet.feeRateApi
   override lazy val creationTime: Instant = wallet.creationTime
 
-  override def start(): Future[WalletApi] = delegate(_.start())
-
-  override def stop(): Future[WalletApi] = {
-    val res = delegate(_.stop())
-
-    res.onComplete { _ =>
-      synchronized {
-        walletOpt = None
-      }
-    }
-
-    res
-  }
   override def getConfirmedBalance(): Future[CurrencyUnit] = delegate(
     _.getConfirmedBalance()
   )

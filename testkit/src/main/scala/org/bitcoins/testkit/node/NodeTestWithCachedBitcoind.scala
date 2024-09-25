@@ -216,11 +216,8 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
   ): Future[Unit] = {
     val node = nodeWithBitcoind.node
     val destroyNodeF = tearDownNode(node, appConfig)
-    val destroyWalletF =
-      BitcoinSWalletTest.destroyWallet(nodeWithBitcoind.wallet)
     for {
       _ <- destroyNodeF
-      _ <- destroyWalletF
       _ <- BitcoinSWalletTest.destroyWalletAppConfig(appConfig.walletConf)
     } yield ()
   }

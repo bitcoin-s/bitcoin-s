@@ -137,7 +137,7 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
 
   def walletCallbacks: WalletCallbacks = walletConfig.callBacks
 
-  private def checkRootAccount: Future[Unit] = {
+  /*  private def checkRootAccount: Future[Unit] = {
     val coinType = HDUtil.getCoinType(keyManager.kmParams.network)
     val coin =
       HDCoin(purpose = keyManager.kmParams.purpose, coinType = coinType)
@@ -159,21 +159,7 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
         val errorMsg = s"Missing root xpub for account $account in database"
         Future.failed(new RuntimeException(errorMsg))
     }
-  }
-
-  override def start(): Future[Wallet] = {
-    logger.info("Starting Wallet")
-
-    checkRootAccount.map { _ =>
-      walletConfig.startRebroadcastTxsScheduler(this)
-      startFeeRateCallbackScheduler()
-      this
-    }
-  }
-
-  override def stop(): Future[Wallet] = {
-    Future.successful(this)
-  }
+  }*/
 
   override def getNewAddress(): Future[BitcoinAddress] = {
     addressHandling.getNewAddress()
