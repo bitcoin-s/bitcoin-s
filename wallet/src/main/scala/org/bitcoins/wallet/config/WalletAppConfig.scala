@@ -62,7 +62,8 @@ case class WalletAppConfig(
 
   private val defaultApi =
     MempoolSpaceProvider(HourFeeTarget, network, torConf.socks5ProxyParams)
-  def feeRateApi: FeeRateApi = {
+
+  lazy val feeRateApi: FeeRateApi = {
     FeeProviderFactory.getFeeProviderOrElse(
       defaultApi,
       feeProviderNameOpt,

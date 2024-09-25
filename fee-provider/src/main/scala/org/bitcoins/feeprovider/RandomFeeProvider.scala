@@ -14,7 +14,7 @@ class RandomFeeProvider extends FeeRateApi {
   var lastFeeRate: Option[FeeUnit] = None
 
   override def getFeeRate(): Future[FeeUnit] = {
-    val raw = scala.util.Random.between(1, 10000)
+    val raw = scala.util.Random.between(1, 1000)
     val feeRate = SatoshisPerVirtualByte(Satoshis(raw))
     lastFeeRate = Some(feeRate)
     Future.successful(feeRate)
