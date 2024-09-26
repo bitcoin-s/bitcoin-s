@@ -256,12 +256,12 @@ class AddressHandlingTest extends BitcoinSWalletTest {
       for {
         nonChange <- wallet.getNewAddress()
         output0 = TransactionOutput(Satoshis.zero, nonChange.scriptPubKey)
-        res0 <- wallet.isChange(output0)
+        res0 <- wallet.addressHandling.isChange(output0)
         _ = assert(!res0)
 
         change <- wallet.getNewChangeAddress()
         output1 = TransactionOutput(Satoshis.zero, change.scriptPubKey)
-        res1 <- wallet.isChange(output1)
+        res1 <- wallet.addressHandling.isChange(output1)
       } yield assert(res1)
   }
 

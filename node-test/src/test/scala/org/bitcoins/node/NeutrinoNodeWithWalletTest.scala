@@ -124,7 +124,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
         maxTries = 30
       )
       // assert we got the full tx with witness data
-      txs <- wallet.listTransactions()
+      txs <- wallet.transactionProcessing.listTransactions()
     } yield assert(txs.exists(_.transaction == expectedTx))
   }
 
@@ -159,7 +159,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       _ <- generateBlock()
 
       // verify
-      txs <- wallet.listTransactions()
+      txs <- wallet.transactionProcessing.listTransactions()
     } yield assert(txs.exists(_.txIdBE == txSent.txIdBE))
   }
 

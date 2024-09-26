@@ -25,7 +25,7 @@ import org.bitcoins.core.wallet.builder.{
   FundRawTxHelper,
   ShufflingNonInteractiveFinalizer
 }
-import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
+import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.*
 import org.bitcoins.crypto.*
 import org.bitcoins.db.SafeDatabase
@@ -2247,6 +2247,14 @@ abstract class DLCWallet
       )
     }
   }
+
+  private def determineFeeRate(feeRateOpt: Option[FeeUnit]): Future[FeeUnit] =
+    feeRateOpt match {
+      case None =>
+        feeRateApi.getFeeRate()
+      case Some(feeRate) =>
+        Future.successful(feeRate)
+    }
 }
 
 object DLCWallet extends WalletLogger {

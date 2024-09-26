@@ -60,7 +60,7 @@ object CallbackUtil extends BitcoinSLogger {
         if (headers.isEmpty) {
           Future.unit
         } else {
-          wallet.updateUtxoPendingStates().map(_ => ())
+          wallet.utxoHandling.updateUtxoPendingStates().map(_ => ())
         }
       }
     }

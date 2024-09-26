@@ -346,7 +346,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
       _ <- wallet.transactionProcessing.processTransaction(dummyPrevTx1,
                                                            blockHashOpt = None)
 
-      toBroadcast <- wallet.getTransactionsToBroadcast
+      toBroadcast <- wallet.sendFundsHandling.getTransactionsToBroadcast
     } yield assert(toBroadcast.map(_.txIdBE) == Vector(dummyPrevTx1.txIdBE))
   }
 

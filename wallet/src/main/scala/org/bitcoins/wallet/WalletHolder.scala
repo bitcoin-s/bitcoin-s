@@ -11,23 +11,16 @@ import org.bitcoins.core.api.dlc.wallet.db.{
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.wallet.*
-import org.bitcoins.core.api.wallet.db.*
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.dlc.accounting.DLCWalletAccounting
 import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.models.*
-import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.tlv.*
-import org.bitcoins.core.protocol.transaction.{
-  Transaction,
-  TransactionOutPoint,
-  TransactionOutput
-}
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
-import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
 import org.bitcoins.crypto.{DoubleSha256DigestBE, Sha256Digest}
 import scodec.bits.ByteVector
 
@@ -136,59 +129,15 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
 
     res
   }
-
-  override def updateUtxoPendingStates(): Future[Vector[SpendingInfoDb]] =
-    delegate(_.updateUtxoPendingStates())
-
   override def getConfirmedBalance(): Future[CurrencyUnit] = delegate(
     _.getConfirmedBalance()
   )
-
-  override def getConfirmedBalance(tag: AddressTag): Future[CurrencyUnit] =
-    delegate(_.getConfirmedBalance(tag))
 
   override def getUnconfirmedBalance(): Future[CurrencyUnit] = delegate(
     _.getUnconfirmedBalance()
   )
 
-  override def getUnconfirmedBalance(tag: AddressTag): Future[CurrencyUnit] =
-    delegate(_.getUnconfirmedBalance(tag))
-
-  override def listTransactions(): Future[Vector[TransactionDb]] = {
-    delegate(_.listTransactions())
-  }
-  override def listUtxos(): Future[Vector[SpendingInfoDb]] = delegate(
-    _.listUtxos()
-  )
-
-  override def listUtxos(state: TxoState): Future[Vector[SpendingInfoDb]] =
-    delegate(_.listUtxos(state))
-
-  override def listUtxos(tag: AddressTag): Future[Vector[SpendingInfoDb]] = {
-    delegate(_.listUtxos(tag))
-  }
-
-  override def markUTXOsAsReserved(
-      utxos: Vector[SpendingInfoDb]
-  ): Future[Vector[SpendingInfoDb]] = delegate(_.markUTXOsAsReserved(utxos))
-
-  override def markUTXOsAsReserved(
-      tx: Transaction
-  ): Future[Vector[SpendingInfoDb]] = delegate(_.markUTXOsAsReserved(tx))
-
-  override def unmarkUTXOsAsReserved(
-      utxos: Vector[SpendingInfoDb]
-  ): Future[Vector[SpendingInfoDb]] = delegate(_.unmarkUTXOsAsReserved(utxos))
-
-  override def unmarkUTXOsAsReserved(
-      tx: Transaction
-  ): Future[Vector[SpendingInfoDb]] = delegate(_.unmarkUTXOsAsReserved(tx))
-
   override def isEmpty(): Future[Boolean] = delegate(_.isEmpty())
-
-  override def isChange(output: TransactionOutput): Future[Boolean] = delegate(
-    _.isChange(output)
-  )
 
   override def getSyncState(): Future[BlockSyncState] = delegate(
     _.getSyncState()
@@ -375,19 +324,11 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
   override def broadcastTransaction(transaction: Transaction): Future[Unit] =
     delegate(_.broadcastTransaction(transaction))
 
-  override def getTransactionsToBroadcast: Future[Vector[Transaction]] = {
-    delegate(_.getTransactionsToBroadcast)
-  }
-
   override def getFeeRate(): Future[FeeUnit] = delegate(_.getFeeRate())
 
   override def getBalance()(implicit
       ec: ExecutionContext
   ): Future[CurrencyUnit] = delegate(_.getBalance())
-
-  override def getBalance(tag: AddressTag)(implicit
-      ec: ExecutionContext
-  ): Future[CurrencyUnit] = delegate(_.getBalance(tag))
 
   def getBalance(account: HDAccount)(implicit
       ec: ExecutionContext
@@ -466,30 +407,6 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
       oracleSig: OracleSignatures
   ): Future[Option[Transaction]] =
     delegate(_.executeDLC(contractId, oracleSig))
-
-  override def findByOutPoints(
-      outPoints: Vector[TransactionOutPoint]
-  ): Future[Vector[SpendingInfoDb]] = {
-    delegate(_.findByOutPoints(outPoints))
-  }
-
-  override def findByTxIds(
-      txIds: Vector[DoubleSha256DigestBE]
-  ): Future[Vector[TransactionDb]] = {
-    delegate(_.findByTxIds(txIds))
-  }
-
-  override def findOutputsBeingSpent(
-      tx: Transaction
-  ): Future[Vector[SpendingInfoDb]] = {
-    delegate(_.findOutputsBeingSpent(tx))
-  }
-
-  override def findByScriptPubKey(
-      scriptPubKey: ScriptPubKey
-  ): Future[Vector[SpendingInfoDb]] = {
-    delegate(_.findByScriptPubKey(scriptPubKey))
-  }
 }
 
 object WalletHolder {

@@ -102,7 +102,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
       bitcoindHeight: Int
   )(implicit ex: ExecutionContext): Future[Range.Inclusive] = {
     for {
-      txDbs <- wallet.listTransactions()
+      txDbs <- wallet.transactionProcessing.listTransactions()
       lastConfirmedOpt = txDbs
         .filter(_.blockHashOpt.isDefined)
         .lastOption
@@ -391,7 +391,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
         for {
           _ <- doneF
           w <- walletF
-          _ <- w.updateUtxoPendingStates()
+          _ <- w.utxoHandling.updateUtxoPendingStates()
         } yield ()
       }
 

@@ -620,7 +620,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         wallet,
         chainCallbacksOpt
       )(system)
-      _ = syncF.map(_ => wallet.updateUtxoPendingStates())
+      _ = syncF.map(_ => wallet.utxoHandling.updateUtxoPendingStates())
 
       // don't start polling until initial sync is done
       pollingCancellable <- syncF.flatMap { _ =>

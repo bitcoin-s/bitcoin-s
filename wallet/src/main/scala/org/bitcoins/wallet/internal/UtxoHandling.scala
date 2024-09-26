@@ -7,9 +7,14 @@ import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.wallet.UtxoHandlingApi
 import org.bitcoins.core.api.wallet.db.*
 import org.bitcoins.core.consensus.Consensus
+import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.{P2WPKHWitnessSPKV0, P2WPKHWitnessV0}
+import org.bitcoins.core.protocol.script.{
+  P2WPKHWitnessSPKV0,
+  P2WPKHWitnessV0,
+  ScriptPubKey
+}
 import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.util.{BlockHashWithConfs, FutureUtil}
 import org.bitcoins.core.wallet.utxo.*
@@ -63,6 +68,39 @@ case class UtxoHandling(
     safeDatabase
       .run(action)
       .map(_ => ())
+  }
+
+  override def findByScriptPubKey(
+      scriptPubKey: ScriptPubKey
+  ): Future[Vector[SpendingInfoDb]] = {
+    spendingInfoDAO.findByScriptPubKey(scriptPubKey)
+  }
+
+  override def findByOutPoints(
+      outPoints: Vector[TransactionOutPoint]
+  ): Future[Vector[SpendingInfoDb]] = {
+    spendingInfoDAO.findByOutPoints(outPoints)
+  }
+
+  override def findOutputsBeingSpent(
+      tx: Transaction
+  ): Future[Vector[SpendingInfoDb]] = {
+    spendingInfoDAO.findOutputsBeingSpent(tx)
+  }
+
+  override def getConfirmedBalance(tag: AddressTag): Future[CurrencyUnit] = {
+    spendingInfoDAO.findAllUnspentForTag(tag).map { allUnspent =>
+      val confirmed = allUnspent.filter(_.state == ConfirmedReceived)
+      confirmed.foldLeft(CurrencyUnits.zero)(_ + _.output.value)
+    }
+  }
+
+  override def getUnconfirmedBalance(tag: AddressTag): Future[CurrencyUnit] = {
+    spendingInfoDAO.findAllUnspentForTag(tag).map { allUnspent =>
+      val confirmed = allUnspent
+        .filter(utxo => TxoState.pendingReceivedStates.contains(utxo.state))
+      confirmed.foldLeft(CurrencyUnits.zero)(_ + _.output.value)
+    }
   }
 
   /** @inheritdoc */

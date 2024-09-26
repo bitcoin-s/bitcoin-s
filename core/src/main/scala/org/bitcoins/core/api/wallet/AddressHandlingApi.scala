@@ -59,6 +59,11 @@ trait AddressHandlingApi {
       address: BitcoinAddress,
       tagType: AddressTagType
   ): Future[Vector[AddressTagDb]]
+
+  /** Determines if the given output is from this wallet and is a change output
+    * from this wallet
+    */
+  def isChange(output: TransactionOutput): Future[Boolean]
   def listAddresses(): Future[Vector[AddressDb]]
   def listUnusedAddresses(): Future[Vector[AddressDb]]
   def listScriptPubKeys(): Future[Vector[ScriptPubKeyDb]]

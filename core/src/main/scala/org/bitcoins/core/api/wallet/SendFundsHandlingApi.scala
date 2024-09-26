@@ -29,7 +29,7 @@ trait SendFundsHandlingApi {
   def bumpFeeCPFP(
       txId: DoubleSha256DigestBE,
       feeRate: FeeUnit): Future[Transaction]
-
+  def getTransactionsToBroadcast: Future[Vector[Transaction]]
   def makeOpReturnCommitment(
       message: String,
       hashMessage: Boolean,

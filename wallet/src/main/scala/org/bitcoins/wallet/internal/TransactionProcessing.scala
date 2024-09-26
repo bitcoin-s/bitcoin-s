@@ -73,6 +73,11 @@ case class TransactionProcessing(
 
   /////////////////////
   // Public facing API
+  override def findByTxIds(
+      txIds: Vector[DoubleSha256DigestBE]
+  ): Future[Vector[TransactionDb]] = {
+    transactionDAO.findByTxIds(txIds)
+  }
 
   /** @inheritdoc */
   override def processTransaction(

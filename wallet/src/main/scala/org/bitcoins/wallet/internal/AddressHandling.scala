@@ -293,6 +293,13 @@ case class AddressHandling(
     }
   }
 
+  override def isChange(output: TransactionOutput): Future[Boolean] = {
+    addressDAO.findByScriptPubKey(output.scriptPubKey).map {
+      case Some(db) => db.isChange
+      case None     => false
+    }
+  }
+
   override def tagAddress(
       address: BitcoinAddress,
       tag: AddressTag

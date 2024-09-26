@@ -66,6 +66,12 @@ case class DLCTransactionProcessing(
     dlcWalletDAOs.dlcAnnouncementDAO
   private lazy val safeDLCDatabase: SafeDatabase = dlcDAO.safeDatabase
 
+  override def findByTxIds(
+      txIds: Vector[DoubleSha256DigestBE]
+  ): Future[Vector[TransactionDb]] = {
+    transactionDAO.findByTxIds(txIds)
+  }
+
   /** Calculates the new state of the DLCDb based on the closing transaction,
     * will delete old CET sigs that are no longer needed after execution
     * @return

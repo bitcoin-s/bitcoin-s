@@ -148,7 +148,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
             for {
               confirmed <- wallet.getConfirmedBalance()
               unconfirmed <- wallet.getUnconfirmedBalance()
-              reservedUtxos <- wallet.listUtxos(TxoState.Reserved)
+              reservedUtxos <- wallet.utxoHandling.listUtxos(TxoState.Reserved)
             } yield {
 
               val reserved = reservedUtxos.map(_.output.value).sum
@@ -189,7 +189,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
       withValidServerCommand(GetTransaction.fromJsArr(arr)) {
         case GetTransaction(txId) =>
           complete {
-            val resultF = wallet.findByTxId(txId).map {
+            val resultF = wallet.transactionProcessing.findByTxId(txId).map {
               case None =>
                 Server.httpSuccess(ujson.Null)
               case Some(txDb) =>
@@ -206,15 +206,15 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
           complete {
             val func: Vector[SpendingInfoDb] => Future[Vector[SpendingInfoDb]] =
               utxos => {
-                if (unlock) wallet.unmarkUTXOsAsReserved(utxos)
-                else wallet.markUTXOsAsReserved(utxos)
+                if (unlock) wallet.utxoHandling.unmarkUTXOsAsReserved(utxos)
+                else wallet.utxoHandling.markUTXOsAsReserved(utxos)
               }
 
             for {
               utxos <-
                 if (unlock) {
-                  wallet.listUtxos(TxoState.Reserved)
-                } else wallet.listUtxos()
+                  wallet.utxoHandling.listUtxos(TxoState.Reserved)
+                } else wallet.utxoHandling.listUtxos()
 
               filtered =
                 if (outputParams.nonEmpty) {
@@ -794,7 +794,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
 
     case ServerCommand("getutxos", _) =>
       complete {
-        wallet.listUtxos().map { utxos =>
+        wallet.utxoHandling.listUtxos().map { utxos =>
           val json = utxos.map(spendingInfoDbToJson)
           Server.httpSuccess(json)
         }
@@ -802,7 +802,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
 
     case ServerCommand("listreservedutxos", _) =>
       complete {
-        wallet.listUtxos(TxoState.Reserved).map { utxos =>
+        wallet.utxoHandling.listUtxos(TxoState.Reserved).map { utxos =>
           val json = utxos.map(spendingInfoDbToJson)
           Server.httpSuccess(json)
         }
