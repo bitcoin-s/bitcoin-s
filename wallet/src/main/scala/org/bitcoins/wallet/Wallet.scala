@@ -137,30 +137,6 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
 
   def walletCallbacks: WalletCallbacks = walletConfig.callBacks
 
-  /*  private def checkRootAccount: Future[Unit] = {
-    val coinType = HDUtil.getCoinType(keyManager.kmParams.network)
-    val coin =
-      HDCoin(purpose = keyManager.kmParams.purpose, coinType = coinType)
-    val account = HDAccount(coin = coin, index = 0)
-    // safe since we're deriving from a priv
-    val xpub = keyManager.deriveXPub(account).get
-
-    accountDAO.read((account.coin, account.index)).flatMap {
-      case Some(account) =>
-        if (account.xpub != xpub) {
-          val errorMsg =
-            s"Divergent xpubs for account=$account. Existing database xpub=${account.xpub}, key manager's xpub=$xpub. " +
-              s"It is possible we have a different key manager being used than expected, key manager=${keyManager.kmParams.seedPath.toAbsolutePath.toString}"
-          Future.failed(new RuntimeException(errorMsg))
-        } else {
-          Future.unit
-        }
-      case None =>
-        val errorMsg = s"Missing root xpub for account $account in database"
-        Future.failed(new RuntimeException(errorMsg))
-    }
-  }*/
-
   override def getNewAddress(): Future[BitcoinAddress] = {
     addressHandling.getNewAddress()
   }
