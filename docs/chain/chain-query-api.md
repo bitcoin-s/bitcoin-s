@@ -188,7 +188,7 @@ val chainApi = new ChainQueryApi {
 
 // Finally, we can initialize our wallet with our own node api
 val wallet =
-    Wallet(nodeApi = nodeApi, chainQueryApi = chainApi, feeRateApi = ConstantFeeRateProvider(SatoshisPerVirtualByte.one))
+    Wallet(nodeApi = nodeApi, chainQueryApi = chainApi)
 
 // Then to trigger one of the events we can run
 wallet.chainQueryApi.getFiltersBetweenHeights(100, 150)

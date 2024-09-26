@@ -95,7 +95,7 @@ val exampleCallback = createCallback(exampleProcessBlock)
 
 // Finally, we can initialize our wallet with our own node api
 val wallet =
-    Wallet(nodeApi = nodeApi, chainQueryApi = chainApi, feeRateApi = ConstantFeeRateProvider(SatoshisPerVirtualByte.one))
+    Wallet(nodeApi = nodeApi, chainQueryApi = chainApi)
 
 // Then to trigger the event we can run
 val exampleBlock = DoubleSha256DigestBE(
