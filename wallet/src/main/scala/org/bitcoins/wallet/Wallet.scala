@@ -34,10 +34,10 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
 abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
-
   def keyManager: BIP39KeyManager = {
     walletConfig.kmConf.toBip39KeyManager
   }
+  def feeRateApi: FeeRateApi = walletConfig.feeRateApi
   implicit val walletConfig: WalletAppConfig
 
   implicit val system: ActorSystem = walletConfig.system
@@ -315,18 +315,16 @@ object Wallet extends WalletLogger {
 
   private case class WalletImpl(
       nodeApi: NodeApi,
-      chainQueryApi: ChainQueryApi,
-      feeRateApi: FeeRateApi
+      chainQueryApi: ChainQueryApi
   )(implicit
       val walletConfig: WalletAppConfig
   ) extends Wallet
 
   def apply(
       nodeApi: NodeApi,
-      chainQueryApi: ChainQueryApi,
-      feeRateApi: FeeRateApi
+      chainQueryApi: ChainQueryApi
   )(implicit config: WalletAppConfig): Wallet = {
-    WalletImpl(nodeApi, chainQueryApi, feeRateApi)
+    WalletImpl(nodeApi, chainQueryApi)
   }
 
   /** Creates the master xpub for the key manager in the database
