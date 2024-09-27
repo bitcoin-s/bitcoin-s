@@ -70,8 +70,7 @@ val exampleCallbacks = WalletCallbacks(
 val wallet =
     Wallet(
            nodeApi = bitcoind,
-           chainQueryApi = bitcoind,
-           feeRateApi = ConstantFeeRateProvider(SatoshisPerVirtualByte.one))
+           chainQueryApi = bitcoind)
 
 // Finally, we can add the callbacks to our wallet config
 walletConf.addCallbacks(exampleCallbacks)

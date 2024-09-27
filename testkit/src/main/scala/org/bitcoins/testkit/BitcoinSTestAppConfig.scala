@@ -84,6 +84,7 @@ object BitcoinSTestAppConfig {
            |     relay = true
            |     enable-peer-discovery = false
            |  }
+           |  fee-provider.name = "random"
            |  proxy.enabled = $torEnabled
            |  tor.enabled = $torEnabled
            |  tor.use-random-ports = false  

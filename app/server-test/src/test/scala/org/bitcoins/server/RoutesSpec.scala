@@ -125,8 +125,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
     DLCWalletNeutrinoBackendLoader(
       walletHolder,
       mockChainApi,
-      mockNode,
-      feeRateApi
+      mockNode
     )
   }
 

@@ -9,7 +9,6 @@ import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.wallet.WalletApi
 import org.bitcoins.core.currency.*
 import org.bitcoins.dlc.wallet.{DLCAppConfig, DLCWallet}
-import org.bitcoins.feeprovider.RandomFeeProvider
 import org.bitcoins.node.NodeCallbacks
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.server.BitcoinSAppConfig
@@ -75,9 +74,8 @@ trait BitcoinSWalletTest
       makeDependentFixture[Wallet](
         build =
           createNewWallet(nodeApi = nodeApi, chainQueryApi = chainQueryApi),
-        destroy = { wallet =>
+        destroy = { (_: WalletApi) =>
           for {
-            _ <- destroyWallet(wallet)
             _ <- destroyWalletAppConfig(newWalletConf)
           } yield ()
         }
@@ -93,9 +91,8 @@ trait BitcoinSWalletTest
   )(implicit walletAppConfig: WalletAppConfig): FutureOutcome = {
     makeDependentFixture(
       build = () => FundWalletUtil.createFundedWallet(nodeApi, chainQueryApi),
-      destroy = { (funded: FundedWallet) =>
+      destroy = { (_: FundedWallet) =>
         for {
-          _ <- destroyWallet(funded.wallet)
           _ <- destroyWalletAppConfig(walletAppConfig)
         } yield ()
       }
@@ -107,9 +104,8 @@ trait BitcoinSWalletTest
   )(implicit walletAppConfig: WalletAppConfig): FutureOutcome = {
     makeDependentFixture(
       build = () => FundWalletUtil.createFundedWallet(nodeApi, chainQueryApi),
-      destroy = { (funded: FundedWallet) =>
+      destroy = { (_: FundedWallet) =>
         for {
-          _ <- destroyWallet(funded.wallet)
           _ <- destroyWalletAppConfig(walletAppConfig)
         } yield ()
       }
@@ -152,9 +148,8 @@ trait BitcoinSWalletTest
       build = { () =>
         createDefaultWallet(nodeApi, chainQueryApi)
       },
-      destroy = { wallet =>
+      destroy = { (_: WalletApi) =>
         for {
-          _ <- destroyWallet(wallet)
           _ <- destroyWalletAppConfig(walletAppConfig)
         } yield ()
       }
@@ -168,7 +163,7 @@ trait BitcoinSWalletTest
       build = { () =>
         createWallet2Accounts(nodeApi, chainQueryApi)
       },
-      destroy = destroyWallet
+      destroy = { (_: WalletApi) => Future.unit }
     )(test)
   }
 
@@ -285,7 +280,7 @@ object BitcoinSWalletTest extends WalletLogger {
 
       walletConfig.start().flatMap { _ =>
         val wallet =
-          Wallet(nodeApi, chainQueryApi, new RandomFeeProvider)(walletConfig)
+          Wallet(nodeApi, chainQueryApi)(walletConfig)
         Wallet.initialize(wallet,
                           wallet.accountHandling,
                           walletConfig.bip39PasswordOpt)
@@ -310,7 +305,7 @@ object BitcoinSWalletTest extends WalletLogger {
 
     initConfs.flatMap { _ =>
       val wallet =
-        DLCWallet(nodeApi, chainQueryApi, new RandomFeeProvider)(
+        DLCWallet(nodeApi, chainQueryApi)(
           config.walletConf,
           config.dlcConf
         )
@@ -351,8 +346,7 @@ object BitcoinSWalletTest extends WalletLogger {
       walletWithCallback = Wallet(
         nodeApi =
           SyncUtil.getNodeApiWalletCallback(bitcoind, walletCallbackP.future),
-        chainQueryApi = bitcoind,
-        feeRateApi = new RandomFeeProvider
+        chainQueryApi = bitcoind
       )(wallet.walletConfig)
       // complete the walletCallbackP so we can handle the callbacks when they are
       // called without hanging forever.
@@ -523,23 +517,13 @@ object BitcoinSWalletTest extends WalletLogger {
       walletWithBitcoind: WalletWithBitcoind[_]
   )(implicit ec: ExecutionContext): Future[Unit] = {
     for {
-      _ <- destroyWallet(walletWithBitcoind.wallet)
       _ <- destroyWalletAppConfig(walletWithBitcoind.walletConfig)
-    } yield ()
-  }
-
-  def destroyWallet(
-      wallet: WalletApi
-  )(implicit ec: ExecutionContext): Future[Unit] = {
-    for {
-      _ <- wallet.stop()
     } yield ()
   }
 
   def destroyDLCWallet(wallet: DLCWallet): Future[Unit] = {
     import wallet.ec
     for {
-      _ <- destroyWallet(wallet)
       _ <- destroyWalletAppConfig(wallet.walletConfig)
       _ <- wallet.dlcConfig.stop()
     } yield ()

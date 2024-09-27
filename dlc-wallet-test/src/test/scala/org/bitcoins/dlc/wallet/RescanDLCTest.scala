@@ -6,8 +6,9 @@ import org.bitcoins.core.protocol.dlc.models.{
   DisjointUnionContractInfo,
   SingleContractInfo
 }
+import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.testkit.wallet.DLCWalletUtil._
+import org.bitcoins.testkit.wallet.DLCWalletUtil.*
 import org.bitcoins.testkit.wallet.{DLCWalletUtil, DualWalletTestCachedBitcoind}
 import org.scalatest.FutureOutcome
 
@@ -55,7 +56,7 @@ class RescanDLCTest extends DualWalletTestCachedBitcoind {
 
       Vector(hash) <- bitcoind.generate(1)
 
-      _ <- wallet.rescanHandling.rescanNeutrinoWallet(
+      rescanState <- wallet.rescanHandling.rescanNeutrinoWallet(
         startOpt = None,
         endOpt = Some(BlockHash(hash)),
         addressBatchSize = 20,
@@ -64,6 +65,7 @@ class RescanDLCTest extends DualWalletTestCachedBitcoind {
       )
 
       postStatus <- getDLCStatus(wallet)
+      _ <- RescanState.awaitRescanDone(rescanState)
     } yield assert(postStatus.state == DLCState.Claimed)
   }
 
@@ -100,7 +102,7 @@ class RescanDLCTest extends DualWalletTestCachedBitcoind {
 
       Vector(hash) <- bitcoind.generate(1)
 
-      _ <- wallet.rescanHandling.rescanNeutrinoWallet(
+      rescanState <- wallet.rescanHandling.rescanNeutrinoWallet(
         startOpt = None,
         endOpt = Some(BlockHash(hash)),
         addressBatchSize = 20,
@@ -109,6 +111,7 @@ class RescanDLCTest extends DualWalletTestCachedBitcoind {
       )
 
       postStatus <- getDLCStatus(wallet)
+      _ <- RescanState.awaitRescanDone(rescanState)
     } yield assert(postStatus.state == DLCState.RemoteClaimed)
   }
 }

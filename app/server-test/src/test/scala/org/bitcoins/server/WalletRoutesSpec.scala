@@ -51,8 +51,7 @@ class WalletRoutesSpec
     DLCWalletNeutrinoBackendLoader(
       walletHolder,
       mockChainApi,
-      mockNode,
-      feeRateApi
+      mockNode
     )
 
   val walletRoutes: WalletRoutes =

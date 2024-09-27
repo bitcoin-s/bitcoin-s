@@ -29,7 +29,6 @@ import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.dlc.node.DLCNode
 import org.bitcoins.dlc.node.config.DLCNodeAppConfig
 import org.bitcoins.dlc.wallet.*
-import org.bitcoins.feeprovider.MempoolSpaceTarget.HourFeeTarget
 import org.bitcoins.feeprovider.*
 import org.bitcoins.node.Node
 import org.bitcoins.node.config.NodeAppConfig
@@ -185,15 +184,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       walletCreationTimeOpt = Some(creationTime)
     )(chainConf, system)
 
-    val defaultApi =
-      MempoolSpaceProvider(HourFeeTarget, network, torConf.socks5ProxyParams)
-    val feeProvider = FeeProviderFactory.getFeeProviderOrElse(
-      defaultApi,
-      conf.walletConf.feeProviderNameOpt,
-      conf.walletConf.feeProviderTargetOpt,
-      torConf.socks5ProxyParams,
-      network
-    )
     // get our wallet
     val walletHolder = WalletHolder.empty
     val neutrinoWalletLoaderF = {
@@ -203,8 +193,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         val l = DLCWalletNeutrinoBackendLoader(
           walletHolder,
           chainApi,
-          nodeApi = node,
-          feeRateApi = feeProvider
+          nodeApi = node
         )
         walletLoaderApiOpt = Some(l)
         l

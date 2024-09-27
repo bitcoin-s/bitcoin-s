@@ -17,7 +17,7 @@ object FeeProviderName extends StringFactory[FeeProviderName] {
   case object Random extends FeeProviderName
 
   val all: Vector[FeeProviderName] =
-    Vector(BitcoinerLive, BitGo, Constant, MempoolSpace)
+    Vector(BitcoinerLive, BitGo, Constant, MempoolSpace, Random)
 
   override def fromStringOpt(str: String): Option[FeeProviderName] = {
     all.find(_.toString.toLowerCase == str.toLowerCase)

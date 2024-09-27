@@ -8,7 +8,6 @@ import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.crypto.DoubleSha256DigestBE
 
@@ -22,7 +21,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * @see
   *   [[https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki BIP44]]
   */
-trait WalletApi extends StartStopAsync[WalletApi] {
+trait WalletApi {
   def accountHandling: AccountHandlingApi
   def fundTxHandling: FundTransactionHandlingApi
   def rescanHandling: RescanHandlingApi
@@ -33,17 +32,13 @@ trait WalletApi extends StartStopAsync[WalletApi] {
 
   val nodeApi: NodeApi
   val chainQueryApi: ChainQueryApi
-  val feeRateApi: FeeRateApi
+  def feeRateApi: FeeRateApi
   val creationTime: Instant
 
   def broadcastTransaction(transaction: Transaction): Future[Unit] =
     nodeApi.broadcastTransaction(transaction)
 
   def getFeeRate(): Future[FeeUnit] = feeRateApi.getFeeRate()
-
-  def start(): Future[WalletApi]
-
-  def stop(): Future[WalletApi]
 
   /** Gets the sum of all UTXOs in this wallet */
   def getBalance()(implicit ec: ExecutionContext): Future[CurrencyUnit] = {

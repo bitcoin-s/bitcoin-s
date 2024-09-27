@@ -3,7 +3,6 @@ package org.bitcoins.dlc.wallet
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
 import org.bitcoins.core.api.dlc.wallet.db.DLCDb
-import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.wallet.db.*
 import org.bitcoins.core.currency.*
@@ -2267,8 +2266,7 @@ object DLCWallet extends WalletLogger {
 
   private case class DLCWalletImpl(
       nodeApi: NodeApi,
-      chainQueryApi: ChainQueryApi,
-      feeRateApi: FeeRateApi
+      chainQueryApi: ChainQueryApi
   )(implicit
       val walletConfig: WalletAppConfig,
       val dlcConfig: DLCAppConfig
@@ -2276,10 +2274,9 @@ object DLCWallet extends WalletLogger {
 
   def apply(
       nodeApi: NodeApi,
-      chainQueryApi: ChainQueryApi,
-      feeRateApi: FeeRateApi
+      chainQueryApi: ChainQueryApi
   )(implicit config: WalletAppConfig, dlcConfig: DLCAppConfig): DLCWallet = {
-    DLCWalletImpl(nodeApi, chainQueryApi, feeRateApi)
+    DLCWalletImpl(nodeApi, chainQueryApi)
   }
 
   private object AcceptingOffersLatch {

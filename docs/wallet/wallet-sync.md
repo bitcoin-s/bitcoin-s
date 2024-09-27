@@ -115,8 +115,7 @@ val genesisHashBEF = bitcoind.getBlockHash(0)
 //a fresh wallet
 implicit val walletAppConfig: WalletAppConfig = WalletAppConfig.fromDefaultDatadir()
 
-val feeRateProvider: FeeRateApi = MempoolSpaceProvider.fromBlockTarget(6, proxyParams = None)
-val wallet = Wallet(bitcoind, bitcoind, feeRateProvider)
+val wallet = Wallet(bitcoind, bitcoind)
 
 //yay! we have a synced wallet
 val syncedWalletF = genesisHashBEF.flatMap { genesisHash => 

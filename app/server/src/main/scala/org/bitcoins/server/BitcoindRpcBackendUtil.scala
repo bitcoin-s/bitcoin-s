@@ -222,8 +222,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
     )
     val pairedWallet = Wallet(
       nodeApi = nodeApi,
-      chainQueryApi = bitcoind,
-      feeRateApi = wallet.feeRateApi
+      chainQueryApi = bitcoind
     )(wallet.walletConfig)
 
     walletCallbackP.success(pairedWallet)
@@ -305,8 +304,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
         walletCallbackP.future,
         chainCallbacksOpt
       ),
-      chainQueryApi = bitcoind,
-      feeRateApi = wallet.feeRateApi
+      chainQueryApi = bitcoind
     )(wallet.walletConfig, wallet.dlcConfig)
 
     walletCallbackP.success(pairedWallet)
