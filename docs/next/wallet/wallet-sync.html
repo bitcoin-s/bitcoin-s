@@ -138,8 +138,7 @@ This method takes 4 parameters</p>
 <span class="hljs-comment">//a fresh wallet</span>
 <span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> walletAppConfig: <span class="hljs-type">WalletAppConfig</span> = <span class="hljs-type">WalletAppConfig</span>.fromDefaultDatadir()
 
-<span class="hljs-keyword">val</span> feeRateProvider: <span class="hljs-type">FeeRateApi</span> = <span class="hljs-type">MempoolSpaceProvider</span>.fromBlockTarget(<span class="hljs-number">6</span>, proxyParams = <span class="hljs-type">None</span>)
-<span class="hljs-keyword">val</span> wallet = <span class="hljs-type">Wallet</span>(bitcoind, bitcoind, feeRateProvider)
+<span class="hljs-keyword">val</span> wallet = <span class="hljs-type">Wallet</span>(bitcoind, bitcoind)
 
 <span class="hljs-comment">//yay! we have a synced wallet</span>
 <span class="hljs-keyword">val</span> syncedWalletF = genesisHashBEF.flatMap { genesisHash =&gt; 

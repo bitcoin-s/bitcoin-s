@@ -108,8 +108,7 @@ that you are notified of the event. For instance, if your DLC transitions from
 <span class="hljs-keyword">val</span> wallet =
     <span class="hljs-type">Wallet</span>(
            nodeApi = bitcoind,
-           chainQueryApi = bitcoind,
-           feeRateApi = <span class="hljs-type">ConstantFeeRateProvider</span>(<span class="hljs-type">SatoshisPerVirtualByte</span>.one))
+           chainQueryApi = bitcoind)
 
 <span class="hljs-comment">// Finally, we can add the callbacks to our wallet config</span>
 walletConf.addCallbacks(exampleCallbacks)
