@@ -304,17 +304,17 @@ object BitcoinSWalletTest extends WalletLogger {
     } yield ()
 
     initConfs.flatMap { _ =>
-      val wallet =
-        DLCWallet(nodeApi, chainQueryApi)(
-          config.walletConf,
-          config.dlcConf
-        )
+      val wallet = Wallet(nodeApi, chainQueryApi)(config.walletConf)
 
       Wallet
         .initialize(wallet,
                     wallet.accountHandling,
                     config.walletConf.bip39PasswordOpt)
-        .map(_.asInstanceOf[DLCWallet])
+        .map(w =>
+          DLCWallet(w)(
+            config.dlcConf,
+            config.walletConf
+          ))
     }
   }
 
@@ -521,8 +521,8 @@ object BitcoinSWalletTest extends WalletLogger {
     } yield ()
   }
 
-  def destroyDLCWallet(wallet: DLCWallet): Future[Unit] = {
-    import wallet.ec
+  def destroyDLCWallet(wallet: DLCWallet)(implicit
+      ec: ExecutionContext): Future[Unit] = {
     for {
       _ <- destroyWalletAppConfig(wallet.walletConfig)
       _ <- wallet.dlcConfig.stop()

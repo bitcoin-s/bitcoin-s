@@ -544,7 +544,8 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
   it must "cancel an offered DLC" in {
     (FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet)) =>
-      val walletA = FundedDLCWallets._1.wallet
+      val dlcWalletA = FundedDLCWallets._1.wallet
+      val walletApiA = dlcWalletA.walletApi
 
       val offerData: DLCOffer = DLCWalletUtil.sampleDLCOffer
 
@@ -555,11 +556,11 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
       val announcementTLV = announcementTLVs.head
 
       for {
-        oldBalance <- walletA.getBalance()
-        oldReserved <- walletA.spendingInfoDAO.findByTxoState(TxoState.Reserved)
+        oldBalance <- dlcWalletA.getBalance()
+        oldReserved <- walletApiA.utxoHandling.listUtxos(TxoState.Reserved)
         _ = assert(oldReserved.isEmpty)
 
-        offer <- walletA.createDLCOffer(
+        offer <- dlcWalletA.createDLCOffer(
           offerData.contractInfo,
           offerData.collateral,
           Some(offerData.feeRate),
@@ -572,18 +573,18 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
         dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
 
-        _ <- walletA.cancelDLC(dlcId)
+        _ <- dlcWalletA.cancelDLC(dlcId)
 
-        announcementData <- walletA.announcementDAO.findByPublicKey(
+        announcementData <- dlcWalletA.announcementDAO.findByPublicKey(
           announcementTLV.publicKey
         )
-        nonceDbs <- walletA.oracleNonceDAO.findByAnnouncementIds(
+        nonceDbs <- dlcWalletA.oracleNonceDAO.findByAnnouncementIds(
           announcementData.map(_.id.get)
         )
 
-        balance <- walletA.getBalance()
-        reserved <- walletA.spendingInfoDAO.findByTxoState(TxoState.Reserved)
-        dlcOpt <- walletA.findDLC(dlcId)
+        balance <- dlcWalletA.getBalance()
+        reserved <- walletApiA.utxoHandling.listUtxos(TxoState.Reserved)
+        dlcOpt <- dlcWalletA.findDLC(dlcId)
       } yield {
         assert(balance == oldBalance)
         assert(reserved.isEmpty)
@@ -597,17 +598,19 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
   it must "cancel an accepted DLC" in {
     (FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet)) =>
-      val walletA = FundedDLCWallets._1.wallet
-      val walletB = FundedDLCWallets._2.wallet
+      val dlcWalletA = FundedDLCWallets._1.wallet
+      val dlcWalletB = FundedDLCWallets._2.wallet
+
+      val walletApiB = dlcWalletB.walletApi
 
       val offerData: DLCOffer = DLCWalletUtil.sampleDLCOffer
 
       for {
-        oldBalance <- walletB.getBalance()
-        oldReserved <- walletB.spendingInfoDAO.findByTxoState(TxoState.Reserved)
+        oldBalance <- dlcWalletB.getBalance()
+        oldReserved <- walletApiB.utxoHandling.listUtxos(TxoState.Reserved)
         _ = assert(oldReserved.isEmpty)
 
-        offer <- walletA.createDLCOffer(
+        offer <- dlcWalletA.createDLCOffer(
           offerData.contractInfo,
           offerData.collateral,
           Some(offerData.feeRate),
@@ -617,15 +620,15 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           None,
           None
         )
-        _ <- walletB.acceptDLCOffer(offer, None, None, None)
+        _ <- dlcWalletB.acceptDLCOffer(offer, None, None, None)
 
         dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
 
-        _ <- walletB.cancelDLC(dlcId)
+        _ <- dlcWalletB.cancelDLC(dlcId)
 
-        balance <- walletB.getBalance()
-        reserved <- walletB.spendingInfoDAO.findByTxoState(TxoState.Reserved)
-        dlcOpt <- walletB.findDLC(dlcId)
+        balance <- dlcWalletB.getBalance()
+        reserved <- walletApiB.utxoHandling.listUtxos(TxoState.Reserved)
+        dlcOpt <- dlcWalletB.findDLC(dlcId)
       } yield {
         assert(balance == oldBalance)
         assert(reserved.isEmpty)
@@ -635,25 +638,28 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
   it must "cancel a signed DLC" in {
     (FundedDLCWallets: (FundedDLCWallet, FundedDLCWallet)) =>
-      val walletA = FundedDLCWallets._1.wallet
-      val walletB = FundedDLCWallets._2.wallet
+      val dlcWalletA = FundedDLCWallets._1.wallet
+      val dlcWalletB = FundedDLCWallets._2.wallet
+
+      val walletApiA = dlcWalletA.walletApi
+      val walletApiB = dlcWalletB.walletApi
 
       val offerData: DLCOffer = DLCWalletUtil.sampleDLCOffer
 
       for {
-        oldBalanceA <- walletA.getBalance()
-        oldReservedA <- walletA.spendingInfoDAO.findByTxoState(
+        oldBalanceA <- dlcWalletA.getBalance()
+        oldReservedA <- walletApiA.utxoHandling.listUtxos(
           TxoState.Reserved
         )
         _ = assert(oldReservedA.isEmpty)
 
-        oldBalanceB <- walletB.getBalance()
-        oldReservedB <- walletB.spendingInfoDAO.findByTxoState(
+        oldBalanceB <- dlcWalletB.getBalance()
+        oldReservedB <- walletApiB.utxoHandling.listUtxos(
           TxoState.Reserved
         )
         _ = assert(oldReservedB.isEmpty)
 
-        offer <- walletA.createDLCOffer(
+        offer <- dlcWalletA.createDLCOffer(
           offerData.contractInfo,
           offerData.collateral,
           Some(offerData.feeRate),
@@ -663,22 +669,22 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
           None,
           None
         )
-        accept <- walletB.acceptDLCOffer(offer, None, None, None)
-        sign <- walletA.signDLC(accept)
-        _ <- walletB.addDLCSigs(sign)
+        accept <- dlcWalletB.acceptDLCOffer(offer, None, None, None)
+        sign <- dlcWalletA.signDLC(accept)
+        _ <- dlcWalletB.addDLCSigs(sign)
 
         dlcId = calcDLCId(offer.fundingInputs.map(_.outPoint))
 
-        _ <- walletA.cancelDLC(dlcId)
-        _ <- walletB.cancelDLC(dlcId)
+        _ <- dlcWalletA.cancelDLC(dlcId)
+        _ <- dlcWalletB.cancelDLC(dlcId)
 
-        balanceA <- walletA.getBalance()
-        reservedA <- walletA.spendingInfoDAO.findByTxoState(TxoState.Reserved)
-        dlcAOpt <- walletA.findDLC(dlcId)
+        balanceA <- dlcWalletA.getBalance()
+        reservedA <- walletApiA.utxoHandling.listUtxos(TxoState.Reserved)
+        dlcAOpt <- dlcWalletA.findDLC(dlcId)
 
-        balanceB <- walletB.getBalance()
-        reservedB <- walletB.spendingInfoDAO.findByTxoState(TxoState.Reserved)
-        dlcBOpt <- walletB.findDLC(dlcId)
+        balanceB <- dlcWalletB.getBalance()
+        reservedB <- walletApiB.utxoHandling.listUtxos(TxoState.Reserved)
+        dlcBOpt <- dlcWalletB.findDLC(dlcId)
       } yield {
         assert(balanceA == oldBalanceA)
         assert(reservedA.isEmpty)

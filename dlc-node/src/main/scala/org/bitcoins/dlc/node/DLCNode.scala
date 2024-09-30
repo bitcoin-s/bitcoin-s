@@ -220,6 +220,7 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
       _ <- DLCClient.connect(
         peer,
         wallet,
+        wallet.incomingOfferHandling,
         Some(handlerP),
         handleWrite = handleTLVSendSucceed,
         handleWriteError = handleTLVSendFailed

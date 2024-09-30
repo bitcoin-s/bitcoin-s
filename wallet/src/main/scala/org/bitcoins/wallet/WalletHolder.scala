@@ -2,12 +2,11 @@ package org.bitcoins.wallet
 
 import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.chain.ChainQueryApi
-import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
-import org.bitcoins.core.api.dlc.wallet.db.{
-  DLCContactDb,
-  DLCDb,
-  IncomingDLCOfferDb
+import org.bitcoins.core.api.dlc.wallet.{
+  DLCNeutrinoHDWalletApi,
+  IncomingDLCOfferHandlingApi
 }
+import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.wallet.*
@@ -38,7 +37,7 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
   @volatile private var walletOpt: Option[DLCNeutrinoHDWalletApi] =
     initWalletOpt
 
-  private def wallet: DLCNeutrinoHDWalletApi = synchronized {
+  override protected def walletApi: DLCNeutrinoHDWalletApi = synchronized {
     walletOpt match {
       case Some(wallet) => wallet
       case None =>
@@ -46,22 +45,25 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
     }
   }
 
-  override def accountHandling: AccountHandlingApi = wallet.accountHandling
+  override def incomingOfferHandling: IncomingDLCOfferHandlingApi =
+    walletApi.incomingOfferHandling
 
-  override def rescanHandling: RescanHandlingApi = wallet.rescanHandling
+  override def accountHandling: AccountHandlingApi = walletApi.accountHandling
+
+  override def rescanHandling: RescanHandlingApi = walletApi.rescanHandling
 
   override def fundTxHandling: FundTransactionHandlingApi =
-    wallet.fundTxHandling
+    walletApi.fundTxHandling
 
-  override def utxoHandling: UtxoHandlingApi = wallet.utxoHandling
+  override def utxoHandling: UtxoHandlingApi = walletApi.utxoHandling
 
-  override def addressHandling: AddressHandlingApi = wallet.addressHandling
+  override def addressHandling: AddressHandlingApi = walletApi.addressHandling
 
   override def transactionProcessing: TransactionProcessingApi =
-    wallet.transactionProcessing
+    walletApi.transactionProcessing
 
   override def sendFundsHandling: SendFundsHandlingApi =
-    wallet.sendFundsHandling
+    walletApi.sendFundsHandling
   def isInitialized: Boolean = synchronized {
     walletOpt.isDefined
   }
@@ -76,7 +78,7 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
 
   private def delegate[T]
       : (DLCNeutrinoHDWalletApi => Future[T]) => Future[T] = {
-    Future(wallet).flatMap[T](_)
+    Future(walletApi).flatMap[T](_)
   }
 
   override def getNewAddress(): Future[BitcoinAddress] = delegate(
@@ -93,10 +95,10 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
 
   override def isRescanning(): Future[Boolean] = delegate(_.isRescanning())
 
-  override lazy val nodeApi: NodeApi = wallet.nodeApi
-  override lazy val chainQueryApi: ChainQueryApi = wallet.chainQueryApi
-  override lazy val feeRateApi: FeeRateApi = wallet.feeRateApi
-  override lazy val creationTime: Instant = wallet.creationTime
+  override lazy val nodeApi: NodeApi = walletApi.nodeApi
+  override lazy val chainQueryApi: ChainQueryApi = walletApi.chainQueryApi
+  override lazy val feeRateApi: FeeRateApi = walletApi.feeRateApi
+  override lazy val creationTime: Instant = walletApi.creationTime
 
   override def getConfirmedBalance(): Future[CurrencyUnit] = delegate(
     _.getConfirmedBalance()
@@ -230,48 +232,6 @@ class WalletHolder(initWalletOpt: Option[DLCNeutrinoHDWalletApi])(implicit
   override def getWalletAccounting(): Future[DLCWalletAccounting] = delegate(
     _.getWalletAccounting()
   )
-
-  override def registerIncomingDLCOffer(
-      offerTLV: DLCOfferTLV,
-      peer: Option[String],
-      message: Option[String]
-  ): Future[Sha256Digest] = delegate(
-    _.registerIncomingDLCOffer(offerTLV, peer, message)
-  )
-
-  override def listIncomingDLCOffers(): Future[Vector[IncomingDLCOfferDb]] =
-    delegate(_.listIncomingDLCOffers())
-
-  override def rejectIncomingDLCOffer(offerHash: Sha256Digest): Future[Unit] =
-    delegate(_.rejectIncomingDLCOffer(offerHash))
-
-  override def findIncomingDLCOffer(
-      offerHash: Sha256Digest
-  ): Future[Option[IncomingDLCOfferDb]] = delegate(
-    _.findIncomingDLCOffer(offerHash)
-  )
-
-  override def listDLCContacts(): Future[Vector[DLCContactDb]] = delegate(
-    _.listDLCContacts()
-  )
-
-  override def addDLCContact(contact: DLCContactDb): Future[Unit] = delegate(
-    _.addDLCContact(contact)
-  )
-
-  override def removeDLCContact(address: InetSocketAddress): Future[Unit] =
-    delegate(_.removeDLCContact(address))
-
-  override def findDLCContacts(alias: String): Future[Vector[DLCContactDb]] =
-    delegate(_.findDLCContacts(alias))
-
-  override def addDLCContactMapping(
-      dlcId: Sha256Digest,
-      contactId: InetSocketAddress
-  ): Future[Unit] = delegate(_.addDLCContactMapping(dlcId, contactId))
-
-  override def removeDLCContactMapping(dlcId: Sha256Digest): Future[Unit] =
-    delegate(_.removeDLCContactMapping(dlcId))
 
   override def listDLCsByContact(
       address: InetSocketAddress

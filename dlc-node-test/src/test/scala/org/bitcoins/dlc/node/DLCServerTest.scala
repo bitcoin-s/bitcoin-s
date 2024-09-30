@@ -52,7 +52,7 @@ class DLCServerTest extends BitcoinSActorFixtureWithDLCWallet {
         dlcWalletApi.wallet,
         bindAddress,
         Some(boundAddressPromise),
-        { (_, _, connectionHandler) =>
+        { (_, _, _, connectionHandler) =>
           serverConnectionHandlerOpt = Some(connectionHandler)
           serverProbe.ref
         },
@@ -70,9 +70,10 @@ class DLCServerTest extends BitcoinSActorFixtureWithDLCWallet {
       val client = TestActorRef(
         DLCClient.props(
           dlcWalletApi.wallet,
+          dlcWalletApi.wallet.incomingOfferHandling,
           Some(connectedAddressPromise),
           None,
-          { (_, _, connectionHandler) =>
+          { (_, _, _, connectionHandler) =>
             clientConnectionHandlerOpt = Some(connectionHandler)
             clientProbe.ref
           },

@@ -5,9 +5,12 @@ import org.apache.pekko.event.LoggingReceive
 import org.apache.pekko.io.Tcp
 import org.apache.pekko.util.ByteString
 import org.bitcoins.commons.util.BitcoinSLogger
-import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
+import org.bitcoins.core.api.dlc.wallet.{
+  DLCWalletApi,
+  IncomingDLCOfferHandlingApi
+}
 import org.bitcoins.core.protocol.BigSizeUInt
-import org.bitcoins.core.protocol.tlv._
+import org.bitcoins.core.protocol.tlv.*
 import org.bitcoins.dlc.node.DLCConnectionHandler.parseIndividualMessages
 import scodec.bits.ByteVector
 
@@ -18,6 +21,7 @@ import scala.util.{Failure, Success, Try}
 
 class DLCConnectionHandler(
     dlcWalletApi: DLCWalletApi,
+    incomingOfferHandling: IncomingDLCOfferHandlingApi,
     connection: ActorRef,
     handlerP: Option[Promise[ActorRef]],
     dataHandlerFactory: DLCDataHandler.Factory,
@@ -27,7 +31,8 @@ class DLCConnectionHandler(
     with ActorLogging {
 
   private val handler = {
-    val h = dataHandlerFactory(dlcWalletApi, context, self)
+    val h =
+      dataHandlerFactory(dlcWalletApi, incomingOfferHandling, context, self)
     handlerP.foreach(_.success(h))
     h
   }
@@ -142,6 +147,7 @@ object DLCConnectionHandler extends BitcoinSLogger {
 
   def props(
       dlcWalletApi: DLCWalletApi,
+      incomingOfferHandling: IncomingDLCOfferHandlingApi,
       connection: ActorRef,
       handlerP: Option[Promise[ActorRef]],
       dataHandlerFactory: DLCDataHandler.Factory,
@@ -151,6 +157,7 @@ object DLCConnectionHandler extends BitcoinSLogger {
     Props(
       new DLCConnectionHandler(
         dlcWalletApi,
+        incomingOfferHandling,
         connection,
         handlerP,
         dataHandlerFactory,

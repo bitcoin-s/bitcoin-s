@@ -1,5 +1,6 @@
 package org.bitcoins.dlc.wallet.internal
 
+import org.bitcoins.core.api.dlc.wallet.IncomingDLCOfferHandlingApi
 import org.bitcoins.core.api.dlc.wallet.db.{
   DLCContactDb,
   DLCContactDbHelper,
@@ -7,15 +8,25 @@ import org.bitcoins.core.api.dlc.wallet.db.{
 }
 import org.bitcoins.core.protocol.tlv.DLCOfferTLV
 import org.bitcoins.crypto.Sha256Digest
-import org.bitcoins.dlc.wallet.DLCWallet
-import org.bitcoins.dlc.wallet.models.IncomingDLCOfferDbHelper
+import org.bitcoins.dlc.wallet.DLCAppConfig
+import org.bitcoins.dlc.wallet.models.{
+  DLCContactDAO,
+  DLCDAO,
+  DLCWalletDAOs,
+  IncomingDLCOfferDbHelper
+}
 
 import java.net.InetSocketAddress
 import scala.concurrent.Future
 
-trait IncomingDLCOffersHandling { self: DLCWallet =>
+case class IncomingDLCOffersHandling(dlcWalletDAOs: DLCWalletDAOs)(implicit
+    dlcConfig: DLCAppConfig)
+    extends IncomingDLCOfferHandlingApi {
+  import dlcConfig.ec
 
-  def registerIncomingDLCOffer(
+  private val contactDAO: DLCContactDAO = dlcWalletDAOs.contactDAO
+  private val dlcDAO: DLCDAO = dlcWalletDAOs.dlcDAO
+  override def registerIncomingDLCOffer(
       offerTLV: DLCOfferTLV,
       peerOpt: Option[String],
       message: Option[String]

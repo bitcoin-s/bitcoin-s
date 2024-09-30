@@ -297,15 +297,18 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
     // after we have created it into SyncUtil.getNodeApiWalletCallback
     // so we don't lose the internal state of the wallet
     val walletCallbackP = Promise[DLCWallet]()
+    val nodeApi = BitcoindRpcBackendUtil.buildBitcoindNodeApi(
+      bitcoind,
+      walletCallbackP.future,
+      chainCallbacksOpt
+    )
 
-    val pairedWallet = DLCWallet(
-      nodeApi = BitcoindRpcBackendUtil.buildBitcoindNodeApi(
-        bitcoind,
-        walletCallbackP.future,
-        chainCallbacksOpt
-      ),
-      chainQueryApi = bitcoind
-    )(wallet.walletConfig, wallet.dlcConfig)
+    val walletConfig = wallet.walletConfig
+    val dlcConfig = wallet.dlcConfig
+    val bitcoindCallbackWallet =
+      wallet.walletApi.copy(nodeApi = nodeApi)(walletConfig)
+    val pairedWallet =
+      DLCWallet(bitcoindCallbackWallet)(dlcConfig, walletConfig)
 
     walletCallbackP.success(pairedWallet)
 

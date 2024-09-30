@@ -9,12 +9,18 @@ import org.apache.pekko.actor.{
   Terminated
 }
 import org.apache.pekko.event.LoggingReceive
-import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
-import org.bitcoins.core.protocol.tlv._
+import org.bitcoins.core.api.dlc.wallet.{
+  DLCWalletApi,
+  IncomingDLCOfferHandlingApi
+}
+import org.bitcoins.core.protocol.tlv.*
 
-import scala.concurrent._
+import scala.concurrent.*
 
-class DLCDataHandler(dlcWalletApi: DLCWalletApi, connectionHandler: ActorRef)
+class DLCDataHandler(
+    dlcWalletApi: DLCWalletApi,
+    incomingOfferHandling: IncomingDLCOfferHandlingApi,
+    connectionHandler: ActorRef)
     extends Actor
     with ActorLogging {
   implicit val ec: ExecutionContextExecutor = context.system.dispatcher
@@ -58,11 +64,13 @@ class DLCDataHandler(dlcWalletApi: DLCWalletApi, connectionHandler: ActorRef)
         Future.unit
       case dlcOffer: DLCOfferTLV =>
         for {
-          _ <- dlcWalletApi.registerIncomingDLCOffer(dlcOffer, None, None)
+          _ <- incomingOfferHandling.registerIncomingDLCOffer(dlcOffer,
+                                                              None,
+                                                              None)
         } yield ()
       case dlcOfferMessage: SendOfferTLV =>
         for {
-          _ <- dlcWalletApi.registerIncomingDLCOffer(
+          _ <- incomingOfferHandling.registerIncomingDLCOffer(
             offerTLV = dlcOfferMessage.offer,
             peer = Some(dlcOfferMessage.peer),
             message = Some(dlcOfferMessage.message)
@@ -91,7 +99,11 @@ class DLCDataHandler(dlcWalletApi: DLCWalletApi, connectionHandler: ActorRef)
 
 object DLCDataHandler {
 
-  type Factory = (DLCWalletApi, ActorContext, ActorRef) => ActorRef
+  type Factory = (
+      DLCWalletApi,
+      IncomingDLCOfferHandlingApi,
+      ActorContext,
+      ActorRef) => ActorRef
 
   sealed trait Command
   case class Received(message: LnMessage[TLV]) extends Command
@@ -99,12 +111,20 @@ object DLCDataHandler {
 
   def defaultFactory(
       dlcWalletApi: DLCWalletApi,
+      incomingOfferHandling: IncomingDLCOfferHandlingApi,
       context: ActorContext,
       connectionHandler: ActorRef
   ): ActorRef = {
-    context.actorOf(props(dlcWalletApi, connectionHandler))
+    context.actorOf(
+      props(dlcWalletApi, incomingOfferHandling, connectionHandler))
   }
 
-  def props(dlcWalletApi: DLCWalletApi, connectionHandler: ActorRef): Props =
-    Props(new DLCDataHandler(dlcWalletApi, connectionHandler))
+  def props(
+      dlcWalletApi: DLCWalletApi,
+      incomingOfferHandling: IncomingDLCOfferHandlingApi,
+      connectionHandler: ActorRef): Props =
+    Props(
+      new DLCDataHandler(dlcWalletApi,
+                         incomingOfferHandling,
+                         connectionHandler))
 }

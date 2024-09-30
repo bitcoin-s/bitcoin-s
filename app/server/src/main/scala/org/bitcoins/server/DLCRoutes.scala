@@ -76,7 +76,7 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
 
     case ServerCommand("offers-list", _) =>
       complete {
-        dlcNode.wallet.listIncomingDLCOffers().map { offers =>
+        dlcNode.incomingOfferHandling.listIncomingDLCOffers().map { offers =>
           def toJson(io: IncomingDLCOfferDb): Value = {
             Obj(
               "hash" -> io.hash.hex,
@@ -94,7 +94,7 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
     case ServerCommand("offer-add", arr) =>
       withValidServerCommand(OfferAdd.fromJsArr(arr)) { register =>
         complete {
-          dlcNode.wallet
+          dlcNode.incomingOfferHandling
             .registerIncomingDLCOffer(
               register.offerTLV,
               register.peer,
@@ -109,9 +109,11 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
     case ServerCommand("offer-remove", arr) =>
       withValidServerCommand(OfferRemove.fromJsArr(arr)) { reject =>
         complete {
-          dlcNode.wallet.rejectIncomingDLCOffer(reject.hash).map { _ =>
-            Server.httpSuccess(reject.hash.hex)
-          }
+          dlcNode.incomingOfferHandling
+            .rejectIncomingDLCOffer(reject.hash)
+            .map { _ =>
+              Server.httpSuccess(reject.hash.hex)
+            }
         }
       }
 
@@ -138,7 +140,7 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
 
     case ServerCommand("contacts-list", _) =>
       complete {
-        dlcNode.wallet.listDLCContacts().map { contacts =>
+        dlcNode.incomingOfferHandling.listDLCContacts().map { contacts =>
           val json = contacts
             .map(c => upickle.default.writeJs(c)(Picklers.contactDbPickler))
           Server.httpSuccess(json)
@@ -148,7 +150,7 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
     case ServerCommand("contact-add", arr) =>
       withValidServerCommand(ContactAdd.fromJsArr(arr)) { contactAdd =>
         complete {
-          dlcNode.wallet
+          dlcNode.incomingOfferHandling
             .addDLCContact(contactAdd.toDLCContactDb)
             .map { _ =>
               Server.httpSuccess("ok")
@@ -159,7 +161,7 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
     case ServerCommand("contact-remove", arr) =>
       withValidServerCommand(ContactRemove.fromJsArr(arr)) { contactAdd =>
         complete {
-          dlcNode.wallet
+          dlcNode.incomingOfferHandling
             .removeDLCContact(contactAdd.address)
             .map { _ =>
               Server.httpSuccess("ok")
@@ -170,7 +172,7 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
     case ServerCommand("dlc-contact-add", arr) =>
       withValidServerCommand(DLCContactAdd.fromJsArr(arr)) { dlcContactAdd =>
         complete {
-          dlcNode.wallet
+          dlcNode.incomingOfferHandling
             .addDLCContactMapping(dlcContactAdd.dlcId, dlcContactAdd.address)
             .map { _ =>
               val dlcId = dlcContactAdd.dlcId.hex
@@ -187,7 +189,7 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
       withValidServerCommand(DLCContactRemove.fromJsArr(arr)) {
         dlcContactRemove =>
           complete {
-            dlcNode.wallet
+            dlcNode.incomingOfferHandling
               .removeDLCContactMapping(dlcContactRemove.dlcId)
               .map { _ =>
                 Server.httpSuccess("ok")

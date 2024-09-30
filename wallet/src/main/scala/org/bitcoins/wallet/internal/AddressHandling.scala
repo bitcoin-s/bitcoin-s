@@ -50,22 +50,6 @@ case class AddressHandling(
   private val scriptPubKeyDAO: ScriptPubKeyDAO = walletDAOs.scriptPubKeyDAO
   private val networkParameters: NetworkParameters = walletConfig.network
 
-  def contains(
-      address: BitcoinAddress,
-      accountOpt: Option[(AccountHandlingApi, HDAccount)]
-  ): Future[Boolean] = {
-    val possibleAddressesF = accountOpt match {
-      case Some((ah, account)) =>
-        ah.listAddresses(account)
-      case None =>
-        listAddresses()
-    }
-
-    possibleAddressesF.map { possibleAddresses =>
-      possibleAddresses.exists(_.address == address)
-    }
-  }
-
   override def listAddresses(): Future[Vector[AddressDb]] =
     addressDAO.findAllAddresses()
 
@@ -241,7 +225,7 @@ case class AddressHandling(
   }
 
   /** @inheritdoc */
-  def getUnusedAddress: Future[BitcoinAddress] = {
+  override def getUnusedAddress: Future[BitcoinAddress] = {
     for {
       account <- accountHandling.getDefaultAccount()
       addresses <- addressDAO.getUnusedAddresses(account.hdAccount)

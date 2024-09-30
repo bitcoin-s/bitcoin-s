@@ -75,7 +75,7 @@ class DLCServerTorTest
             fundedDLCWallet.wallet,
             bindAddress,
             Some(boundAddressPromise),
-            { (_, _, connectionHandler) =>
+            { (_, _, _, connectionHandler) =>
               serverConnectionHandlerOpt = Some(connectionHandler)
               serverProbe.ref
             },
@@ -94,9 +94,10 @@ class DLCServerTorTest
           val client = TestActorRef(
             DLCClient.props(
               fundedDLCWallet.wallet,
+              fundedDLCWallet.wallet.incomingOfferHandling,
               Some(connectedAddressPromise),
               None,
-              { (_, _, connectionHandler) =>
+              { (_, _, _, connectionHandler) =>
                 clientConnectionHandlerOpt = Some(connectionHandler)
                 clientProbe.ref
               },

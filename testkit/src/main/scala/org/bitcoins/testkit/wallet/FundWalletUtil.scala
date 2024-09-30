@@ -4,14 +4,14 @@ import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.node.NodeApi
-import org.bitcoins.core.api.wallet.NeutrinoHDWalletApi
+import org.bitcoins.core.api.wallet.{NeutrinoHDWalletApi, WalletApi}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.dlc.wallet.DLCWallet
+import org.bitcoins.dlc.wallet.{DLCAppConfig, DLCWallet}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.{BitcoinSAppConfig, BitcoindRpcBackendUtil}
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest.{
@@ -24,7 +24,6 @@ import org.bitcoins.testkit.wallet.FundWalletUtil.{
 }
 import org.bitcoins.testkitcore.gen.TransactionGenerators
 import org.bitcoins.testkitcore.util.TransactionTestUtil
-import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.config.WalletAppConfig
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -64,8 +63,8 @@ trait FundWalletUtil extends BitcoinSLogger {
   def fundAccountForWallet(
       amts: Vector[CurrencyUnit],
       account: HDAccount,
-      wallet: Wallet
-  )(implicit ec: ExecutionContext): Future[Wallet] = {
+      wallet: WalletApi
+  )(implicit ec: ExecutionContext): Future[WalletApi] = {
 
     val addressesF: Future[Vector[BitcoinAddress]] = Future.sequence {
       Vector.fill(3)(wallet.accountHandling.getNewAddress(account))
@@ -132,17 +131,18 @@ trait FundWalletUtil extends BitcoinSLogger {
   /** Funds a bitcoin-s wallet with 3 utxos with 1, 2 and 3 bitcoin in the utxos
     */
   def fundWallet(
-      wallet: Wallet
+      wallet: WalletApi,
+      walletConfig: WalletAppConfig
   )(implicit ec: ExecutionContext): Future[FundedTestWallet] = {
 
-    val defaultAccount = wallet.walletConfig.defaultAccount
+    val defaultAccount = walletConfig.defaultAccount
     val fundedDefaultAccountWalletF = FundWalletUtil.fundAccountForWallet(
       amts = BitcoinSWalletTest.defaultAcctAmts,
       account = defaultAccount,
       wallet = wallet
     )
 
-    val hdAccount1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
+    val hdAccount1 = WalletTestUtil.getHdAccount1(walletConfig)
     val fundedAccount1WalletF = for {
       fundedDefaultAcct <- fundedDefaultAccountWalletF
       fundedAcct1 <- FundWalletUtil.fundAccountForWallet(
@@ -169,35 +169,28 @@ trait FundWalletUtil extends BitcoinSLogger {
           s"got balance=${hdAccount1} expected=${BitcoinSWalletTest.expectedAccount1Amt}"
       )
 
-    } yield FundedWallet(fundedWallet)
+    } yield FundedWallet(fundedWallet, walletConfig)
   }
 }
 
 object FundWalletUtil extends FundWalletUtil {
 
   trait FundedTestWallet {
-    def wallet: Wallet
-  }
-
-  object FundedTestWallet {
-
-    def apply(wallet: Wallet): FundedTestWallet = {
-      wallet match {
-        case dlc: DLCWallet =>
-          FundedDLCWallet(dlc)
-        case _: Wallet =>
-          FundedWallet(wallet)
-      }
-    }
+    def wallet: WalletApi
   }
 
   /** This is a wallet that was two funded accounts Account 0 (default account)
     * has utxos of 1,2,3 bitcoin in it (6 btc total) Account 1 has a utxos of
     * 0.2,0.3,0.5 bitcoin in it (0.6 total)
     */
-  case class FundedWallet(wallet: Wallet) extends FundedTestWallet
+  case class FundedWallet(wallet: WalletApi, walletConfig: WalletAppConfig)
+      extends FundedTestWallet
 
-  case class FundedDLCWallet(wallet: DLCWallet) extends FundedTestWallet
+  case class FundedDLCWallet(
+      wallet: DLCWallet,
+      walletConfig: WalletAppConfig,
+      dlcConfig: DLCAppConfig)
+      extends FundedTestWallet
 
   /** This creates a wallet that was two funded accounts Account 0 (default
     * account) has utxos of 1,2,3 bitcoin in it (6 btc total) Account 1 has a
@@ -214,8 +207,8 @@ object FundWalletUtil extends FundWalletUtil {
         nodeApi = nodeApi,
         chainQueryApi = chainQueryApi
       )
-      funded <- FundWalletUtil.fundWallet(wallet)
-    } yield FundedWallet(funded.wallet)
+      funded <- FundWalletUtil.fundWallet(wallet, config)
+    } yield FundedWallet(funded.wallet, config)
   }
 
   def createFundedDLCWallet(nodeApi: NodeApi, chainQueryApi: ChainQueryApi)(
@@ -229,9 +222,11 @@ object FundWalletUtil extends FundWalletUtil {
         nodeApi = nodeApi,
         chainQueryApi = chainQueryApi
       )
-      funded <- FundWalletUtil.fundWallet(wallet)
+      funded <- FundWalletUtil.fundWallet(wallet, config.walletConf)
     } yield {
-      FundedDLCWallet(funded.wallet.asInstanceOf[DLCWallet])
+      FundedDLCWallet(funded.wallet.asInstanceOf[DLCWallet],
+                      config.walletConf,
+                      config.dlcConf)
     }
   }
 
@@ -264,7 +259,9 @@ object FundWalletUtil extends FundWalletUtil {
         bitcoind
       )
     } yield {
-      FundedDLCWallet(funded.asInstanceOf[DLCWallet])
+      FundedDLCWallet(funded.asInstanceOf[DLCWallet],
+                      wallet.walletConfig,
+                      wallet.dlcConfig)
     }
   }
 }
