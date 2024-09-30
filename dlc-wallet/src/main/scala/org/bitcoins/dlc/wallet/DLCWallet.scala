@@ -2300,6 +2300,10 @@ case class DLCWallet(override val walletApi: Wallet)(implicit
         Future.successful(feeRate)
     }
 
+  override def broadcastTransaction(transaction: Transaction): Future[Unit] = {
+    walletApi.broadcastTransaction(transaction)
+  }
+
   override def processCompactFilters(
       blockFilters: Vector[(DoubleSha256DigestBE, GolombFilter)])
       : Future[NeutrinoHDWalletApi] =
