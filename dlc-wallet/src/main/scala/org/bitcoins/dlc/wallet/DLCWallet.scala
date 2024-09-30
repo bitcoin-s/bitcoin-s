@@ -58,7 +58,11 @@ import org.bitcoins.dlc.wallet.util.{
   IntermediaryDLCStatus
 }
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.internal.{TransactionProcessing, UtxoHandling}
+import org.bitcoins.wallet.internal.{
+  RescanHandling,
+  TransactionProcessing,
+  UtxoHandling
+}
 import org.bitcoins.wallet.models.{
   AddressDAO,
   ScriptPubKeyDAO,
@@ -157,6 +161,17 @@ case class DLCWallet(override val walletApi: Wallet)(implicit
       utxoHandling = utxoHandling,
       dlcWalletApi = this
     )
+  }
+
+  override lazy val rescanHandling: RescanHandlingApi = {
+    RescanHandling(
+      transactionProcessing = transactionProcessing,
+      accountHandling = accountHandling,
+      addressHandling = addressHandling,
+      chainQueryApi = chainQueryApi,
+      nodeApi = nodeApi,
+      walletDAOs = walletDAOs
+    )(walletConfig, walletConfig.system)
   }
   private lazy val safeDLCDatabase: SafeDatabase = dlcDAO.safeDatabase
   private lazy val walletDatabase: SafeDatabase =
@@ -2294,8 +2309,6 @@ case class DLCWallet(override val walletApi: Wallet)(implicit
 
   override def fundTxHandling: FundTransactionHandlingApi =
     walletApi.fundTxHandling
-
-  override def rescanHandling: RescanHandlingApi = walletApi.rescanHandling
 
   override def addressHandling: AddressHandlingApi = walletApi.addressHandling
 
