@@ -347,7 +347,7 @@ object DLCAppConfig
             accountHandling = unInitializedWallet.accountHandling,
             bip39PasswordOpt = bip39PasswordOpt
           )
-          .map(_.asInstanceOf[DLCWallet])
+          .map(DLCWallet.apply)
       }
     }
   }
