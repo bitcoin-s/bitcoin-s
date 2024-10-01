@@ -88,28 +88,31 @@ case class DLCWallet(override val walletApi: Wallet)(implicit
   import dlcConfig.profile.api._
 
   private val networkParameters: NetworkParameters = walletConfig.network
+  private[wallet] val dlcWalletDAOs = DLCWalletDAOs.fromDLCAppConfig(dlcConfig)
   private[bitcoins] val announcementDAO: OracleAnnouncementDataDAO =
-    OracleAnnouncementDataDAO()
-  private[bitcoins] val oracleNonceDAO: OracleNonceDAO = OracleNonceDAO()
+    dlcWalletDAOs.oracleAnnouncementDAO
+  private[bitcoins] val oracleNonceDAO: OracleNonceDAO =
+    dlcWalletDAOs.oracleNonceDAO
 
   private[bitcoins] val dlcAnnouncementDAO: DLCAnnouncementDAO =
-    DLCAnnouncementDAO()
-  private[bitcoins] val dlcOfferDAO: DLCOfferDAO = DLCOfferDAO()
-  private[bitcoins] val dlcAcceptDAO: DLCAcceptDAO = DLCAcceptDAO()
-  private[bitcoins] val dlcDAO: DLCDAO = DLCDAO()
+    dlcWalletDAOs.dlcAnnouncementDAO
+  private[bitcoins] val dlcOfferDAO: DLCOfferDAO = dlcWalletDAOs.dlcOfferDAO
+  private[bitcoins] val dlcAcceptDAO: DLCAcceptDAO = dlcWalletDAOs.dlcAcceptDAO
+  private[bitcoins] val dlcDAO: DLCDAO = dlcWalletDAOs.dlcDAO
 
   private[bitcoins] val contractDataDAO: DLCContractDataDAO =
-    DLCContractDataDAO()
-  private[bitcoins] val dlcInputsDAO: DLCFundingInputDAO = DLCFundingInputDAO()
-  private[bitcoins] val dlcSigsDAO: DLCCETSignaturesDAO = DLCCETSignaturesDAO()
-  private[bitcoins] val dlcRefundSigDAO: DLCRefundSigsDAO = DLCRefundSigsDAO()
-  private[bitcoins] val remoteTxDAO: DLCRemoteTxDAO = DLCRemoteTxDAO()
-
-  private[bitcoins] val incomingOfferDAO: IncomingDLCOfferDAO =
-    IncomingDLCOfferDAO()
+    dlcWalletDAOs.contractDataDAO
+  private[bitcoins] val dlcInputsDAO: DLCFundingInputDAO =
+    dlcWalletDAOs.dlcInputsDAO
+  private[bitcoins] val dlcSigsDAO: DLCCETSignaturesDAO =
+    dlcWalletDAOs.dlcSigsDAO
+  private[bitcoins] val dlcRefundSigDAO: DLCRefundSigsDAO =
+    dlcWalletDAOs.dlcRefundSigDAO
+  private[bitcoins] val remoteTxDAO: DLCRemoteTxDAO =
+    dlcWalletDAOs.dlcRemoteTxDAO
 
   private[bitcoins] val contactDAO: DLCContactDAO =
-    DLCContactDAO()
+    dlcWalletDAOs.contactDAO
 
   private def walletDAOs: WalletDAOs = walletApi.walletDAOs
 
@@ -118,22 +121,6 @@ case class DLCWallet(override val walletApi: Wallet)(implicit
     walletApi.transactionDAO
   private[bitcoins] def scriptPubKeyDAO: ScriptPubKeyDAO =
     walletApi.scriptPubKeyDAO
-
-  private[wallet] val dlcWalletDAOs = DLCWalletDAOs(
-    dlcDAO,
-    contractDataDAO,
-    dlcAnnouncementDAO,
-    dlcInputsDAO,
-    dlcOfferDAO,
-    dlcAcceptDAO,
-    dlcSigsDAO,
-    dlcRefundSigDAO,
-    oracleNonceDAO,
-    announcementDAO,
-    remoteTxDAO,
-    incomingOfferDAO,
-    contactDAO
-  )
 
   override def incomingOfferHandling: IncomingDLCOfferHandlingApi =
     IncomingDLCOffersHandling(dlcWalletDAOs)
