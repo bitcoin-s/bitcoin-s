@@ -77,7 +77,9 @@ trait AddressHandlingApi {
       tagType: AddressTagType
   ): Future[Vector[AddressTagDb]]
 
-  /** @inheritdoc */
+  /** Gets a external address. Calling this method multiple times will return
+    * the same address, until it has received funds.
+    */
   def getUnusedAddress: Future[BitcoinAddress]
 
   /** Determines if the given output is from this wallet and is a change output
