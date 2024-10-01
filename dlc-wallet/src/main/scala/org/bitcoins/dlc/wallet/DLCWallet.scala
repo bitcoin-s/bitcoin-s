@@ -1680,11 +1680,13 @@ case class DLCWallet(override val walletApi: Wallet)(implicit
           isValidBroadcastState(dlcDb)
       }
       tx <- fundingTxF
-      _ <- updateDLCState(contractId, DLCState.Broadcasted)
+      state <- updateDLCState(contractId, DLCState.Broadcasted)
       _ = logger.info(
         s"Broadcasting funding transaction ${tx.txIdBE.hex} for contract ${contractId.toHex}"
       )
       _ <- broadcastTransaction(tx)
+      status <- findDLC(state.dlcId)
+      _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(status.get)
       _ = logger.info(s"Done broadcast tx ${contractId}")
     } yield tx
   }
