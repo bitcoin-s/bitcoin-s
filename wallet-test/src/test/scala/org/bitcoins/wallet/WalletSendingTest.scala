@@ -17,6 +17,8 @@ import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
 import org.bitcoins.testkitcore.Implicits.GeneratorOps
 import org.bitcoins.testkitcore.gen.FeeUnitGen
+import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.models.{OutgoingTransactionDAO, SpendingInfoDAO}
 import org.scalatest.{Assertion, FutureOutcome}
 import scodec.bits.ByteVector
 
@@ -113,9 +115,9 @@ class WalletSendingTest extends BitcoinSWalletTest {
   }
 
   def testOpReturnCommitment(
-      wallet: Wallet,
+      wallet: WalletApi,
       hashMessage: Boolean
-  ): Future[Assertion] = {
+  )(implicit walletConfig: WalletAppConfig): Future[Assertion] = {
     val message = "ben was here"
     for {
       tx <- wallet.sendFundsHandling.makeOpReturnCommitment(
@@ -123,8 +125,8 @@ class WalletSendingTest extends BitcoinSWalletTest {
         hashMessage = hashMessage,
         feeRateOpt = None
       )
-
-      outgoingTxDbOpt <- wallet.outgoingTxDAO.read(tx.txIdBE)
+      outgoingTxDAO = OutgoingTransactionDAO()(executionContext, walletConfig)
+      outgoingTxDbOpt <- outgoingTxDAO.read(tx.txIdBE)
     } yield {
       val opReturnOutputOpt = tx.outputs.find(_.value == 0.satoshis)
       assert(opReturnOutputOpt.isDefined, "Missing output with 0 value")
@@ -157,12 +159,14 @@ class WalletSendingTest extends BitcoinSWalletTest {
   }
 
   it should "correctly make a hashed OP_RETURN commitment" in { fundedWallet =>
-    testOpReturnCommitment(fundedWallet.wallet, hashMessage = true)
+    testOpReturnCommitment(fundedWallet.wallet, hashMessage = true)(
+      fundedWallet.walletConfig)
   }
 
   it should "correctly make an unhashed OP_RETURN commitment" in {
     fundedWallet =>
-      testOpReturnCommitment(fundedWallet.wallet, hashMessage = false)
+      testOpReturnCommitment(fundedWallet.wallet, hashMessage = false)(
+        fundedWallet.walletConfig)
   }
 
   it should "fail to make an OP_RETURN commitment that is too long" in {
@@ -210,8 +214,10 @@ class WalletSendingTest extends BitcoinSWalletTest {
 
   it should "correctly send from outpoints" in { fundedWallet =>
     val wallet = fundedWallet.wallet
+    val spendingInfoDAO =
+      SpendingInfoDAO()(executionContext, fundedWallet.walletConfig)
     for {
-      allOutPoints <- wallet.spendingInfoDAO.findAllOutpoints()
+      allOutPoints <- spendingInfoDAO.findAllOutpoints()
       // use half of them
       outPoints = allOutPoints.drop(allOutPoints.size / 2)
       tx <- wallet.sendFundsHandling.sendFromOutPoints(outPoints,
@@ -346,9 +352,10 @@ class WalletSendingTest extends BitcoinSWalletTest {
 
       newFeeRate = SatoshisPerByte(feeRate.currencyUnit + Satoshis(50))
       bumpedTx <- wallet.sendFundsHandling.bumpFeeRBF(tx.txIdBE, newFeeRate)
-
-      txDb1Opt <- wallet.outgoingTxDAO.findByTxId(tx.txIdBE)
-      txDb2Opt <- wallet.outgoingTxDAO.findByTxId(bumpedTx.txIdBE)
+      outgoingTxDAO = OutgoingTransactionDAO()(executionContext,
+                                               fundedWallet.walletConfig)
+      txDb1Opt <- outgoingTxDAO.findByTxId(tx.txIdBE)
+      txDb2Opt <- outgoingTxDAO.findByTxId(bumpedTx.txIdBE)
 
       secondBal <- wallet.getBalance()
     } yield {
@@ -422,8 +429,9 @@ class WalletSendingTest extends BitcoinSWalletTest {
                                                        None)
       bumpRate <- wallet.feeRateApi.getFeeRate()
       child <- wallet.sendFundsHandling.bumpFeeCPFP(parent.txIdBE, bumpRate)
-
-      received <- wallet.spendingInfoDAO.findTx(child).map(_.nonEmpty)
+      spendingInfoDAO = SpendingInfoDAO()(executionContext,
+                                          fundedWallet.walletConfig)
+      received <- spendingInfoDAO.findTx(child).map(_.nonEmpty)
     } yield {
       // Verify we are only sending to ourself
       assert(child.outputs.size == 1)
@@ -492,7 +500,9 @@ class WalletSendingTest extends BitcoinSWalletTest {
             DoubleSha256DigestBE.empty
           ) // dummy spending txid
           .copyWithState(TxoState.PendingConfirmationsSpent)
-        _ <- wallet.spendingInfoDAO.update(spent)
+        spendingInfoDAO = SpendingInfoDAO()(executionContext,
+                                            fundedWallet.walletConfig)
+        _ <- spendingInfoDAO.update(spent)
         test <- recoverToSucceededIf[IllegalArgumentException](
           wallet.sendFundsHandling.sendFromOutPoints(
             allUtxos.map(_.outPoint),
@@ -505,7 +515,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
   }
 
   def testSendWithAlgo(
-      wallet: Wallet,
+      wallet: WalletApi,
       algo: CoinSelectionAlgo
   ): Future[Assertion] = {
     for {

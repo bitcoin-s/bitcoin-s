@@ -61,6 +61,7 @@ class DLCNegotiationTest extends BitcoinSDualWalletTest {
         _ <- DLCClient.connect(
           Peer(connectAddress, socks5ProxyParams = None),
           walletB,
+          walletB.incomingOfferHandling,
           Some(handlerP),
           handleWrite = handleWriteFn,
           handleWriteError = handleWriteErrorFn
@@ -130,6 +131,7 @@ class DLCNegotiationTest extends BitcoinSDualWalletTest {
         _ <- DLCClient.connect(
           Peer(connectAddress, socks5ProxyParams = None),
           walletB,
+          walletB.incomingOfferHandling,
           Some(handlerP),
           handleWrite = { (_, tlvId) =>
             okP.success(tlvId)
@@ -143,8 +145,8 @@ class DLCNegotiationTest extends BitcoinSDualWalletTest {
 
         handler <- handlerP.future
 
-        preA <- walletA.listIncomingDLCOffers()
-        preB <- walletA.listIncomingDLCOffers()
+        preA <- walletA.incomingOfferHandling.listIncomingDLCOffers()
+        preB <- walletA.incomingOfferHandling.listIncomingDLCOffers()
         _ = assert(preA.isEmpty)
         _ = assert(preB.isEmpty)
 
@@ -168,10 +170,10 @@ class DLCNegotiationTest extends BitcoinSDualWalletTest {
         _ = assert(!errorP.isCompleted)
 
         _ <- TestAsyncUtil.awaitConditionF { () =>
-          walletA.listIncomingDLCOffers().map(_.nonEmpty)
+          walletA.incomingOfferHandling.listIncomingDLCOffers().map(_.nonEmpty)
         }
-        postA <- walletA.listIncomingDLCOffers()
-        postB <- walletB.listIncomingDLCOffers()
+        postA <- walletA.incomingOfferHandling.listIncomingDLCOffers()
+        postB <- walletB.incomingOfferHandling.listIncomingDLCOffers()
       } yield {
         assert(postA.nonEmpty)
         assert(postB.isEmpty)

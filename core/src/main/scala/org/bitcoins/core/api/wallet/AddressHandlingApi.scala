@@ -2,7 +2,7 @@ package org.bitcoins.core.api.wallet
 
 import org.bitcoins.core.api.wallet.db.{AddressDb, AddressTagDb, ScriptPubKeyDb}
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.hd.AddressType
+import org.bitcoins.core.hd.{AddressType, HDAccount}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{
@@ -16,9 +16,25 @@ import org.bitcoins.core.wallet.utxo.{
   AddressTagType
 }
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 trait AddressHandlingApi {
+  final def contains(
+      address: BitcoinAddress,
+      accountOpt: Option[(AccountHandlingApi, HDAccount)]
+  )(implicit ec: ExecutionContext): Future[Boolean] = {
+    val possibleAddressesF = accountOpt match {
+      case Some((ah, account)) =>
+        ah.listAddresses(account)
+      case None =>
+        listAddresses()
+    }
+
+    possibleAddressesF.map { possibleAddresses =>
+      possibleAddresses.exists(_.address == address)
+    }
+  }
+
   def dropAddressTag(addressTagDb: AddressTagDb): Future[Int]
   def dropAddressTagType(
       addressTagType: AddressTagType
@@ -55,10 +71,16 @@ trait AddressHandlingApi {
   ): Future[Option[AddressInfo]]
   def getAddressTags(): Future[Vector[AddressTagDb]]
   def getAddressTags(address: BitcoinAddress): Future[Vector[AddressTagDb]]
+  def getAddressTags(tagType: AddressTagType): Future[Vector[AddressTagDb]]
   def getAddressTags(
       address: BitcoinAddress,
       tagType: AddressTagType
   ): Future[Vector[AddressTagDb]]
+
+  /** Gets a external address. Calling this method multiple times will return
+    * the same address, until it has received funds.
+    */
+  def getUnusedAddress: Future[BitcoinAddress]
 
   /** Determines if the given output is from this wallet and is a change output
     * from this wallet

@@ -11,6 +11,7 @@ import org.bitcoins.core.wallet.utxo.{
 }
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
+import org.bitcoins.wallet.models.{ScriptPubKeyDAO, SpendingInfoDAO}
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
@@ -40,7 +41,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
   it must "generate an address for a non default account and then find it" in {
     (fundedWallet: FundedWallet) =>
       val wallet = fundedWallet.wallet
-      val account1 = WalletTestUtil.getHdAccount1(wallet.walletConfig)
+      val account1 = WalletTestUtil.getHdAccount1(fundedWallet.walletConfig)
       val addressF = wallet.accountHandling.getNewAddress(account1)
       for {
         address <- addressF
@@ -116,7 +117,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
       tx <- wallet.sendFundsHandling.sendToAddress(tempAddress,
                                                    Bitcoins(1),
                                                    None)
-      spentDbs <- wallet.spendingInfoDAO.findOutputsBeingSpent(tx)
+      spentDbs <- wallet.utxoHandling.findOutputsBeingSpent(tx)
       spentAddresses <- wallet.addressHandling.listSpentAddresses()
     } yield {
       val diff = spentDbs
@@ -131,7 +132,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
       val wallet = fundedWallet.wallet
 
       for {
-        unspentDbs <- wallet.spendingInfoDAO.findAllUnspent()
+        unspentDbs <- wallet.utxoHandling.listUtxos()
         fundedAddresses <- wallet.addressHandling.listFundedAddresses()
       } yield {
         val diff = unspentDbs
@@ -147,9 +148,10 @@ class AddressHandlingTest extends BitcoinSWalletTest {
   it must "get the correct unused addresses" in {
     (fundedWallet: FundedWallet) =>
       val wallet = fundedWallet.wallet
-
+      val spendingInfoDAO =
+        SpendingInfoDAO()(executionContext, fundedWallet.walletConfig)
       for {
-        addrDbs <- wallet.spendingInfoDAO.findAllSpendingInfos()
+        addrDbs <- spendingInfoDAO.findAllSpendingInfos()
         fundedAddresses <- wallet.addressHandling.listUnusedAddresses()
       } yield {
         val intersect = addrDbs
@@ -269,11 +271,11 @@ class AddressHandlingTest extends BitcoinSWalletTest {
     (fundedWallet: FundedWallet) =>
       val wallet = fundedWallet.wallet
       val addressF = wallet.getNewAddress()
-      val spendingInfoDAO = wallet.spendingInfoDAO
-      val spkDAO = wallet.scriptPubKeyDAO
+      val spkDAO =
+        ScriptPubKeyDAO()(executionContext, fundedWallet.walletConfig)
       for {
         address <- addressF
-        utxos <- spendingInfoDAO.findByScriptPubKey(address.scriptPubKey)
+        utxos <- wallet.utxoHandling.findByScriptPubKey(address.scriptPubKey)
         spkOpt <- spkDAO.findScriptPubKey(address.scriptPubKey)
       } yield {
         assert(utxos.isEmpty)

@@ -33,13 +33,17 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
-abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
+case class Wallet(
+    override val nodeApi: NodeApi,
+    override val chainQueryApi: ChainQueryApi
+)(implicit
+    val walletConfig: WalletAppConfig
+) extends NeutrinoHDWalletApi
+    with WalletLogger {
   def keyManager: BIP39KeyManager = {
     walletConfig.kmConf.toBip39KeyManager
   }
   def feeRateApi: FeeRateApi = walletConfig.feeRateApi
-  implicit val walletConfig: WalletAppConfig
-
   implicit val system: ActorSystem = walletConfig.system
 
   implicit val ec: ExecutionContext = system.dispatcher
@@ -50,36 +54,28 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
 
   val networkParameters: BitcoinNetwork = walletConfig.network
 
-  private[bitcoins] val addressDAO: AddressDAO = AddressDAO()
-  private[bitcoins] val accountDAO: AccountDAO = AccountDAO()
-  private[bitcoins] val spendingInfoDAO: SpendingInfoDAO = SpendingInfoDAO()
-  private[bitcoins] val transactionDAO: TransactionDAO = TransactionDAO()
-  private[bitcoins] val scriptPubKeyDAO: ScriptPubKeyDAO = ScriptPubKeyDAO()
+  private[bitcoins] val walletDAOs: WalletDAOs =
+    WalletDAOs.fromWalletConfig(walletConfig)
+
+  private[bitcoins] val addressDAO: AddressDAO = walletDAOs.addressDAO
+  private[bitcoins] val accountDAO: AccountDAO = walletDAOs.accountDAO
+  private[bitcoins] val spendingInfoDAO: SpendingInfoDAO = walletDAOs.utxoDAO
+  private[bitcoins] val transactionDAO: TransactionDAO =
+    walletDAOs.transactionDAO
+  private[bitcoins] val scriptPubKeyDAO: ScriptPubKeyDAO =
+    walletDAOs.scriptPubKeyDAO
 
   private[bitcoins] val incomingTxDAO: IncomingTransactionDAO =
-    IncomingTransactionDAO()
+    walletDAOs.incomingTxDAO
 
   private[bitcoins] val outgoingTxDAO: OutgoingTransactionDAO =
-    OutgoingTransactionDAO()
-  private[bitcoins] val addressTagDAO: AddressTagDAO = AddressTagDAO()
+    walletDAOs.outgoingTxDAO
+  private[bitcoins] val addressTagDAO: AddressTagDAO = walletDAOs.addressTagDAO
 
   private[bitcoins] val stateDescriptorDAO: WalletStateDescriptorDAO =
-    WalletStateDescriptorDAO()
-
-  private def walletDAOs: WalletDAOs = WalletDAOs(accountDAO,
-                                                  addressDAO,
-                                                  addressTagDAO,
-                                                  spendingInfoDAO,
-                                                  transactionDAO,
-                                                  incomingTxDAO,
-                                                  outgoingTxDAO,
-                                                  scriptPubKeyDAO,
-                                                  stateDescriptorDAO)
-
+    walletDAOs.stateDescriptorDAO
   protected lazy val safeDatabase: SafeDatabase = spendingInfoDAO.safeDatabase
 
-  val nodeApi: NodeApi
-  val chainQueryApi: ChainQueryApi
   val creationTime: Instant = keyManager.creationTime
 
   def utxoHandling: UtxoHandling =
@@ -310,22 +306,7 @@ abstract class Wallet extends NeutrinoHDWalletApi with WalletLogger {
   }
 }
 
-// todo: create multiple wallets, need to maintain multiple databases
 object Wallet extends WalletLogger {
-
-  private case class WalletImpl(
-      nodeApi: NodeApi,
-      chainQueryApi: ChainQueryApi
-  )(implicit
-      val walletConfig: WalletAppConfig
-  ) extends Wallet
-
-  def apply(
-      nodeApi: NodeApi,
-      chainQueryApi: ChainQueryApi
-  )(implicit config: WalletAppConfig): Wallet = {
-    WalletImpl(nodeApi, chainQueryApi)
-  }
 
   /** Creates the master xpub for the key manager in the database
     * @throws RuntimeException

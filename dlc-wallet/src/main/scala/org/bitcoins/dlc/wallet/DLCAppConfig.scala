@@ -334,13 +334,12 @@ object DLCAppConfig
     walletConf.hasWallet().flatMap { walletExists =>
       if (walletExists) {
         logger.info(s"Using pre-existing wallet")
-        val wallet =
-          DLCWallet(nodeApi, chainQueryApi)
-        Future.successful(wallet)
+        val walletF = walletConf.createHDWallet(nodeApi, chainQueryApi)
+        walletF.map(DLCWallet.apply)
       } else {
         logger.info(s"Creating new wallet")
         val unInitializedWallet =
-          DLCWallet(nodeApi, chainQueryApi)
+          Wallet(nodeApi, chainQueryApi)
 
         Wallet
           .initialize(
@@ -348,7 +347,7 @@ object DLCAppConfig
             accountHandling = unInitializedWallet.accountHandling,
             bip39PasswordOpt = bip39PasswordOpt
           )
-          .map(_.asInstanceOf[DLCWallet])
+          .map(DLCWallet.apply)
       }
     }
   }

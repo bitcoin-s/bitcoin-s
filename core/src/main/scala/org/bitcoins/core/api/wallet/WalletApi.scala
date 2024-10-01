@@ -35,8 +35,7 @@ trait WalletApi {
   def feeRateApi: FeeRateApi
   val creationTime: Instant
 
-  def broadcastTransaction(transaction: Transaction): Future[Unit] =
-    nodeApi.broadcastTransaction(transaction)
+  def broadcastTransaction(transaction: Transaction): Future[Unit]
 
   def getFeeRate(): Future[FeeUnit] = feeRateApi.getFeeRate()
 

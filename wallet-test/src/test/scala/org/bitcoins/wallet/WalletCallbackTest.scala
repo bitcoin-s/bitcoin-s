@@ -43,7 +43,7 @@ class WalletCallbackTest extends BitcoinSWalletTest {
 
       val callbacks = WalletCallbacks.onNewAddressGenerated(callback)
 
-      fundedWallet.wallet.walletConfig.addCallbacks(callbacks)
+      fundedWallet.walletConfig.addCallbacks(callbacks)
 
       val wallet = fundedWallet.wallet
 
@@ -68,7 +68,7 @@ class WalletCallbackTest extends BitcoinSWalletTest {
 
       val callbacks = WalletCallbacks.onTransactionProcessed(callback)
 
-      fundedWallet.wallet.walletConfig.addCallbacks(callbacks)
+      fundedWallet.walletConfig.addCallbacks(callbacks)
 
       val wallet = fundedWallet.wallet
 
@@ -94,7 +94,7 @@ class WalletCallbackTest extends BitcoinSWalletTest {
 
       val callbacks = WalletCallbacks.onTransactionProcessed(callback)
 
-      fundedWallet.wallet.walletConfig.addCallbacks(callbacks)
+      fundedWallet.walletConfig.addCallbacks(callbacks)
 
       val wallet = fundedWallet.wallet
 
@@ -132,7 +132,7 @@ class WalletCallbackTest extends BitcoinSWalletTest {
 
       val callbacks = WalletCallbacks.onTransactionBroadcast(callback)
 
-      fundedWallet.wallet.walletConfig.addCallbacks(callbacks)
+      fundedWallet.walletConfig.addCallbacks(callbacks)
 
       val wallet = fundedWallet.wallet
 
@@ -155,7 +155,7 @@ class WalletCallbackTest extends BitcoinSWalletTest {
 
       val callbacks = WalletCallbacks.onReservedUtxos(callback)
 
-      fundedWallet.wallet.walletConfig.addCallbacks(callbacks)
+      fundedWallet.walletConfig.addCallbacks(callbacks)
 
       val wallet = fundedWallet.wallet
 
@@ -187,7 +187,7 @@ class WalletCallbackTest extends BitcoinSWalletTest {
       for {
         utxos <- wallet.utxoHandling.listUtxos()
         reserved <- wallet.utxoHandling.markUTXOsAsReserved(Vector(utxos.head))
-        _ = fundedWallet.wallet.walletConfig.addCallbacks(callbacks)
+        _ = fundedWallet.walletConfig.addCallbacks(callbacks)
 
         _ <- wallet.utxoHandling.unmarkUTXOsAsReserved(reserved)
         result <- resultP.future
@@ -208,7 +208,7 @@ class WalletCallbackTest extends BitcoinSWalletTest {
 
       val callbacks = WalletCallbacks.onBlockProcessed(callback)
 
-      fundedWallet.wallet.walletConfig.addCallbacks(callbacks)
+      fundedWallet.walletConfig.addCallbacks(callbacks)
 
       val wallet = fundedWallet.wallet
 

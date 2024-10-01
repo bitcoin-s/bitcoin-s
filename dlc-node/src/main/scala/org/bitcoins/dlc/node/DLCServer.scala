@@ -57,6 +57,7 @@ class DLCServer(
         Props(
           new DLCConnectionHandler(
             dlcWalletApi,
+            dlcWalletApi.incomingOfferHandling,
             connection,
             None,
             dataHandlerFactory,

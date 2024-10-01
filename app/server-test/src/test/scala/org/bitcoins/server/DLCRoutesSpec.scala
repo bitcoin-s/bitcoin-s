@@ -2,7 +2,10 @@ package org.bitcoins.server
 
 import org.apache.pekko.http.scaladsl.model.ContentTypes
 import org.apache.pekko.http.scaladsl.testkit.ScalatestRouteTest
-import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
+import org.bitcoins.core.api.dlc.wallet.{
+  DLCNeutrinoHDWalletApi,
+  IncomingDLCOfferHandlingApi
+}
 import org.bitcoins.core.api.dlc.wallet.db.DLCContactDb
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.dlc.models.ContractInfo
@@ -29,6 +32,9 @@ class DLCRoutesSpec
   val mockWallet = mock[DLCNeutrinoHDWalletApi]
 
   val mockNodeApi = DLCNode(mockWallet)(system, conf.dlcNodeConf)
+
+  val mockIncomingDLCOfferHandlingApi: IncomingDLCOfferHandlingApi =
+    mock[IncomingDLCOfferHandlingApi]
 
   val dlcRoutes = DLCRoutes(mockNodeApi)
 
@@ -161,7 +167,11 @@ class DLCRoutesSpec
     }
 
     "contact-add a peer" in {
-      (mockWallet
+      (() => mockWallet.incomingOfferHandling)
+        .expects()
+        .returning(mockIncomingDLCOfferHandlingApi)
+        .anyNumberOfTimes()
+      (mockWallet.incomingOfferHandling
         .addDLCContact(_: DLCContactDb))
         .expects(expected)
         .returning(Future.unit)
@@ -178,7 +188,12 @@ class DLCRoutesSpec
     }
 
     "contacts-list list contacts" in {
-      (() => mockWallet.listDLCContacts())
+      (() => mockWallet.incomingOfferHandling)
+        .expects()
+        .returning(mockIncomingDLCOfferHandlingApi)
+        .anyNumberOfTimes()
+
+      (() => mockWallet.incomingOfferHandling.listDLCContacts())
         .expects()
         .returning(Future.successful(Vector(expected)))
 
@@ -200,7 +215,12 @@ class DLCRoutesSpec
       val address = host + port
       val unresolved = InetSocketAddress.createUnresolved(host, 2862)
 
-      (mockWallet
+      (() => mockWallet.incomingOfferHandling)
+        .expects()
+        .returning(mockIncomingDLCOfferHandlingApi)
+        .anyNumberOfTimes()
+
+      (mockWallet.incomingOfferHandling
         .removeDLCContact(_: InetSocketAddress))
         .expects(unresolved)
         .returning(Future.unit)
@@ -216,7 +236,12 @@ class DLCRoutesSpec
     }
 
     "dlc-contact-add a peer" in {
-      (mockWallet
+      (() => mockWallet.incomingOfferHandling)
+        .expects()
+        .returning(mockIncomingDLCOfferHandlingApi)
+        .anyNumberOfTimes()
+
+      (mockWallet.incomingOfferHandling
         .addDLCContactMapping(_: Sha256Digest, _: InetSocketAddress))
         .expects(Sha256Digest.empty, expected.address)
         .returning(Future.unit)
@@ -236,8 +261,12 @@ class DLCRoutesSpec
     }
 
     "dlc-contact-remove a peer" in {
+      (() => mockWallet.incomingOfferHandling)
+        .expects()
+        .returning(mockIncomingDLCOfferHandlingApi)
+        .anyNumberOfTimes()
 
-      (mockWallet
+      (mockWallet.incomingOfferHandling
         .removeDLCContactMapping(_: Sha256Digest))
         .expects(Sha256Digest.empty)
         .returning(Future.unit)

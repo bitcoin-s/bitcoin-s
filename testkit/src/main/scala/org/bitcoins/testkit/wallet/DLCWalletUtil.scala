@@ -403,9 +403,13 @@ object DLCWalletUtil extends BitcoinSLogger {
       tx <- walletB.broadcastDLCFundingTx(sigs.contractId)
       _ <- walletA.transactionProcessing.processTransaction(tx, None)
     } yield {
+      val fundedA =
+        FundedDLCWallet(walletA, walletA.walletConfig, walletA.dlcConfig)
+      val fundedB =
+        FundedDLCWallet(walletB, walletB.walletConfig, walletB.dlcConfig)
       (
-        InitializedDLCWallet(FundedDLCWallet(walletA)),
-        InitializedDLCWallet(FundedDLCWallet(walletB))
+        InitializedDLCWallet(fundedA),
+        InitializedDLCWallet(fundedB)
       )
     }
   }

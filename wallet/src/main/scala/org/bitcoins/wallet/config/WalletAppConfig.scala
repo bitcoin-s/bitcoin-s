@@ -345,7 +345,7 @@ case class WalletAppConfig(
   def createHDWallet(
       nodeApi: NodeApi,
       chainQueryApi: ChainQueryApi
-  )(implicit system: ActorSystem): Future[Wallet] = {
+  ): Future[Wallet] = {
     WalletAppConfig.createHDWallet(
       nodeApi = nodeApi,
       chainQueryApi = chainQueryApi

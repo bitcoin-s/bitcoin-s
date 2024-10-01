@@ -10,7 +10,10 @@ import org.apache.pekko.actor.{
 }
 import org.apache.pekko.event.LoggingReceive
 import org.apache.pekko.io.{IO, Tcp}
-import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
+import org.bitcoins.core.api.dlc.wallet.{
+  DLCWalletApi,
+  IncomingDLCOfferHandlingApi
+}
 import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.core.protocol.BigSizeUInt
@@ -25,6 +28,7 @@ import scala.concurrent.{Future, Promise}
 
 class DLCClient(
     dlcWalletApi: DLCWalletApi,
+    incomingOfferHandling: IncomingDLCOfferHandlingApi,
     connectedAddress: Option[Promise[InetSocketAddress]],
     handlerP: Option[Promise[ActorRef]],
     dataHandlerFactory: DLCDataHandler.Factory,
@@ -93,6 +97,7 @@ class DLCClient(
             Props(
               new DLCConnectionHandler(
                 dlcWalletApi,
+                incomingOfferHandling,
                 connection,
                 handlerP,
                 dataHandlerFactory,
@@ -127,6 +132,7 @@ class DLCClient(
         Props(
           new DLCConnectionHandler(
             dlcWalletApi,
+            incomingOfferHandling,
             proxy,
             handlerP,
             dataHandlerFactory,
@@ -155,6 +161,7 @@ object DLCClient {
 
   def props(
       dlcWalletApi: DLCWalletApi,
+      incomingOfferHandling: IncomingDLCOfferHandlingApi,
       connectedAddress: Option[Promise[InetSocketAddress]],
       handlerP: Option[Promise[ActorRef]],
       dataHandlerFactory: DLCDataHandler.Factory,
@@ -164,6 +171,7 @@ object DLCClient {
     Props(
       new DLCClient(
         dlcWalletApi,
+        incomingOfferHandling,
         connectedAddress,
         handlerP,
         dataHandlerFactory,
@@ -175,6 +183,7 @@ object DLCClient {
   def connect(
       peer: Peer,
       dlcWalletApi: DLCWalletApi,
+      incomingOfferHandling: IncomingDLCOfferHandlingApi,
       handlerP: Option[Promise[ActorRef]],
       dataHandlerFactory: DLCDataHandler.Factory =
         DLCDataHandler.defaultFactory,
@@ -186,6 +195,7 @@ object DLCClient {
       system.actorOf(
         props(
           dlcWalletApi,
+          incomingOfferHandling,
           Some(promise),
           handlerP,
           dataHandlerFactory,

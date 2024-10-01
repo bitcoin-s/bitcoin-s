@@ -1,12 +1,31 @@
 package org.bitcoins.dlc.wallet
 
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.chain.ChainQueryApi
-import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
+import org.bitcoins.core.api.dlc.wallet.{
+  DLCNeutrinoHDWalletApi,
+  IncomingDLCOfferHandlingApi
+}
 import org.bitcoins.core.api.dlc.wallet.db.DLCDb
+import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
+import org.bitcoins.core.api.wallet.{
+  AccountHandlingApi,
+  AddressHandlingApi,
+  BlockSyncState,
+  FundTransactionHandlingApi,
+  NeutrinoHDWalletApi,
+  RescanHandlingApi,
+  SendFundsHandlingApi,
+  SyncHeightDescriptor,
+  UtxoHandlingApi,
+  WalletInfo
+}
 import org.bitcoins.core.api.wallet.db.*
+import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.*
 import org.bitcoins.core.dlc.accounting.DLCWalletAccounting
+import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.hd.*
 import org.bitcoins.core.number.*
 import org.bitcoins.core.protocol.*
@@ -39,72 +58,72 @@ import org.bitcoins.dlc.wallet.util.{
   IntermediaryDLCStatus
 }
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.internal.TransactionProcessing
-import org.bitcoins.wallet.models.WalletDAOs
+import org.bitcoins.wallet.internal.{
+  RescanHandling,
+  TransactionProcessing,
+  UtxoHandling
+}
+import org.bitcoins.wallet.models.{
+  AddressDAO,
+  ScriptPubKeyDAO,
+  TransactionDAO,
+  WalletDAOs
+}
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import scodec.bits.ByteVector
 import slick.dbio.*
 
 import java.net.InetSocketAddress
+import java.time.Instant
 import scala.concurrent.Future
 
 /** A [[Wallet]] with full DLC Functionality */
-abstract class DLCWallet
-    extends Wallet
-    with DLCNeutrinoHDWalletApi
-    with IncomingDLCOffersHandling {
-
-  implicit val dlcConfig: DLCAppConfig
+case class DLCWallet(override val walletApi: Wallet)(implicit
+    val dlcConfig: DLCAppConfig,
+    val walletConfig: WalletAppConfig)
+    extends DLCNeutrinoHDWalletApi
+    with BitcoinSLogger {
+  import dlcConfig.ec
 
   import dlcConfig.profile.api._
 
+  private val networkParameters: NetworkParameters = walletConfig.network
+  private[wallet] val dlcWalletDAOs = DLCWalletDAOs.fromDLCAppConfig(dlcConfig)
   private[bitcoins] val announcementDAO: OracleAnnouncementDataDAO =
-    OracleAnnouncementDataDAO()
-  private[bitcoins] val oracleNonceDAO: OracleNonceDAO = OracleNonceDAO()
+    dlcWalletDAOs.oracleAnnouncementDAO
+  private[bitcoins] val oracleNonceDAO: OracleNonceDAO =
+    dlcWalletDAOs.oracleNonceDAO
 
   private[bitcoins] val dlcAnnouncementDAO: DLCAnnouncementDAO =
-    DLCAnnouncementDAO()
-  private[bitcoins] val dlcOfferDAO: DLCOfferDAO = DLCOfferDAO()
-  private[bitcoins] val dlcAcceptDAO: DLCAcceptDAO = DLCAcceptDAO()
-  private[bitcoins] val dlcDAO: DLCDAO = DLCDAO()
+    dlcWalletDAOs.dlcAnnouncementDAO
+  private[bitcoins] val dlcOfferDAO: DLCOfferDAO = dlcWalletDAOs.dlcOfferDAO
+  private[bitcoins] val dlcAcceptDAO: DLCAcceptDAO = dlcWalletDAOs.dlcAcceptDAO
+  private[bitcoins] val dlcDAO: DLCDAO = dlcWalletDAOs.dlcDAO
 
   private[bitcoins] val contractDataDAO: DLCContractDataDAO =
-    DLCContractDataDAO()
-  private[bitcoins] val dlcInputsDAO: DLCFundingInputDAO = DLCFundingInputDAO()
-  private[bitcoins] val dlcSigsDAO: DLCCETSignaturesDAO = DLCCETSignaturesDAO()
-  private[bitcoins] val dlcRefundSigDAO: DLCRefundSigsDAO = DLCRefundSigsDAO()
-  private[bitcoins] val remoteTxDAO: DLCRemoteTxDAO = DLCRemoteTxDAO()
-
-  private[bitcoins] val incomingOfferDAO: IncomingDLCOfferDAO =
-    IncomingDLCOfferDAO()
+    dlcWalletDAOs.contractDataDAO
+  private[bitcoins] val dlcInputsDAO: DLCFundingInputDAO =
+    dlcWalletDAOs.dlcInputsDAO
+  private[bitcoins] val dlcSigsDAO: DLCCETSignaturesDAO =
+    dlcWalletDAOs.dlcSigsDAO
+  private[bitcoins] val dlcRefundSigDAO: DLCRefundSigsDAO =
+    dlcWalletDAOs.dlcRefundSigDAO
+  private[bitcoins] val remoteTxDAO: DLCRemoteTxDAO =
+    dlcWalletDAOs.dlcRemoteTxDAO
 
   private[bitcoins] val contactDAO: DLCContactDAO =
-    DLCContactDAO()
+    dlcWalletDAOs.contactDAO
 
-  private val walletDAOs: WalletDAOs = WalletDAOs(accountDAO,
-                                                  addressDAO,
-                                                  addressTagDAO,
-                                                  spendingInfoDAO,
-                                                  transactionDAO,
-                                                  incomingTxDAO,
-                                                  outgoingTxDAO,
-                                                  scriptPubKeyDAO,
-                                                  stateDescriptorDAO)
-  private[wallet] val dlcWalletDAOs = DLCWalletDAOs(
-    dlcDAO,
-    contractDataDAO,
-    dlcAnnouncementDAO,
-    dlcInputsDAO,
-    dlcOfferDAO,
-    dlcAcceptDAO,
-    dlcSigsDAO,
-    dlcRefundSigDAO,
-    oracleNonceDAO,
-    announcementDAO,
-    remoteTxDAO,
-    incomingOfferDAO,
-    contactDAO
-  )
+  private def walletDAOs: WalletDAOs = walletApi.walletDAOs
+
+  private[bitcoins] def addressDAO: AddressDAO = walletApi.addressDAO
+  private[bitcoins] def transactionDAO: TransactionDAO =
+    walletApi.transactionDAO
+  private[bitcoins] def scriptPubKeyDAO: ScriptPubKeyDAO =
+    walletApi.scriptPubKeyDAO
+
+  override def incomingOfferHandling: IncomingDLCOfferHandlingApi =
+    IncomingDLCOffersHandling(dlcWalletDAOs)
 
   private[wallet] val dlcDataManagement = DLCDataManagement(dlcWalletDAOs)
 
@@ -116,22 +135,34 @@ abstract class DLCWallet
     val txProcessing = TransactionProcessing(
       walletApi = this,
       chainQueryApi = chainQueryApi,
-      utxoHandling = utxoHandling,
+      utxoHandling = utxoHandling.asInstanceOf[UtxoHandling],
       walletDAOs = walletDAOs
-    )
+    )(walletApi.walletConfig, ec)
     DLCTransactionProcessing(
       txProcessing = txProcessing,
       dlcWalletDAOs = dlcWalletDAOs,
       walletDAOs = walletDAOs,
       dlcDataManagement = dlcDataManagement,
-      keyManager = keyManager,
-      transactionDAO = transactionDAO,
+      keyManager = walletApi.keyManager,
+      transactionDAO = walletDAOs.transactionDAO,
       utxoHandling = utxoHandling,
       dlcWalletApi = this
     )
   }
+
+  override lazy val rescanHandling: RescanHandlingApi = {
+    RescanHandling(
+      transactionProcessing = transactionProcessing,
+      accountHandling = accountHandling,
+      addressHandling = addressHandling,
+      chainQueryApi = chainQueryApi,
+      nodeApi = nodeApi,
+      walletDAOs = walletDAOs
+    )(walletConfig, walletConfig.system)
+  }
   private lazy val safeDLCDatabase: SafeDatabase = dlcDAO.safeDatabase
-  private lazy val walletDatabase: SafeDatabase = addressDAO.safeDatabase
+  private lazy val walletDatabase: SafeDatabase =
+    walletDAOs.addressDAO.safeDatabase
 
   /** Updates the contract Id in the wallet database for the given offer and
     * accept
@@ -299,8 +330,8 @@ abstract class DLCWallet
       index: Int
   ): Future[Vector[AddressDb]] = {
     for {
-      zero <- addressHandling.getAddress(account, chainType, index)
-      one <- addressHandling.getAddress(account, chainType, index + 1)
+      zero <- walletApi.addressHandling.getAddress(account, chainType, index)
+      one <- walletApi.addressHandling.getAddress(account, chainType, index + 1)
     } yield {
       logger.debug(s"Wrote DLC key addresses to database using index $index")
       Vector(zero, one)
@@ -331,7 +362,7 @@ abstract class DLCWallet
         s"Canceling DLC with tempContractId=${dlcDb.tempContractId.hex} dlcId=${dlcId.hex} contractId=${dlcDb.contractIdOpt}"
       )
       inputs <- dlcInputsDAO.findByDLCId(dlcId, dlcDb.isInitiator)
-      dbs <- spendingInfoDAO.findByOutPoints(inputs.map(_.outPoint))
+      dbs <- walletDAOs.utxoDAO.findByOutPoints(inputs.map(_.outPoint))
       // allow this to fail in the case they have already been unreserved
       _ <- utxoHandling.unmarkUTXOsAsReserved(dbs).recoverWith {
         case scala.util.control.NonFatal(_) => Future.successful(Vector.empty)
@@ -430,10 +461,11 @@ abstract class DLCWallet
       chainType = HDChainType.External
 
       account <- accountHandling.getDefaultAccountForType(AddressType.SegWit)
-      nextIndex <- addressHandling.getNextAvailableIndex(account, chainType)
+      nextIndex <- walletApi.addressHandling.getNextAvailableIndex(account,
+                                                                   chainType)
       _ <- writeDLCKeysToAddressDb(account, chainType, nextIndex)
 
-      fundRawTxHelper <- fundTxHandling.fundRawTransactionInternal(
+      fundRawTxHelper <- walletApi.fundTxHandling.fundRawTransactionInternal(
         destinations = Vector(TransactionOutput(collateral, EmptyScriptPubKey)),
         feeRate = feeRate,
         fromAccount = account,
@@ -635,7 +667,7 @@ abstract class DLCWallet
         }
       case None =>
         val nextIndexF =
-          addressHandling.getNextAvailableIndex(account, chainType)
+          walletApi.addressHandling.getNextAvailableIndex(account, chainType)
         val acceptWithoutSigsWithKeysF
             : Future[(DLCAcceptWithoutSigs, DLCPublicKeys)] =
           nextIndexF.map { nextIndex =>
@@ -838,7 +870,7 @@ abstract class DLCWallet
     val txBuilderAndSpendingInfosF
         : Future[FundRawTxHelper[ShufflingNonInteractiveFinalizer]] = {
       for {
-        fundRawTxHelper <- fundTxHandling.fundRawTransactionInternal(
+        fundRawTxHelper <- walletApi.fundTxHandling.fundRawTransactionInternal(
           destinations =
             Vector(TransactionOutput(collateral, EmptyScriptPubKey)),
           feeRate = offer.feeRate,
@@ -862,7 +894,7 @@ abstract class DLCWallet
       )
     )
     val privKeyPath = HDPath.fromString(bip32Path.toString)
-    keyManager.toSign(privKeyPath)
+    walletApi.keyManager.toSign(privKeyPath)
   }
 
   private def createNewDLCAccept(
@@ -1215,7 +1247,7 @@ abstract class DLCWallet
         dlcId = dlc.dlcId,
         transactionDAO = transactionDAO,
         fundingUtxoScriptSigParams = scriptSigParams,
-        keyManager = keyManager
+        keyManager = walletApi.keyManager
       )
 
       mySigs <- dlcSigsDAO.findByDLCId(dlc.dlcId)
@@ -1574,7 +1606,7 @@ abstract class DLCWallet
         dlcDb = dlcDb,
         fundingUtxoScriptSigParams = scriptSigParams,
         transactionDAO = transactionDAO,
-        keyManager = keyManager
+        keyManager = walletApi.keyManager
       )
       _ = require(
         signerOpt.isDefined,
@@ -1635,11 +1667,13 @@ abstract class DLCWallet
           isValidBroadcastState(dlcDb)
       }
       tx <- fundingTxF
-      _ <- updateDLCState(contractId, DLCState.Broadcasted)
+      state <- updateDLCState(contractId, DLCState.Broadcasted)
       _ = logger.info(
         s"Broadcasting funding transaction ${tx.txIdBE.hex} for contract ${contractId.toHex}"
       )
       _ <- broadcastTransaction(tx)
+      status <- findDLC(state.dlcId)
+      _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(status.get)
       _ = logger.info(s"Done broadcast tx ${contractId}")
     } yield tx
   }
@@ -1773,7 +1807,7 @@ abstract class DLCWallet
                   contractId = contractId,
                   txDAO = transactionDAO,
                   fundingUtxoScriptSigParams = scriptSigParams,
-                  keyManager = keyManager
+                  keyManager = walletApi.keyManager
                 )
             }
             executorWithSetupOptF.flatMap {
@@ -1879,7 +1913,7 @@ abstract class DLCWallet
         dlcDb.dlcId,
         transactionDAO,
         scriptSigParams,
-        keyManager
+        walletApi.keyManager
       )
       _ = require(
         executorOpt.isDefined,
@@ -2254,6 +2288,62 @@ abstract class DLCWallet
       case Some(feeRate) =>
         Future.successful(feeRate)
     }
+
+  override def broadcastTransaction(transaction: Transaction): Future[Unit] = {
+    walletApi.broadcastTransaction(transaction)
+  }
+
+  override def processCompactFilters(
+      blockFilters: Vector[(DoubleSha256DigestBE, GolombFilter)])
+      : Future[NeutrinoHDWalletApi] =
+    walletApi.processCompactFilters(blockFilters)
+
+  override def accountHandling: AccountHandlingApi = walletApi.accountHandling
+
+  override def fundTxHandling: FundTransactionHandlingApi =
+    walletApi.fundTxHandling
+
+  override def addressHandling: AddressHandlingApi = walletApi.addressHandling
+
+  override def utxoHandling: UtxoHandlingApi = walletApi.utxoHandling
+
+  override def sendFundsHandling: SendFundsHandlingApi =
+    walletApi.sendFundsHandling
+
+  override val nodeApi: NodeApi = walletApi.nodeApi
+  override val chainQueryApi: ChainQueryApi = walletApi.chainQueryApi
+
+  override def feeRateApi: FeeRateApi = walletApi.feeRateApi
+
+  override val creationTime: Instant = walletApi.creationTime
+
+  /** Gets the sum of all confirmed UTXOs in this wallet */
+  override def getConfirmedBalance(): Future[CurrencyUnit] =
+    walletApi.getConfirmedBalance()
+
+  override def getNewAddress(): Future[BitcoinAddress] =
+    walletApi.getNewAddress()
+
+  override def getNewChangeAddress(): Future[BitcoinAddress] =
+    walletApi.getNewChangeAddress()
+
+  /** Gets the sum of all unconfirmed UTXOs in this wallet */
+  override def getUnconfirmedBalance(): Future[CurrencyUnit] =
+    walletApi.getUnconfirmedBalance()
+
+  /** Checks if the wallet contains any data */
+  override def isEmpty(): Future[Boolean] = walletApi.isEmpty()
+
+  override def getSyncState(): Future[BlockSyncState] = walletApi.getSyncState()
+
+  override def isRescanning(): Future[Boolean] = walletApi.isRescanning()
+
+  override def getSyncDescriptorOpt(): Future[Option[SyncHeightDescriptor]] =
+    walletApi.getSyncDescriptorOpt()
+
+  override def getWalletName(): Future[String] = walletApi.getWalletName()
+
+  override def getInfo(): Future[WalletInfo] = walletApi.getInfo()
 }
 
 object DLCWallet extends WalletLogger {
@@ -2263,21 +2353,6 @@ object DLCWallet extends WalletLogger {
 
   case class InvalidAnnouncementSignature(message: String)
       extends RuntimeException(message)
-
-  private case class DLCWalletImpl(
-      nodeApi: NodeApi,
-      chainQueryApi: ChainQueryApi
-  )(implicit
-      val walletConfig: WalletAppConfig,
-      val dlcConfig: DLCAppConfig
-  ) extends DLCWallet
-
-  def apply(
-      nodeApi: NodeApi,
-      chainQueryApi: ChainQueryApi
-  )(implicit config: WalletAppConfig, dlcConfig: DLCAppConfig): DLCWallet = {
-    DLCWalletImpl(nodeApi, chainQueryApi)
-  }
 
   private object AcceptingOffersLatch {
 
