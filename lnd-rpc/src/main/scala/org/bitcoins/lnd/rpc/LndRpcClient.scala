@@ -112,7 +112,7 @@ import scala.util.Try
 /** @param binaryOpt
   *   Path to lnd executable
   */
-class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
+case class LndRpcClient(instance: LndInstance, binaryOpt: Option[File] = None)(
     implicit val system: ActorSystem
 ) extends NativeProcessFactory
     with LndUtils
@@ -1263,11 +1263,6 @@ class LndRpcClient(val instance: LndInstance, binaryOpt: Option[File] = None)(
     for {
       _ <- stopF
       _ <- stopBinary()
-      _ <- {
-        if (system.name == LndRpcClient.ActorSystemName)
-          system.terminate()
-        else Future.unit
-      }
     } yield this
   }
 
@@ -1288,32 +1283,8 @@ object LndRpcClient {
     hex"8c45ee0b90e3afd0fb4d6f39afa3c5d551ee5f2c7ac2d06820ed3d16582186d2"
 
   /** The current version we support of Lnd */
-  private[bitcoins] val version = "v0.17.5-beta"
+  private[bitcoins] val version = "v0.18.3-beta"
 
   /** Key used for adding the macaroon to the gRPC header */
   private[lnd] val macaroonKey = "macaroon"
-
-  /** THe name we use to create actor systems. We use this to know which actor
-    * systems to shut down on node shutdown
-    */
-  private[lnd] val ActorSystemName = "lnd-rpc-client-created-by-bitcoin-s"
-
-  /** Creates an RPC client from the given instance, together with the given
-    * actor system. This is for advanced users, where you need fine grained
-    * control over the RPC client.
-    */
-  def apply(
-      instance: LndInstance,
-      binary: Option[File] = None
-  ): LndRpcClient = {
-    implicit val system: ActorSystem = ActorSystem.create(ActorSystemName)
-    withActorSystem(instance, binary)
-  }
-
-  /** Constructs a RPC client from the given datadir, or the default datadir if
-    * no directory is provided
-    */
-  def withActorSystem(instance: LndInstance, binary: Option[File] = None)(
-      implicit system: ActorSystem
-  ) = new LndRpcClient(instance, binary)
 }

@@ -40,7 +40,7 @@ TaskKeys.downloadLnd := {
     Files.createDirectories(binaryDir)
   }
 
-  val version = "0.17.5-beta"
+  val version = "0.18.3-beta"
 
   val (platform, suffix) =
     if (Properties.isLinux) ("linux-amd64", "tar.gz")
@@ -75,13 +75,13 @@ TaskKeys.downloadLnd := {
 
     val expectedHash =
       if (Properties.isLinux)
-        "c06d96222990ecb240affba44c92413c26481057d9448657b18b6f0ab6a56d47"
+        "b7ef62befece22bbc60227d63280dee4dfa7ec46ec780f33988cece5a70b4b05"
       else if (Properties.isMac && System.getProperty("os.arch") == "aarch64")
-        "fa88dc3e05605f71ec4a8c1cf608bc3b0d166caa5e0bbe2213e35c62346b31fd"
+        "69b43b6c84884305f856ca0fd2ac55263a54c1dedf43a7c8fb620bebc8453147"
       else if (Properties.isMac)
         "71ec034b2e62a6db29c88d941f8e8902fa6070ce45e1b3c22d529313ae5fd0ce"
       else if (Properties.isWin)
-        "9b6f0ada7910d5beddc44d6eef3a92206d3f7f06c19e9e3dcc412dd6a0d6182d"
+        "07b5f5e6a97361850ffd3188d084a59a85c04397bbe9948f5d254152c6e9aa97"
       else sys.error(s"Unsupported OS: ${Properties.osName}")
 
     val success = hash.equalsIgnoreCase(expectedHash)
