@@ -40,7 +40,7 @@ TaskKeys.downloadLnd := {
     Files.createDirectories(binaryDir)
   }
 
-  val version = "0.17.5-beta"
+  val version = "0.18.3-beta"
 
   val (platform, suffix) =
     if (Properties.isLinux) ("linux-amd64", "tar.gz")
@@ -75,7 +75,7 @@ TaskKeys.downloadLnd := {
 
     val expectedHash =
       if (Properties.isLinux)
-        "c06d96222990ecb240affba44c92413c26481057d9448657b18b6f0ab6a56d47"
+        "b7ef62befece22bbc60227d63280dee4dfa7ec46ec780f33988cece5a70b4b05"
       else if (Properties.isMac && System.getProperty("os.arch") == "aarch64")
         "fa88dc3e05605f71ec4a8c1cf608bc3b0d166caa5e0bbe2213e35c62346b31fd"
       else if (Properties.isMac)
