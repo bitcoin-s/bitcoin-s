@@ -81,7 +81,7 @@ TaskKeys.downloadLnd := {
       else if (Properties.isMac)
         "71ec034b2e62a6db29c88d941f8e8902fa6070ce45e1b3c22d529313ae5fd0ce"
       else if (Properties.isWin)
-        "9b6f0ada7910d5beddc44d6eef3a92206d3f7f06c19e9e3dcc412dd6a0d6182d"
+        "07b5f5e6a97361850ffd3188d084a59a85c04397bbe9948f5d254152c6e9aa97"
       else sys.error(s"Unsupported OS: ${Properties.osName}")
 
     val success = hash.equalsIgnoreCase(expectedHash)
