@@ -149,7 +149,7 @@ trait Client
         logger.debug(
           s"starting bitcoind with datadir ${local.datadir} and binary path $binaryPath"
         )
-
+        println(s"cmd=$cmd")
         cmd
 
     }
