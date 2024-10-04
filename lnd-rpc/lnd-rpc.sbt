@@ -77,7 +77,7 @@ TaskKeys.downloadLnd := {
       if (Properties.isLinux)
         "b7ef62befece22bbc60227d63280dee4dfa7ec46ec780f33988cece5a70b4b05"
       else if (Properties.isMac && System.getProperty("os.arch") == "aarch64")
-        "fa88dc3e05605f71ec4a8c1cf608bc3b0d166caa5e0bbe2213e35c62346b31fd"
+        "69b43b6c84884305f856ca0fd2ac55263a54c1dedf43a7c8fb620bebc8453147"
       else if (Properties.isMac)
         "71ec034b2e62a6db29c88d941f8e8902fa6070ce45e1b3c22d529313ae5fd0ce"
       else if (Properties.isWin)
