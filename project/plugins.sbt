@@ -31,7 +31,7 @@ addSbtPlugin("ch.epfl.scala" % "sbt-bloop" % "2.0.2")
 
 //tool to publish snapshots to sonatype after CI builds finish
 //https://github.com/olafurpg/sbt-ci-release
-addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.6.1")
+addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.7.0")
 
 // write markdown files with type-checked Scala
 //https://github.com/scalameta/mdoc
