@@ -190,11 +190,15 @@ object JsonSerializers {
   implicit val networkAddressReads: Reads[NetworkAddress] =
     Json.reads[NetworkAddress]
 
-  implicit val geNetworkInfoPreV21Reads: Reads[GetNetworkInfoResultPreV21] =
-    Json.reads[GetNetworkInfoResultPreV21]
+  implicit val getNetworkInfoV28Reads: Reads[GetNetworkInfoResultV28] =
+    Json.reads[GetNetworkInfoResultV28]
 
-  implicit val geNetworkInfoPostV21Reads: Reads[GetNetworkInfoResultPostV21] =
+  implicit val getNetworkInfoPostV21Reads: Reads[GetNetworkInfoResultPostV21] =
     Json.reads[GetNetworkInfoResultPostV21]
+
+  implicit val getNetworkInfoReads: Reads[GetNetworkInfoResult] = {
+    Json.reads[GetNetworkInfoResult]
+  }
 
   implicit val satsPerKbReads: Reads[SatoshisPerKiloByte] =
     new Reads[SatoshisPerKiloByte] {
@@ -297,6 +301,15 @@ object JsonSerializers {
   implicit val getBlockChainInfoResultPostV23Reads
       : Reads[GetBlockChainInfoResultPostV23] =
     Json.reads[GetBlockChainInfoResultPostV23]
+
+  implicit val getBlockChainInfoResultPost27Reads
+      : Reads[GetBlockChainInfoResultPostV27] = {
+    Json.reads[GetBlockChainInfoResultPostV27]
+  }
+
+  implicit val getBlockchainInfoResult: Reads[GetBlockChainInfoResult] = {
+    Json.reads[GetBlockChainInfoResult]
+  }
 
   implicit val blockHeaderFormattedReads: Reads[GetBlockHeaderResult] =
     Json.reads[GetBlockHeaderResult]
@@ -537,6 +550,12 @@ object JsonSerializers {
   implicit val getBlockTemplateResultReads: Reads[GetBlockTemplateResult] =
     Json.reads[GetBlockTemplateResult]
 
+  implicit val miningInfoResultPre28: Reads[GetMiningInfoResultPre28] = {
+    Json.reads[GetMiningInfoResultPre28]
+  }
+  implicit val miningInfoResultV28: Reads[GetMiningInfoResultV28] = {
+    Json.reads[GetMiningInfoResultV28]
+  }
   implicit val miningInfoReads: Reads[GetMiningInfoResult] =
     Json.reads[GetMiningInfoResult]
 
