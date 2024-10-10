@@ -109,7 +109,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
                   |rpcuser=$username
                   |rpcpassword=$pass
                   |rpcport=${rpcUri.getPort}
-                  |port=${uri.getPort}
+                  |bind=127.0.0.1:${uri.getPort}
                   |debug=$isDebug
                   |walletbroadcast=1
                   |mempoolfullrbf=1
