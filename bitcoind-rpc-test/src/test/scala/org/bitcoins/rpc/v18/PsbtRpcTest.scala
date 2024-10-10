@@ -107,7 +107,6 @@ class PsbtRpcTest extends BitcoindFixturesFundedCachedNewest {
     val joinedF = client.joinPsbts(seqofpsbts)
 
     joinedF.map { result =>
-      logger.info(s"result=${result.base64}")
       val allInputs = seqofpsbts.flatMap(_.transaction.inputs).distinct
       val allOutputs = seqofpsbts.flatMap(_.transaction.outputs).distinct
       assert(allInputs.forall(i => result.transaction.inputs.contains(i)))

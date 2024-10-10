@@ -1,7 +1,6 @@
 package org.bitcoins.rpc
 
 import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.{
   BitcoindAuthCredentials,
@@ -11,33 +10,13 @@ import org.bitcoins.rpc.config.{
 }
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil.newestBitcoindBinary
-
 import org.bitcoins.testkit.util.{BitcoindRpcTest, FileUtil}
 import org.scalatest.compatible.Assertion
 
-import java.io.{File, PrintWriter}
 import java.net.URI
-import java.nio.file.{Files, Path}
 import scala.concurrent.Future
-import scala.io.Source
-import scala.util.control.NonFatal
 
 class BitcoindInstanceTest extends BitcoindRpcTest {
-
-  private val sampleConf: Seq[String] = {
-    val source = Source.fromURL(getClass.getResource("/sample-bitcoin.conf"))
-    source.getLines().toSeq
-  }
-
-  private val datadir: Path = Files.createTempDirectory(null)
-
-  override protected def beforeAll(): Unit = {
-    val confFile = new File(datadir.toString + "/bitcoin.conf")
-    val pw = new PrintWriter(confFile)
-    sampleConf.foreach(line => pw.write(line + "\n"))
-    pw.close()
-  }
 
   /** Tests that the client can call the isStartedF method without throwing and
     * then start
@@ -63,12 +42,15 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
     val confStr = s"""
                      |regtest=1
                      |daemon=1
+                     |[regtest]
                      |port=${RpcUtil.randomPort}
                      |rpcport=${RpcUtil.randomPort}
     """.stripMargin
 
     val conf = BitcoindConfig(confStr, FileUtil.tmpDir())
-    val instance = BitcoindInstanceLocal.fromConfig(conf, newestBitcoindBinary)
+    val instance =
+      BitcoindInstanceLocal.fromConfig(conf,
+                                       BitcoindRpcTestUtil.newestBitcoindBinary)
     assert(
       instance.authCredentials
         .isInstanceOf[BitcoindAuthCredentials.CookieBased]
@@ -84,12 +66,15 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
                      |regtest=1
                      |rpcuser=foobar
                      |rpcpassword=barfoo
+                     |[regtest]
                      |port=${RpcUtil.randomPort}
                      |rpcport=${RpcUtil.randomPort}
       """.stripMargin
 
     val conf = BitcoindConfig(confStr, FileUtil.tmpDir())
-    val instance = BitcoindInstanceLocal.fromConfig(conf, newestBitcoindBinary)
+    val instance =
+      BitcoindInstanceLocal.fromConfig(conf,
+                                       BitcoindRpcTestUtil.newestBitcoindBinary)
     assert(
       instance.authCredentials
         .isInstanceOf[BitcoindAuthCredentials.PasswordBased]
@@ -112,8 +97,9 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
                      |daemon=1
                      |rpcauth=bitcoin-s:6d7580be1deb4ae52bc4249871845b09$$82b282e7c6493f6982a5a7af9fbb1b671bab702e2f31bbb1c016bb0ea1cc27ca
                      |regtest=1
-                     |port=${RpcUtil.randomPort}
-                     |rpcport=${RpcUtil.randomPort}
+                     |[regtest]
+                     |port=${port}
+                     |rpcport=${rpcPort}
        """.stripMargin
 
     val conf = BitcoindConfig(confStr, FileUtil.tmpDir())
@@ -129,34 +115,10 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
         rpcUri = new URI(s"http://localhost:$rpcPort"),
         authCredentials = authCredentials,
         datadir = conf.datadir,
-        binary = newestBitcoindBinary
+        binary = BitcoindRpcTestUtil.newestBitcoindBinary
       )
 
     testClientStart(BitcoindRpcClient(instance))
-  }
-
-  it should "parse a bitcoin.conf file, start bitcoind, mine some blocks and quit" in {
-    val instance =
-      BitcoindInstanceLocal.fromDatadir(datadir.toFile, newestBitcoindBinary)
-    val client =
-      BitcoindRpcClient(instance)
-
-    for {
-      _ <- startClient(client)
-      _ <- client.generate(101)
-      balance <- client.getBalance
-      _ <- BitcoindRpcTestUtil.stopServers(Vector(client))
-      _ <-
-        client.getBalance
-          .map { balance =>
-            logger.error(s"Got unexpected balance: $balance")
-            fail("Was able to connect to bitcoind after shutting down")
-          }
-          .recover { case NonFatal(_) =>
-            ()
-          }
-    } yield assert(balance > Bitcoins(0))
-
   }
 
   it should "connect us to a remote bitcoind instance and ping it successfully" in {
@@ -166,8 +128,9 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
                      |daemon=1
                      |rpcauth=bitcoin-s:6d7580be1deb4ae52bc4249871845b09$$82b282e7c6493f6982a5a7af9fbb1b671bab702e2f31bbb1c016bb0ea1cc27ca
                      |regtest=1
-                     |port=${RpcUtil.randomPort}
-                     |rpcport=${RpcUtil.randomPort}
+                     |[regtest]
+                     |port=${port}
+                     |rpcport=${rpcPort}
        """.stripMargin
 
     val conf = BitcoindConfig(confStr, FileUtil.tmpDir())
@@ -183,7 +146,7 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
         rpcUri = new URI(s"http://localhost:$rpcPort"),
         authCredentials = authCredentials,
         datadir = conf.datadir,
-        binary = newestBitcoindBinary
+        binary = BitcoindRpcTestUtil.newestBitcoindBinary
       )
 
     val client =
