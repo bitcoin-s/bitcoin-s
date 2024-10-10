@@ -142,7 +142,8 @@ trait Client
         val binaryPath = local.binary.getAbsolutePath
         val cmd = Vector(
           binaryPath,
-          "-datadir=" + local.datadir
+          "-datadir=" + local.datadir,
+          "-deprecatedrpc=warnings"
         )
         logger.debug(
           s"starting bitcoind with datadir ${local.datadir} and binary path $binaryPath"
