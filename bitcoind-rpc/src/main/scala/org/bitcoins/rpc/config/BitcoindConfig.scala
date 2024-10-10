@@ -223,7 +223,7 @@ case class BitcoindConfig(
   lazy val zmqpubhashtx: Option[InetSocketAddress] =
     getValue("zmqpubhashtx").map(toInetSocketAddress)
 
-  lazy val port: Int = getValue("port").map(_.toInt).getOrElse(network.port)
+  lazy val portOpt: Option[Int] = getValue("port").map(_.toInt)
 
   /** Defaults to localhost */
   lazy val bind: URI = new URI({
@@ -233,7 +233,7 @@ case class BitcoindConfig(
 
   })
 
-  lazy val uri: URI = new URI(s"$bind:$port")
+  lazy val uri: URI = new URI(s"$bind")
 
   lazy val rpcport: Int =
     getValue("rpcport").map(_.toInt).getOrElse(network.rpcPort)
