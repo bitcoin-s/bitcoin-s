@@ -34,7 +34,7 @@ case class NetTarget(
     time_left_in_cycle: UInt32
 ) extends NetworkResult
 
-trait GetNetworkInfoResult extends NetworkResult {
+sealed trait GetNetworkInfoResult extends NetworkResult {
   def version: Int
   def subversion: String
   def protocolversion: Int
@@ -44,14 +44,15 @@ trait GetNetworkInfoResult extends NetworkResult {
   def timeoffset: Int
   def networkactive: Boolean
   def connections: Int
+  def connections_in: Int
+  def connections_out: Int
   def networks: Vector[Network]
   def relayfee: Bitcoins
   def incrementalfee: Bitcoins
   def localaddresses: Vector[NetworkAddress]
-  def warnings: String
 }
 
-case class GetNetworkInfoResultPreV21(
+case class GetNetworkInfoResultV28(
     version: Int,
     subversion: String,
     protocolversion: Int,
@@ -61,11 +62,13 @@ case class GetNetworkInfoResultPreV21(
     timeoffset: Int,
     networkactive: Boolean,
     connections: Int,
+    connections_in: Int,
+    connections_out: Int,
     networks: Vector[Network],
     relayfee: Bitcoins,
     incrementalfee: Bitcoins,
     localaddresses: Vector[NetworkAddress],
-    warnings: String
+    warnings: Vector[String]
 ) extends GetNetworkInfoResult
 
 case class GetNetworkInfoResultPostV21(

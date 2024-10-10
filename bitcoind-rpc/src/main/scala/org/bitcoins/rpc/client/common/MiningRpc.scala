@@ -4,15 +4,24 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
   GenerateBlockResult,
   GetBlockTemplateResult,
   GetMiningInfoResult,
+  GetMiningInfoResultPre28,
+  GetMiningInfoResultV28,
   PrioritisedTransaction,
   RpcOpts
 }
-import org.bitcoins.commons.serializers.JsonReaders._
-import org.bitcoins.commons.serializers.JsonSerializers._
+import org.bitcoins.commons.serializers.JsonReaders.*
+import org.bitcoins.commons.serializers.JsonSerializers.*
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import org.bitcoins.rpc.client.common.BitcoindVersion.{
+  Unknown,
+  V25,
+  V26,
+  V27,
+  V28
+}
 import play.api.libs.json.{JsArray, JsNumber, JsString, Json}
 
 import scala.concurrent.Future
@@ -75,7 +84,12 @@ trait MiningRpc { self: Client with BlockchainRpc =>
   }
 
   def getMiningInfo: Future[GetMiningInfoResult] = {
-    bitcoindCall[GetMiningInfoResult]("getmininginfo")
+    self.version.flatMap {
+      case V25 | V26 | V27 | Unknown =>
+        bitcoindCall[GetMiningInfoResultPre28]("getmininginfo")
+      case V28 =>
+        bitcoindCall[GetMiningInfoResultV28]("getmininginfo")
+    }
   }
 
   def prioritiseTransaction(
