@@ -38,8 +38,8 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
       info <- client.getBlockChainInfo
       bestHash <- client.getBestBlockHash()
     } yield {
-      assert(info.isInstanceOf[GetBlockChainInfoResultPostV23])
-      val postV23 = info.asInstanceOf[GetBlockChainInfoResultPostV23]
+      assert(info.isInstanceOf[GetBlockChainInfoResultPostV27])
+      val postV23 = info.asInstanceOf[GetBlockChainInfoResultPostV27]
       assert(postV23.chain == RegTest)
       assert(postV23.bestblockhash == bestHash)
     }

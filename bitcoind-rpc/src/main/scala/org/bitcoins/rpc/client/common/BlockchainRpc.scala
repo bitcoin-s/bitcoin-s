@@ -1,8 +1,8 @@
 package org.bitcoins.rpc.client.common
 
-import org.bitcoins.commons.jsonmodels.bitcoind._
+import org.bitcoins.commons.jsonmodels.bitcoind.*
 import org.bitcoins.commons.serializers.JsonSerializers
-import org.bitcoins.commons.serializers.JsonSerializers._
+import org.bitcoins.commons.serializers.JsonSerializers.*
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.core.api.chain.db.{
   CompactFilterDb,
@@ -14,7 +14,14 @@ import org.bitcoins.core.gcs.{BlockFilter, FilterHeader, FilterType}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import play.api.libs.json._
+import org.bitcoins.rpc.client.common.BitcoindVersion.{
+  Unknown,
+  V25,
+  V26,
+  V27,
+  V28
+}
+import play.api.libs.json.*
 
 import scala.concurrent.Future
 
@@ -39,7 +46,13 @@ trait BlockchainRpc extends ChainApi { self: Client =>
   }
 
   def getBlockChainInfo: Future[GetBlockChainInfoResult] = {
-    bitcoindCall[GetBlockChainInfoResult]("getblockchaininfo")
+    self.version.flatMap {
+      case V25 | V26 | V27 | Unknown =>
+        bitcoindCall[GetBlockChainInfoResultPostV23]("getblockchaininfo")
+      case V28 =>
+        bitcoindCall[GetBlockChainInfoResultPostV27]("getblockchaininfo")
+    }
+
   }
 
   override def getBlockCount(): Future[Int] = {
