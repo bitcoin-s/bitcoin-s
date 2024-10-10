@@ -18,8 +18,8 @@ jobs:
       - name: Setup Scala
         uses: actions/setup-java@v3
         with:
-          distribution: 'adopt'
-          java-version: '21'
+          distribution: 'temurin'
+          java-version: '21.0.4'
           cache: 'sbt'
       - name: install sbt as workaround https://github.com/actions/setup-java/issues/627
         run: brew install sbt
