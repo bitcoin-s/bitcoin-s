@@ -39,7 +39,7 @@ trait BlockchainRpc extends ChainApi { self: Client =>
   }
 
   def getBlockChainInfo: Future[GetBlockChainInfoResult] = {
-    bitcoindCall[GetBlockChainInfoResultPostV23]("getblockchaininfo")
+    bitcoindCall[GetBlockChainInfoResult]("getblockchaininfo")
   }
 
   override def getBlockCount(): Future[Int] = {
