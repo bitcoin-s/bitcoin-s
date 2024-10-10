@@ -17,8 +17,8 @@ jobs:
       - name: Setup Scala
         uses: actions/setup-java@v3
         with:
-          distribution: 'adopt'
-          java-version: '21'
+          distribution: 'temurin'
+          java-version: '21.0.4'
           cache: 'sbt'
       - uses: olafurpg/setup-gpg@v3
       - run: sbt -J-Xmx2g ci-release docs/publishWebsite
@@ -54,8 +54,8 @@ jobs:
       - name: Setup Scala
         uses: actions/setup-java@v3
         with:
-          distribution: 'adopt'
-          java-version: '21'
+          distribution: 'temurin'
+          java-version: '21.0.4'
           cache: 'sbt'
       - name: Get Previous tag
         id: previoustag
