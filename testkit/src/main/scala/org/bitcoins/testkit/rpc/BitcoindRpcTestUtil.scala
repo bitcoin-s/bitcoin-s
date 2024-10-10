@@ -658,7 +658,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     val connectedPairsF = addNodesF.flatMap { _ =>
       val futures = pairs.map { case (first, second) =>
         BitcoindRpcTestUtil
-          .awaitConnection(first, second, interval = 10.second)
+          .awaitConnection(first, second, interval = 1.second)
       }
       Future.sequence(futures)
     }
