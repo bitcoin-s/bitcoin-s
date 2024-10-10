@@ -48,7 +48,7 @@ addSbtPlugin("org.scalameta" % "sbt-native-image" % "0.3.4")
 
 // gRPC
 //https://pekko.apache.org/docs/pekko-grpc/current/server/walkthrough.html#setting-up
-addSbtPlugin("org.apache.pekko" % "pekko-grpc-sbt-plugin" % "1.1.0-M1")
+addSbtPlugin("org.apache.pekko" % "pekko-grpc-sbt-plugin" % "1.1.0")
 
 // Scala.js
 //https://www.scala-js.org/doc/project/
