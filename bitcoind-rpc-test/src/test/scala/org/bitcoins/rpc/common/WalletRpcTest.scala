@@ -830,6 +830,17 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
         info <- client.getAddressInfo(addr)
       } yield assert(info.address == addr)
   }
+
+  it should "be able to gethdkeys" in { nodePair =>
+    val client = nodePair.node1
+    for {
+      hdKeys <- client.getHDKeys()
+    } yield {
+      assert(hdKeys.nonEmpty)
+      // assert(hdKeys.descriptors.nonEmpty)
+    }
+  }
+
   def startClient(client: BitcoindRpcClient): Future[Unit] = {
     BitcoindRpcTestUtil.startServers(Vector(client))
   }

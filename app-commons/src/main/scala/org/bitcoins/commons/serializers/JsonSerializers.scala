@@ -406,6 +406,11 @@ object JsonSerializers {
   implicit val TransactionDetailsReads: Reads[TransactionDetails] =
     Json.reads[TransactionDetails]
 
+  implicit val hdKeyDescriptor: Reads[HDKeyDescriptor] =
+    Json.reads[HDKeyDescriptor]
+  implicit val getHDKeysReads: Reads[GetHDKeysResult] = {
+    Json.reads[GetHDKeysResult]
+  }
   implicit val getTranasctionResultPreV28: Reads[GetTransactionResultPreV28] = {
     Json.reads[GetTransactionResultPreV28]
   }

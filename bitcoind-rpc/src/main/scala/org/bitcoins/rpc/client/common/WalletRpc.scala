@@ -55,6 +55,10 @@ trait WalletRpc { self: Client =>
     )
   }
 
+  def getHDKeys(): Future[Vector[GetHDKeysResult]] = {
+    bitcoindCall[Vector[GetHDKeysResult]]("gethdkeys")
+  }
+
   def getReceivedByAddress(
       address: BitcoinAddress,
       minConfirmations: Int = 1,
