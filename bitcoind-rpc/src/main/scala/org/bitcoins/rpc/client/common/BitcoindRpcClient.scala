@@ -424,6 +424,7 @@ object BitcoindVersion
       case "25" => V25
       case "26" => V26
       case "27" => V27
+      case "28" => V28
       case _ =>
         logger.warn(
           s"Unsupported Bitcoin Core version: $int. The latest supported version is ${BitcoindVersion.newest}"
