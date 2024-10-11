@@ -42,7 +42,26 @@ case class BumpFeeResult(
     errors: Vector[String]
 ) extends WalletResult
 
-case class GetTransactionResult(
+sealed trait GetTransactionResult extends WalletResult {
+  def amount: Bitcoins
+  def fee: Option[Bitcoins]
+  def confirmations: Int
+  def generated: Option[Boolean]
+  def blockhash: Option[DoubleSha256DigestBE]
+  def blockindex: Option[Int]
+  def blocktime: Option[UInt32]
+  def txid: DoubleSha256DigestBE
+  def walletconflicts: Vector[DoubleSha256DigestBE]
+  def time: UInt32
+  def timereceived: UInt32
+  def bip125_replaceable: Option[String]
+  def comment: Option[String]
+  def to: Option[String]
+  def details: Vector[TransactionDetails]
+  def hex: Transaction
+}
+
+case class GetTransactionResultPreV28(
     amount: Bitcoins,
     fee: Option[Bitcoins],
     confirmations: Int,
@@ -54,12 +73,32 @@ case class GetTransactionResult(
     walletconflicts: Vector[DoubleSha256DigestBE],
     time: UInt32,
     timereceived: UInt32,
-    bip125_replaceable: String,
+    bip125_replaceable: Option[String],
     comment: Option[String],
     to: Option[String],
     details: Vector[TransactionDetails],
     hex: Transaction
-) extends WalletResult
+) extends GetTransactionResult
+
+case class GetTransactionResultV28(
+    amount: Bitcoins,
+    fee: Option[Bitcoins],
+    confirmations: Int,
+    generated: Option[Boolean],
+    blockhash: Option[DoubleSha256DigestBE],
+    blockindex: Option[Int],
+    blocktime: Option[UInt32],
+    txid: DoubleSha256DigestBE,
+    walletconflicts: Vector[DoubleSha256DigestBE],
+    time: UInt32,
+    timereceived: UInt32,
+    bip125_replaceable: Option[String],
+    comment: Option[String],
+    to: Option[String],
+    details: Vector[TransactionDetails],
+    hex: Transaction,
+    mempoolconflicts: Vector[Transaction]
+) extends GetTransactionResult
 
 case class SetWalletFlagResult(
     flag_name: String,

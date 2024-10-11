@@ -1,12 +1,13 @@
 package org.bitcoins.rpc.client.common
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.FeeEstimationMode
-import org.bitcoins.commons.jsonmodels.bitcoind._
-import org.bitcoins.commons.serializers.JsonSerializers._
+import org.bitcoins.commons.jsonmodels.bitcoind.*
+import org.bitcoins.commons.serializers.JsonSerializers.*
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import play.api.libs.json._
+import org.bitcoins.rpc.client.common.BitcoindVersion.{V25, V26, V27, V28}
+import play.api.libs.json.*
 
 import scala.concurrent.Future
 
@@ -77,11 +78,20 @@ trait TransactionRpc { self: Client =>
       watchOnly: Boolean = false,
       walletName: String = BitcoindRpcClient.DEFAULT_WALLET_NAME
   ): Future[GetTransactionResult] = {
-    bitcoindCall[GetTransactionResult](
-      "gettransaction",
-      List(JsString(txid.hex), JsBoolean(watchOnly)),
-      uriExtensionOpt = Some(walletExtension(walletName))
-    )
+    self.version.flatMap {
+      case V25 | V26 | V27 | BitcoindVersion.Unknown =>
+        bitcoindCall[GetTransactionResultPreV28](
+          "gettransaction",
+          List(JsString(txid.hex), JsBoolean(watchOnly)),
+          uriExtensionOpt = Some(walletExtension(walletName))
+        )
+      case V28 =>
+        bitcoindCall[GetTransactionResultV28](
+          "gettransaction",
+          List(JsString(txid.hex), JsBoolean(watchOnly)),
+          uriExtensionOpt = Some(walletExtension(walletName))
+        )
+    }
   }
 
   def getTxOut(
