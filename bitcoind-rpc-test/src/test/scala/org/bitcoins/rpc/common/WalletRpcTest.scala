@@ -3,6 +3,7 @@ package org.bitcoins.rpc.common
 import org.bitcoins.commons.file.FileUtil
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
   AddressType,
+  CreateWalletDescriptorOptions,
   WalletFlag
 }
 import org.bitcoins.commons.jsonmodels.bitcoind.{
@@ -12,6 +13,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
   GetWalletInfoResultPostV22
 }
 import org.bitcoins.core.config.RegTest
+import org.bitcoins.core.crypto.{ExtPrivateKey, ExtPublicKey}
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
@@ -833,11 +835,30 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
 
   it should "be able to gethdkeys" in { nodePair =>
     val client = nodePair.node1
+    val walletName = "v28-createwalletdescriptor"
+    val xpriv = ExtPrivateKey.fromString(
+      "tprv8ZgxMBicQKsPds78rqEk8ATTSqn2fw1zXkwzcsUVattUrjDK8EEDJ3aGXanbUTwBKDmEKatJFNqy6XDt11Na18ZVwEtcxRuLVC5RCEkcNGP")
+    val xpub = ExtPublicKey.fromString(
+      "tpubDFnks5gPtLoRfipk28gNhwcmiBjEQRLbRAkUEDdrb2ygzaxnF47Hy9wBHnKyb46QMRKLG7NsM8d3PzddAqEysaYw7YbcUtavNAZkwjM7aqi")
+    val optionsDesc =
+      CreateWalletDescriptorOptions(internal = true, hdkey = xpub)
+    val importDesc = DescriptorsResult(desc = P2WPKHDescriptor(xpriv),
+                                       timestamp = Instant.now().getEpochSecond,
+                                       active = true,
+                                       internal = None,
+                                       range = None,
+                                       next = None)
     for {
-      hdKeys <- client.getHDKeys()
+      _ <- client.createWallet(walletName = walletName, blank = true)
+      importDescResult <- client.importDescriptor(importDesc)
+      _ = assert(importDescResult.success, s"${importDescResult.warnings}")
+      result <- client.createWalletDescriptor(addressType = AddressType.Bech32m,
+                                              options = Some(optionsDesc),
+                                              walletName = walletName)
+      hdKeys <- client.getHDKeys(walletName = walletName)
     } yield {
+      assert(result.nonEmpty)
       assert(hdKeys.nonEmpty)
-      // assert(hdKeys.descriptors.nonEmpty)
     }
   }
 

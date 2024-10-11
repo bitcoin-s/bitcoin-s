@@ -2,19 +2,22 @@ package org.bitcoins.rpc.client.common
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
   AddressType,
+  CreateWalletDescriptorOptions,
   WalletCreateFundedPsbtOptions,
   WalletFlag
 }
-import org.bitcoins.commons.jsonmodels.bitcoind._
-import org.bitcoins.commons.serializers.JsonSerializers._
-import org.bitcoins.commons.serializers.JsonWriters._
+import org.bitcoins.commons.jsonmodels.bitcoind.*
+import org.bitcoins.commons.serializers.JsonReaders
+import org.bitcoins.commons.serializers.JsonSerializers.*
+import org.bitcoins.commons.serializers.JsonWriters.*
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
+import org.bitcoins.core.protocol.script.descriptor.Descriptor
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
 import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.crypto._
-import play.api.libs.json._
+import org.bitcoins.crypto.*
+import play.api.libs.json.*
 
 import scala.concurrent.Future
 
@@ -55,8 +58,11 @@ trait WalletRpc { self: Client =>
     )
   }
 
-  def getHDKeys(): Future[Vector[GetHDKeysResult]] = {
-    bitcoindCall[Vector[GetHDKeysResult]]("gethdkeys")
+  def getHDKeys(
+      walletName: String = DEFAULT_WALLET): Future[Vector[GetHDKeysResult]] = {
+    bitcoindCall[Vector[GetHDKeysResult]]("gethdkeys",
+                                          uriExtensionOpt =
+                                            Some(walletExtension(walletName)))
   }
 
   def getReceivedByAddress(
@@ -392,6 +398,17 @@ trait WalletRpc { self: Client =>
         JsBoolean(descriptors)
       )
     )
+  }
+
+  def createWalletDescriptor(
+      addressType: AddressType,
+      options: Option[CreateWalletDescriptorOptions] = None,
+      walletName: String = DEFAULT_WALLET): Future[Vector[Descriptor]] = {
+    import JsonReaders.DescriptorReads
+    bitcoindCall[Vector[Descriptor]](
+      "createwalletdescriptor",
+      List(Json.toJson(addressType), Json.toJson(options)),
+      uriExtensionOpt = Some(walletExtension(walletName)))
   }
 
   def getAddressInfo(

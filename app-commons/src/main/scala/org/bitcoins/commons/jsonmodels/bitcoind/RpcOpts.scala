@@ -1,5 +1,6 @@
 package org.bitcoins.commons.jsonmodels.bitcoind
 
+import org.bitcoins.commons.serializers.JsonWriters
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -8,7 +9,8 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionInput,
   TransactionOutPoint
 }
-import org.bitcoins.commons.serializers.JsonWriters._
+import org.bitcoins.commons.serializers.JsonWriters.*
+import org.bitcoins.core.crypto.ExtKey
 import org.bitcoins.crypto.{
   DoubleSha256DigestBE,
   ECPrivateKeyBytes,
@@ -266,5 +268,13 @@ object RpcOpts {
     case object Abort extends ScanBlocksAction {
       override val action: String = "abort"
     }
+  }
+
+  case class CreateWalletDescriptorOptions(internal: Boolean, hdkey: ExtKey)
+
+  implicit val createWalletDescriptorOptionsWrites
+      : Writes[CreateWalletDescriptorOptions] = {
+    import JsonWriters.ExtKeyWrites
+    Json.writes[CreateWalletDescriptorOptions]
   }
 }

@@ -504,6 +504,7 @@ class HDPathTest extends BitcoinSUnitTest {
     {
       val rootXpriv =
         ExtPrivateKey.fromBIP39Seed(ExtKeyVersion.LegacyTestNet3Priv, seed)
+      println(s"rootXpriv=${rootXpriv.toStringSensitive}")
       val path = LegacyHDPath.fromString("m/44'/0'/0'/0/0")
       val xpub = rootXpriv.deriveChildPubKey(path).get
       val expectedXpub = ExtPublicKey.fromString(
