@@ -1,6 +1,7 @@
 package org.bitcoins.testkit.rpc
 
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
+import org.bitcoins.rpc.client.v27.BitcoindV27RpcClient
 import org.bitcoins.rpc.util.{NodePair, NodeTriple}
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.util.BitcoinSPekkoAsyncTest
@@ -102,6 +103,17 @@ trait CachedBitcoindV26 extends CachedBitcoindFunded[BitcoindRpcClient] {
     val _ = isBitcoindUsed.set(true)
     BitcoinSFixture
       .createBitcoindWithFunds(Some(BitcoindVersion.V26))
+  }
+}
+
+trait CachedBitcoindV27 extends CachedBitcoindFunded[BitcoindV27RpcClient] {
+  _: BitcoinSPekkoAsyncTest =>
+
+  override protected lazy val cachedBitcoindWithFundsF
+      : Future[BitcoindRpcClient] = {
+    val _ = isBitcoindUsed.set(true)
+    BitcoinSFixture
+      .createBitcoindWithFunds(Some(BitcoindVersion.V27))
   }
 }
 

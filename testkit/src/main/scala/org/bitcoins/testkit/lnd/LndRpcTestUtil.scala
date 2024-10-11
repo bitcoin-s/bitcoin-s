@@ -9,6 +9,7 @@ import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.lnd.rpc.LndRpcClient
 import org.bitcoins.lnd.rpc.config.{LndInstanceLocal, LndInstanceRemote}
+import org.bitcoins.rpc.client.common.BitcoindVersion.{V25, V26, V27, V28}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.config.{
   BitcoindAuthCredentials,
@@ -45,6 +46,18 @@ trait LndRpcTestUtil extends BitcoinSLogger {
   )(implicit actorSystem: ActorSystem): Future[BitcoindRpcClient] = {
     // need to do something with the Vector.newBuilder presumably?
     BitcoindRpcTestUtil.startedBitcoindRpcClient(instanceOpt, Vector.newBuilder)
+  }
+
+  def startedBitcoindRpcClient(version: BitcoindVersion)(implicit
+      system: ActorSystem): Future[BitcoindRpcClient] = {
+    val instance = version match {
+      case V25                     => BitcoindRpcTestUtil.v25Instance()
+      case V26                     => BitcoindRpcTestUtil.v26Instance()
+      case V27                     => BitcoindRpcTestUtil.v27Instance()
+      case V28                     => BitcoindRpcTestUtil.v28Instance()
+      case BitcoindVersion.Unknown => BitcoindRpcTestUtil.instance()
+    }
+    startedBitcoindRpcClient(Some(instance))
   }
 
   /** Creates a bitcoind instance with the given parameters */
