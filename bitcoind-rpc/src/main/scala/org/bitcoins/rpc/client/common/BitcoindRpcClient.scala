@@ -3,6 +3,10 @@ package org.bitcoins.rpc.client.common
 import org.apache.pekko.Done
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.stream.scaladsl.{Keep, RunnableGraph, Sink, Source}
+import org.bitcoins.commons.jsonmodels.bitcoind.{
+  GetNetworkInfoResultPostV21,
+  GetNetworkInfoResultV28
+}
 import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.chain.db.BlockHeaderDb
 import org.bitcoins.core.api.chain.{ChainApi, FilterSyncMarker}
@@ -63,11 +67,21 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
 
   private val syncing = new AtomicBoolean(false)
 
-  override def version: Future[BitcoindVersion] = {
+  override lazy val version: Future[BitcoindVersion] = {
+    import org.bitcoins.commons.serializers.JsonSerializers.{
+      getNetworkInfoV28Reads,
+      getNetworkInfoPostV21Reads
+    }
     instance match {
       case _: BitcoindInstanceRemote =>
-        getNetworkInfo.map(info =>
-          BitcoindVersion.fromNetworkVersion(info.version))
+        // work around for version specific calls to 'getnetworkinfo'
+        // the return payload is slightly different pre28 and post 28
+        // this can be removed in the future when we drop support for v27 of bitcoind
+        bitcoindCall[GetNetworkInfoResultV28]("getnetworkinfo")
+          .recoverWith { _ =>
+            bitcoindCall[GetNetworkInfoResultPostV21]("getnetworkinfo")
+          }
+          .map(result => BitcoindVersion.fromNetworkVersion(result.version))
       case local: BitcoindInstanceLocal =>
         Future.successful(local.getVersion)
     }
