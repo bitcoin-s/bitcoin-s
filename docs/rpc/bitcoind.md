@@ -36,7 +36,7 @@ import org.bitcoins.core.config._
 import org.bitcoins.rpc.config._
 import org.bitcoins.rpc.client.common._
 
-import org.bitcoins.rpc.BitcoindWalletException
+import org.bitcoins.commons.rpc.BitcoindWalletException
 import org.bitcoins.crypto._
 import org.bitcoins.core.protocol._
 import org.bitcoins.core.currency._
