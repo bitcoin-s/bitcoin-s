@@ -1,10 +1,10 @@
 package org.bitcoins.rpc.common
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
+import org.bitcoins.commons.rpc.BitcoindWalletException
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.rpc._
 import org.bitcoins.rpc.client.common._
 import org.bitcoins.rpc.config.{BitcoindInstanceLocal, BitcoindInstanceRemote}
 import org.bitcoins.rpc.util.{NodePair, RpcUtil}

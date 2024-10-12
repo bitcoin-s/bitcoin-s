@@ -8,7 +8,7 @@ import org.bitcoins.core.api.CallbackConfig
 import org.bitcoins.core.api.callback.CallbackFactory
 import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.rpc.BitcoindCallbacks
-import org.bitcoins.rpc.BitcoindException.InWarmUp
+import org.bitcoins.commons.rpc.BitcoindException.InWarmUp
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.util.AppConfigFactoryActorSystem
 import org.bitcoins.tor.config.TorAppConfig

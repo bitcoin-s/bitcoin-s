@@ -10,7 +10,7 @@ import org.bitcoins.core.protocol.script.{
 }
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
-import org.bitcoins.rpc.BitcoindException.InvalidAddressOrKey
+import org.bitcoins.commons.rpc.BitcoindException.InvalidAddressOrKey
 import org.bitcoins.testkit.rpc.{
   BitcoindFixturesCachedPairNewest,
   BitcoindRpcTestUtil

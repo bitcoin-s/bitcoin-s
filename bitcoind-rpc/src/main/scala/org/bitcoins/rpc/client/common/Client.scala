@@ -22,7 +22,7 @@ import org.bitcoins.core.config._
 import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.crypto.{ECPrivateKey, ECPrivateKeyBytes}
-import org.bitcoins.rpc.BitcoindException
+import org.bitcoins.commons.rpc.BitcoindException
 import org.bitcoins.rpc.config.BitcoindAuthCredentials.{
   CookieBased,
   PasswordBased

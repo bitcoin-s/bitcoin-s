@@ -9,6 +9,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
   RpcOpts,
   SignRawTransactionResult
 }
+import org.bitcoins.commons.rpc.BitcoindException
 import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.Bitcoins
@@ -26,8 +27,7 @@ import org.bitcoins.crypto.{
   DoubleSha256DigestBE,
   ECPublicKey
 }
-import org.bitcoins.rpc.BitcoindException
-import org.bitcoins.rpc.client.common.BitcoindVersion._
+import org.bitcoins.rpc.client.common.BitcoindVersion.*
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v25.BitcoindV25RpcClient
 import org.bitcoins.rpc.client.v26.BitcoindV26RpcClient

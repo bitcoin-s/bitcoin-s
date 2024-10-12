@@ -1,5 +1,6 @@
 package org.bitcoins.rpc.common
 
+import org.bitcoins.commons.rpc.BitcoindException
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -9,7 +10,6 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint
 }
 import org.bitcoins.crypto.DoubleSha256Digest
-import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.rpc.config.{BitcoindInstanceLocal, BitcoindInstanceRemote}
 import org.bitcoins.testkit.rpc.{
   BitcoindFixturesCachedPairNewest,

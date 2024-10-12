@@ -34,7 +34,7 @@ import org.bitcoins.node.Node
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.NodeStateDescriptorDAO
 import org.bitcoins.rpc.BitcoindCallbacks
-import org.bitcoins.rpc.BitcoindException.InWarmUp
+import org.bitcoins.commons.rpc.BitcoindException.InWarmUp
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.{BitcoindRpcAppConfig, ZmqConfig}
 import org.bitcoins.server.bitcoind.BitcoindSyncState
