@@ -1,7 +1,7 @@
 package org.bitcoins.rpc.common
 
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.rpc.BitcoindException.MiscError
+import org.bitcoins.commons.rpc.BitcoindException.MiscError
 import org.bitcoins.testkit.rpc.BitcoindFixturesFundedCachedNewest
 
 import scala.concurrent.duration._

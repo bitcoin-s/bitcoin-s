@@ -1,5 +1,6 @@
 package org.bitcoins.dlc.integration
 
+import org.bitcoins.commons.rpc.BitcoindException
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.{UInt16, UInt32}
 import org.bitcoins.core.protocol.BlockStamp.BlockHeight
@@ -20,8 +21,7 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.crypto.{HashType, _}
-import org.bitcoins.rpc.BitcoindException
+import org.bitcoins.crypto.*
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoindRpcTest
 import org.bitcoins.testkitcore.dlc.{DLCFeeTestUtil, DLCTest, TestDLCClient}

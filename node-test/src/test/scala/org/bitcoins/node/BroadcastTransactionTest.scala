@@ -1,8 +1,8 @@
 package org.bitcoins.node
 
+import org.bitcoins.commons.rpc.BitcoindException
 import org.bitcoins.core.currency._
 import org.bitcoins.core.protocol.transaction.Transaction
-import org.bitcoins.rpc.BitcoindException
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig

@@ -1,9 +1,6 @@
-package org.bitcoins.rpc
+package org.bitcoins.commons.rpc
 
-import play.api.libs.json.Reads
-import play.api.libs.json.{JsResult, JsValue}
-import play.api.libs.json.JsError
-import play.api.libs.json.JsSuccess
+import play.api.libs.json.*
 
 /** Represents failures that can happen when using the `bitcoind` RPC interface.
   *
@@ -25,9 +22,8 @@ sealed abstract class BitcoindException(private val message: String)
   */
 
 object BitcoindException {
-  import org.bitcoins.rpc.BitcoindP2PException._
-  import org.bitcoins.rpc.BitcoindWalletException._
-
+  import BitcoindP2PException.*
+  import BitcoindWalletException.*
   implicit val reads: Reads[BitcoindException] = new Reads[BitcoindException] {
 
     def reads(json: JsValue): JsResult[BitcoindException] =

@@ -1,11 +1,11 @@
 package org.bitcoins.rpc.client.common
 
 import org.bitcoins.commons.jsonmodels.bitcoind._
+import org.bitcoins.commons.rpc.BitcoindException
 import org.bitcoins.commons.serializers.JsonReaders._
 import org.bitcoins.commons.serializers.JsonSerializers._
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.rpc.BitcoindException
 import play.api.libs.json.{JsArray, JsBoolean, JsString, Json}
 
 import java.nio.file.Path

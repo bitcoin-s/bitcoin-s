@@ -32,9 +32,9 @@ import scala.concurrent.Future
   * versions. If you need RPC calls specific to a version, check out
   *
   * If a RPC call fails for any reason, a
-  * [[org.bitcoins.rpc.BitcoindException BitcoindException]] is thrown. This is
-  * a sealed abstract class, so you can pattern match easily on the errors, and
-  * handle them as you see fit.
+  * [[BitcoindException BitcoindException]] is thrown. This is a sealed abstract
+  * class, so you can pattern match easily on the errors, and handle them as you
+  * see fit.
   */
 class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
     override val system: ActorSystem,

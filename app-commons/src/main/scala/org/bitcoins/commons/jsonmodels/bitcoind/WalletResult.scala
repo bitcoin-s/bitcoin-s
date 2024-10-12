@@ -1,6 +1,7 @@
 package org.bitcoins.commons.jsonmodels.bitcoind
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LabelPurpose
+import org.bitcoins.commons.rpc.BitcoindException
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.UInt32
@@ -389,7 +390,8 @@ final case class CreateWalletResult(
 
 case class ImportDescriptorResult(
     success: Boolean,
-    warnings: Option[Vector[String]]
+    warnings: Option[Vector[String]],
+    error: Option[BitcoindException]
 ) extends WalletResult
 
 case class PrioritisedTransaction(fee_delta: Satoshis, in_mempool: Boolean)
