@@ -8,13 +8,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.*
 import org.bitcoins.commons.serializers.JsonSerializers
 import org.bitcoins.commons.serializers.JsonSerializers.*
 import org.bitcoins.core.protocol.blockchain.Block
-import org.bitcoins.rpc.client.common.BitcoindVersion.{
-  Unknown,
-  V25,
-  V26,
-  V27,
-  V28
-}
+import org.bitcoins.rpc.client.common.BitcoindVersion.{Unknown, V26, V27, V28}
 import play.api.libs.json.{JsBoolean, JsNumber, JsString}
 
 import java.net.URI
@@ -70,7 +64,7 @@ trait P2PRpc { self: Client =>
 
   def getNetworkInfo: Future[GetNetworkInfoResult] = {
     self.version.flatMap {
-      case V25 | V26 | V27 | Unknown =>
+      case V26 | V27 | Unknown =>
         bitcoindCall[GetNetworkInfoResultPostV21]("getnetworkinfo")
       case V28 =>
         bitcoindCall[GetNetworkInfoResultV28]("getnetworkinfo")
