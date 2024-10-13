@@ -22,7 +22,6 @@ import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.crypto.{DoubleSha256DigestBE, StringFactory}
 import org.bitcoins.rpc.client.v18.V18AssortedRpc
 import org.bitcoins.rpc.client.v20.V20MultisigRpc
-import org.bitcoins.rpc.client.v25.BitcoindV25RpcClient
 import org.bitcoins.rpc.client.v26.BitcoindV26RpcClient
 import org.bitcoins.rpc.client.v27.BitcoindV27RpcClient
 import org.bitcoins.rpc.client.v28.BitcoindV28RpcClient
@@ -353,7 +352,6 @@ object BitcoindRpcClient {
       implicit system: ActorSystem
   ): BitcoindRpcClient = {
     val bitcoind = version match {
-      case BitcoindVersion.V25 => BitcoindV25RpcClient(instance)
       case BitcoindVersion.V26 => BitcoindV26RpcClient(instance)
       case BitcoindVersion.V27 => BitcoindV27RpcClient(instance)
       case BitcoindVersion.V28 => BitcoindV28RpcClient(instance)
@@ -374,7 +372,6 @@ object BitcoindRpcClient {
       bitcoindRpcAppConfig: BitcoindRpcAppConfig
   ): BitcoindRpcClient = {
     val bitcoind = version match {
-      case BitcoindVersion.V25 => new BitcoindV25RpcClient(instance)
       case BitcoindVersion.V26 => new BitcoindV26RpcClient(instance)
       case BitcoindVersion.V27 => new BitcoindV27RpcClient(instance)
       case BitcoindVersion.V28 => new BitcoindV28RpcClient(instance)
@@ -397,13 +394,9 @@ object BitcoindVersion
   val newest: BitcoindVersion = V28
 
   val standard: Vector[BitcoindVersion] =
-    Vector(V28, V27, V26, V25)
+    Vector(V28, V27, V26)
 
   val known: Vector[BitcoindVersion] = standard
-
-  case object V25 extends BitcoindVersion {
-    override def toString: String = "v25.2"
-  }
 
   case object V26 extends BitcoindVersion {
     override def toString: String = "v26.1"
@@ -435,7 +428,6 @@ object BitcoindVersion
   def fromNetworkVersion(int: Int): BitcoindVersion = {
     // need to translate the int 210100 (as an example) to a BitcoindVersion
     int.toString.substring(0, 2) match {
-      case "25" => V25
       case "26" => V26
       case "27" => V27
       case "28" => V28
