@@ -1743,4 +1743,9 @@ object JsonReaders {
     }
   }
 
+  implicit val createWalletDescriptorReads
+      : Reads[CreateWalletDescriptorResult] = {
+    Json.reads[CreateWalletDescriptorResult]
+  }
+
 }

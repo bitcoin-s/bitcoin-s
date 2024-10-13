@@ -54,7 +54,17 @@ case class BlockTransaction(
     required: Option[Boolean]
 ) extends OtherResult
 
-case class GetMiningInfoResult(
+sealed abstract class GetMiningInfoResult extends OtherResult {
+  def blocks: Int
+  def currentblockweight: Option[Int]
+  def currentblocktx: Option[Int]
+  def difficulty: BigDecimal
+  def networkhashps: BigDecimal
+  def pooledtx: Int
+  def chain: String
+}
+
+case class GetMiningInfoResultPre28(
     blocks: Int,
     currentblockweight: Option[Int],
     currentblocktx: Option[Int],
@@ -62,8 +72,19 @@ case class GetMiningInfoResult(
     networkhashps: BigDecimal,
     pooledtx: Int,
     chain: String,
-    warnings: String
-) extends OtherResult
+    warnings: String)
+    extends GetMiningInfoResult
+
+case class GetMiningInfoResultV28(
+    blocks: Int,
+    currentblockweight: Option[Int],
+    currentblocktx: Option[Int],
+    difficulty: BigDecimal,
+    networkhashps: BigDecimal,
+    pooledtx: Int,
+    chain: String,
+    warnings: Vector[String])
+    extends GetMiningInfoResult
 
 case class GetMemoryInfoResult(locked: MemoryManager) extends OtherResult
 

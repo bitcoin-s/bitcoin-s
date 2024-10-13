@@ -67,7 +67,7 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
                      |rpcuser=foobar
                      |rpcpassword=barfoo
                      |[regtest]
-                     |port=${RpcUtil.randomPort}
+                     |bind=127.0.0.1:${RpcUtil.randomPort}
                      |rpcport=${RpcUtil.randomPort}
       """.stripMargin
 
@@ -98,7 +98,7 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
                      |rpcauth=bitcoin-s:6d7580be1deb4ae52bc4249871845b09$$82b282e7c6493f6982a5a7af9fbb1b671bab702e2f31bbb1c016bb0ea1cc27ca
                      |regtest=1
                      |[regtest]
-                     |port=${port}
+                     |bind=127.0.0.1:${port}
                      |rpcport=${rpcPort}
        """.stripMargin
 
@@ -129,7 +129,7 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
                      |rpcauth=bitcoin-s:6d7580be1deb4ae52bc4249871845b09$$82b282e7c6493f6982a5a7af9fbb1b671bab702e2f31bbb1c016bb0ea1cc27ca
                      |regtest=1
                      |[regtest]
-                     |port=${port}
+                     |bind=127.0.0.1:${port}
                      |rpcport=${rpcPort}
        """.stripMargin
 

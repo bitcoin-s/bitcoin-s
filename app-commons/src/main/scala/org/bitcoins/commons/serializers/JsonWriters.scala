@@ -1,21 +1,22 @@
 package org.bitcoins.commons.serializers
 
-import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts._
-import org.bitcoins.core.currency._
-import org.bitcoins.core.number._
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.*
+import org.bitcoins.core.crypto.{ExtKey, ExtPrivateKey, ExtPublicKey}
+import org.bitcoins.core.currency.*
+import org.bitcoins.core.number.*
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.ln.LnInvoice
 import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
-import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.script.*
 import org.bitcoins.core.protocol.script.descriptor.Descriptor
-import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.psbt._
+import org.bitcoins.core.protocol.transaction.*
+import org.bitcoins.core.psbt.*
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.serializers.PicklerKeys
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.crypto._
-import play.api.libs.json._
+import org.bitcoins.crypto.*
+import play.api.libs.json.*
 
 import java.net.URL
 import scala.collection.mutable
@@ -116,6 +117,16 @@ object JsonWriters {
 
     override def writes(d: Descriptor): JsValue = {
       JsString(d.toString)
+    }
+  }
+
+  implicit object ExtKeyWrites extends Writes[ExtKey] {
+    override def writes(key: ExtKey): JsValue = {
+      val str = key match {
+        case xpub: ExtPublicKey  => JsString(xpub.toString)
+        case xprv: ExtPrivateKey => JsString(xprv.toStringSensitive)
+      }
+      str
     }
   }
 

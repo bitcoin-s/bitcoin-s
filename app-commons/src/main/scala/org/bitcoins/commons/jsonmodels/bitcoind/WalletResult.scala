@@ -2,6 +2,7 @@ package org.bitcoins.commons.jsonmodels.bitcoind
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LabelPurpose
 import org.bitcoins.commons.rpc.BitcoindException
+import org.bitcoins.core.crypto.{ExtPrivateKey, ExtPublicKey}
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.UInt32
@@ -42,7 +43,34 @@ case class BumpFeeResult(
     errors: Vector[String]
 ) extends WalletResult
 
-case class GetTransactionResult(
+case class HDKeyDescriptor(desc: Descriptor, active: Boolean)
+case class GetHDKeysResult(
+    xpub: ExtPublicKey,
+    has_private: Boolean,
+    xprv: Option[ExtPrivateKey],
+    descriptors: Vector[HDKeyDescriptor])
+    extends WalletResult
+
+sealed trait GetTransactionResult extends WalletResult {
+  def amount: Bitcoins
+  def fee: Option[Bitcoins]
+  def confirmations: Int
+  def generated: Option[Boolean]
+  def blockhash: Option[DoubleSha256DigestBE]
+  def blockindex: Option[Int]
+  def blocktime: Option[UInt32]
+  def txid: DoubleSha256DigestBE
+  def walletconflicts: Vector[DoubleSha256DigestBE]
+  def time: UInt32
+  def timereceived: UInt32
+  def bip125_replaceable: Option[String]
+  def comment: Option[String]
+  def to: Option[String]
+  def details: Vector[TransactionDetails]
+  def hex: Transaction
+}
+
+case class GetTransactionResultPreV28(
     amount: Bitcoins,
     fee: Option[Bitcoins],
     confirmations: Int,
@@ -54,12 +82,32 @@ case class GetTransactionResult(
     walletconflicts: Vector[DoubleSha256DigestBE],
     time: UInt32,
     timereceived: UInt32,
-    bip125_replaceable: String,
+    bip125_replaceable: Option[String],
     comment: Option[String],
     to: Option[String],
     details: Vector[TransactionDetails],
     hex: Transaction
-) extends WalletResult
+) extends GetTransactionResult
+
+case class GetTransactionResultV28(
+    amount: Bitcoins,
+    fee: Option[Bitcoins],
+    confirmations: Int,
+    generated: Option[Boolean],
+    blockhash: Option[DoubleSha256DigestBE],
+    blockindex: Option[Int],
+    blocktime: Option[UInt32],
+    txid: DoubleSha256DigestBE,
+    walletconflicts: Vector[DoubleSha256DigestBE],
+    time: UInt32,
+    timereceived: UInt32,
+    bip125_replaceable: Option[String],
+    comment: Option[String],
+    to: Option[String],
+    details: Vector[TransactionDetails],
+    hex: Transaction,
+    mempoolconflicts: Vector[Transaction]
+) extends GetTransactionResult
 
 case class SetWalletFlagResult(
     flag_name: String,
@@ -395,3 +443,5 @@ case class ImportDescriptorResult(
 ) extends WalletResult
 
 case class PrioritisedTransaction(fee_delta: Satoshis, in_mempool: Boolean)
+
+case class CreateWalletDescriptorResult(descs: Vector[Descriptor])

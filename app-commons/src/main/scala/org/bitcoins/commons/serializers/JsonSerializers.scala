@@ -190,11 +190,15 @@ object JsonSerializers {
   implicit val networkAddressReads: Reads[NetworkAddress] =
     Json.reads[NetworkAddress]
 
-  implicit val geNetworkInfoPreV21Reads: Reads[GetNetworkInfoResultPreV21] =
-    Json.reads[GetNetworkInfoResultPreV21]
+  implicit val getNetworkInfoV28Reads: Reads[GetNetworkInfoResultV28] =
+    Json.reads[GetNetworkInfoResultV28]
 
-  implicit val geNetworkInfoPostV21Reads: Reads[GetNetworkInfoResultPostV21] =
+  implicit val getNetworkInfoPostV21Reads: Reads[GetNetworkInfoResultPostV21] =
     Json.reads[GetNetworkInfoResultPostV21]
+
+  implicit val getNetworkInfoReads: Reads[GetNetworkInfoResult] = {
+    Json.reads[GetNetworkInfoResult]
+  }
 
   implicit val satsPerKbReads: Reads[SatoshisPerKiloByte] =
     new Reads[SatoshisPerKiloByte] {
@@ -298,6 +302,15 @@ object JsonSerializers {
       : Reads[GetBlockChainInfoResultPostV23] =
     Json.reads[GetBlockChainInfoResultPostV23]
 
+  implicit val getBlockChainInfoResultPost27Reads
+      : Reads[GetBlockChainInfoResultPostV27] = {
+    Json.reads[GetBlockChainInfoResultPostV27]
+  }
+
+  implicit val getBlockchainInfoResult: Reads[GetBlockChainInfoResult] = {
+    Json.reads[GetBlockChainInfoResult]
+  }
+
   implicit val blockHeaderFormattedReads: Reads[GetBlockHeaderResult] =
     Json.reads[GetBlockHeaderResult]
 
@@ -393,23 +406,21 @@ object JsonSerializers {
   implicit val TransactionDetailsReads: Reads[TransactionDetails] =
     Json.reads[TransactionDetails]
 
-  implicit val getTransactionResultReads: Reads[GetTransactionResult] =
-    ((__ \ "amount").read[Bitcoins] and
-      (__ \ "fee").readNullable[Bitcoins] and
-      (__ \ "confirmations").read[Int] and
-      (__ \ "generated").readNullable[Boolean] and
-      (__ \ "blockhash").readNullable[DoubleSha256DigestBE] and
-      (__ \ "blockindex").readNullable[Int] and
-      (__ \ "blocktime").readNullable[UInt32] and
-      (__ \ "txid").read[DoubleSha256DigestBE] and
-      (__ \ "walletconflicts").read[Vector[DoubleSha256DigestBE]] and
-      (__ \ "time").read[UInt32] and
-      (__ \ "timereceived").read[UInt32] and
-      (__ \ "bip125-replaceable").read[String] and
-      (__ \ "comment").readNullable[String] and
-      (__ \ "to").readNullable[String] and
-      (__ \ "details").read[Vector[TransactionDetails]] and
-      (__ \ "hex").read[Transaction])(GetTransactionResult.apply)
+  implicit val hdKeyDescriptor: Reads[HDKeyDescriptor] =
+    Json.reads[HDKeyDescriptor]
+  implicit val getHDKeysReads: Reads[GetHDKeysResult] = {
+    Json.reads[GetHDKeysResult]
+  }
+  implicit val getTranasctionResultPreV28: Reads[GetTransactionResultPreV28] = {
+    Json.reads[GetTransactionResultPreV28]
+  }
+  implicit val getTransactionResultV28: Reads[GetTransactionResultV28] = {
+    Json.reads[GetTransactionResultV28]
+  }
+
+  implicit val getTransactionResultReads: Reads[GetTransactionResult] = {
+    Json.reads[GetTransactionResult]
+  }
 
   implicit val getWalletInfoResultReadsPostV22
       : Reads[GetWalletInfoResultPostV22] =
@@ -537,6 +548,12 @@ object JsonSerializers {
   implicit val getBlockTemplateResultReads: Reads[GetBlockTemplateResult] =
     Json.reads[GetBlockTemplateResult]
 
+  implicit val miningInfoResultPre28: Reads[GetMiningInfoResultPre28] = {
+    Json.reads[GetMiningInfoResultPre28]
+  }
+  implicit val miningInfoResultV28: Reads[GetMiningInfoResultV28] = {
+    Json.reads[GetMiningInfoResultV28]
+  }
   implicit val miningInfoReads: Reads[GetMiningInfoResult] =
     Json.reads[GetMiningInfoResult]
 
