@@ -3,7 +3,6 @@ package org.bitcoins.rpc.common
 import org.bitcoins.commons.file.FileUtil
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
   AddressType,
-  CreateWalletDescriptorOptions,
   WalletFlag
 }
 import org.bitcoins.commons.jsonmodels.bitcoind.{
@@ -13,14 +12,16 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
   GetWalletInfoResultPostV22
 }
 import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.crypto.{ExtPrivateKey, ExtPublicKey}
+import org.bitcoins.core.crypto.ExtPrivateKey
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
+import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.script.descriptor.{
   Descriptor,
   P2SHDescriptor,
-  P2WPKHDescriptor
+  P2WPKHDescriptor,
+  XprvECPublicKeyExpression
 }
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.protocol.{
@@ -51,6 +52,7 @@ import org.scalatest.{FutureOutcome, Outcome}
 
 import java.io.File
 import java.time.Instant
+import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
@@ -66,6 +68,7 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
     new FutureOutcome(f)
   }
 
+  private val isWalletClientUsed: AtomicBoolean = new AtomicBoolean(false)
   // This client's wallet is encrypted
   lazy val walletClientF: Future[BitcoindRpcClient] = clientsF.flatMap { _ =>
     val instance =
@@ -73,6 +76,7 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
     val walletClient =
       BitcoindRpcClient(instance)
 
+    isWalletClientUsed.set(true)
     for {
       _ <- startClient(walletClient)
       _ <- walletClient.generate(101)
@@ -833,31 +837,37 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
       } yield assert(info.address == addr)
   }
 
-  it should "be able to gethdkeys" in { nodePair =>
+  it should "be able to createwalletdescriptor/gethdkeys" in { nodePair =>
     val client = nodePair.node1
     val walletName = "v28-createwalletdescriptor"
+    val path = BIP32Path.fromString("m/44'/0'/0'/0")
     val xpriv = ExtPrivateKey.fromString(
       "tprv8ZgxMBicQKsPds78rqEk8ATTSqn2fw1zXkwzcsUVattUrjDK8EEDJ3aGXanbUTwBKDmEKatJFNqy6XDt11Na18ZVwEtcxRuLVC5RCEkcNGP")
-    val xpub = ExtPublicKey.fromString(
-      "tpubDFnks5gPtLoRfipk28gNhwcmiBjEQRLbRAkUEDdrb2ygzaxnF47Hy9wBHnKyb46QMRKLG7NsM8d3PzddAqEysaYw7YbcUtavNAZkwjM7aqi")
-    val optionsDesc =
-      CreateWalletDescriptorOptions(internal = true, hdkey = xpub)
-    val importDesc = DescriptorsResult(desc = P2WPKHDescriptor(xpriv),
+    val keyExpression =
+      XprvECPublicKeyExpression(extKey = xpriv,
+                                originOpt = None,
+                                pathOpt = Some(path),
+                                childrenHardenedOpt = Some(None))
+    val desc = P2WPKHDescriptor(keyExpression)
+    val importDesc = DescriptorsResult(desc = desc,
                                        timestamp = Instant.now().getEpochSecond,
                                        active = true,
                                        internal = None,
-                                       range = None,
+                                       range = Some(Vector(0, 5)),
                                        next = None)
     for {
       _ <- client.createWallet(walletName = walletName, blank = true)
-      importDescResult <- client.importDescriptor(importDesc)
-      _ = assert(importDescResult.success, s"${importDescResult.warnings}")
+      initHdKeys <- client.getHDKeys(walletName)
+      _ = assert(initHdKeys.isEmpty, s"initHdKeys=$initHdKeys")
+      importDescResult <- client.importDescriptor(importDesc,
+                                                  walletName = walletName)
+      _ = assert(importDescResult.success, s"${importDescResult.error}")
       result <- client.createWalletDescriptor(addressType = AddressType.Bech32m,
-                                              options = Some(optionsDesc),
+                                              options = None,
                                               walletName = walletName)
       hdKeys <- client.getHDKeys(walletName = walletName)
     } yield {
-      assert(result.nonEmpty)
+      assert(result.descs.nonEmpty)
       assert(hdKeys.nonEmpty)
     }
   }
@@ -867,7 +877,13 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
   }
 
   override def afterAll(): Unit = {
-    val stopF = walletClientF.map(BitcoindRpcTestUtil.stopServer)
+    val stopF = {
+      if (isWalletClientUsed.get) {
+        walletClientF.map(BitcoindRpcTestUtil.stopServer)
+      } else {
+        Future.unit
+      }
+    }
     Await.result(stopF, 30.seconds)
     super.afterAll()
   }

@@ -1,7 +1,6 @@
 package org.bitcoins.core.protocol.script.descriptor
 
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.crypto.{ExtKey, ExtPrivateKey, ExtPublicKey}
 import org.bitcoins.core.number.{UInt64, UInt8}
 import org.bitcoins.core.protocol.Bech32Address
 import org.bitcoins.core.protocol.script.*
@@ -216,13 +215,7 @@ object P2WPKHDescriptor
     P2WPKHDescriptor(p2wpkhExpression, Some(checksum))
   }
 
-  def apply(extKey: ExtKey): P2WPKHDescriptor = {
-    val keyExpression = extKey match {
-      case xpriv: ExtPrivateKey =>
-        XprvECPublicKeyExpression(xpriv, None, None, None)
-      case xpub: ExtPublicKey =>
-        XpubECPublicKeyExpression(xpub, None, None, None)
-    }
+  def apply(keyExpression: ExtECPublicKeyExpression): P2WPKHDescriptor = {
     val p2wpkhExpression = P2WPKHExpression(keyExpression)
     val noChecksum = P2WPKHDescriptor(p2wpkhExpression, None)
     val checksum = Descriptor.createChecksum(noChecksum)

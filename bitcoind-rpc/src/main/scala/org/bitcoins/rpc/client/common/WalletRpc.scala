@@ -13,7 +13,6 @@ import org.bitcoins.commons.serializers.JsonWriters.*
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
-import org.bitcoins.core.protocol.script.descriptor.Descriptor
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionInput}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.crypto.*
@@ -403,9 +402,10 @@ trait WalletRpc { self: Client =>
   def createWalletDescriptor(
       addressType: AddressType,
       options: Option[CreateWalletDescriptorOptions] = None,
-      walletName: String = DEFAULT_WALLET): Future[Vector[Descriptor]] = {
-    import JsonReaders.DescriptorReads
-    bitcoindCall[Vector[Descriptor]](
+      walletName: String = DEFAULT_WALLET)
+      : Future[CreateWalletDescriptorResult] = {
+    import JsonReaders.createWalletDescriptorReads
+    bitcoindCall[CreateWalletDescriptorResult](
       "createwalletdescriptor",
       List(Json.toJson(addressType), Json.toJson(options)),
       uriExtensionOpt = Some(walletExtension(walletName)))

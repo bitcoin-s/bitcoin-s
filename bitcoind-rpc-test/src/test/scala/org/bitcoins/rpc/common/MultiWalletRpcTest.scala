@@ -37,7 +37,7 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairNewest {
     new FutureOutcome(f)
   }
 
-  private val cachedSetupClientsF: Future[NodePair[BitcoindRpcClient]] = {
+  private lazy val cachedSetupClientsF: Future[NodePair[BitcoindRpcClient]] = {
     clientsF.flatMap(setupWalletClient)
   }
 
