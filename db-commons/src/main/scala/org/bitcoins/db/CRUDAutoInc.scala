@@ -12,7 +12,7 @@ abstract class CRUDAutoInc[T <: DbRowAutoInc[T]](implicit
   import profile.api._
 
   /** The table inside our database we are inserting into */
-  override val table: profile.api.TableQuery[_ <: TableAutoInc[T]]
+  override val table: profile.api.TableQuery[? <: TableAutoInc]
 
   override def createAllAction(
       ts: Vector[T]
@@ -33,12 +33,12 @@ abstract class CRUDAutoInc[T <: DbRowAutoInc[T]](implicit
 
   override protected def findByPrimaryKey(
       id: Long
-  ): Query[TableAutoInc[T], T, Seq] =
+  ): Query[TableAutoInc, T, Seq] =
     table.filter(_.id === id)
 
   override def findByPrimaryKeys(
       ids: Vector[Long]
-  ): Query[TableAutoInc[T], T, Seq] = {
+  ): Query[TableAutoInc, T, Seq] = {
     table.filter { t =>
       t.id.inSet(ids)
     }
@@ -60,7 +60,7 @@ abstract class CRUDAutoInc[T <: DbRowAutoInc[T]](implicit
 trait TableAutoIncComponent[T <: DbRowAutoInc[T]] { self: CRUDAutoInc[T] =>
   import profile.api._
 
-  abstract class TableAutoInc[T](
+  abstract class TableAutoInc(
       tag: profile.api.Tag,
       schemaName: Option[String],
       tableName: String
