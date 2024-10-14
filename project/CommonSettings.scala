@@ -313,6 +313,7 @@ object CommonSettings {
       "org.flywaydb.core.internal.scanner.cloud.s3" -> "software.amazon.awssdk.services.s3",
       "org.flywaydb.core.internal.scanner.cloud.s3" -> "software.amazon.awssdk.services.s3.model",
       "org.flywaydb.core.api.configuration" -> "software.amazon.awssdk.services.s3",
+      "org.flywaydb.core.internal.configuration" -> "org.apache.commons.text.similarity",
       //we don't use oracle database products
       "org.flywaydb.core.internal.database.oracle" -> "oracle.jdbc",
       //we don't use jboss
