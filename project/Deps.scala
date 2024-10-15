@@ -47,7 +47,7 @@ object Deps {
 
     val breezeV = "1.3"
 
-    val newMicroPickleV = "3.1.4" // https://github.com/com-lihaoyi/upickle/
+    val newMicroPickleV = "4.0.2" // https://github.com/com-lihaoyi/upickle/
     val newMicroJsonV = newMicroPickleV
 
     val osgiFrameworkV = "1.10.0"
