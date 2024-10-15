@@ -14,7 +14,7 @@ import org.scalatest.Suite
 
 /** Base test trait for all the tests in our walletTest module */
 trait BaseWalletTest extends EmbeddedPg {
-  self: Suite with BitcoinSPekkoAsyncTest =>
+  self: Suite & BitcoinSPekkoAsyncTest =>
 
   override def beforeAll(): Unit = {
     AppConfig.throwIfDefaultDatadir(getFreshConfig.walletConf)
