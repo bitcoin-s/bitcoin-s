@@ -1,10 +1,9 @@
 package org.bitcoins.chain.blockchain
 
 import org.bitcoins.chain.ChainVerificationLogger
-import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.validation.{TipUpdateResult, TipValidation}
 import org.bitcoins.core.api.chain.db.BlockHeaderDb
-import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.protocol.blockchain.{BitcoinChainParams, BlockHeader}
 import org.bitcoins.core.util.SeqWrapper
 import org.bitcoins.crypto.DoubleSha256DigestBE
 
@@ -112,9 +111,10 @@ private[blockchain] trait BaseBlockChainCompObject
     * @param blockchain
     *   the blockchain we are attempting to connect to
     */
-  def connectTip(header: BlockHeader, blockchain: Blockchain)(implicit
-      conf: ChainAppConfig
-  ): ConnectTipResult = {
+  def connectTip(
+      header: BlockHeader,
+      blockchain: Blockchain,
+      chainParams: BitcoinChainParams): ConnectTipResult = {
     logger.debug(
       s"Attempting to add new tip=${header.hashBE.hex} with prevhash=${header.previousBlockHashBE.hex} to chain"
     )
@@ -137,7 +137,9 @@ private[blockchain] trait BaseBlockChainCompObject
           )
           val chain = blockchain.fromValidHeader(prevBlockHeader)
           val tipResult =
-            TipValidation.checkNewTip(newPotentialTip = header, chain)
+            TipValidation.checkNewTip(newPotentialTip = header,
+                                      chain,
+                                      chainParams)
 
           tipResult match {
             case success: TipUpdateResult.Success =>
@@ -183,8 +185,9 @@ private[blockchain] trait BaseBlockChainCompObject
     */
   def connectHeadersToChains(
       headers: Vector[BlockHeader],
-      blockchains: Vector[Blockchain]
-  )(implicit chainAppConfig: ChainAppConfig): Vector[BlockchainUpdate] = {
+      blockchains: Vector[Blockchain],
+      chainParams: BitcoinChainParams
+  ): Vector[BlockchainUpdate] = {
     logger.debug(
       s"Attempting to connect ${headers.length} headers to ${blockchains.length} blockchains"
     )
@@ -199,7 +202,8 @@ private[blockchain] trait BaseBlockChainCompObject
           val connectTipResult =
             Blockchain.connectTip(
               header = h,
-              blockchain = lastUpdate.blockchain
+              blockchain = lastUpdate.blockchain,
+              chainParams
             )
           parseConnectTipResult(connectTipResult, lastUpdate)
         }
@@ -304,8 +308,9 @@ private[blockchain] trait BaseBlockChainCompObject
     */
   def reconstructFromHeaders(
       childHeader: BlockHeaderDb,
-      ancestors: Vector[BlockHeaderDb]
-  )(implicit chainAppConfig: ChainAppConfig): Vector[Blockchain] = {
+      ancestors: Vector[BlockHeaderDb],
+      chainParams: BitcoinChainParams
+  ): Vector[Blockchain] = {
     // now all hashes are connected correctly forming a
     // valid blockchain in term of hashes connected to each other
     val orderedHeaders =
@@ -328,8 +333,9 @@ private[blockchain] trait BaseBlockChainCompObject
     // now let's connect headers
     val blockchainUpdateOpt = initBlockchainOpt.map { initBlockchain =>
       Blockchain.connectHeadersToChains(
-        orderedHeaders.tail.map(_.blockHeader),
-        Vector(initBlockchain)
+        headers = orderedHeaders.tail.map(_.blockHeader),
+        blockchains = Vector(initBlockchain),
+        chainParams = chainParams
       )
     }
 

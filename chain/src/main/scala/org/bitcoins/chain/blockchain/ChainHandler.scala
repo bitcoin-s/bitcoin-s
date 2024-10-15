@@ -135,7 +135,8 @@ class ChainHandler(
       val blockchainUpdates: Vector[BlockchainUpdate] = {
         Blockchain.connectHeadersToChains(
           headers = filteredHeaders,
-          blockchains = blockchains
+          blockchains = blockchains,
+          chainParams = chainConfig.chain
         )
       }
 

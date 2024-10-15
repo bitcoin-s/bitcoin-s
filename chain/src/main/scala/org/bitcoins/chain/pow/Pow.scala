@@ -1,7 +1,6 @@
 package org.bitcoins.chain.pow
 
 import org.bitcoins.chain.blockchain.Blockchain
-import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.chain.db.BlockHeaderDb
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain._
@@ -19,9 +18,9 @@ sealed abstract class Pow {
     */
   def getNetworkWorkRequired(
       newPotentialTip: BlockHeader,
-      blockchain: Blockchain
-  )(implicit config: ChainAppConfig): UInt32 = {
-    val chainParams = config.chain
+      blockchain: Blockchain,
+      chainParams: ChainParams
+  ): UInt32 = {
     val tip = blockchain.tip
     val currentHeight = tip.height
 
@@ -46,7 +45,7 @@ sealed abstract class Pow {
             nonMinDiffF match {
               case Some(bh) => bh.nBits
               case None =>
-                config.chain match {
+                chainParams match {
                   case RegTestNetChainParams =>
                     RegTestNetChainParams.compressedPowLimit
                   case TestNetChainParams | MainNetChainParams |

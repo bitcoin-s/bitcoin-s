@@ -2,11 +2,10 @@ package org.bitcoins.chain.validation
 
 import org.bitcoins.chain.ChainVerificationLogger
 import org.bitcoins.chain.blockchain.Blockchain
-import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.api.chain.db.{BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.protocol.blockchain.{BitcoinChainParams, BlockHeader}
 import org.bitcoins.core.util.NumberUtil
 
 /** Responsible for checking if we can connect two block headers together on the
@@ -24,9 +23,10 @@ sealed abstract class TipValidation extends ChainVerificationLogger {
     * [[org.bitcoins.core.protocol.blockchain.BlockHeader BlockHeader]] after
     * all these validation checks occur
     */
-  def checkNewTip(newPotentialTip: BlockHeader, blockchain: Blockchain)(implicit
-      conf: ChainAppConfig
-  ): TipUpdateResult = {
+  def checkNewTip(
+      newPotentialTip: BlockHeader,
+      blockchain: Blockchain,
+      chainParams: BitcoinChainParams): TipUpdateResult = {
     val header = newPotentialTip
     val currentTip = blockchain.tip
     logger.trace(
@@ -34,7 +34,9 @@ sealed abstract class TipValidation extends ChainVerificationLogger {
     )
 
     val expectedWork: UInt32 =
-      isBadPow(newPotentialTip = newPotentialTip, blockchain = blockchain)(conf)
+      isBadPow(newPotentialTip = newPotentialTip,
+               blockchain = blockchain,
+               chainParams = chainParams)
 
     val connectTipResult: TipUpdateResult = {
       if (header.previousBlockHashBE != currentTip.hashBE) {
@@ -100,13 +102,15 @@ sealed abstract class TipValidation extends ChainVerificationLogger {
     }
   }
 
-  private def isBadPow(newPotentialTip: BlockHeader, blockchain: Blockchain)(
-      config: ChainAppConfig
-  ): UInt32 = {
+  private def isBadPow(
+      newPotentialTip: BlockHeader,
+      blockchain: Blockchain,
+      chainParams: BitcoinChainParams): UInt32 = {
     Pow.getNetworkWorkRequired(
       newPotentialTip = newPotentialTip,
-      blockchain = blockchain
-    )(config)
+      blockchain = blockchain,
+      chainParams = chainParams
+    )
 
   }
 }
