@@ -3,7 +3,10 @@ package org.bitcoins.chain.validation
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
-import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.protocol.blockchain.{
+  BlockHeader,
+  RegTestNetChainParams
+}
 import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainDbUnitTest}
 import org.scalatest.{Assertion, FutureOutcome}
 
@@ -65,7 +68,9 @@ class TipValidationTest extends ChainDbUnitTest {
       expected: TipUpdateResult,
       blockchain: Blockchain
   ): Assertion = {
-    val result = TipValidation.checkNewTip(header, blockchain)
+    val result = TipValidation.checkNewTip(newPotentialTip = header,
+                                           blockchain = blockchain,
+                                           chainParams = RegTestNetChainParams)
     assert(result == expected)
   }
 }
