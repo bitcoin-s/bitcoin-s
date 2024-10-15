@@ -195,10 +195,10 @@ object CommonSettings {
       "-feature",
       "-Ypatmat-exhaust-depth",
       "off",
-      "-explain",
-      "-rewrite",
-      "-source",
-      "3.4-migration"
+      "-explain"
+//      "-rewrite",
+//      "-source",
+//      "3.4-migration"
     ) ++ commonCompilerOpts ++ {
       if (scalaVersion.startsWith("2.13")) {
         scala2_13SourceCompilerOpts ++ scala2_13CompilerLinting
