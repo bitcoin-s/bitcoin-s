@@ -52,7 +52,7 @@ case class OracleAnnouncementDataDAO()(implicit
   }
 
   class OracleAnnouncementsTable(tag: Tag)
-      extends TableAutoInc[OracleAnnouncementDataDb](
+      extends TableAutoInc(
         tag,
         schemaName,
         "oracle_announcement_data"

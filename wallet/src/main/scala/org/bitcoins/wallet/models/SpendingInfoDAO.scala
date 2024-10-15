@@ -774,7 +774,7 @@ case class SpendingInfoDAO()(implicit
     * of the transaction that created this output.
     */
   case class SpendingInfoTable(tag: Tag)
-      extends TableAutoInc[UTXORecord](tag, schemaName, "txo_spending_info") {
+      extends TableAutoInc(tag, schemaName, "txo_spending_info") {
 
     def outPoint: Rep[TransactionOutPoint] =
       column("tx_outpoint", O.Unique)
