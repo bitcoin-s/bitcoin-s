@@ -29,7 +29,7 @@ val msg = scodec.bits.ByteVector.fromValidHex("010101010101")
 ```
 
 ```scala mdoc:compile-only
-// Alice generages an adaptor signature using her private key and the adaptor point
+// Alice generates an adaptor signature using her private key and the adaptor point
 val adaptorSig = privKey.adaptorSign(adaptorPoint, msg)
 
 // Bob verifies this adaptor signature using Alice's public key and the adaptor point
