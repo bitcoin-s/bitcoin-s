@@ -93,7 +93,7 @@ cd app/server/target/universal
 Now we will copy this file over to `bitcoin-s-ts/wallet-electron-ts` by running 
 
 ```
-cp <the zip file> ~/bitcoin-s-ts/walllet-electron-ts
+cp <the zip file> ~/bitcoin-s-ts/wallet-electron-ts
 ```
 You now can return to the Setup section
 
