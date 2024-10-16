@@ -741,7 +741,7 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
     } yield {
       decoded match {
         case decodedV22: DecodeScriptResultV22 =>
-          assert(decodedV22.typeOfScript.contains(ScriptType.PUBKEYHASH))
+          assert(decodedV22.`type`.contains(ScriptType.PUBKEYHASH))
       }
     }
   }

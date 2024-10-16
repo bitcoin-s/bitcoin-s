@@ -57,7 +57,7 @@ case class RpcTransactionOutputV22(
 sealed trait RpcScriptPubKey extends RawTransactionResult {
   def asm: String
   def hex: String
-  def scriptType: ScriptType
+  def `type`: ScriptType
   def addresses: Option[Vector[BitcoinAddress]]
 }
 
@@ -65,27 +65,27 @@ case class RpcScriptPubKeyPreV22(
     asm: String,
     hex: String,
     reqSigs: Option[Int],
-    scriptType: ScriptType,
+    `type`: ScriptType,
     addresses: Option[Vector[BitcoinAddress]]
 ) extends RpcScriptPubKey
 
 case class RpcScriptPubKeyPostV22(
     asm: String,
     hex: String,
-    scriptType: ScriptType,
+    `type`: ScriptType,
     addresses: Option[Vector[BitcoinAddress]],
     address: Option[BitcoinAddress]
 ) extends RpcScriptPubKey
 
 sealed trait DecodeScriptResult extends RawTransactionResult {
   def asm: String
-  def typeOfScript: Option[ScriptType]
+  def `type`: Option[ScriptType]
   def address: BitcoinAddress
 }
 
 case class DecodeScriptResultV22(
     asm: String,
-    typeOfScript: Option[ScriptType],
+    `type`: Option[ScriptType],
     address: BitcoinAddress
 ) extends DecodeScriptResult
 
