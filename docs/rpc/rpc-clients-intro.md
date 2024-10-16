@@ -21,7 +21,7 @@ header.
 We've done all the mundane work of wiring requests and
 responses from Bitcoin Core to the powerful and safe types
 found in Bitcoin-S. We've also written a bunch of tests,
-that verify that all of this actually work.
+that verify that all of this actually works.
 You'll know for sure that you're sending
 a valid public key to `importmulti`, and you when doing
 RPC calls like `getblockheader` we'll even parse the
