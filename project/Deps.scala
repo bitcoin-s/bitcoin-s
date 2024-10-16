@@ -8,7 +8,7 @@ object Deps {
     val bouncyCastle = "1.78.1"
     val dropwizardMetricsV = "4.2.28" // https://github.com/dropwizard/metrics
 
-    val logback = "1.5.10" // https://github.com/qos-ch/logback
+    val logback = "1.5.11" // https://github.com/qos-ch/logback
     val log4jV = "1.2.17"
 
     val logkitV = "20020529"
@@ -188,7 +188,8 @@ object Deps {
     val sqlite = "org.xerial" % "sqlite-jdbc" % V.sqliteV
     val postgres = "org.postgresql" % "postgresql" % V.postgresV
     val flyway = "org.flywaydb" % "flyway-core" % V.flywayV
-    val flywayPostgres = "org.flywaydb" % "flyway-database-postgresql" % V.flywayV
+    val flywayPostgres =
+      "org.flywaydb" % "flyway-database-postgresql" % V.flywayV
 
     val newMicroJson = "com.lihaoyi" %% "ujson" % V.newMicroJsonV
 
