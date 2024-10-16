@@ -188,7 +188,8 @@ object Deps {
     val sqlite = "org.xerial" % "sqlite-jdbc" % V.sqliteV
     val postgres = "org.postgresql" % "postgresql" % V.postgresV
     val flyway = "org.flywaydb" % "flyway-core" % V.flywayV
-    val flywayPostgres = "org.flywaydb" % "flyway-database-postgresql" % V.flywayV
+    val flywayPostgres =
+      "org.flywaydb" % "flyway-database-postgresql" % V.flywayV
 
     val newMicroJson = "com.lihaoyi" %% "ujson" % V.newMicroJsonV
 
