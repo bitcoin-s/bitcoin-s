@@ -5,7 +5,7 @@ title: Sign API
 
 ### The [`Sign` API](/api/org/bitcoins/crypto/Sign)
 
-This is the API we define to sign things with. It takes in an arbitrary byte vector and returns a `Future[ECDigitalSignature]`. The reason we incorporate `Future`s here is for extensibility of this API. We would like to provide implementations of this API for hardware devices, which need to be asynchrnous since they may require user input.
+This is the API we define to sign things with. It takes in an arbitrary byte vector and returns a `Future[ECDigitalSignature]`. The reason we incorporate `Future`s here is for extensibility of this API. We would like to provide implementations of this API for hardware devices, which need to be asynchronous since they may require user input.
 
 From [Sign.scala](/api/org/bitcoins/crypto/Sign):
 
