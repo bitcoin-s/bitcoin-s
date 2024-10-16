@@ -66,7 +66,7 @@ object Deps {
     val scalaJsStubsV = "1.1.0"
     // CLI deps
     val scoptV = "4.1.0"
-    val sttpV = "3.10.0" // https://github.com/softwaremill/sttp
+    val sttpV = "3.10.1" // https://github.com/softwaremill/sttp
     val codehausV = "3.1.12"
     val scalaJsTimeV = "2.6.0"
     val zxingV = "3.5.0"
@@ -188,7 +188,8 @@ object Deps {
     val sqlite = "org.xerial" % "sqlite-jdbc" % V.sqliteV
     val postgres = "org.postgresql" % "postgresql" % V.postgresV
     val flyway = "org.flywaydb" % "flyway-core" % V.flywayV
-    val flywayPostgres = "org.flywaydb" % "flyway-database-postgresql" % V.flywayV
+    val flywayPostgres =
+      "org.flywaydb" % "flyway-database-postgresql" % V.flywayV
 
     val newMicroJson = "com.lihaoyi" %% "ujson" % V.newMicroJsonV
 
