@@ -59,7 +59,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
   private val rValueChainIndex = 0
 
   /** The root private key for this oracle */
-  private[this] val extPrivateKey: ExtPrivateKeyHardened = {
+  private val extPrivateKey: ExtPrivateKeyHardened = {
     WalletStorage.getPrivateKeyFromDisk(
       conf.kmConf.seedPath,
       SegWitTestNet3Priv,
@@ -83,10 +83,10 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
     extPrivateKey.deriveChildPrivKey(path).key
   }
 
-  override val publicKey: SchnorrPublicKey = signingKey.schnorrPublicKey
+  override def publicKey(): SchnorrPublicKey = signingKey.schnorrPublicKey
 
   override def stakingAddress(network: BitcoinNetwork): Bech32Address =
-    Bech32Address(P2WPKHWitnessSPKV0(publicKey.publicKey), network)
+    Bech32Address(P2WPKHWitnessSPKV0(publicKey().publicKey), network)
 
   protected[bitcoins] val rValueDAO: RValueDAO = RValueDAO()
   protected[bitcoins] val eventDAO: EventDAO = EventDAO()
@@ -283,7 +283,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
 
       oracleAnnouncement = OracleAnnouncementV0TLV(
         announcementSignature = announcementSignature,
-        publicKey = publicKey,
+        publicKey = publicKey(),
         eventTLV = eventTLV
       )
 
@@ -608,7 +608,7 @@ object DLCOracle {
   def fromDatadir(path: Path, configs: Vector[Config])(implicit
       ec: ExecutionContext
   ): Future[DLCOracle] = {
-    implicit val appConfig =
+    implicit val appConfig: DLCOracleAppConfig =
       DLCOracleAppConfig.fromDatadir(datadir = path, configs)
     val masterXpubDAO: MasterXPubDAO = MasterXPubDAO()(ec, appConfig)
     val oracle = DLCOracle()
@@ -617,9 +617,9 @@ object DLCOracle {
       _ <- appConfig.start()
       _ <- MasterXPubUtil.checkMasterXPub(oracle.getRootXpub, masterXpubDAO)
       differentKeyDbs <- oracle.eventDAO.findDifferentPublicKey(
-        oracle.publicKey
+        oracle.publicKey()
       )
-      fixedDbs = differentKeyDbs.map(_.copy(pubkey = oracle.publicKey))
+      fixedDbs = differentKeyDbs.map(_.copy(pubkey = oracle.publicKey()))
       _ <- oracle.eventDAO.updateAll(fixedDbs)
     } yield oracle
   }

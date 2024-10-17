@@ -102,7 +102,7 @@ class EclairRpcClient(
       Seq(
         from.map(x => "from" -> x.getEpochSecond.toString),
         to.map(x => "to" -> x.getEpochSecond.toString)
-      ).flatten: _*
+      ).flatten*
     )
 
   override def channel(channelId: ChannelId): Future[ChannelResult] = {
@@ -111,7 +111,7 @@ class EclairRpcClient(
 
   private def channels(nodeId: Option[NodeId]): Future[Vector[ChannelInfo]] = {
     val params = Seq(nodeId.map(id => "nodeId" -> id.toString)).flatten
-    eclairCall[Vector[ChannelInfo]]("channels", params: _*)
+    eclairCall[Vector[ChannelInfo]]("channels", params*)
   }
 
   def channels(): Future[Vector[ChannelInfo]] = channels(nodeId = None)
@@ -130,7 +130,7 @@ class EclairRpcClient(
         scriptPubKey.map(x => "scriptPubKey" -> BytesUtil.encodeHex(x.asmBytes))
       ).flatten
 
-    eclairCall[ChannelCommandResult]("close", params: _*)
+    eclairCall[ChannelCommandResult]("close", params*)
   }
 
   def close(channelId: ChannelId): Future[ChannelCommandResult] =
@@ -193,7 +193,7 @@ class EclairRpcClient(
       Some("invoice" -> invoice.toString),
       amountMsat.map(x => "amountMsat" -> x.toBigDecimal.toString)
     ).flatten
-    eclairCall[Vector[Route]]("findroute", params: _*)
+    eclairCall[Vector[Route]]("findroute", params*)
   }
 
   override def forceClose(
@@ -262,7 +262,7 @@ class EclairRpcClient(
 
     // this is unfortunately returned in this format
     // created channel 30bdf849eb9f72c9b41a09e38a6d83138c2edf332cb116dd7cf0f0dfb66be395
-    val call = eclairCall[String]("open", params: _*)
+    val call = eclairCall[String]("open", params*)
     // let's just return the chanId
     // format:
     // created channel 19e11470b0dd96ed15c56ea8f32e9a3277dcbd570e7392c1c34709adc7ebfdc3 with fundingTxId=c2fdebc7ad0947c3c192730e57bddc77329a2ef3a86ec515ed96ddb07014e119 and fees=24750 sat
@@ -413,7 +413,7 @@ class EclairRpcClient(
       paymentPreimage.map(x => "paymentPreimage" -> x.hex)
     ).flatten
 
-    val responseF = eclairCall[InvoiceResult]("createinvoice", params: _*)
+    val responseF = eclairCall[InvoiceResult]("createinvoice", params*)
 
     responseF.flatMap { res =>
       Future.fromTry(LnInvoice.fromStringT(res.serialized))
@@ -515,7 +515,7 @@ class EclairRpcClient(
       externalId.map(x => "externalId" -> x)
     ).flatten
 
-    eclairCall[PaymentId]("payinvoice", params: _*)
+    eclairCall[PaymentId]("payinvoice", params*)
   }
 
   override def getReceivedInfo(
@@ -541,7 +541,7 @@ class EclairRpcClient(
         case _: JsError           => JsSuccess(None)
       }
     }
-    eclairCall[Option[IncomingPayment]]("getreceivedinfo", params: _*)(r)
+    eclairCall[Option[IncomingPayment]]("getreceivedinfo", params*)(r)
   }
 
   override def getSentInfo(
@@ -575,7 +575,7 @@ class EclairRpcClient(
       externalId.map(x => "externalId" -> x)
     ).flatten
 
-    eclairCall[PaymentId]("sendtonode", params: _*)
+    eclairCall[PaymentId]("sendtonode", params*)
   }
 
   def sendToRoute(
@@ -603,7 +603,7 @@ class EclairRpcClient(
       parentId.map(x => "parentId" -> x.toString),
       externalId.map(x => "externalId" -> x)
     ).flatten
-    eclairCall[SendToRouteResult]("sendtoroute", params: _*)
+    eclairCall[SendToRouteResult]("sendtoroute", params*)
   }
 
   override def updateRelayFee(
@@ -640,7 +640,7 @@ class EclairRpcClient(
       Seq(
         from.map(x => "from" -> x.toSeconds.toString),
         to.map(x => "to" -> x.toSeconds.toString)
-      ).flatten: _*
+      ).flatten*
     )
   }
 
@@ -676,7 +676,7 @@ class EclairRpcClient(
       Seq(
         from.map(x => "from" -> x.getEpochSecond.toString),
         to.map(x => "to" -> x.getEpochSecond.toString)
-      ).flatten: _*
+      ).flatten*
     )
     resF.flatMap(xs =>
       Future.sequence(
@@ -727,7 +727,7 @@ class EclairRpcClient(
   private def eclairCall[T](command: String, parameters: (String, String)*)(
       implicit reader: Reads[T]
   ): Future[T] = {
-    val request = buildRequest(getDaemon, command, parameters: _*)
+    val request = buildRequest(getDaemon, command, parameters*)
 
     logger.trace(s"eclair rpc call ${request}")
     val responseF = sendRequest(request)
@@ -810,7 +810,7 @@ class EclairRpcClient(
     HttpRequest(
       method = HttpMethods.POST,
       uri,
-      entity = FormData(params: _*).toEntity
+      entity = FormData(params*).toEntity
     )
       .addCredentials(
         HttpCredentials.createBasicHttpCredentials(username, password)

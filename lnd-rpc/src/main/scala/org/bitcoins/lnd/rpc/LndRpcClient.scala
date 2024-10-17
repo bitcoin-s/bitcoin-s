@@ -142,7 +142,7 @@ case class LndRpcClient(instance: LndInstance, binaryOpt: Option[File] = None)(
 
   // These need to be lazy so we don't try and fetch
   // the tls certificate before it is generated
-  private[this] lazy val certStreamOpt: Option[InputStream] = {
+  private lazy val certStreamOpt: Option[InputStream] = {
     instance.certFileOpt match {
       case Some(file) => Some(new FileInputStream(file))
       case None =>

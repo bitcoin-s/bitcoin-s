@@ -148,8 +148,8 @@ case class OracleRoutes(oracle: DLCOracleApi)(implicit
             oracle.findEvent(eventName).map {
               case Some(event: OracleEvent) =>
                 val outcomesJson = event.eventDescriptorTLV match {
-                  case enum: EnumEventDescriptorV0TLV =>
-                    enum.outcomes.map(outcome => Str(outcome.normStr))
+                  case e: EnumEventDescriptorV0TLV =>
+                    e.outcomes.map(outcome => Str(outcome.normStr))
                   case decomp: DigitDecompositionEventDescriptorV0TLV =>
                     val digits = 0.until(decomp.numDigits.toInt).map { _ =>
                       0
