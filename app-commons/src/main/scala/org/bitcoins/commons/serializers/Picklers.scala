@@ -1320,6 +1320,8 @@ object Picklers {
         val numericOracles =
           oracles.map(_.asInstanceOf[NumericSingleOracleInfo])
         NumericOracleOutcome(numericOracles.zip(numericOutcomes))
+      case signed: SignedNumericOutcome =>
+        throw new IllegalArgumentException(s"Unexpected outcome $signed")
     }
 
     lazy val myPayoutJs = obj(PicklerKeys.myPayout)
