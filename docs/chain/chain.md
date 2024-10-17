@@ -81,7 +81,7 @@ val syncedChainApiF = for {
 val syncResultF = syncedChainApiF.flatMap { chainApi =>
   chainApi.getBlockCount().map(count => println(s"chain api blockcount=${count}"))
 
-  rpcCli.getBlockCount.map(count => println(s"bitcoind blockcount=${count}"))
+  rpcCli.getBlockCount().map(count => println(s"bitcoind blockcount=${count}"))
 }
 
 syncResultF.onComplete { case result =>

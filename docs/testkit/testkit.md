@@ -50,7 +50,7 @@ val bitcoindRpcClientF = BitcoindRpcTestUtil.startedBitcoindRpcClient(Some(insta
 //let's just grab the block count for an example
 val blockCountF = for {
   bitcoind <- bitcoindRpcClientF
-  count <- bitcoind.getBlockCount
+  count <- bitcoind.getBlockCount()
 } yield {
   //run a test against the block count
   assert(count > 0, s"Block count was not more than zero!")
