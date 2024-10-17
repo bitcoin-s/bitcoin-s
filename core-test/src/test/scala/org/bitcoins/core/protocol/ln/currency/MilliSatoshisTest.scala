@@ -79,7 +79,7 @@ class MilliSatoshisTest extends BitcoinSUnitTest {
 
   it must "subtract msats" in {
     forAll(LnCurrencyUnitGen.milliSatoshisPair) { case (first, second) =>
-      val subtracted = first subtractSafe second
+      val subtracted = first `subtractSafe` second
       val isPositive = (first.toBigInt - second.toBigInt) >= 0
 
       assert(subtracted.isSuccess == isPositive)

@@ -498,7 +498,7 @@ class DescriptorTest extends BitcoinSUnitTest {
         )
       case x: ScriptPathTreeExpression =>
         x.source.leafs.head.source
-          .asInstanceOf[P2PKScriptExpression[_]]
+          .asInstanceOf[P2PKScriptExpression[?]]
           .source
           .asInstanceOf[ExtXOnlyPublicKeyExpression]
           .ecPublicKeyExpression

@@ -344,7 +344,7 @@ sealed abstract class CryptoGenerators {
       mGen.flatMap { m =>
         val upperBound = m.toInt * 2 - 2
 
-        val randGen = Gen.chooseNum(0L, upperBound).map(UInt64(_))
+        val randGen = Gen.chooseNum(0, upperBound).map(UInt64(_))
 
         randGen.map(rand => (p, m, rand))
       }

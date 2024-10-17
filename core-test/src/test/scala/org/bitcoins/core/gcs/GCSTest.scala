@@ -6,7 +6,7 @@ import org.bitcoins.crypto.SipHashKey
 import org.bitcoins.testkitcore.gen.NumberGenerator
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalacheck.Gen
-import scodec.bits.{BinStringSyntax, ByteVector}
+import scodec.bits.{BitVector, ByteVector}
 
 class GCSTest extends BitcoinSUnitTest {
   behavior of "GCS"
@@ -18,7 +18,7 @@ class GCSTest extends BitcoinSUnitTest {
 
     val encoding = GCS.golombEncode(item = original, p = p)
 
-    assert(encoding == bin"000")
+    assert(encoding == BitVector.fromValidBin("000"))
 
     val decode = GCS.golombDecode(codedItem = encoding, p = p)
 
@@ -31,7 +31,7 @@ class GCSTest extends BitcoinSUnitTest {
 
     val encoding = GCS.golombEncode(item = original, p = p)
 
-    assert(encoding == bin"001")
+    assert(encoding == BitVector.fromValidBin("001"))
 
     val decode = GCS.golombDecode(codedItem = encoding, p = p)
 
@@ -44,7 +44,7 @@ class GCSTest extends BitcoinSUnitTest {
 
     val encoding = GCS.golombEncode(item = original, p = p)
 
-    assert(encoding == bin"010")
+    assert(encoding == BitVector.fromValidBin("010"))
 
     val decode = GCS.golombDecode(codedItem = encoding, p = p)
 
@@ -57,7 +57,7 @@ class GCSTest extends BitcoinSUnitTest {
 
     val encoding = GCS.golombEncode(item = original, p = p)
 
-    assert(encoding == bin"011")
+    assert(encoding == BitVector.fromValidBin("011"))
 
     val decode = GCS.golombDecode(codedItem = encoding, p = p)
 
@@ -70,7 +70,7 @@ class GCSTest extends BitcoinSUnitTest {
 
     val encoding = GCS.golombEncode(item = original, p = p)
 
-    assert(encoding == bin"1000")
+    assert(encoding == BitVector.fromValidBin("1000"))
 
     val decode = GCS.golombDecode(codedItem = encoding, p = p)
 
@@ -83,7 +83,7 @@ class GCSTest extends BitcoinSUnitTest {
 
     val encoding = GCS.golombEncode(item = original, p = p)
 
-    assert(encoding == bin"1001")
+    assert(encoding == BitVector.fromValidBin("1001"))
 
     val decode = GCS.golombDecode(codedItem = encoding, p = p)
 
@@ -96,7 +96,7 @@ class GCSTest extends BitcoinSUnitTest {
 
     val encoding = GCS.golombEncode(item = original, p = p)
 
-    assert(encoding == bin"1010")
+    assert(encoding == BitVector.fromValidBin("1010"))
 
     val decode = GCS.golombDecode(codedItem = encoding, p = p)
 
@@ -109,7 +109,7 @@ class GCSTest extends BitcoinSUnitTest {
 
     val encoding = GCS.golombEncode(item = original, p = p)
 
-    assert(encoding == bin"1011")
+    assert(encoding == BitVector.fromValidBin("1011"))
 
     val decode = GCS.golombDecode(codedItem = encoding, p = p)
 
@@ -122,7 +122,7 @@ class GCSTest extends BitcoinSUnitTest {
 
     val encoding = GCS.golombEncode(item = original, p = p)
 
-    assert(encoding == bin"11000")
+    assert(encoding == BitVector.fromValidBin("11000"))
 
     val decode = GCS.golombDecode(codedItem = encoding, p = p)
 
@@ -135,7 +135,7 @@ class GCSTest extends BitcoinSUnitTest {
 
     val encoding = GCS.golombEncode(item = original, p = p)
 
-    assert(encoding == bin"11001")
+    assert(encoding == BitVector.fromValidBin("11001"))
 
     val decode = GCS.golombDecode(codedItem = encoding, p = p)
 
@@ -170,12 +170,12 @@ class GCSTest extends BitcoinSUnitTest {
 
     val codedSet = GCS.encodeSortedSet(sortedItems, p)
 
-    val coded0 = bin"000"
-    val coded1 = bin"001"
-    val coded2 = bin"010"
-    val coded3 = bin"011"
-    val coded4 = bin"1000"
-    val coded5 = bin"1001"
+    val coded0 = BitVector.fromValidBin("000")
+    val coded1 = BitVector.fromValidBin("001")
+    val coded2 = BitVector.fromValidBin("010")
+    val coded3 = BitVector.fromValidBin("011")
+    val coded4 = BitVector.fromValidBin("1000")
+    val coded5 = BitVector.fromValidBin("1001")
     val expectedCodedSet =
       coded0 ++ coded1 ++ coded2 ++ coded3 ++ coded4 ++ coded5
 

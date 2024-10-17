@@ -18,7 +18,7 @@ class TaprootWalletTestVectors extends BitcoinSUnitTest {
 
   lazy val testCase: TaprootWalletTestCases = {
     upickle.default.read[TaprootWalletTestCases](lines)(
-      TaprootWalletTestCase.walletTestVectorReader
+      using TaprootWalletTestCase.walletTestVectorReader
     )
   }
 

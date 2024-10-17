@@ -6,7 +6,7 @@ import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.testkitcore.gen.NumberGenerator
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalacheck.Gen
-import scodec.bits.{ByteVector, HexStringSyntax}
+import scodec.bits.ByteVector
 
 class RawAddrV2MessageSerializerTest extends BitcoinSUnitTest {
 
@@ -108,7 +108,7 @@ class RawAddrV2MessageSerializerTest extends BitcoinSUnitTest {
       IPv4AddrV2Message(
         UInt32(4523),
         CompactSizeUInt(UInt64(53453453L)),
-        InetAddress.getByAddress(hex"00000000".toArray),
+        InetAddress.getByAddress(ByteVector.fromValidHex("00000000").toArray),
         UInt16(8333)
       )
 
@@ -125,7 +125,8 @@ class RawAddrV2MessageSerializerTest extends BitcoinSUnitTest {
     val msg = IPv6AddrV2Message(
       UInt32(4523),
       CompactSizeUInt(UInt64(53453453L)),
-      InetAddress.getByAddress(hex"00000000000000000000000000000000".toArray),
+      InetAddress.getByAddress(
+        ByteVector.fromValidHex("00000000000000000000000000000000").toArray),
       UInt16(8333)
     )
 
@@ -144,7 +145,7 @@ class RawAddrV2MessageSerializerTest extends BitcoinSUnitTest {
     val msg = TorV2AddrV2Message(
       UInt32(4523),
       CompactSizeUInt(UInt64(53453453L)),
-      hex"00000000000000000000",
+      ByteVector.fromValidHex("00000000000000000000"),
       UInt16(8333)
     )
 
@@ -161,7 +162,8 @@ class RawAddrV2MessageSerializerTest extends BitcoinSUnitTest {
     val msg = TorV3AddrV2Message(
       UInt32(4523),
       CompactSizeUInt(UInt64(53453453L)),
-      hex"0000000000000000000000000000000000000000000000000000000000000000",
+      ByteVector.fromValidHex(
+        "0000000000000000000000000000000000000000000000000000000000000000"),
       UInt16(8333)
     )
 
@@ -180,7 +182,8 @@ class RawAddrV2MessageSerializerTest extends BitcoinSUnitTest {
     val msg = I2PAddrV2Message(
       UInt32(4523),
       CompactSizeUInt(UInt64(53453453L)),
-      hex"0000000000000000000000000000000000000000000000000000000000000000",
+      ByteVector.fromValidHex(
+        "0000000000000000000000000000000000000000000000000000000000000000"),
       UInt16(8333)
     )
 
@@ -199,7 +202,7 @@ class RawAddrV2MessageSerializerTest extends BitcoinSUnitTest {
     val msg = CJDNSAddrV2Message(
       UInt32(4523),
       CompactSizeUInt(UInt64(53453453L)),
-      hex"fc000000000000000000000000000000",
+      ByteVector.fromValidHex("fc000000000000000000000000000000"),
       UInt16(8333)
     )
 
@@ -219,7 +222,7 @@ class RawAddrV2MessageSerializerTest extends BitcoinSUnitTest {
       UInt32(4523),
       CompactSizeUInt(UInt64(53453453L)),
       0x07,
-      hex"00000000000000000000000000000000",
+      ByteVector.fromValidHex("00000000000000000000000000000000"),
       UInt16(8333)
     )
 

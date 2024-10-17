@@ -3,7 +3,7 @@ package org.bitcoins.core.crypto
 import org.bitcoins.testkitcore.gen.CryptoGenerators
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalatest.Assertion
-import scodec.bits.{BinStringSyntax, BitVector, ByteVector}
+import scodec.bits.{BitVector, ByteVector}
 import ujson._
 import upickle.default._
 
@@ -60,7 +60,7 @@ class MnemonicCodeTest extends BitcoinSUnitTest {
   it must "fail to generate mnemonics from entropy of bad length" in {
     def testEntropyFailure(entropy: BitVector): Assertion = {
       val short = entropy.drop(1)
-      val long = entropy ++ bin"1"
+      val long = entropy ++ BitVector.fromValidHex("1")
       assertThrows[IllegalArgumentException](MnemonicCode.fromEntropy(short))
       assertThrows[IllegalArgumentException](MnemonicCode.fromEntropy(long))
     }
@@ -79,12 +79,12 @@ class MnemonicCodeTest extends BitcoinSUnitTest {
       assert(attempt.isFailure)
 
       val exc = attempt
-        .asInstanceOf[Failure[_]]
+        .asInstanceOf[Failure[?]]
         .exception
 
       val message = exc.getMessage
 
-      message contains "Entropy cannot be longer"
+      message `contains` "Entropy cannot be longer"
     }
   }
 
@@ -99,11 +99,11 @@ class MnemonicCodeTest extends BitcoinSUnitTest {
       }
       assert(attempt.isFailure)
       val exc = attempt
-        .asInstanceOf[Failure[_]]
+        .asInstanceOf[Failure[?]]
         .exception
 
       val message = exc.getMessage
-      assert(message contains "Entropy must be at least")
+      assert(message `contains` "Entropy must be at least")
     }
   }
 
@@ -113,8 +113,8 @@ class MnemonicCodeTest extends BitcoinSUnitTest {
       val codeT = Try(MnemonicCode.fromEntropy(e.drop(1)))
 
       assert(codeT.isFailure)
-      val exc = codeT.asInstanceOf[Failure[_]].exception
-      assert(exc.getMessage contains "Entropy must be a multiple")
+      val exc = codeT.asInstanceOf[Failure[?]].exception
+      assert(exc.getMessage `contains` "Entropy must be a multiple")
     }
   }
 
@@ -151,8 +151,8 @@ class MnemonicCodeTest extends BitcoinSUnitTest {
     }
 
     assert(fromWordsT.isFailure)
-    val exc = fromWordsT.asInstanceOf[Failure[_]].exception
-    assert(exc.getMessage contains "checksum is not valid")
+    val exc = fromWordsT.asInstanceOf[Failure[?]].exception
+    assert(exc.getMessage `contains` "checksum is not valid")
   }
 
   it must "fail to generate mnemonic codes from word vectors of bad length" in {
@@ -161,12 +161,12 @@ class MnemonicCodeTest extends BitcoinSUnitTest {
       assert(attempt.isFailure)
 
       val exc = attempt
-        .asInstanceOf[Failure[_]]
+        .asInstanceOf[Failure[?]]
         .exception
 
       val message = exc.getMessage
 
-      assert(message contains "Number of words")
+      assert(message `contains` "Number of words")
     }
 
     forAll(CryptoGenerators.mnemonicPhrase) { phrase =>
@@ -175,11 +175,11 @@ class MnemonicCodeTest extends BitcoinSUnitTest {
       assert(attempt.isFailure)
 
       val exc = attempt
-        .asInstanceOf[Failure[_]]
+        .asInstanceOf[Failure[?]]
         .exception
 
       val message = exc.getMessage
-      assert(message contains "Number of words")
+      assert(message `contains` "Number of words")
     }
   }
 

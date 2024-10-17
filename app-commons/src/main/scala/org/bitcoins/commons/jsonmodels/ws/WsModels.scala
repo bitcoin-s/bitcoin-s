@@ -178,7 +178,7 @@ object WalletNotification {
     override val `type`: WalletWsType = WalletWsType.NewAddress
 
     override val json: ujson.Value = {
-      upickle.default.writeJs(this)(WsPicklers.newAddressPickler)
+      upickle.default.writeJs(this)(using WsPicklers.newAddressPickler)
     }
   }
 
@@ -187,7 +187,7 @@ object WalletNotification {
     override val `type`: WalletWsType = WalletWsType.TxProcessed
 
     override val json: ujson.Value = {
-      upickle.default.writeJs(this)(WsPicklers.txProcessedPickler)
+      upickle.default.writeJs(this)(using WsPicklers.txProcessedPickler)
     }
   }
 
@@ -196,7 +196,7 @@ object WalletNotification {
     override val `type`: WalletWsType = WalletWsType.TxBroadcast
 
     override val json: ujson.Value = {
-      upickle.default.writeJs(this)(WsPicklers.txBroadcastPickler)
+      upickle.default.writeJs(this)(using WsPicklers.txBroadcastPickler)
     }
   }
 
@@ -205,7 +205,7 @@ object WalletNotification {
     override val `type`: WalletWsType = WalletWsType.ReservedUtxos
 
     override val json: ujson.Value = {
-      upickle.default.writeJs(this)(WsPicklers.reservedUtxosPickler)
+      upickle.default.writeJs(this)(using WsPicklers.reservedUtxosPickler)
     }
   }
 
@@ -214,7 +214,7 @@ object WalletNotification {
     override val `type`: WalletWsType = WalletWsType.DLCStateChange
 
     override val json: ujson.Value = {
-      upickle.default.writeJs(this)(WsPicklers.dlcStateChangePickler)
+      upickle.default.writeJs(this)(using WsPicklers.dlcStateChangePickler)
     }
   }
 
@@ -223,7 +223,7 @@ object WalletNotification {
     override val `type`: WalletWsType = WalletWsType.DLCOfferAdd
 
     override val json: ujson.Value = {
-      upickle.default.writeJs(this)(WsPicklers.dlcOfferAddPickler)
+      upickle.default.writeJs(this)(using WsPicklers.dlcOfferAddPickler)
     }
   }
 
@@ -232,7 +232,7 @@ object WalletNotification {
     override val `type`: WalletWsType = WalletWsType.DLCOfferRemove
 
     override val json: ujson.Value = {
-      upickle.default.writeJs(this)(WsPicklers.dlcOfferRemovePickler)
+      upickle.default.writeJs(this)(using WsPicklers.dlcOfferRemovePickler)
     }
   }
 
@@ -241,7 +241,7 @@ object WalletNotification {
     override val `type`: WalletWsType = WalletWsType.RescanComplete
 
     override val json: ujson.Value = {
-      upickle.default.writeJs(this)(WsPicklers.rescanPickler)
+      upickle.default.writeJs(this)(using WsPicklers.rescanPickler)
     }
   }
 
@@ -250,7 +250,7 @@ object WalletNotification {
     override val `type`: WalletWsType = WalletWsType.FeeRateChange
 
     override val json: ujson.Value = {
-      upickle.default.writeJs(this)(WsPicklers.feeRatePickler)
+      upickle.default.writeJs(this)(using WsPicklers.feeRatePickler)
     }
   }
 }
@@ -262,7 +262,7 @@ object ChainNotification {
     override val `type`: ChainWsType = ChainWsType.BlockProcessed
 
     override val json: ujson.Value = {
-      upickle.default.writeJs(this)(WsPicklers.blockProcessedPickler)
+      upickle.default.writeJs(this)(using WsPicklers.blockProcessedPickler)
     }
   }
 
@@ -273,7 +273,7 @@ object ChainNotification {
 
     override val json: ujson.Value = {
       upickle.default.writeJs(this)(
-        WsPicklers.compactFilterHeaderProcessedPickler
+        using WsPicklers.compactFilterHeaderProcessedPickler
       )
     }
   }
@@ -283,7 +283,8 @@ object ChainNotification {
     override val `type`: ChainWsType = ChainWsType.CompactFilterProcessed
 
     override val json: ujson.Value = {
-      upickle.default.writeJs(this)(WsPicklers.compactFilterProcessedPickler)
+      upickle.default.writeJs(this)(
+        using WsPicklers.compactFilterProcessedPickler)
     }
   }
 
@@ -292,7 +293,7 @@ object ChainNotification {
     override val `type`: ChainWsType = ChainWsType.SyncFlagChanged
 
     override val json: ujson.Value = {
-      upickle.default.writeJs(this)(WsPicklers.syncFlagChangedPickler)
+      upickle.default.writeJs(this)(using WsPicklers.syncFlagChangedPickler)
     }
   }
 }
@@ -304,7 +305,7 @@ object TorNotification {
     override val payload: Unit = ()
 
     override val json: ujson.Value = {
-      upickle.default.writeJs(this)(WsPicklers.torStartedPickler)
+      upickle.default.writeJs(this)(using WsPicklers.torStartedPickler)
     }
   }
 }
@@ -316,7 +317,7 @@ object DLCNodeNotification {
     override def `type`: DLCNodeWsType = DLCNodeWsType.DLCConnectionInitiated
 
     override def json: Value = upickle.default.writeJs(this)(
-      WsPicklers.dlcNodeConnectionInitiatedPickler
+      using WsPicklers.dlcNodeConnectionInitiatedPickler
     )
   }
 
@@ -325,7 +326,7 @@ object DLCNodeNotification {
     override def `type`: DLCNodeWsType = DLCNodeWsType.DLCConnectionEstablished
 
     override def json: Value = upickle.default.writeJs(this)(
-      WsPicklers.dlcNodeConnectionEstablishedPickler
+      using WsPicklers.dlcNodeConnectionEstablishedPickler
     )
   }
 
@@ -334,7 +335,8 @@ object DLCNodeNotification {
     override def `type`: DLCNodeWsType = DLCNodeWsType.DLCConnectionFailed
 
     override def json: Value =
-      upickle.default.writeJs(this)(WsPicklers.dlcNodeConnectionFailedPickler)
+      upickle.default.writeJs(this)(
+        using WsPicklers.dlcNodeConnectionFailedPickler)
   }
 
   case class DLCAcceptFailed(payload: (Sha256Digest, String))
@@ -342,7 +344,7 @@ object DLCNodeNotification {
     override def `type`: DLCNodeWsType = DLCNodeWsType.DLCAcceptFailed
 
     override def json: Value =
-      upickle.default.writeJs(this)(WsPicklers.dlcAcceptFailedPickler)
+      upickle.default.writeJs(this)(using WsPicklers.dlcAcceptFailedPickler)
   }
 
   case class DLCAcceptSucceed(payload: Sha256Digest)
@@ -350,7 +352,7 @@ object DLCNodeNotification {
     override def `type`: DLCNodeWsType = DLCNodeWsType.DLCAcceptSucceed
 
     override def json: Value =
-      upickle.default.writeJs(this)(WsPicklers.dlcAcceptSucceedPickler)
+      upickle.default.writeJs(this)(using WsPicklers.dlcAcceptSucceedPickler)
   }
 
   case class DLCOfferSendFailed(payload: (Sha256Digest, String))
@@ -358,7 +360,7 @@ object DLCNodeNotification {
     override def `type`: DLCNodeWsType = DLCNodeWsType.DLCOfferSendFailed
 
     override def json: Value =
-      upickle.default.writeJs(this)(WsPicklers.dlcOfferSendFailedPickler)
+      upickle.default.writeJs(this)(using WsPicklers.dlcOfferSendFailedPickler)
   }
 
   case class DLCOfferSendSucceed(payload: Sha256Digest)
@@ -366,7 +368,7 @@ object DLCNodeNotification {
     override def `type`: DLCNodeWsType = DLCNodeWsType.DLCOfferSendSucceed
 
     override def json: Value =
-      upickle.default.writeJs(this)(WsPicklers.dlcOfferSendSucceedPickler)
+      upickle.default.writeJs(this)(using WsPicklers.dlcOfferSendSucceedPickler)
   }
 
   case class DLCSignFailed(payload: (Sha256Digest, String))
@@ -374,7 +376,7 @@ object DLCNodeNotification {
     override def `type`: DLCNodeWsType = DLCNodeWsType.DLCSignFailed
 
     override def json: Value =
-      upickle.default.writeJs(this)(WsPicklers.dlcSignFailedPickler)
+      upickle.default.writeJs(this)(using WsPicklers.dlcSignFailedPickler)
   }
 
   case class DLCSignSucceed(payload: Sha256Digest)
@@ -382,6 +384,6 @@ object DLCNodeNotification {
     override def `type`: DLCNodeWsType = DLCNodeWsType.DLCSignSucceed
 
     override def json: Value =
-      upickle.default.writeJs(this)(WsPicklers.dlcSignSucceedPickler)
+      upickle.default.writeJs(this)(using WsPicklers.dlcSignSucceedPickler)
   }
 }

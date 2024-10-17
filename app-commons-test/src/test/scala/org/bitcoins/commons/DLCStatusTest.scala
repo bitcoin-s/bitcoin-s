@@ -51,7 +51,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
         assert(read[DLCStatus](write(status)) == status)
         assert(
           read[DLCStatus](
-            write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)
+            write(status.asInstanceOf[DLCStatus])(using Picklers.dlcStatusW)
           ) == status
         )
     }
@@ -100,7 +100,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
       assert(read[DLCStatus](write(status)) == status)
       assert(
         read[DLCStatus](
-          write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)
+          write(status.asInstanceOf[DLCStatus])(using Picklers.dlcStatusW)
         ) == status
       )
     }
@@ -142,7 +142,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
       assert(read[DLCStatus](write(status)) == status)
       assert(
         read[DLCStatus](
-          write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)
+          write(status.asInstanceOf[DLCStatus])(using Picklers.dlcStatusW)
         ) == status
       )
     }
@@ -184,7 +184,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
       assert(read[DLCStatus](write(status)) == status)
       assert(
         read[DLCStatus](
-          write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)
+          write(status.asInstanceOf[DLCStatus])(using Picklers.dlcStatusW)
         ) == status
       )
     }
@@ -226,7 +226,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
       assert(read[DLCStatus](write(status)) == status)
       assert(
         read[DLCStatus](
-          write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)
+          write(status.asInstanceOf[DLCStatus])(using Picklers.dlcStatusW)
         ) == status
       )
     }
@@ -283,7 +283,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
       assert(read[DLCStatus](write(status)) == status)
       assert(
         read[DLCStatus](
-          write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)
+          write(status.asInstanceOf[DLCStatus])(using Picklers.dlcStatusW)
         ) == status
       )
     }
@@ -342,7 +342,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
       assert(read[DLCStatus](write(status)) == status)
       assert(
         read[DLCStatus](
-          write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)
+          write(status.asInstanceOf[DLCStatus])(using Picklers.dlcStatusW)
         ) == status
       )
     }
@@ -395,7 +395,7 @@ class DLCStatusTest extends BitcoinSJvmTest {
       assert(read[DLCStatus](write(status)) == status)
       assert(
         read[DLCStatus](
-          write(status.asInstanceOf[DLCStatus])(Picklers.dlcStatusW)
+          write(status.asInstanceOf[DLCStatus])(using Picklers.dlcStatusW)
         ) == status
       )
     }

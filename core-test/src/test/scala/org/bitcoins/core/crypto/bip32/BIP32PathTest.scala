@@ -36,7 +36,7 @@ class BIP32PathTest extends BitcoinSUnitTest {
 
   it must "have varargs and vector constructors what work the same way" in {
     forAll(HDGenerators.bip32Path) { bip32 =>
-      assert(BIP32Path(bip32.path) == BIP32Path(bip32.path: _*))
+      assert(BIP32Path(bip32.path) == BIP32Path(bip32.path*))
     }
   }
 
