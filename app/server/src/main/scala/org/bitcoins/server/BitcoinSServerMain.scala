@@ -202,8 +202,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
 
     val tuple = buildWsSource
 
-    val wsQueue: SourceQueueWithComplete[WsNotification[_]] = tuple._1
-    val wsSource: Source[WsNotification[_], NotUsed] = tuple._2
+    val wsQueue: SourceQueueWithComplete[WsNotification[?]] = tuple._1
+    val wsSource: Source[WsNotification[?], NotUsed] = tuple._2
 
     val torCallbacks = WebsocketUtil.buildTorCallbacks(wsQueue)
     torConf.addCallbacks(torCallbacks)
@@ -289,7 +289,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   }
 
   private def buildNeutrinoCallbacks(
-      wsQueue: SourceQueueWithComplete[WsNotification[_]],
+      wsQueue: SourceQueueWithComplete[WsNotification[?]],
       chainApi: ChainApi,
       walletConf: WalletAppConfig,
       dlcConf: DLCAppConfig
@@ -345,11 +345,11 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   }
 
   /** The wallet loader that is being used for our wallet. */
-  private[this] var walletLoaderApiOpt: Option[DLCWalletLoaderApi] = None
+  private var walletLoaderApiOpt: Option[DLCWalletLoaderApi] = None
 
-  private[this] var bitcoindSyncStateOpt: Option[BitcoindSyncState] = None
+  private var bitcoindSyncStateOpt: Option[BitcoindSyncState] = None
 
-  private[this] var nodeOpt: Option[Node] = None
+  private var nodeOpt: Option[Node] = None
 
   /** Start the bitcoin-s wallet server with a bitcoind backend
     * @param startedTorConfigF
@@ -368,8 +368,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       client
     }
     val tuple = buildWsSource
-    val wsQueue: SourceQueueWithComplete[WsNotification[_]] = tuple._1
-    val wsSource: Source[WsNotification[_], NotUsed] = tuple._2
+    val wsQueue: SourceQueueWithComplete[WsNotification[?]] = tuple._1
+    val wsSource: Source[WsNotification[?], NotUsed] = tuple._2
     val torCallbacks = WebsocketUtil.buildTorCallbacks(wsQueue)
     val _ = torConf.addCallbacks(torCallbacks)
     val isTorStartedF = if (torConf.torProvided) {
@@ -507,7 +507,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       dlcNodeF: Future[DLCNode],
       torConfStarted: Future[Unit],
       serverCmdLineArgs: ServerArgParser,
-      wsSource: Source[WsNotification[_], NotUsed]
+      wsSource: Source[WsNotification[?], NotUsed]
   )(implicit system: ActorSystem, conf: BitcoinSAppConfig): Future[Server] = {
     implicit val nodeConf: NodeAppConfig = conf.nodeConf
     implicit val walletConf: WalletAppConfig = conf.walletConf
@@ -675,8 +675,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     * emits websocket messages
     */
   private def buildWsSource: (
-      SourceQueueWithComplete[WsNotification[_]],
-      Source[WsNotification[_], NotUsed]
+      SourceQueueWithComplete[WsNotification[?]],
+      Source[WsNotification[?], NotUsed]
   ) = {
     val maxBufferSize: Int = 25
 
@@ -688,7 +688,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
       // the BroadcastHub.sink is needed to avoid these errors
       // 'Websocket handler failed with Processor actor'
       Source
-        .queue[WsNotification[_]](maxBufferSize, OverflowStrategy.dropHead)
+        .queue[WsNotification[?]](maxBufferSize, OverflowStrategy.dropHead)
         .toMat(BroadcastHub.sink)(Keep.both)
         .run()
     }

@@ -88,7 +88,7 @@ class ScanBitcoind()(implicit
     val source: Source[Int, NotUsed] = Source(startHeight.to(endHeight))
 
     // in this simple example, we are going to count the number of witness transactions
-    val countSegwitTxs: Block => Int = { block: Block =>
+    val countSegwitTxs: Block => Int = { (block: Block) =>
       block.transactions.count(_.isInstanceOf[WitnessTransaction])
     }
     val countsF: Future[Seq[Int]] = for {

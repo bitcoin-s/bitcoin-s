@@ -68,8 +68,8 @@ import scala.concurrent.{ExecutionContext, Future}
 object WebsocketUtil extends BitcoinSLogger {
 
   private def sendHeadersToWs(
-      notifications: Vector[ChainNotification[_]],
-      queue: SourceQueueWithComplete[WsNotification[_]]
+      notifications: Vector[ChainNotification[?]],
+      queue: SourceQueueWithComplete[WsNotification[?]]
   )(implicit ec: ExecutionContext): Future[Unit] = {
     for {
       _ <- FutureUtil.sequentially(notifications) { case msg =>
@@ -82,7 +82,7 @@ object WebsocketUtil extends BitcoinSLogger {
   }
 
   def buildChainCallbacks(
-      queue: SourceQueueWithComplete[WsNotification[_]],
+      queue: SourceQueueWithComplete[WsNotification[?]],
       chainApi: ChainApi
   )(implicit
       ec: ExecutionContext,
@@ -175,7 +175,7 @@ object WebsocketUtil extends BitcoinSLogger {
 
   /** Builds websocket callbacks for the wallet */
   def buildWalletCallbacks(
-      walletQueue: SourceQueueWithComplete[WsNotification[_]],
+      walletQueue: SourceQueueWithComplete[WsNotification[?]],
       walletName: String
   )(implicit system: ActorSystem): WalletCallbackStreamManager = {
     import system.dispatcher
@@ -234,7 +234,7 @@ object WebsocketUtil extends BitcoinSLogger {
   }
 
   def buildTorCallbacks(
-      queue: SourceQueueWithComplete[WsNotification[_]]
+      queue: SourceQueueWithComplete[WsNotification[?]]
   )(implicit ec: ExecutionContext): TorCallbacks = {
     val onTorStarted: OnTorStarted = { _ =>
       val notification = TorStartedNotification
@@ -248,7 +248,7 @@ object WebsocketUtil extends BitcoinSLogger {
   private def buildTxNotification(
       wsType: WalletWsType,
       tx: Transaction,
-      walletQueue: SourceQueueWithComplete[WsNotification[_]]
+      walletQueue: SourceQueueWithComplete[WsNotification[?]]
   )(implicit ec: ExecutionContext): Future[Unit] = {
     val notification = wsType match {
       case WalletWsType.TxProcessed =>
@@ -267,7 +267,7 @@ object WebsocketUtil extends BitcoinSLogger {
   }
 
   def buildDLCWalletCallbacks(
-      walletQueue: SourceQueueWithComplete[WsNotification[_]]
+      walletQueue: SourceQueueWithComplete[WsNotification[?]]
   )(implicit system: ActorSystem): DLCWalletCallbackStreamManager = {
     import system.dispatcher
     val onStateChange: OnDLCStateChange = { (status: DLCStatus) =>
@@ -299,7 +299,7 @@ object WebsocketUtil extends BitcoinSLogger {
   }
 
   def buildDLCNodeCallbacks(
-      walletQueue: SourceQueueWithComplete[WsNotification[_]]
+      walletQueue: SourceQueueWithComplete[WsNotification[?]]
   )(implicit ec: ExecutionContext): DLCNodeCallbacks = {
 
     val onConnectionInitiated: OnPeerConnectionInitiated = { payload =>

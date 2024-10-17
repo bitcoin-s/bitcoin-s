@@ -58,207 +58,200 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
     decryptedExtPrivKey
   }
 
-  it must "write and read an encrypted mnemonic to disk" in {
-    (walletConf: WalletAppConfig) =>
-      assert(!walletConf.kmConf.seedExists())
+  it must "write and read an encrypted mnemonic to disk" in { walletConf =>
+    assert(!walletConf.kmConf.seedExists())
 
-      val writtenMnemonic = getAndWriteMnemonic(walletConf)
+    val writtenMnemonic = getAndWriteMnemonic(walletConf)
 
-      // should have been written by now
-      assert(walletConf.kmConf.seedExists())
-      val seedPath = getSeedPath(walletConf)
-      val read =
-        WalletStorage.decryptSeedFromDisk(seedPath, passphrase)
-      read match {
-        case Right(readMnemonic: DecryptedMnemonic) =>
-          assert(writtenMnemonic.mnemonicCode == readMnemonic.mnemonicCode)
-          // Need to compare using getEpochSecond because when reading an epoch second
-          // it will not include the milliseconds that writtenMnemonic will have
-          assert(
-            writtenMnemonic.creationTime.getEpochSecond == readMnemonic.creationTime.getEpochSecond
-          )
-          assert(writtenMnemonic.backupTimeOpt.isEmpty)
-        case Right(xprv: DecryptedExtPrivKey) =>
-          fail(s"Parsed unexpected type of seed $xprv")
-        case Left(err) => fail(err.toString)
-      }
+    // should have been written by now
+    assert(walletConf.kmConf.seedExists())
+    val seedPath = getSeedPath(walletConf)
+    val read =
+      WalletStorage.decryptSeedFromDisk(seedPath, passphrase)
+    read match {
+      case Right(readMnemonic: DecryptedMnemonic) =>
+        assert(writtenMnemonic.mnemonicCode == readMnemonic.mnemonicCode)
+        // Need to compare using getEpochSecond because when reading an epoch second
+        // it will not include the milliseconds that writtenMnemonic will have
+        assert(
+          writtenMnemonic.creationTime.getEpochSecond == readMnemonic.creationTime.getEpochSecond
+        )
+        assert(writtenMnemonic.backupTimeOpt.isEmpty)
+      case Right(xprv: DecryptedExtPrivKey) =>
+        fail(s"Parsed unexpected type of seed $xprv")
+      case Left(err) => fail(err.toString)
+    }
   }
 
-  it must "write and read an encrypted seed to disk" in {
-    (walletConf: WalletAppConfig) =>
-      assert(!walletConf.kmConf.seedExists())
+  it must "write and read an encrypted seed to disk" in { walletConf =>
+    assert(!walletConf.kmConf.seedExists())
 
-      val writtenXprv = getAndWriteXprv(walletConf)
+    val writtenXprv = getAndWriteXprv(walletConf)
 
-      // should have been written by now
-      assert(walletConf.kmConf.seedExists())
-      val seedPath = getSeedPath(walletConf)
-      val read =
-        WalletStorage.decryptSeedFromDisk(seedPath, passphrase)
-      read match {
-        case Right(readXprv: DecryptedExtPrivKey) =>
-          assert(writtenXprv.xprv == readXprv.xprv)
-          // Need to compare using getEpochSecond because when reading an epoch second
-          // it will not include the milliseconds that writtenMnemonic will have
-          assert(
-            writtenXprv.creationTime.getEpochSecond == readXprv.creationTime.getEpochSecond
-          )
-        case Right(readMnemonic: DecryptedMnemonic) =>
-          fail(s"Parsed unexpected type of seed $readMnemonic")
-        case Left(err) => fail(err.toString)
-      }
+    // should have been written by now
+    assert(walletConf.kmConf.seedExists())
+    val seedPath = getSeedPath(walletConf)
+    val read =
+      WalletStorage.decryptSeedFromDisk(seedPath, passphrase)
+    read match {
+      case Right(readXprv: DecryptedExtPrivKey) =>
+        assert(writtenXprv.xprv == readXprv.xprv)
+        // Need to compare using getEpochSecond because when reading an epoch second
+        // it will not include the milliseconds that writtenMnemonic will have
+        assert(
+          writtenXprv.creationTime.getEpochSecond == readXprv.creationTime.getEpochSecond
+        )
+      case Right(readMnemonic: DecryptedMnemonic) =>
+        fail(s"Parsed unexpected type of seed $readMnemonic")
+      case Left(err) => fail(err.toString)
+    }
   }
 
-  it must "write and read an unencrypted mnemonic to disk" in {
-    (walletConf: WalletAppConfig) =>
-      assert(!walletConf.kmConf.seedExists())
-      val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
-      val writtenMnemonic =
-        DecryptedMnemonic(mnemonicCode, TimeUtil.now, None, false)
-      val seedPath = getSeedPath(walletConf)
-      WalletStorage.writeSeedToDisk(seedPath, writtenMnemonic)
+  it must "write and read an unencrypted mnemonic to disk" in { walletConf =>
+    assert(!walletConf.kmConf.seedExists())
+    val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
+    val writtenMnemonic =
+      DecryptedMnemonic(mnemonicCode, TimeUtil.now, None, false)
+    val seedPath = getSeedPath(walletConf)
+    WalletStorage.writeSeedToDisk(seedPath, writtenMnemonic)
 
-      // should have been written by now
-      assert(walletConf.kmConf.seedExists())
-      val read =
-        WalletStorage.decryptSeedFromDisk(seedPath, None)
-      read match {
-        case Right(readMnemonic: DecryptedMnemonic) =>
-          assert(writtenMnemonic.mnemonicCode == readMnemonic.mnemonicCode)
-          // Need to compare using getEpochSecond because when reading an epoch second
-          // it will not include the milliseconds that writtenMnemonic will have
-          assert(
-            writtenMnemonic.creationTime.getEpochSecond == readMnemonic.creationTime.getEpochSecond
-          )
-        case Right(xprv: DecryptedExtPrivKey) =>
-          fail(s"Parsed unexpected type of seed $xprv")
-        case Left(err) => fail(err.toString)
-      }
+    // should have been written by now
+    assert(walletConf.kmConf.seedExists())
+    val read =
+      WalletStorage.decryptSeedFromDisk(seedPath, None)
+    read match {
+      case Right(readMnemonic: DecryptedMnemonic) =>
+        assert(writtenMnemonic.mnemonicCode == readMnemonic.mnemonicCode)
+        // Need to compare using getEpochSecond because when reading an epoch second
+        // it will not include the milliseconds that writtenMnemonic will have
+        assert(
+          writtenMnemonic.creationTime.getEpochSecond == readMnemonic.creationTime.getEpochSecond
+        )
+      case Right(xprv: DecryptedExtPrivKey) =>
+        fail(s"Parsed unexpected type of seed $xprv")
+      case Left(err) => fail(err.toString)
+    }
   }
 
-  it must "write and read an unencrypted xprv to disk" in {
-    (walletConf: WalletAppConfig) =>
-      assert(!walletConf.kmConf.seedExists())
-      val xprv = CryptoGenerators.extPrivateKey.sampleSome
-      val writtenXprv = DecryptedExtPrivKey(xprv, TimeUtil.now, None, false)
-      val seedPath = getSeedPath(walletConf)
-      WalletStorage.writeSeedToDisk(seedPath, writtenXprv)
+  it must "write and read an unencrypted xprv to disk" in { walletConf =>
+    assert(!walletConf.kmConf.seedExists())
+    val xprv = CryptoGenerators.extPrivateKey.sampleSome
+    val writtenXprv = DecryptedExtPrivKey(xprv, TimeUtil.now, None, false)
+    val seedPath = getSeedPath(walletConf)
+    WalletStorage.writeSeedToDisk(seedPath, writtenXprv)
 
-      // should have been written by now
-      assert(walletConf.kmConf.seedExists())
-      val read =
-        WalletStorage.decryptSeedFromDisk(seedPath, None)
-      read match {
-        case Right(readXprv: DecryptedExtPrivKey) =>
-          assert(writtenXprv.xprv == readXprv.xprv)
-          // Need to compare using getEpochSecond because when reading an epoch second
-          // it will not include the milliseconds that writtenMnemonic will have
-          assert(
-            writtenXprv.creationTime.getEpochSecond == readXprv.creationTime.getEpochSecond
-          )
-        case Right(readMnemonic: DecryptedMnemonic) =>
-          fail(s"Parsed unexpected type of seed $readMnemonic")
-        case Left(err) => fail(err.toString)
-      }
+    // should have been written by now
+    assert(walletConf.kmConf.seedExists())
+    val read =
+      WalletStorage.decryptSeedFromDisk(seedPath, None)
+    read match {
+      case Right(readXprv: DecryptedExtPrivKey) =>
+        assert(writtenXprv.xprv == readXprv.xprv)
+        // Need to compare using getEpochSecond because when reading an epoch second
+        // it will not include the milliseconds that writtenMnemonic will have
+        assert(
+          writtenXprv.creationTime.getEpochSecond == readXprv.creationTime.getEpochSecond
+        )
+      case Right(readMnemonic: DecryptedMnemonic) =>
+        fail(s"Parsed unexpected type of seed $readMnemonic")
+      case Left(err) => fail(err.toString)
+    }
   }
 
-  it must "change the password of an encrypted mnemonic" in {
-    (walletConf: WalletAppConfig) =>
-      assert(!walletConf.kmConf.seedExists())
+  it must "change the password of an encrypted mnemonic" in { walletConf =>
+    assert(!walletConf.kmConf.seedExists())
 
-      val writtenMnemonic = getAndWriteMnemonic(walletConf)
+    val writtenMnemonic = getAndWriteMnemonic(walletConf)
 
-      assert(walletConf.kmConf.seedExists())
-      val seedPath = getSeedPath(walletConf)
+    assert(walletConf.kmConf.seedExists())
+    val seedPath = getSeedPath(walletConf)
 
-      WalletStorage.changeAesPassword(
-        seedPath = seedPath,
-        oldPasswordOpt = passphrase,
-        newPasswordOpt = badPassphrase
-      )
+    WalletStorage.changeAesPassword(
+      seedPath = seedPath,
+      oldPasswordOpt = passphrase,
+      newPasswordOpt = badPassphrase
+    )
 
-      val read =
-        WalletStorage.decryptSeedFromDisk(seedPath, badPassphrase)
-      read match {
-        case Right(readMnemonic: DecryptedMnemonic) =>
-          assert(writtenMnemonic.mnemonicCode == readMnemonic.mnemonicCode)
-          // Need to compare using getEpochSecond because when reading an epoch second
-          // it will not include the milliseconds that writtenMnemonic will have
-          assert(
-            writtenMnemonic.creationTime.getEpochSecond == readMnemonic.creationTime.getEpochSecond
-          )
-        case Right(xprv: DecryptedExtPrivKey) =>
-          fail(s"Parsed unexpected type of seed $xprv")
-        case Left(err) => fail(err.toString)
-      }
+    val read =
+      WalletStorage.decryptSeedFromDisk(seedPath, badPassphrase)
+    read match {
+      case Right(readMnemonic: DecryptedMnemonic) =>
+        assert(writtenMnemonic.mnemonicCode == readMnemonic.mnemonicCode)
+        // Need to compare using getEpochSecond because when reading an epoch second
+        // it will not include the milliseconds that writtenMnemonic will have
+        assert(
+          writtenMnemonic.creationTime.getEpochSecond == readMnemonic.creationTime.getEpochSecond
+        )
+      case Right(xprv: DecryptedExtPrivKey) =>
+        fail(s"Parsed unexpected type of seed $xprv")
+      case Left(err) => fail(err.toString)
+    }
   }
 
-  it must "change the password of an unencrypted mnemonic" in {
-    (walletConf: WalletAppConfig) =>
-      assert(!walletConf.kmConf.seedExists())
-      val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
-      val writtenMnemonic =
-        DecryptedMnemonic(mnemonicCode, TimeUtil.now, None, false)
-      val seedPath = getSeedPath(walletConf)
-      WalletStorage.writeSeedToDisk(seedPath, writtenMnemonic)
+  it must "change the password of an unencrypted mnemonic" in { walletConf =>
+    assert(!walletConf.kmConf.seedExists())
+    val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
+    val writtenMnemonic =
+      DecryptedMnemonic(mnemonicCode, TimeUtil.now, None, false)
+    val seedPath = getSeedPath(walletConf)
+    WalletStorage.writeSeedToDisk(seedPath, writtenMnemonic)
 
-      assert(walletConf.kmConf.seedExists())
+    assert(walletConf.kmConf.seedExists())
 
-      WalletStorage.changeAesPassword(
-        seedPath = seedPath,
-        oldPasswordOpt = None,
-        newPasswordOpt = badPassphrase
-      )
+    WalletStorage.changeAesPassword(
+      seedPath = seedPath,
+      oldPasswordOpt = None,
+      newPasswordOpt = badPassphrase
+    )
 
-      val read =
-        WalletStorage.decryptSeedFromDisk(seedPath, badPassphrase)
-      read match {
-        case Right(readMnemonic: DecryptedMnemonic) =>
-          assert(writtenMnemonic.mnemonicCode == readMnemonic.mnemonicCode)
-          // Need to compare using getEpochSecond because when reading an epoch second
-          // it will not include the milliseconds that writtenMnemonic will have
-          assert(
-            writtenMnemonic.creationTime.getEpochSecond == readMnemonic.creationTime.getEpochSecond
-          )
-        case Right(xprv: DecryptedExtPrivKey) =>
-          fail(s"Parsed unexpected type of seed $xprv")
-        case Left(err) => fail(err.toString)
-      }
+    val read =
+      WalletStorage.decryptSeedFromDisk(seedPath, badPassphrase)
+    read match {
+      case Right(readMnemonic: DecryptedMnemonic) =>
+        assert(writtenMnemonic.mnemonicCode == readMnemonic.mnemonicCode)
+        // Need to compare using getEpochSecond because when reading an epoch second
+        // it will not include the milliseconds that writtenMnemonic will have
+        assert(
+          writtenMnemonic.creationTime.getEpochSecond == readMnemonic.creationTime.getEpochSecond
+        )
+      case Right(xprv: DecryptedExtPrivKey) =>
+        fail(s"Parsed unexpected type of seed $xprv")
+      case Left(err) => fail(err.toString)
+    }
   }
 
-  it must "remove the password from an encrypted mnemonic" in {
-    (walletConf: WalletAppConfig) =>
-      assert(!walletConf.kmConf.seedExists())
+  it must "remove the password from an encrypted mnemonic" in { walletConf =>
+    assert(!walletConf.kmConf.seedExists())
 
-      val writtenMnemonic = getAndWriteMnemonic(walletConf)
+    val writtenMnemonic = getAndWriteMnemonic(walletConf)
 
-      assert(walletConf.kmConf.seedExists())
-      val seedPath = getSeedPath(walletConf)
+    assert(walletConf.kmConf.seedExists())
+    val seedPath = getSeedPath(walletConf)
 
-      WalletStorage.changeAesPassword(
-        seedPath = seedPath,
-        oldPasswordOpt = passphrase,
-        newPasswordOpt = None
-      )
+    WalletStorage.changeAesPassword(
+      seedPath = seedPath,
+      oldPasswordOpt = passphrase,
+      newPasswordOpt = None
+    )
 
-      val read =
-        WalletStorage.decryptSeedFromDisk(seedPath, None)
-      read match {
-        case Right(readMnemonic: DecryptedMnemonic) =>
-          assert(writtenMnemonic.mnemonicCode == readMnemonic.mnemonicCode)
-          // Need to compare using getEpochSecond because when reading an epoch second
-          // it will not include the milliseconds that writtenMnemonic will have
-          assert(
-            writtenMnemonic.creationTime.getEpochSecond == readMnemonic.creationTime.getEpochSecond
-          )
-        case Right(xprv: DecryptedExtPrivKey) =>
-          fail(s"Parsed unexpected type of seed $xprv")
-        case Left(err) => fail(err.toString)
-      }
+    val read =
+      WalletStorage.decryptSeedFromDisk(seedPath, None)
+    read match {
+      case Right(readMnemonic: DecryptedMnemonic) =>
+        assert(writtenMnemonic.mnemonicCode == readMnemonic.mnemonicCode)
+        // Need to compare using getEpochSecond because when reading an epoch second
+        // it will not include the milliseconds that writtenMnemonic will have
+        assert(
+          writtenMnemonic.creationTime.getEpochSecond == readMnemonic.creationTime.getEpochSecond
+        )
+      case Right(xprv: DecryptedExtPrivKey) =>
+        fail(s"Parsed unexpected type of seed $xprv")
+      case Left(err) => fail(err.toString)
+    }
   }
 
   it must "fail to change the aes password when given the wrong password" in {
-    (walletConf: WalletAppConfig) =>
+    walletConf =>
       assert(!walletConf.kmConf.seedExists())
 
       getAndWriteMnemonic(walletConf)
@@ -276,7 +269,7 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
   }
 
   it must "fail to change the aes password when given no password" in {
-    (walletConf: WalletAppConfig) =>
+    walletConf =>
       assert(!walletConf.kmConf.seedExists())
 
       getAndWriteMnemonic(walletConf)
@@ -294,7 +287,7 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
   }
 
   it must "fail to set the aes password when given an oldPassword" in {
-    (walletConf: WalletAppConfig) =>
+    walletConf =>
       assert(!walletConf.kmConf.seedExists())
       val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
       val writtenMnemonic =
@@ -627,7 +620,7 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
   }
 
   it must "write and read an encrypted ExtPrivateKey from disk" in {
-    (walletConf: WalletAppConfig) =>
+    walletConf =>
       assert(!walletConf.kmConf.seedExists())
 
       val password = getBIP39PasswordOpt().getOrElse(BIP39Seed.EMPTY_PASSWORD)
@@ -657,7 +650,7 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
   }
 
   it must "write and read an unencrypted ExtPrivateKey from disk" in {
-    (walletConf: WalletAppConfig) =>
+    walletConf =>
       assert(!walletConf.kmConf.seedExists())
       val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
       val writtenMnemonic =
@@ -690,7 +683,7 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
   }
 
   it must "fail to read unencrypted ExtPrivateKey from disk that doesn't exist" in {
-    (walletConf: WalletAppConfig) =>
+    walletConf =>
       assert(!walletConf.kmConf.seedExists())
       val seedPath = getSeedPath(walletConf)
       val keyVersion = SegWitMainNetPriv
@@ -701,45 +694,44 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
 
   }
 
-  it must "safely create 2 seeds in the seed folder" in {
-    (walletConfA: WalletAppConfig) =>
-      assert(!walletConfA.kmConf.seedExists())
-      getAndWriteMnemonic(walletConfA)
-      assert(walletConfA.kmConf.seedExists())
+  it must "safely create 2 seeds in the seed folder" in { walletConfA =>
+    assert(!walletConfA.kmConf.seedExists())
+    getAndWriteMnemonic(walletConfA)
+    assert(walletConfA.kmConf.seedExists())
 
-      val otherWalletName = UUID.randomUUID().toString.replace("-", "")
+    val otherWalletName = UUID.randomUUID().toString.replace("-", "")
 
-      val walletConfB = walletConfA.withOverrides(
-        ConfigFactory.parseString(
-          s"bitcoin-s.wallet.walletName = $otherWalletName"
-        )
+    val walletConfB = walletConfA.withOverrides(
+      ConfigFactory.parseString(
+        s"bitcoin-s.wallet.walletName = $otherWalletName"
       )
+    )
 
-      assert(!walletConfB.kmConf.seedExists())
-      getAndWriteXprv(walletConfB)
-      assert(walletConfB.kmConf.seedExists())
+    assert(!walletConfB.kmConf.seedExists())
+    getAndWriteXprv(walletConfB)
+    assert(walletConfB.kmConf.seedExists())
 
-      val expectedParentDir =
-        walletConfA.baseDatadir.resolve(WalletStorage.SEED_FOLDER_NAME)
-      assert(walletConfA.seedPath.getParent == expectedParentDir)
-      assert(walletConfB.seedPath.getParent == expectedParentDir)
-      assert(walletConfA.seedPath.getParent == walletConfB.seedPath.getParent)
-      assert(walletConfA.seedPath != walletConfB.seedPath)
+    val expectedParentDir =
+      walletConfA.baseDatadir.resolve(WalletStorage.SEED_FOLDER_NAME)
+    assert(walletConfA.seedPath.getParent == expectedParentDir)
+    assert(walletConfB.seedPath.getParent == expectedParentDir)
+    assert(walletConfA.seedPath.getParent == walletConfB.seedPath.getParent)
+    assert(walletConfA.seedPath != walletConfB.seedPath)
 
-      val mnemonicAE =
-        WalletStorage.decryptSeedFromDisk(walletConfA.seedPath, passphrase)
-      val mnemonicBE =
-        WalletStorage.decryptSeedFromDisk(walletConfB.seedPath, passphrase)
+    val mnemonicAE =
+      WalletStorage.decryptSeedFromDisk(walletConfA.seedPath, passphrase)
+    val mnemonicBE =
+      WalletStorage.decryptSeedFromDisk(walletConfB.seedPath, passphrase)
 
-      (mnemonicAE, mnemonicBE) match {
-        case (Left(_), Left(_)) | (Right(_), Left(_)) | (Left(_), Right(_)) =>
-          fail() // if any of them error, then fail
-        case (Right(mnemonicA), Right(mnemonicB)) =>
-          assert(mnemonicA != mnemonicB)
-      }
+    (mnemonicAE, mnemonicBE) match {
+      case (Left(_), Left(_)) | (Right(_), Left(_)) | (Left(_), Right(_)) =>
+        fail() // if any of them error, then fail
+      case (Right(mnemonicA), Right(mnemonicB)) =>
+        assert(mnemonicA != mnemonicB)
+    }
   }
 
-  it must "backup an unencrypted seed" in { (walletConf: WalletAppConfig) =>
+  it must "backup an unencrypted seed" in { walletConf =>
     assert(!walletConf.kmConf.seedExists())
     val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
     val writtenMnemonic =
@@ -768,7 +760,7 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
     )
   }
 
-  it must "backup an encrypted seed" in { (walletConf: WalletAppConfig) =>
+  it must "backup an encrypted seed" in { walletConf =>
     assert(!walletConf.kmConf.seedExists())
     val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
     val writtenMnemonic =
@@ -798,61 +790,59 @@ class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
     )
   }
 
-  it must "set imported flag for an encrypted seed" in {
-    (walletConf: WalletAppConfig) =>
-      assert(!walletConf.kmConf.seedExists())
-      val seedPath = getSeedPath(walletConf)
-      val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
+  it must "set imported flag for an encrypted seed" in { walletConf =>
+    assert(!walletConf.kmConf.seedExists())
+    val seedPath = getSeedPath(walletConf)
+    val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
 
-      val writtenMnemonic =
-        DecryptedMnemonic(mnemonicCode, TimeUtil.now, None, false).encrypt(
-          passphrase.get
-        )
+    val writtenMnemonic =
+      DecryptedMnemonic(mnemonicCode, TimeUtil.now, None, false).encrypt(
+        passphrase.get
+      )
 
-      WalletStorage.writeSeedToDisk(seedPath, writtenMnemonic)
-      WalletStorage.decryptSeedFromDisk(walletConf.seedPath, passphrase) match {
-        case Right(seed) => assert(!seed.imported)
-        case Left(err)   => fail(err.toString)
-      }
+    WalletStorage.writeSeedToDisk(seedPath, writtenMnemonic)
+    WalletStorage.decryptSeedFromDisk(walletConf.seedPath, passphrase) match {
+      case Right(seed) => assert(!seed.imported)
+      case Left(err)   => fail(err.toString)
+    }
 
-      seedPath.toFile.delete()
+    seedPath.toFile.delete()
 
-      val importedWrittenMnemonic =
-        DecryptedMnemonic(mnemonicCode, TimeUtil.now, None, true).encrypt(
-          passphrase.get
-        )
+    val importedWrittenMnemonic =
+      DecryptedMnemonic(mnemonicCode, TimeUtil.now, None, true).encrypt(
+        passphrase.get
+      )
 
-      WalletStorage.writeSeedToDisk(seedPath, importedWrittenMnemonic)
-      WalletStorage.decryptSeedFromDisk(walletConf.seedPath, passphrase) match {
-        case Right(seed) => assert(seed.imported)
-        case Left(err)   => fail(err.toString)
-      }
+    WalletStorage.writeSeedToDisk(seedPath, importedWrittenMnemonic)
+    WalletStorage.decryptSeedFromDisk(walletConf.seedPath, passphrase) match {
+      case Right(seed) => assert(seed.imported)
+      case Left(err)   => fail(err.toString)
+    }
   }
 
-  it must "set imported flag for an unencrypted seed" in {
-    (walletConf: WalletAppConfig) =>
-      assert(!walletConf.kmConf.seedExists())
-      val seedPath = getSeedPath(walletConf)
-      val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
+  it must "set imported flag for an unencrypted seed" in { walletConf =>
+    assert(!walletConf.kmConf.seedExists())
+    val seedPath = getSeedPath(walletConf)
+    val mnemonicCode = CryptoGenerators.mnemonicCode.sampleSome
 
-      val writtenMnemonic =
-        DecryptedMnemonic(mnemonicCode, TimeUtil.now, None, false)
+    val writtenMnemonic =
+      DecryptedMnemonic(mnemonicCode, TimeUtil.now, None, false)
 
-      WalletStorage.writeSeedToDisk(seedPath, writtenMnemonic)
-      WalletStorage.decryptSeedFromDisk(walletConf.seedPath, None) match {
-        case Right(seed) => assert(!seed.imported)
-        case Left(err)   => fail(err.toString)
-      }
+    WalletStorage.writeSeedToDisk(seedPath, writtenMnemonic)
+    WalletStorage.decryptSeedFromDisk(walletConf.seedPath, None) match {
+      case Right(seed) => assert(!seed.imported)
+      case Left(err)   => fail(err.toString)
+    }
 
-      seedPath.toFile.delete()
+    seedPath.toFile.delete()
 
-      val importedWrittenMnemonic =
-        DecryptedMnemonic(mnemonicCode, TimeUtil.now, None, true)
+    val importedWrittenMnemonic =
+      DecryptedMnemonic(mnemonicCode, TimeUtil.now, None, true)
 
-      WalletStorage.writeSeedToDisk(seedPath, importedWrittenMnemonic)
-      WalletStorage.decryptSeedFromDisk(walletConf.seedPath, None) match {
-        case Right(seed) => assert(seed.imported)
-        case Left(err)   => fail(err.toString)
-      }
+    WalletStorage.writeSeedToDisk(seedPath, importedWrittenMnemonic)
+    WalletStorage.decryptSeedFromDisk(walletConf.seedPath, None) match {
+      case Right(seed) => assert(seed.imported)
+      case Left(err)   => fail(err.toString)
+    }
   }
 }

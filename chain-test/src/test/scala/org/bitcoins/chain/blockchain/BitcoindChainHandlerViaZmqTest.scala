@@ -30,7 +30,7 @@ class BitcoindChainHandlerViaZmqTest extends ChainDbUnitTest {
         bitcoindCount <- bitcoindBlockCountF
         _ = assert(bitcoindCount == bitcoinSBlockCount)
         address <- bitcoind.getNewAddress
-        hash +: _ <- bitcoind.generateToAddress(1, address)
+        case hash +: _ <- bitcoind.generateToAddress(1, address)
         _ <- {
           // test case is totally async since we
           // can't monitor processing flow for zmq

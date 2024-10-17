@@ -17,19 +17,19 @@ class ZMQSubscriberTest extends AsyncFlatSpec with BitcoinSLogger {
   behavior of "ZMQSubscriber"
 
   val rawBlockListener: Option[Block => Unit] = Some {
-    { block: Block =>
+    { block =>
       logger.debug(s"received raw block ${block.hex}")
     }
   }
 
   val hashBlockListener: Option[DoubleSha256DigestBE => Unit] = Some {
-    { hash: DoubleSha256DigestBE =>
+    { hash =>
       logger.debug(s"received raw block hash ${hash.hex}")
     }
   }
 
   val rawTxListener: Option[Transaction => Unit] = Some {
-    { tx: Transaction =>
+    { tx =>
       logger.debug(s"received raw tx ${tx.hex}")
     }
   }

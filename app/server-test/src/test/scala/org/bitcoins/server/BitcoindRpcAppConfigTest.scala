@@ -1,12 +1,10 @@
 package org.bitcoins.server
 
-import java.nio.file._
+import java.nio.file.*
 import com.typesafe.config.ConfigFactory
-import org.bitcoins.core.config._
+import org.bitcoins.core.config.*
 import org.bitcoins.rpc.config.BitcoindRpcAppConfig
-import org.bitcoins.testkit.util.BitcoinSAsyncTest
-
-import scala.reflect.io.Directory
+import org.bitcoins.testkit.util.{BitcoinSAsyncTest, FileUtil}
 
 class BitcoindRpcAppConfigTest extends BitcoinSAsyncTest {
 
@@ -17,7 +15,7 @@ class BitcoindRpcAppConfigTest extends BitcoinSAsyncTest {
 
   override def afterAll(): Unit = {
     super.afterAll()
-    new Directory(tempDir.toFile).deleteRecursively()
+    FileUtil.deleteTmpDir(tempDir)
     ()
   }
 

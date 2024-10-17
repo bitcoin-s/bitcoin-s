@@ -187,7 +187,7 @@ class WalletRoutesSpec
       val cmd = ServerCommand(
         "createnewaccount",
         ujson.Arr(
-          upickle.default.writeJs(HDPurpose.default)(Picklers.hdPurpose))
+          upickle.default.writeJs(HDPurpose.default)(using Picklers.hdPurpose))
       )
       val route = walletRoutes.handleCommand(cmd)
 

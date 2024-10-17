@@ -22,7 +22,7 @@ class ServerRunTest extends BitcoinSAsyncTest {
     // this should cause an exception in startBitcoinSBackend()
     val noPeersConfig =
       ConfigFactory.parseString(s"""bitcoin-s.node.peers=[]""")
-    implicit val config =
+    implicit val config: BitcoinSAppConfig =
       BitcoinSTestAppConfig.getNeutrinoTestConfig(noPeersConfig)
     val datadir = config.chainConf.datadir
 

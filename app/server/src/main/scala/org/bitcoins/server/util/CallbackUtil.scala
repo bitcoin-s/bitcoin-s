@@ -19,7 +19,7 @@ import scala.concurrent.Future
 object CallbackUtil extends BitcoinSLogger {
 
   def createNeutrinoNodeCallbacksForWallet(
-      wallet: WalletApi with NeutrinoWalletApi
+      wallet: WalletApi & NeutrinoWalletApi
   )(implicit system: ActorSystem): Future[NodeCallbackStreamManager] = {
     import system.dispatcher
     val txSink = Sink.foreachAsync[Transaction](1) { case tx: Transaction =>

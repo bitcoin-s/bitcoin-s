@@ -52,27 +52,27 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
 
   behavior of "Websocket Tests"
 
-  val endSink: Sink[WsNotification[_], Future[Seq[WsNotification[_]]]] =
-    Sink.seq[WsNotification[_]]
+  val endSink: Sink[WsNotification[?], Future[Seq[WsNotification[?]]]] =
+    Sink.seq[WsNotification[?]]
 
-  val sink: Sink[Message, Future[Seq[WsNotification[_]]]] = Flow[Message]
+  val sink: Sink[Message, Future[Seq[WsNotification[?]]]] = Flow[Message]
     .map {
       case message: TextMessage.Strict =>
         // we should be able to parse the address message
         val text = message.text
-        val dlcNodeNotificationOpt: Option[DLCNodeNotification[_]] = Try(
-          upickle.default.read[DLCNodeNotification[_]](text)(
-            WsPicklers.dlcNodeNotificationPickler
+        val dlcNodeNotificationOpt: Option[DLCNodeNotification[?]] = Try(
+          upickle.default.read[DLCNodeNotification[?]](text)(
+            using WsPicklers.dlcNodeNotificationPickler
           )
         ).toOption
-        val walletNotificationOpt: Option[WalletNotification[_]] = Try(
-          upickle.default.read[WalletNotification[_]](text)(
-            WsPicklers.walletNotificationPickler
+        val walletNotificationOpt: Option[WalletNotification[?]] = Try(
+          upickle.default.read[WalletNotification[?]](text)(
+            using WsPicklers.walletNotificationPickler
           )
         ).toOption
-        val chainNotificationOpt: Option[ChainNotification[_]] = Try(
-          upickle.default.read[ChainNotification[_]](text)(
-            WsPicklers.chainNotificationPickler
+        val chainNotificationOpt: Option[ChainNotification[?]] = Try(
+          upickle.default.read[ChainNotification[?]](text)(
+            using WsPicklers.chainNotificationPickler
           )
         ).toOption
         walletNotificationOpt.getOrElse(
@@ -104,7 +104,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
   val websocketFlow: Flow[
     Message,
     Message,
-    (Future[Seq[WsNotification[_]]], Promise[Option[Message]])
+    (Future[Seq[WsNotification[?]]], Promise[Option[Message]])
   ] = {
     Flow
       .fromSinkAndSourceCoupledMat(sink, Source.maybe[Message])(Keep.both)
@@ -174,13 +174,13 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       val req = buildReq(server.conf)
       val notificationsF: (
           Future[WebSocketUpgradeResponse],
-          (Future[Seq[WsNotification[_]]], Promise[Option[Message]])
+          (Future[Seq[WsNotification[?]]], Promise[Option[Message]])
       ) = {
         Http()
           .singleWebSocketRequest(req, websocketFlow)
       }
 
-      val walletNotificationsF: Future[Seq[WsNotification[_]]] =
+      val walletNotificationsF: Future[Seq[WsNotification[?]]] =
         notificationsF._2._1
 
       val promise: Promise[Option[Message]] = notificationsF._2._2
@@ -210,7 +210,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       val req = buildReq(server.conf)
       val tuple: (
           Future[WebSocketUpgradeResponse],
-          (Future[Seq[WsNotification[_]]], Promise[Option[Message]])
+          (Future[Seq[WsNotification[?]]], Promise[Option[Message]])
       ) = {
         Http()
           .singleWebSocketRequest(req, websocketFlow)
@@ -253,7 +253,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       val req = buildReq(server.conf)
       val tuple: (
           Future[WebSocketUpgradeResponse],
-          (Future[Seq[WsNotification[_]]], Promise[Option[Message]])
+          (Future[Seq[WsNotification[?]]], Promise[Option[Message]])
       ) = {
         Http()
           .singleWebSocketRequest(req, websocketFlow)
@@ -295,7 +295,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     val req = buildReq(server.conf)
     val tuple: (
         Future[WebSocketUpgradeResponse],
-        (Future[Seq[WsNotification[_]]], Promise[Option[Message]])
+        (Future[Seq[WsNotification[?]]], Promise[Option[Message]])
     ) = {
       Http()
         .singleWebSocketRequest(req, websocketFlow)
@@ -313,7 +313,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       cmd = GetBlockHeader(hash = hashes.head)
       getBlockHeaderResultStr = ConsoleCli.exec(cmd, cliConfig)
       getBlockHeaderResult = upickle.default.read(getBlockHeaderResultStr.get)(
-        Picklers.getBlockHeaderResultPickler
+        using Picklers.getBlockHeaderResultPickler
       )
       _ <- PekkoUtil.nonBlockingSleep(timeout)
       _ = promise.success(None)
@@ -337,13 +337,13 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       val req = buildReq(server.conf)
       val tuple: (
           Future[WebSocketUpgradeResponse],
-          (Future[Seq[WsNotification[_]]], Promise[Option[Message]])
+          (Future[Seq[WsNotification[?]]], Promise[Option[Message]])
       ) = {
         Http()
           .singleWebSocketRequest(req, websocketFlow)
       }
 
-      val notificationsF: Future[Seq[WsNotification[_]]] = tuple._2._1
+      val notificationsF: Future[Seq[WsNotification[?]]] = tuple._2._1
       val promise = tuple._2._2
 
       // lock all utxos
@@ -375,13 +375,13 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       val req = buildReq(server.conf)
       val notificationsF: (
           Future[WebSocketUpgradeResponse],
-          (Future[Seq[WsNotification[_]]], Promise[Option[Message]])
+          (Future[Seq[WsNotification[?]]], Promise[Option[Message]])
       ) = {
         Http()
           .singleWebSocketRequest(req, websocketFlow)
       }
 
-      val walletNotificationsF: Future[Seq[WsNotification[_]]] =
+      val walletNotificationsF: Future[Seq[WsNotification[?]]] =
         notificationsF._2._1
 
       val promise: Promise[Option[Message]] = notificationsF._2._2
@@ -428,7 +428,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     val req = buildReq(server.conf)
     val tuple: (
         Future[WebSocketUpgradeResponse],
-        (Future[Seq[WsNotification[_]]], Promise[Option[Message]])
+        (Future[Seq[WsNotification[?]]], Promise[Option[Message]])
     ) = {
       Http()
         .singleWebSocketRequest(req, websocketFlow)
@@ -446,7 +446,8 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     for {
       _ <- AsyncUtil.retryUntilSatisfied({
         val walletInfoStr = ConsoleCli.exec(WalletInfo, cliConfig)
-        val i = upickle.default.read(walletInfoStr.get)(Picklers.walletInfo)
+        val i =
+          upickle.default.read(walletInfoStr.get)(using Picklers.walletInfo)
         !i.rescan
       })
       _ = promise.success(None)
@@ -463,7 +464,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     val req = buildReq(server.conf)
     val tuple: (
         Future[WebSocketUpgradeResponse],
-        (Future[Seq[WsNotification[_]]], Promise[Option[Message]])
+        (Future[Seq[WsNotification[?]]], Promise[Option[Message]])
     ) = {
       Http()
         .singleWebSocketRequest(req, websocketFlow)
@@ -489,7 +490,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     val req = buildReq(server.conf)
     val tuple: (
         Future[WebSocketUpgradeResponse],
-        (Future[Seq[WsNotification[_]]], Promise[Option[Message]])
+        (Future[Seq[WsNotification[?]]], Promise[Option[Message]])
     ) = {
       Http()
         .singleWebSocketRequest(req, websocketFlow)
@@ -517,14 +518,14 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     val req = buildReq(server.conf)
     val notificationsF: (
         Future[WebSocketUpgradeResponse],
-        (Future[Seq[WsNotification[_]]], Promise[Option[Message]])
+        (Future[Seq[WsNotification[?]]], Promise[Option[Message]])
     ) = {
       Http()
         .singleWebSocketRequest(req, websocketFlow)
     }
 
     val setupF = notificationsF._1
-    val walletNotificationsF: Future[Seq[WsNotification[_]]] =
+    val walletNotificationsF: Future[Seq[WsNotification[?]]] =
       notificationsF._2._1
 
     val promise: Promise[Option[Message]] = notificationsF._2._2

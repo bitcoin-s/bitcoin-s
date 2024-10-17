@@ -133,8 +133,7 @@ sealed trait DLCWalletLoaderApi
   /** Store a rescan state for the wallet that is currently loaded This is
     * needed because we don't save rescan state anywhere else.
     */
-  @volatile private[this] var rescanStateOpt
-      : Option[RescanState.RescanStarted] = None
+  @volatile private var rescanStateOpt: Option[RescanState.RescanStarted] = None
 
   def setRescanState(rescanState: RescanState): Unit = {
     rescanState match {
@@ -190,10 +189,10 @@ sealed trait DLCWalletLoaderApi
     ()
   }
 
-  @volatile private[this] var currentWalletAppConfigOpt
-      : Option[WalletAppConfig] = None
+  @volatile private var currentWalletAppConfigOpt: Option[WalletAppConfig] =
+    None
 
-  @volatile private[this] var currentDLCAppConfigOpt: Option[DLCAppConfig] =
+  @volatile private var currentDLCAppConfigOpt: Option[DLCAppConfig] =
     None
 
   protected def stopOldWalletAppConfig(

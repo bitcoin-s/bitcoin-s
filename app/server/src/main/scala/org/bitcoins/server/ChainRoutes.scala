@@ -61,7 +61,8 @@ case class ChainRoutes(
                   results <- resultsF
                 } yield {
                   val json = upickle.default
-                    .writeJs(results.head)(Picklers.getBlockHeaderResultPickler)
+                    .writeJs(results.head)(
+                      using Picklers.getBlockHeaderResultPickler)
                   Server.httpSuccess(json)
                 }
             }

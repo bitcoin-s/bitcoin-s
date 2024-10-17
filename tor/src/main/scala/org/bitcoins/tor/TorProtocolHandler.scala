@@ -48,12 +48,12 @@ class TorProtocolHandler(
 
   import TorProtocolHandler._
 
-  private var receiver: ActorRef = _
+  private var receiverOpt: Option[ActorRef] = None
 
   private var address: Option[InetSocketAddress] = None
 
   override def receive: Receive = { case Connected(_, _) =>
-    receiver = sender()
+    receiverOpt = Some(sender())
     sendCommand("PROTOCOLINFO 1")
     context.become(protocolInfo)
   }
@@ -202,7 +202,7 @@ class TorProtocolHandler(
   }
 
   private def sendCommand(cmd: String): Unit = {
-    receiver ! ByteString(s"$cmd\r\n")
+    receiverOpt.foreach(_ ! ByteString(s"$cmd\r\n"))
   }
 }
 
