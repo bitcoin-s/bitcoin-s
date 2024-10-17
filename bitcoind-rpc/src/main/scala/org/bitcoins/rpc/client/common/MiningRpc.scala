@@ -22,7 +22,7 @@ import scala.concurrent.Future
 
 /** RPC calls related to mining
   */
-trait MiningRpc { self: Client with BlockchainRpc =>
+trait MiningRpc { self: Client & BlockchainRpc =>
 
   def generateToAddress(
       blocks: Int,

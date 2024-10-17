@@ -44,7 +44,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
   import system.dispatcher
 
   /** The loaded wallet that requests should be directed against */
-  private[this] val wallet: WalletHolder = loadWalletApi.walletHolder
+  private val wallet: WalletHolder = loadWalletApi.walletHolder
 
   implicit private val kmConf: KeyManagerAppConfig = walletConf.kmConf
 
@@ -881,7 +881,8 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
             } yield {
               val xpubs = accounts.map(_.xpub)
               val json =
-                xpubs.map(upickle.default.writeJs(_)(Picklers.extPubKeyPickler))
+                xpubs.map(
+                  upickle.default.writeJs(_)(using Picklers.extPubKeyPickler))
               Server.httpSuccess(Arr.from(json))
             }
           }
@@ -1099,7 +1100,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
     for {
       info <- wallet.getInfo()
     } yield {
-      upickle.default.writeJs(info)(Picklers.walletInfo)
+      upickle.default.writeJs(info)(using Picklers.walletInfo)
     }
   }
 

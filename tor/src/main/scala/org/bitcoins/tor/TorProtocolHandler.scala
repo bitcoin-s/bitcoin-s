@@ -48,7 +48,7 @@ class TorProtocolHandler(
 
   import TorProtocolHandler._
 
-  private var receiver: ActorRef = _
+  private var receiver: ActorRef = scala.compiletime.uninitialized
 
   private var address: Option[InetSocketAddress] = None
 

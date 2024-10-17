@@ -34,7 +34,7 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
   behavior of "MempoolRpc"
 
   it should "be able to find a transaction sent to the mem pool" in {
-    nodePair: FixtureParam =>
+    nodePair =>
       val client = nodePair.node1
       val otherClient = nodePair.node2
       for {
@@ -48,7 +48,7 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
   }
 
   it should "be able to find a verbose transaction in the mem pool" in {
-    nodePair: FixtureParam =>
+    nodePair =>
       val client = nodePair.node1
       val otherClient = nodePair.node2
       for {
@@ -62,7 +62,7 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
       }
   }
 
-  it should "be able to find a mem pool entry" in { nodePair: FixtureParam =>
+  it should "be able to find a mem pool entry" in { nodePair =>
     val client = nodePair.node1
     val otherClient = nodePair.node2
     for {
@@ -72,7 +72,7 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
     } yield succeed
   }
 
-  it must "fail to find a mempool entry" in { nodePair: FixtureParam =>
+  it must "fail to find a mempool entry" in { nodePair =>
     val client = nodePair.node1
     val txid = DoubleSha256Digest.empty
     val resultF = for {
@@ -85,18 +85,17 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
     recoverToSucceededIf[BitcoindException](resultF)
   }
 
-  it must "fail to find a mempool entry and return None" in {
-    nodePair: FixtureParam =>
-      val client = nodePair.node1
-      val txid = DoubleSha256Digest.empty
-      val resultF = for {
-        result <- client.getMemPoolEntryOpt(txid)
-      } yield {
-        assert(result.isEmpty)
-      }
-      resultF
+  it must "fail to find a mempool entry and return None" in { nodePair =>
+    val client = nodePair.node1
+    val txid = DoubleSha256Digest.empty
+    val resultF = for {
+      result <- client.getMemPoolEntryOpt(txid)
+    } yield {
+      assert(result.isEmpty)
+    }
+    resultF
   }
-  it should "be able to get mem pool info" in { nodePair: FixtureParam =>
+  it should "be able to get mem pool info" in { nodePair =>
     val client = nodePair.node1
     val otherClient = nodePair.node2
     for {
@@ -118,28 +117,27 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
     }
   }
 
-  it should "be able to prioritise a mem pool transaction" in {
-    nodePair: FixtureParam =>
-      val client = nodePair.node1
-      val otherClient = nodePair.node2
-      for {
-        address <- otherClient.getNewAddress
-        txid <-
-          BitcoindRpcTestUtil
-            .fundMemPoolTransaction(client, address, Bitcoins(3.2))
-        tt <- client.prioritiseTransaction(txid, Bitcoins.one.satoshis)
-        txs <- client.getPrioritisedTransactions()
-      } yield {
-        assert(tt)
-        assert(txs.exists(_._1 == txid))
-        val p = txs(txid)
-        assert(p.in_mempool)
-        assert(p.fee_delta == Bitcoins.one)
-      }
+  it should "be able to prioritise a mem pool transaction" in { nodePair =>
+    val client = nodePair.node1
+    val otherClient = nodePair.node2
+    for {
+      address <- otherClient.getNewAddress
+      txid <-
+        BitcoindRpcTestUtil
+          .fundMemPoolTransaction(client, address, Bitcoins(3.2))
+      tt <- client.prioritiseTransaction(txid, Bitcoins.one.satoshis)
+      txs <- client.getPrioritisedTransactions()
+    } yield {
+      assert(tt)
+      assert(txs.exists(_._1 == txid))
+      val p = txs(txid)
+      assert(p.in_mempool)
+      assert(p.fee_delta == Bitcoins.one)
+    }
   }
 
   it should "be able to find mem pool ancestors and descendants" in {
-    nodePair: FixtureParam =>
+    nodePair =>
       val client = nodePair.node1
       for {
         _ <- client.generate(1)
@@ -189,23 +187,22 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
       }
   }
 
-  it should "be able to save the mem pool to disk" in {
-    nodePair: FixtureParam =>
-      val client = nodePair.node1
-      val localInstance = client.getDaemon match {
-        case _: BitcoindInstanceRemote =>
-          sys.error(s"Cannot have remote bitcoind instance in tests")
-        case local: BitcoindInstanceLocal => local
-      }
-      val regTest =
-        new File(localInstance.datadir.getAbsolutePath + "/regtest")
-      assert(regTest.isDirectory)
-      assert(!regTest.list().contains("mempool.dat"))
-      for {
-        _ <- client.saveMemPool()
-        mempoolPath = regTest.toPath.resolve("mempool.dat")
-        _ <- client.importMempool(mempoolPath)
-      } yield assert(regTest.list().contains("mempool.dat"))
+  it should "be able to save the mem pool to disk" in { nodePair =>
+    val client = nodePair.node1
+    val localInstance = client.getDaemon match {
+      case _: BitcoindInstanceRemote =>
+        sys.error(s"Cannot have remote bitcoind instance in tests")
+      case local: BitcoindInstanceLocal => local
+    }
+    val regTest =
+      new File(localInstance.datadir.getAbsolutePath + "/regtest")
+    assert(regTest.isDirectory)
+    assert(!regTest.list().contains("mempool.dat"))
+    for {
+      _ <- client.saveMemPool()
+      mempoolPath = regTest.toPath.resolve("mempool.dat")
+      _ <- client.importMempool(mempoolPath)
+    } yield assert(regTest.list().contains("mempool.dat"))
   }
 
   it should "get tx spending prev out" in { nodePair =>
@@ -219,7 +216,7 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
     } yield assert(spending.spendingtxid.contains(txid))
   }
 
-  it must "getrawmempool verbose" in { case nodePair =>
+  it must "getrawmempool verbose" in { nodePair =>
     val client = nodePair.node1
     for {
       // generate block to clear out mempool for test

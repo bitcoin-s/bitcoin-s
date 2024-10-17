@@ -28,7 +28,7 @@ class TestRpcUtilTest extends BitcoindFixturesCachedPairNewest {
   behavior of "BitcoindRpcUtil"
 
   it should "create a temp bitcoin directory when creating a DaemonInstance, and then delete it" in {
-    _: NodePair[BitcoindRpcClient] =>
+    _ =>
       val instance =
         BitcoindRpcTestUtil.instance(RpcUtil.randomPort, RpcUtil.randomPort)
       val dir = instance.datadir
@@ -42,7 +42,7 @@ class TestRpcUtilTest extends BitcoindFixturesCachedPairNewest {
   }
 
   it should "be able to generate and sync blocks" in {
-    nodes: NodePair[BitcoindRpcClient] =>
+    (nodes: NodePair[BitcoindRpcClient]) =>
       val NodePair(first, second) = nodes
       for {
         address <- second.getNewAddress
@@ -58,7 +58,7 @@ class TestRpcUtilTest extends BitcoindFixturesCachedPairNewest {
   }
 
   it should "ble able to generate blocks with multiple clients and sync inbetween" in {
-    nodes: NodePair[BitcoindRpcClient] =>
+    (nodes: NodePair[BitcoindRpcClient]) =>
       val blocksToGenerate = 10
       val NodePair(first, second) = nodes
       val allClients = nodes.toVector
@@ -80,7 +80,7 @@ class TestRpcUtilTest extends BitcoindFixturesCachedPairNewest {
   }
 
   it should "be able to find outputs of previous transactions" in {
-    nodes: NodePair[BitcoindRpcClient] =>
+    (nodes: NodePair[BitcoindRpcClient]) =>
       val NodePair(first, second) = nodes
       for {
         address <- second.getNewAddress

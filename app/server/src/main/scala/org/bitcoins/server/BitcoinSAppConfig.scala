@@ -80,7 +80,7 @@ case class BitcoinSAppConfig(
     val nonTorConfigs = Vector(kmConf, chainConf, walletConf, dlcConf)
 
     val torConfig = torConf.start()
-    val torDependentConfigs =
+    val torDependentConfigs: Vector[AppConfig] =
       Vector(nodeConf, bitcoindRpcConf, dlcNodeConf)
 
     val dbConfigsDependentOnTor: Vector[DbManagement] =
@@ -244,7 +244,7 @@ object BitcoinSAppConfig extends BitcoinSLogger {
       confs: Vector[Config] = Vector.empty
   )(implicit system: ActorSystem): BitcoinSAppConfig = {
     val baseConf: BitcoinSAppConfig =
-      fromDatadir(datadir, confs: _*)
+      fromDatadir(datadir, confs*)
 
     // Grab saved bundle config
     val bundleConfFile =

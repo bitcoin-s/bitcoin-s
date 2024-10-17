@@ -172,7 +172,7 @@ case class CoreRoutes()(implicit system: ActorSystem, config: BitcoinSAppConfig)
         case DecodeContractInfo(contractInfo) =>
           complete {
             Server.httpSuccess(
-              writeJs(contractInfo)(contractInfoV0TLVJsonWriter)
+              writeJs(contractInfo)(using contractInfoV0TLVJsonWriter)
             )
           }
       }
@@ -182,7 +182,7 @@ case class CoreRoutes()(implicit system: ActorSystem, config: BitcoinSAppConfig)
         case DecodeAnnouncement(announcement) =>
           complete {
             Server.httpSuccess(
-              writeJs(announcement)(oracleAnnouncementTLVJsonWriter)
+              writeJs(announcement)(using oracleAnnouncementTLVJsonWriter)
             )
           }
       }
@@ -191,7 +191,8 @@ case class CoreRoutes()(implicit system: ActorSystem, config: BitcoinSAppConfig)
       withValidServerCommand(DecodeAttestations.fromJsArr(arr)) {
         case DecodeAttestations(attestments) =>
           complete {
-            Server.httpSuccess(writeJs(attestments)(oracleAttestmentV0Writer))
+            Server.httpSuccess(
+              writeJs(attestments)(using oracleAttestmentV0Writer))
           }
       }
 

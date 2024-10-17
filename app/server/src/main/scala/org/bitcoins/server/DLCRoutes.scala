@@ -142,7 +142,8 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
       complete {
         dlcNode.incomingOfferHandling.listDLCContacts().map { contacts =>
           val json = contacts
-            .map(c => upickle.default.writeJs(c)(Picklers.contactDbPickler))
+            .map(c =>
+              upickle.default.writeJs(c)(using Picklers.contactDbPickler))
           Server.httpSuccess(json)
         }
       }
