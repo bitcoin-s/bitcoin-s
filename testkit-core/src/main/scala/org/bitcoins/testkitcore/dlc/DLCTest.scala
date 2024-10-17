@@ -696,7 +696,7 @@ trait DLCTest {
       dlcOffer: TestDLCClient,
       dlcAccept: TestDLCClient,
       fundingTxF: Future[SetupDLC] => Future[Transaction],
-      publishTransaction: Transaction => Future[_]
+      publishTransaction: Transaction => Future[?]
   )(implicit ec: ExecutionContext): Future[(SetupDLC, SetupDLC)] = {
     val offerSigReceiveP = {
       Promise[(CETSignatures, PartialSignature)]()

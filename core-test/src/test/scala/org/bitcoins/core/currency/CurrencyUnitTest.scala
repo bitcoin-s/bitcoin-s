@@ -38,13 +38,13 @@ class CurrencyUnitTest extends BitcoinSUnitTest {
   }
 
   it must "have Long syntax" in {
-    forAll(Gen.choose(0, Satoshis.max.toLong / 100000000)) { num =>
+    forAll(Gen.choose(0L, Satoshis.max.toLong / 100000000)) { num =>
       assert(num.bitcoins == Bitcoins(num))
       assert(num.bitcoin == Bitcoins(num))
       assert(num.BTC == Bitcoins(num))
     }
 
-    forAll(Gen.choose(0, Satoshis.max.toLong)) { num =>
+    forAll(Gen.choose(0L, Satoshis.max.toLong)) { num =>
       assert(num.satoshis == Satoshis(num))
       assert(num.satoshi == Satoshis(num))
       assert(num.sats == Satoshis(num))

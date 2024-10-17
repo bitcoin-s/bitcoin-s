@@ -2,7 +2,7 @@ package org.bitcoins.crypto
 
 import org.scalacheck.Gen
 import org.scalatest.compatible.Assertion
-import scodec.bits.{ByteVector, HexStringSyntax}
+import scodec.bits.ByteVector
 
 class AesCryptTest extends BitcoinSCryptoTest {
   behavior of "AesEncrypt"
@@ -14,7 +14,7 @@ class AesCryptTest extends BitcoinSCryptoTest {
   private def getIV(bytes: ByteVector): AesIV = AesIV.fromValidBytes(bytes)
 
   val aesKey: AesKey =
-    getKey(hex"12345678123456781234567812345678")
+    getKey(ByteVector.fromValidHex("12345678123456781234567812345678"))
 
   val badAesKey: AesKey = getKey(aesKey.bytes.reverse)
 
@@ -51,33 +51,38 @@ class AesCryptTest extends BitcoinSCryptoTest {
 
     val first =
       TestVector(
-        plainText = hex"76fe35880055e1fac950f484a815cd22",
-        key = getKey(hex"2eefdf6ee2dbca83e7b7648a8f9d1897"),
+        plainText = ByteVector.fromValidHex("76fe35880055e1fac950f484a815cd22"),
+        key =
+          getKey(ByteVector.fromValidHex("2eefdf6ee2dbca83e7b7648a8f9d1897")),
         cipherText = AesEncryptedData(
-          cipherText = hex"974b22d3de46a58023ddb94dac574293",
-          iv = getIV(hex"889dc64377f6d993ef713c995f9c1ee5")
+          cipherText =
+            ByteVector.fromValidHex("974b22d3de46a58023ddb94dac574293"),
+          iv =
+            getIV(ByteVector.fromValidHex("889dc64377f6d993ef713c995f9c1ee5"))
         )
       )
 
     runTest(first)
 
     val second = TestVector(
-      plainText = hex"3a4f73044d035017d91883ebfc113da7",
-      key = getKey(hex"5ce91f97ed28fd5d1172e23eb17b1baa"),
+      plainText = ByteVector.fromValidHex("3a4f73044d035017d91883ebfc113da7"),
+      key = getKey(ByteVector.fromValidHex("5ce91f97ed28fd5d1172e23eb17b1baa")),
       cipherText = AesEncryptedData(
-        cipherText = hex"f0ff04edc644388edb872237ac558367",
-        iv = getIV(hex"3f91d29f81d48174b25a3d0143eb833c")
+        cipherText =
+          ByteVector.fromValidHex("f0ff04edc644388edb872237ac558367"),
+        iv = getIV(ByteVector.fromValidHex("3f91d29f81d48174b25a3d0143eb833c"))
       )
     )
 
     runTest(second)
 
     val third = TestVector(
-      plainText = hex"5f6a62cb52309db4573bfed807e07bb2",
-      key = getKey(hex"c62bea08786568283dafabde6d699e0f"),
+      plainText = ByteVector.fromValidHex("5f6a62cb52309db4573bfed807e07bb2"),
+      key = getKey(ByteVector.fromValidHex("c62bea08786568283dafabde6d699e0f")),
       cipherText = AesEncryptedData(
-        cipherText = hex"161bd64b0b4efe3561e949344e9efaaf",
-        iv = getIV(hex"455014871cd34f8dcfd7c1e387987bff")
+        cipherText =
+          ByteVector.fromValidHex("161bd64b0b4efe3561e949344e9efaaf"),
+        iv = getIV(ByteVector.fromValidHex("455014871cd34f8dcfd7c1e387987bff"))
       )
     )
 
@@ -89,14 +94,15 @@ class AesCryptTest extends BitcoinSCryptoTest {
   // echo foobar | openssl enc -aes-128-cfb -K 5ce91f97ed28fd5d1172e23eb17b1baa \
   //    -iv 455014871cd34f8dcfd7c1e387987bff -p -base64 -nosalt
   it must "pass an openssl hard coded vector" in {
-    val key = getKey(hex"5CE91F97ED28FD5D1172E23EB17B1BAA")
+    val key =
+      getKey(ByteVector.fromValidHex("5CE91F97ED28FD5D1172E23EB17B1BAA"))
     val plainText = "foobar"
     val plainBytesE = ByteVector.encodeUtf8(plainText)
     val plainbytes = plainBytesE match {
       case Left(_)  => fail(s"Unsuccessful encoding")
       case Right(b) => b
     }
-    val iv = getIV(hex"455014871CD34F8DCFD7C1E387987BFF")
+    val iv = getIV(ByteVector.fromValidHex("455014871CD34F8DCFD7C1E387987BFF"))
     // val expectedCipher = ByteVector.fromValidBase64("oE8HErg1lg==")
 
     val encrypted = AesCrypt.encryptWithIV(plainbytes, iv, key)
@@ -137,8 +143,9 @@ class AesCryptTest extends BitcoinSCryptoTest {
     * KKbLXDQUy7ajmuIJm7ZR7ugaRubqGl1JwG+x5C451JXIFofnselHVTy/u8u0Or9nV2d7Kjy0
     */
   it must "pass a hardcoded crypto-js vector where we decrypt with a key" in {
-    val key = getKey(hex"12345678123456781234567812345678")
-    val iv = getIV(hex"87654321876543218765432187654321")
+    val key =
+      getKey(ByteVector.fromValidHex("12345678123456781234567812345678"))
+    val iv = getIV(ByteVector.fromValidHex("87654321876543218765432187654321"))
     val expectedCipher = ByteVector.fromValidBase64(
       "KKbLXDQUy7ajmuIJm7ZR7ugaRubqGl1JwG+x5C451JXIFofnselHVTy/u8u0Or9nV2d7Kjy0"
     )
@@ -252,8 +259,9 @@ class AesCryptTest extends BitcoinSCryptoTest {
       }
     }
 
-    val key = getKey(hex"e67a00b510bcff7f4a0101ff5f7fb690")
-    val iv = getIV(hex"f43b7f80624e7f01123ac272beb1ff7f")
+    val key =
+      getKey(ByteVector.fromValidHex("e67a00b510bcff7f4a0101ff5f7fb690"))
+    val iv = getIV(ByteVector.fromValidHex("f43b7f80624e7f01123ac272beb1ff7f"))
     val plainText = "The quick brown fox jumps over the lazy dog."
     val plainBytesE = ByteVector.encodeUtf8(plainText)
     val plainbytes = plainBytesE match {
@@ -261,7 +269,8 @@ class AesCryptTest extends BitcoinSCryptoTest {
       case Right(b) => b
     }
     val expectedCipher =
-      hex"09697c53d3a1e5ec5a465231e536c70428f53cb7d4030a707e42daa338ce147ec2d55c865e85dfb5072a1bf31a977cf4"
+      ByteVector.fromValidHex(
+        "09697c53d3a1e5ec5a465231e536c70428f53cb7d4030a707e42daa338ce147ec2d55c865e85dfb5072a1bf31a977cf4")
 
     // test encrypting and decrypting ourselves
     {
@@ -360,9 +369,9 @@ class AesCryptTest extends BitcoinSCryptoTest {
         .filter(!AesKey.keylengths.contains(_))
         .map(NumberGenerator.bytevector(_))
 
-    val first +: second +: _ = bytevectorGens
+    val first +: second +: _ = bytevectorGens: @unchecked
     val badKeyLenghts: Gen[ByteVector] =
-      Gen.oneOf(first, second, bytevectorGens: _*)
+      Gen.oneOf(first, second, bytevectorGens*)
 
     forAll(badKeyLenghts) { bytes =>
       assert(AesKey.fromBytes(bytes).isEmpty)
@@ -380,7 +389,7 @@ class AesCryptTest extends BitcoinSCryptoTest {
   }
 
   it must "not be constructable from invalid length bytes" in {
-    val bytes = hex"12345"
+    val bytes = ByteVector.fromValidHex("12345")
     intercept[IllegalArgumentException] {
       AesIV.fromValidBytes(bytes)
     }

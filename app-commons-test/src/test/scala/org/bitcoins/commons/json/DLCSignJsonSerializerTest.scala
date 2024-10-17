@@ -48,9 +48,10 @@ class DLCSignJsonSerializerTest extends BitcoinSUnitTest {
 
   it must "have serialization symmetry for dlc sign messages" in {
     val sign =
-      upickle.default.read[DLCSignTLV](testString)(Picklers.dlcSignTLVPickler)
+      upickle.default.read[DLCSignTLV](testString)(
+        using Picklers.dlcSignTLVPickler)
     val json: String =
-      upickle.default.write(sign)(Picklers.dlcSignTLVPickler)
+      upickle.default.write(sign)(using Picklers.dlcSignTLVPickler)
     assert(json == testString.replaceAll("\\s", ""))
   }
 }

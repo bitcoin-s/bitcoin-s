@@ -1,6 +1,6 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.crypto.ExtKeyVersion._
+import org.bitcoins.core.crypto.ExtKeyVersion.*
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.testkitcore.gen.{
@@ -9,7 +9,7 @@ import org.bitcoins.testkitcore.gen.{
   NumberGenerator
 }
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
-import scodec.bits.HexStringSyntax
+import scodec.bits.ByteVector
 
 import scala.util.{Failure, Success, Try}
 
@@ -101,7 +101,7 @@ class ExtKeyTest extends BitcoinSUnitTest {
   // https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#test-vectors
   it must "pass the test vectors in BIP32" in {
     // master key
-    val seedBytes = hex"000102030405060708090a0b0c0d0e0f"
+    val seedBytes = ByteVector.fromValidHex("000102030405060708090a0b0c0d0e0f")
 
     val path = BIP32Path.empty
 
@@ -176,7 +176,8 @@ class ExtKeyTest extends BitcoinSUnitTest {
 
   it must "pass test vector 2 in BIP32" in {
     val seedBytes =
-      hex"fffcf9f6f3f0edeae7e4e1dedbd8d5d2cfccc9c6c3c0bdbab7b4b1aeaba8a5a29f9c999693908d8a8784817e7b7875726f6c696663605d5a5754514e4b484542"
+      ByteVector.fromValidHex(
+        "fffcf9f6f3f0edeae7e4e1dedbd8d5d2cfccc9c6c3c0bdbab7b4b1aeaba8a5a29f9c999693908d8a8784817e7b7875726f6c696663605d5a5754514e4b484542")
 
     val masterPriv =
       ExtPrivateKey(LegacyMainNetPriv, Some(seedBytes), BIP32Path.empty)
@@ -252,7 +253,8 @@ class ExtKeyTest extends BitcoinSUnitTest {
 
   it must "pass test vector 3 in BIP32" in {
     val seedBytes =
-      hex"4b381541583be4423346c643850da4b320e46a87ae3d2a4e6da11eba819cd4acba45d239319ac14f863b8d5ab5a0d0c64d2e8a1e7d1457df2e5a3c51c73235be"
+      ByteVector.fromValidHex(
+        "4b381541583be4423346c643850da4b320e46a87ae3d2a4e6da11eba819cd4acba45d239319ac14f863b8d5ab5a0d0c64d2e8a1e7d1457df2e5a3c51c73235be")
 
     val masterPrivKey =
       ExtPrivateKey(LegacyMainNetPriv, Some(seedBytes), BIP32Path.empty)
@@ -278,7 +280,8 @@ class ExtKeyTest extends BitcoinSUnitTest {
 
   it must "pass test vector 4 in BIP32" in {
     val seedBytes =
-      hex"3ddd5602285899a946114506157c7997e5444528f3003f6134712147db19b678"
+      ByteVector.fromValidHex(
+        "3ddd5602285899a946114506157c7997e5444528f3003f6134712147db19b678")
 
     val masterPrivKey =
       ExtPrivateKey(LegacyMainNetPriv, Some(seedBytes), BIP32Path.empty)
@@ -473,7 +476,8 @@ class ExtKeyTest extends BitcoinSUnitTest {
 
   it must "not serialize a ExtPrivateKey to string" in {
     val seedBytes =
-      hex"4b381541583be4423346c643850da4b320e46a87ae3d2a4e6da11eba819cd4acba45d239319ac14f863b8d5ab5a0d0c64d2e8a1e7d1457df2e5a3c51c73235be"
+      ByteVector.fromValidHex(
+        "4b381541583be4423346c643850da4b320e46a87ae3d2a4e6da11eba819cd4acba45d239319ac14f863b8d5ab5a0d0c64d2e8a1e7d1457df2e5a3c51c73235be")
 
     val masterPriv =
       ExtPrivateKey(LegacyMainNetPriv, Some(seedBytes), BIP32Path.empty)

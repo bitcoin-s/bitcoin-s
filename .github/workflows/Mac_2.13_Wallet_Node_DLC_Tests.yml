@@ -32,4 +32,4 @@ jobs:
             ~/.bitcoin-s/binaries
           key: ${{ runner.os }}-wallet-node-dlc-test-cache
       - name: run tests
-        run: sbt coverage walletTest/test dlcWalletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls dlcOracleTest/test dlcOracle/coverageReport dlcOracle/coveralls
+        run: sbt -J-Xmx4g coverage walletTest/test dlcWalletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls dlcOracleTest/test dlcOracle/coverageReport dlcOracle/coveralls

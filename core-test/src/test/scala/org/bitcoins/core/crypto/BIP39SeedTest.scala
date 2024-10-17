@@ -2,7 +2,7 @@ package org.bitcoins.core.crypto
 
 import org.bitcoins.testkitcore.gen.CryptoGenerators
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
-import scodec.bits.HexStringSyntax
+import scodec.bits.ByteVector
 
 import scala.util.{Failure, Try}
 
@@ -28,9 +28,9 @@ class BIP39SeedTest extends BitcoinSUnitTest {
     forAll(CryptoGenerators.entropy.bits128) { entropy =>
       val attempt = Try { BIP39Seed.fromBytes(entropy.toByteVector.drop(1)) }
       assert(attempt.isFailure)
-      val exc = attempt.asInstanceOf[Failure[_]].exception
+      val exc = attempt.asInstanceOf[Failure[?]].exception
 
-      assert(exc.getMessage contains "Seed must be between")
+      assert(exc.getMessage `contains` "Seed must be between")
     }
   }
 
@@ -38,16 +38,16 @@ class BIP39SeedTest extends BitcoinSUnitTest {
     forAll(CryptoGenerators.entropy.bits256) { entropy =>
       val attempt = Try {
         BIP39Seed.fromBytes(
-          (entropy ++ entropy).toByteVector ++ hex"c"
+          (entropy ++ entropy).toByteVector ++ ByteVector.fromValidHex("c")
         ) // one byte too much
       }
       assert(attempt.isFailure)
 
       val exc = attempt
-        .asInstanceOf[Failure[_]]
+        .asInstanceOf[Failure[?]]
         .exception
 
-      assert(exc.getMessage contains "Seed must be between")
+      assert(exc.getMessage `contains` "Seed must be between")
     }
   }
 }

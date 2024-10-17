@@ -21,7 +21,7 @@ jobs:
           java-version: '21.0.4'
           cache: 'sbt'
       - uses: olafurpg/setup-gpg@v3
-      - run: sbt -J-Xmx2g ci-release docs/publishWebsite
+      - run: sbt -J-Xmx4g ci-release docs/publishWebsite
         env:
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
@@ -68,7 +68,7 @@ jobs:
         run: brew install sbt
       - name: Build all zips
         shell: bash # windows needs shell defined
-        run: sbt "universal:stage;universal:packageBin"
+        run: sbt -J-Xmx4g "universal:stage;universal:packageBin"
       - name: View Artifacts
         run: ls -l app/server/target/universal/stage
       # - name: Build appServer
