@@ -130,6 +130,9 @@ object Deps {
     val gson =
       "com.google.code.gson" % "gson" % V.gsonV // https://github.com/google/gson
 
+    val guava = "com.google.guava" % "guava" % "33.3.1-jre" //https://github.com/google/guava/
+
+
     val jUnixSocket =
       "com.kohlschutter.junixsocket" % "junixsocket-core" % V.jUnixSocketV
 
@@ -464,6 +467,7 @@ object Deps {
     // transitive deps needed for jlink
     Compile.codehaus,
     Compile.gson,
+    Compile.guava,
     Compile.dropwizardMetricsHealthChecks,
     Compile.dropwizardMetricsJvm,
     // postgres transitive deps
