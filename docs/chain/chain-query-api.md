@@ -132,14 +132,14 @@ val chainApi = new ChainQueryApi {
 
     /** Gets the hash of the block that is what we consider "best" */
     override def getBestBlockHash(): Future[DoubleSha256DigestBE] = {
-      bitcoind.getBestBlockHash
+      bitcoind.getBestBlockHash()
     }
 
     /** Gets number of confirmations for the given block hash */
     override def getNumberOfConfirmations(
         blockHash: DoubleSha256DigestBE): Future[Option[Int]] = {
       for {
-        tip <- bitcoind.getBlockCount
+        tip <- bitcoind.getBlockCount()
         block <- bitcoind.getBlock(blockHash)
       } yield {
         Some(tip - block.height + 1)
@@ -150,7 +150,7 @@ val chainApi = new ChainQueryApi {
     override def getFilterCount(): Future[Int] = {
       // since bitcoind should have the filter for
       // every block we can just return the block height
-      bitcoind.getBlockCount
+      bitcoind.getBlockCount()
     }
 
     /** Returns the block height of the given block stamp */

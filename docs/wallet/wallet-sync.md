@@ -103,7 +103,7 @@ val bitcoindRpcClientF: Future[BitcoindRpcClient] = client.start()
 //wait for bitcoind to get started
 val bitcoind = Await.result(bitcoindRpcClientF, 10.seconds)
 
-val getBestBlockHashFunc = () => bitcoind.getBestBlockHash
+val getBestBlockHashFunc = () => bitcoind.getBestBlockHash()
 
 val getBlockHeaderFunc = { (hash: DoubleSha256DigestBE) => bitcoind.getBlockHeaderRaw(hash) }
 
