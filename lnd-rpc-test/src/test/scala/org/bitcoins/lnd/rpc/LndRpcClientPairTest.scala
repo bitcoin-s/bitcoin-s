@@ -17,7 +17,7 @@ import org.bitcoins.core.wallet.fee._
 import org.bitcoins.crypto._
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.fixtures.DualLndFixture
-import scodec.bits.{ByteVector, HexStringSyntax}
+import scodec.bits.ByteVector
 import signrpc.SignMethod
 
 import scala.concurrent.{Await, Future}
@@ -439,7 +439,8 @@ class LndRpcClientPairTest extends DualLndFixture with LndUtils {
   it must "send and receive a custom message" in { params =>
     val (_, lndA, lndB) = params
 
-    val customMessage = UnknownTLV(BigSizeUInt(48000), hex"0094355324")
+    val customMessage =
+      UnknownTLV(BigSizeUInt(48000), ByteVector.fromValidHex("0094355324"))
 
     val subscribeF = lndA.subscribeCustomMessages().runWith(Sink.head)
 

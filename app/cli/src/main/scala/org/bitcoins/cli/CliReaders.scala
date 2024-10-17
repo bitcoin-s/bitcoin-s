@@ -124,7 +124,7 @@ object CliReaders {
       override def arity: Int = 1
       override def reads: String => ContractDescriptorTLV = { str =>
         upickle.default.read[ContractDescriptorV0TLV](str)(
-          Picklers.contractDescriptorV0
+          using Picklers.contractDescriptorV0
         )
       }
     }

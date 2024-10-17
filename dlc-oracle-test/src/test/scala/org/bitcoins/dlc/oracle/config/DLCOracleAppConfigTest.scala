@@ -11,29 +11,28 @@ class DLCOracleAppConfigTest extends DLCOracleAppConfigFixture {
 
   behavior of "DLCOracleAppConfig"
 
-  it must "start the same oracle twice" in {
-    dlcOracleAppConfig: DLCOracleAppConfig =>
-      val started1F = dlcOracleAppConfig.start()
-      val started2F = started1F.flatMap(_ => dlcOracleAppConfig.start())
-      for {
-        _ <- started1F
-        _ <- started2F
-        dlcOracle1 = new DLCOracle()(dlcOracleAppConfig)
-        dlcOracle2 = new DLCOracle()(dlcOracleAppConfig)
-      } yield {
-        assert(dlcOracle1.publicKey == dlcOracle2.publicKey)
-      }
+  it must "start the same oracle twice" in { dlcOracleAppConfig =>
+    val started1F = dlcOracleAppConfig.start()
+    val started2F = started1F.flatMap(_ => dlcOracleAppConfig.start())
+    for {
+      _ <- started1F
+      _ <- started2F
+      dlcOracle1 = new DLCOracle()(dlcOracleAppConfig)
+      dlcOracle2 = new DLCOracle()(dlcOracleAppConfig)
+    } yield {
+      assert(dlcOracle1.publicKey() == dlcOracle2.publicKey())
+    }
   }
 
   it must "initialize the oracle, move the seed somewhere else, and then start the oracle again and get the same pubkeys" in {
-    dlcOracleAppConfig: DLCOracleAppConfig =>
+    dlcOracleAppConfig =>
       val seedFile = dlcOracleAppConfig.seedPath
       val startedF = dlcOracleAppConfig.start()
       val pubKeyBeforeMoveF = for {
         _ <- startedF
         dlcOracle = new DLCOracle()(dlcOracleAppConfig)
       } yield {
-        dlcOracle.publicKey
+        dlcOracle.publicKey()
       }
 
       // stop old oracle
@@ -69,14 +68,14 @@ class DLCOracleAppConfigTest extends DLCOracleAppConfigFixture {
       for {
         _ <- stoppedF
         pubKey1 <- pubKeyBeforeMoveF
-        pubKey2 <- dlcOracle2F.map(_.publicKey)
+        pubKey2 <- dlcOracle2F.map(_.publicKey())
       } yield {
         assert(pubKey1 == pubKey2)
       }
   }
 
   it must "fail to start the oracle app config if we have different seeds" in {
-    dlcOracleAppConfig: DLCOracleAppConfig =>
+    dlcOracleAppConfig =>
       val seedFile = dlcOracleAppConfig.seedPath
       val startedF = dlcOracleAppConfig.start()
 
