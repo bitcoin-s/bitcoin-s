@@ -12,7 +12,7 @@ The server project is the aggregation of these three sub projects
 2. [Chain](../chain/chain.md)
 3. [Node](../node/node.md)
 
-The server project provides a away to access information from these three projects via a JSON RPC.
+The server project provides a way to access information from these three projects via a JSON RPC.
 
 ## Building the server
 
