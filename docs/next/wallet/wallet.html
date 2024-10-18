@@ -126,7 +126,7 @@ val bitcoind = BitcoindRpcClient(bitcoindInstance)
 // peer
 val syncF: Future[ChainApi] = configF.flatMap { _ =&gt;
     val getBestBlockHashFunc = { () =&gt;
-        bitcoind.getBestBlockHash
+        bitcoind.getBestBlockHash()
     }
 
     

@@ -158,14 +158,14 @@ want.</p>
 
     <span class="hljs-comment">/** Gets the hash of the block that is what we consider "best" */</span>
     <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">getBestBlockHash</span></span>(): <span class="hljs-type">Future</span>[<span class="hljs-type">DoubleSha256DigestBE</span>] = {
-      bitcoind.getBestBlockHash
+      bitcoind.getBestBlockHash()
     }
 
     <span class="hljs-comment">/** Gets number of confirmations for the given block hash */</span>
     <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">getNumberOfConfirmations</span></span>(
         blockHash: <span class="hljs-type">DoubleSha256DigestBE</span>): <span class="hljs-type">Future</span>[<span class="hljs-type">Option</span>[<span class="hljs-type">Int</span>]] = {
       <span class="hljs-keyword">for</span> {
-        tip &lt;- bitcoind.getBlockCount
+        tip &lt;- bitcoind.getBlockCount()
         block &lt;- bitcoind.getBlock(blockHash)
       } <span class="hljs-keyword">yield</span> {
         <span class="hljs-type">Some</span>(tip - block.height + <span class="hljs-number">1</span>)
@@ -176,7 +176,7 @@ want.</p>
     <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">getFilterCount</span></span>(): <span class="hljs-type">Future</span>[<span class="hljs-type">Int</span>] = {
       <span class="hljs-comment">// since bitcoind should have the filter for</span>
       <span class="hljs-comment">// every block we can just return the block height</span>
-      bitcoind.getBlockCount
+      bitcoind.getBlockCount()
     }
 
     <span class="hljs-comment">/** Returns the block height of the given block stamp */</span>

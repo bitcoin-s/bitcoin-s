@@ -126,7 +126,7 @@ This method takes 4 parameters</p>
 <span class="hljs-comment">//wait for bitcoind to get started</span>
 <span class="hljs-keyword">val</span> bitcoind = <span class="hljs-type">Await</span>.result(bitcoindRpcClientF, <span class="hljs-number">10.</span>seconds)
 
-<span class="hljs-keyword">val</span> getBestBlockHashFunc = () =&gt; bitcoind.getBestBlockHash
+<span class="hljs-keyword">val</span> getBestBlockHashFunc = () =&gt; bitcoind.getBestBlockHash()
 
 <span class="hljs-keyword">val</span> getBlockHeaderFunc = { (hash: <span class="hljs-type">DoubleSha256DigestBE</span>) =&gt; bitcoind.getBlockHeaderRaw(hash) }
 

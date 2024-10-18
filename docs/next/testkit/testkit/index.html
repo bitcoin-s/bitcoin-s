@@ -88,7 +88,7 @@ This spins up a bitcoind regtest instance on machine and generates 101 blocks on
 <span class="hljs-comment">//let's just grab the block count for an example</span>
 <span class="hljs-keyword">val</span> blockCountF = <span class="hljs-keyword">for</span> {
   bitcoind &lt;- bitcoindRpcClientF
-  count &lt;- bitcoind.getBlockCount
+  count &lt;- bitcoind.getBlockCount()
 } <span class="hljs-keyword">yield</span> {
   <span class="hljs-comment">//run a test against the block count</span>
   assert(count &gt; <span class="hljs-number">0</span>, <span class="hljs-string">s"Block count was not more than zero!"</span>)
