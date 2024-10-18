@@ -33,7 +33,7 @@ import java.nio.file.Files
 
 implicit val ec: ExecutionContext = ExecutionContext.global
 implicit val system: ActorSystem = ActorSystem("System")
-// We are assuming that a `bitcoind` regtest node is running the background.
+// We are assuming that a `bitcoind` regtest node is running in the background.
 // You can see our `bitcoind` guides to see how to connect
 // to a local or remote `bitcoind` node.
 
