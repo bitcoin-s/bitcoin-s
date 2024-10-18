@@ -674,7 +674,7 @@ object ConditionalSigner extends ConditionalSigner
 We must now add the new signing functionality from the previous step to the general-purpose signing functions by adding a new `case` for your new `InputInfo` type in the `match` within `BitcoinSigner.sign`. In the case of `P2PKWithTimeout`, this looks like:
 
 ```scala mdoc:compile-only
-    spendingInfoToSatisfy match {
+    spendingInfoToSatisfy.inputInfo match {
       //...
       case p2pKWithTimeout: P2PKWithTimeoutInputInfo =>
               P2PKWithTimeoutSigner.sign(spendingInfo,
