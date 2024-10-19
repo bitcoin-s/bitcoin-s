@@ -80,8 +80,10 @@ sealed trait BinaryTreeDoubleSha256Digest
       parentTree: BinaryTreeDoubleSha256Digest): BinaryTreeDoubleSha256Digest =
     parentTree match {
       case n: NodeDoubleSha256Digest =>
-        if (n.l == Empty) NodeDoubleSha256Digest(n.v, subTree, n.r)
-        else if (n.r == Empty) NodeDoubleSha256Digest(n.v, n.l, subTree)
+        if (n.l == EmptyTreeDoubleSha256Digest)
+          NodeDoubleSha256Digest(n.v, subTree, n.r)
+        else if (n.r == EmptyTreeDoubleSha256Digest)
+          NodeDoubleSha256Digest(n.v, n.l, subTree)
         else
           throw new RuntimeException(
             "There was no empty branch to insert the new t: " + subTree + "inside of tree: " + parentTree)
@@ -121,7 +123,7 @@ sealed trait BinaryTreeDoubleSha256Digest
     // TODO: Optimize this into a tail recursive function
     parentTree match {
       case EmptyTreeDoubleSha256Digest =>
-        if (originalTree == Empty) replacementTree
+        if (originalTree == EmptyTreeDoubleSha256Digest) replacementTree
         else EmptyTreeDoubleSha256Digest
       case l: LeafDoubleSha256Digest =>
         if (l == originalTree) replacementTree else l
