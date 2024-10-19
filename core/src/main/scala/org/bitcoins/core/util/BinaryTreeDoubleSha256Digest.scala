@@ -5,22 +5,22 @@ import org.bitcoins.crypto.DoubleSha256Digest
 import scala.annotation.tailrec
 
 sealed trait BinaryTreeDoubleSha256Digest
-    extends BinaryTree[DoubleSha256Digest] {
-  override def value: Option[DoubleSha256Digest] =
+/*extends BinaryTree[DoubleSha256Digest]*/ {
+  def value: Option[DoubleSha256Digest] =
     this match {
       case n: NodeDoubleSha256Digest   => Some(n.v)
       case l: LeafDoubleSha256Digest   => Some(l.v)
       case EmptyTreeDoubleSha256Digest => None
     }
 
-  override def left: Option[BinaryTreeDoubleSha256Digest] =
+  def left: Option[BinaryTreeDoubleSha256Digest] =
     this match {
       case n: NodeDoubleSha256Digest   => Some(n.l)
       case _: LeafDoubleSha256Digest   => None
       case EmptyTreeDoubleSha256Digest => None
     }
 
-  override def right: Option[BinaryTreeDoubleSha256Digest] =
+  def right: Option[BinaryTreeDoubleSha256Digest] =
     this match {
       case n: NodeDoubleSha256Digest   => Some(n.r)
       case _: LeafDoubleSha256Digest   => None
@@ -88,9 +88,7 @@ sealed trait BinaryTreeDoubleSha256Digest
           throw new RuntimeException(
             "There was no empty branch to insert the new t: " + subTree + "inside of tree: " + parentTree)
       case l: LeafDoubleSha256Digest =>
-        NodeDoubleSha256Digest(l.v,
-                               subTree,
-                               Empty.asInstanceOf[BinaryTreeDoubleSha256Digest])
+        NodeDoubleSha256Digest(l.v, subTree, EmptyTreeDoubleSha256Digest)
       case EmptyTreeDoubleSha256Digest => subTree
     }
 
@@ -101,12 +99,12 @@ sealed trait BinaryTreeDoubleSha256Digest
     // TODO: Optimize into a tail recursive function
     parentTree match {
       case EmptyTreeDoubleSha256Digest =>
-        Empty.asInstanceOf[BinaryTreeDoubleSha256Digest]
+        EmptyTreeDoubleSha256Digest
       case l: LeafDoubleSha256Digest =>
-        if (l == subTree) Empty.asInstanceOf[BinaryTreeDoubleSha256Digest]
+        if (l == subTree) EmptyTreeDoubleSha256Digest
         else l
       case n: NodeDoubleSha256Digest =>
-        if (n == subTree) Empty.asInstanceOf[BinaryTreeDoubleSha256Digest]
+        if (n == subTree) EmptyTreeDoubleSha256Digest
         else
           NodeDoubleSha256Digest(n.v,
                                  remove(subTree)(n.l),
