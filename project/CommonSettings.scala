@@ -156,7 +156,7 @@ object CommonSettings {
       "-Xlint:eta-sam",
       "-Xlint:doc-detached",
       "-Xlint:private-shadow",
-      //"-Xlint:type-parameter-shadow" need to fix BinaryTree.scala
+      "-Xlint:type-parameter-shadow",
       "-Xlint:poly-implicit-overload",
       "-Xlint:option-implicit",
       "-Xlint:delayedinit-select",
