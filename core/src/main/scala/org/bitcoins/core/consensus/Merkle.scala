@@ -17,7 +17,7 @@ import scala.annotation.tailrec
   */
 trait Merkle {
 
-  type MerkleTree = BinaryTree[DoubleSha256Digest]
+  type MerkleTree = BinaryTreeDoubleSha256Digest
 
   /** Computes the merkle root for the given block
     * @param block
@@ -41,7 +41,7 @@ trait Merkle {
           "We cannot have zero transactions in the block. There always should be ATLEAST one - the coinbase tx")
       case h +: Nil => h.txId
       case _ +: _ =>
-        val leafs = transactions.map(tx => Leaf(tx.txId))
+        val leafs = transactions.map(tx => LeafDoubleSha256Digest(tx.txId))
         val merkleTree = build(leafs, Nil)
         merkleTree.value.get
     }
@@ -77,7 +77,7 @@ trait Merkle {
 
   /** Builds a merkle tree from a sequence of hashes */
   def build(hashes: Seq[DoubleSha256Digest]): MerkleTree = {
-    val leafs = hashes.map(Leaf(_))
+    val leafs = hashes.map(LeafDoubleSha256Digest.apply)
     build(leafs, Nil)
   }
 
@@ -85,7 +85,7 @@ trait Merkle {
   def computeTree(tree1: MerkleTree, tree2: MerkleTree): MerkleTree = {
     val bytes = tree1.value.get.bytes ++ tree2.value.get.bytes
     val hash = CryptoUtil.doubleSHA256(bytes)
-    Node(hash, tree1, tree2)
+    NodeDoubleSha256Digest(hash, tree1, tree2)
   }
 
   /** Computes the commitment of the block to the wtxids See the definition of a
