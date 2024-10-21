@@ -70,6 +70,6 @@ case class IncomingDLCOfferDAO()(implicit
         peer,
         message,
         offerTLV
-      ) <> (IncomingDLCOfferDb.tupled, IncomingDLCOfferDb.unapply)
+      ).<>(IncomingDLCOfferDb.tupled, IncomingDLCOfferDb.unapply)
   }
 }

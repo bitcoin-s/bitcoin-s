@@ -65,12 +65,12 @@ class TorController(
       context.become {
         case data: ByteString =>
           connection ! Write(data)
-        case c @ CommandFailed(_: Write) =>
+        case cmdFailed @ CommandFailed(_: Write) =>
           // O/S buffer was full
           protocolHandler ! SendFailed
           log.error(
             "Tor command failed",
-            c.cause.getOrElse(new RuntimeException("Unknown error"))
+            cmdFailed.cause.getOrElse(new RuntimeException("Unknown error"))
           )
         case Received(data) =>
           protocolHandler ! data

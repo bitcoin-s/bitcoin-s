@@ -146,26 +146,7 @@ object CommonSettings {
   private val scala2_13CompilerLinting = {
     Seq(
       "-Xfatal-warnings",
-      "-Xlint:unused",
-      "-Xlint:adapted-args",
-      "-Xlint:nullary-unit",
-      "-Xlint:inaccessible",
-      "-Xlint:infer-any",
-      "-Xlint:missing-interpolator",
-      "-Xlint:eta-zero",
-      "-Xlint:eta-sam",
-      "-Xlint:doc-detached",
-      "-Xlint:private-shadow",
-      "-Xlint:type-parameter-shadow",
-      "-Xlint:poly-implicit-overload",
-      "-Xlint:option-implicit",
-      "-Xlint:delayedinit-select",
-      "-Xlint:package-object-classes",
-      "-Xlint:stars-align",
-      "-Xlint:constant",
-      "-Xlint:nonlocal-return",
-      "-Xlint:implicit-not-found",
-      "-Xlint:serial"
+      "-Xlint"
     )
   }
 

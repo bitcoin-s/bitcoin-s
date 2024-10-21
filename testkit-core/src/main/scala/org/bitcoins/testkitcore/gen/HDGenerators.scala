@@ -137,10 +137,13 @@ object HDGenerators {
   def hdPathWithConstructor: Gen[(HDPath, HDPathConstructor)] =
     for {
       path <- hdPath
-    } yield path match {
-      case legacy: LegacyHDPath       => (legacy, LegacyHDPath(_))
-      case nested: NestedSegWitHDPath => (nested, NestedSegWitHDPath(_))
-      case segwit: SegWitHDPath       => (segwit, SegWitHDPath(_))
+    } yield {
+      path match {
+        case legacy: LegacyHDPath       => (legacy, LegacyHDPath(_))
+        case nested: NestedSegWitHDPath => (nested, NestedSegWitHDPath(_))
+        case segwit: SegWitHDPath       => (segwit, SegWitHDPath(_))
+        case h: HDPath                  => sys.error(s"Unsupported hdPath=$h")
+      }
     }
 
   /** Generates a pair of paths that can be diffed.

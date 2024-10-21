@@ -524,8 +524,8 @@ case class PeerManager(
       initState: NodeState
   ): Sink[NodeStreamMessage, Future[NodeState]] = {
     Sink.foldAsync(initState) {
-      case (state, s: StartSync) =>
-        val nodeStateOptF: Future[Option[NodeState]] = s.peerOpt match {
+      case (state, startSync: StartSync) =>
+        val nodeStateOptF: Future[Option[NodeState]] = startSync.peerOpt match {
           case Some(p) =>
             state match {
               case s: SyncNodeState if !s.waitingForDisconnection.contains(p) =>

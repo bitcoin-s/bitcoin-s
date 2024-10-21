@@ -154,7 +154,7 @@ object TaprootTestCase {
             sys.error(s"Expected string for prevouts, got=$x")
         }
         val index = obj("index").num.toInt
-        val success = obj("success") match {
+        val successPath = obj("success") match {
           case success: ujson.Obj =>
             val scriptSig = ScriptSignature.fromAsmHex(success("scriptSig").str)
 
@@ -212,7 +212,7 @@ object TaprootTestCase {
           tx = transaction,
           prevouts = prevouts,
           index = index,
-          success = success,
+          success = successPath,
           failure = failure,
           flags = flags,
           `final` = finals,

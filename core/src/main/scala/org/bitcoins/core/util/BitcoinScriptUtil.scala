@@ -194,9 +194,9 @@ trait BitcoinScriptUtil {
     */
   def isPushOnly(script: Seq[ScriptToken]): Boolean = {
     @tailrec
-    def loop(tokens: Seq[ScriptToken]): Boolean =
+    def loop(tokens: List[ScriptToken]): Boolean =
       tokens match {
-        case h +: t =>
+        case h :: t =>
           h match {
             case scriptOp: ScriptOperation =>
               if (scriptOp.opCode < OP_16.opCode) {
@@ -209,7 +209,7 @@ trait BitcoinScriptUtil {
           }
         case Nil => true
       }
-    loop(script)
+    loop(script.toList)
   }
 
   /** Determines if the token being pushed onto the stack is being pushed by the
@@ -489,7 +489,7 @@ trait BitcoinScriptUtil {
   def calculateScriptForSigning(
       spendingTransaction: Transaction,
       signingInfo: InputSigningInfo[InputInfo],
-      script: Seq[ScriptToken]): Seq[ScriptToken] = {
+      asm: Seq[ScriptToken]): Seq[ScriptToken] = {
 
     val idx = TxUtil.inputIndex(signingInfo.inputInfo, spendingTransaction)
 
@@ -528,7 +528,7 @@ trait BitcoinScriptUtil {
           _: ConditionalScriptPubKey | _: NonStandardScriptPubKey |
           _: CLTVScriptPubKey | _: CSVScriptPubKey | _: WitnessCommitment |
           EmptyScriptPubKey =>
-        script
+        asm
     }
   }
 
@@ -558,16 +558,16 @@ trait BitcoinScriptUtil {
       script: Seq[ScriptToken]): Seq[ScriptToken] = {
     @tailrec
     def loop(
-        remainingSigs: Seq[ECDigitalSignature],
+        remainingSigs: List[ECDigitalSignature],
         scriptTokens: Seq[ScriptToken]): Seq[ScriptToken] = {
       remainingSigs match {
         case Nil => scriptTokens
-        case h +: t =>
+        case h :: t =>
           val newScriptTokens = removeSignatureFromScript(h, scriptTokens)
           loop(t, newScriptTokens)
       }
     }
-    loop(sigs, script)
+    loop(sigs.toList, script).toVector
   }
 
   /** Removes the

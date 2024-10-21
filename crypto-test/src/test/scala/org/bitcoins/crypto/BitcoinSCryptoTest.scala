@@ -67,7 +67,7 @@ trait BitcoinSCryptoAsyncTest
       .toVector
       .flatten
 
-    val testRunsF = Future.sequence(samples.map(func))
+    val testRunsF = Future.traverse(samples)(func)
 
     checkRunResults(testRunsF)
   }
@@ -80,11 +80,11 @@ trait BitcoinSCryptoAsyncTest
       .to(generatorDrivenConfig.minSize)
       .map(_ => (genA.sample, genB.sample))
       .toVector
-      .collect { case (Some(a), Some(b)) =>
-        (a, b)
+      .collect { case (Some(x), Some(y)) =>
+        (x, y)
       }
 
-    val testRunsF = Future.sequence(samples.map(x => func(x._1, x._2)))
+    val testRunsF = Future.traverse(samples)(x => func(x._1, x._2))
 
     checkRunResults(testRunsF)
   }

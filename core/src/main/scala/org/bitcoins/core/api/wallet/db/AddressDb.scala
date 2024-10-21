@@ -143,5 +143,6 @@ object AddressDbHelper {
       case legacy: LegacyHDPath       => getLegacyAddress(pub, legacy, np)
       case nested: NestedSegWitHDPath => getNestedSegwitAddress(pub, nested, np)
       case segwit: SegWitHDPath       => getSegwitAddress(pub, segwit, np)
+      case x: HDPath => sys.error(s"Unknown HDPath type, got=$x")
     }
 }
