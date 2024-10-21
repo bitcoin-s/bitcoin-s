@@ -151,7 +151,7 @@ case class AccountHandling(
 
   override def clearUtxos(account: HDAccount): Future[Unit] = {
     val aggregatedActions
-        : DBIOAction[Unit, NoStream, Effect.Read with Effect.Write] = {
+        : DBIOAction[Unit, NoStream, Effect.Read & Effect.Write] = {
       for {
         accountUtxos <- spendingInfoDAO.findAllForAccountAction(account)
         _ <- spendingInfoDAO.deleteSpendingInfoDbAllAction(accountUtxos)
@@ -185,7 +185,7 @@ case class AccountHandling(
                   ScriptPubKey
                 ],
                 NoStream,
-                Effect.Read with Effect.Write with Effect.Transactional] = {
+                Effect.Read & Effect.Write & Effect.Transactional] = {
     val addressCountA = addressDAO.countAction
     for {
       addressCount <- addressCountA
@@ -219,25 +219,25 @@ case class AccountHandling(
                   BitcoinAddress
                 ],
                 NoStream,
-                Effect.Read with Effect.Write with Effect.Transactional] = {
-    val receiveAddressesA: DBIOAction[
-      Vector[
-        BitcoinAddress
-      ],
-      NoStream,
-      Effect.Read with Effect.Write with Effect.Transactional] = {
+                Effect.Read & Effect.Write & Effect.Transactional] = {
+    val receiveAddressesA
+        : DBIOAction[Vector[
+                       BitcoinAddress
+                     ],
+                     NoStream,
+                     Effect.Read & Effect.Write & Effect.Transactional] = {
       DBIOAction.sequence {
         1.to(addressBatchSize)
           .map(_ => getNewAddressAction(account))
       }
     }.map(_.toVector)
 
-    val changeAddressesA: DBIOAction[
-      Vector[
-        BitcoinAddress
-      ],
-      NoStream,
-      Effect.Read with Effect.Write with Effect.Transactional] = {
+    val changeAddressesA
+        : DBIOAction[Vector[
+                       BitcoinAddress
+                     ],
+                     NoStream,
+                     Effect.Read & Effect.Write & Effect.Transactional] = {
       DBIOAction.sequence {
         1.to(addressBatchSize)
           .map(_ => getNewChangeAddressAction(account))
@@ -272,7 +272,7 @@ case class AccountHandling(
   def getNewAddressAction(account: HDAccount): DBIOAction[
     BitcoinAddress,
     NoStream,
-    Effect.Read with Effect.Write with Effect.Transactional
+    Effect.Read & Effect.Write & Effect.Transactional
   ] = {
     val accountDbOptA = findAccountAction(account)
     accountDbOptA.flatMap {
@@ -289,7 +289,7 @@ case class AccountHandling(
   def getNewChangeAddressAction(account: HDAccount): DBIOAction[
     BitcoinAddress,
     NoStream,
-    Effect.Read with Effect.Write with Effect.Transactional
+    Effect.Read & Effect.Write & Effect.Transactional
   ] = {
     val accountDbOptA = findAccountAction(account)
     accountDbOptA.flatMap {
@@ -311,7 +311,7 @@ case class AccountHandling(
   def getNewAddressAction(account: AccountDb): DBIOAction[
     BitcoinAddress,
     NoStream,
-    Effect.Read with Effect.Write with Effect.Transactional
+    Effect.Read & Effect.Write & Effect.Transactional
   ] = {
     getNewAddressHelperAction(account, HDChainType.External)
   }
@@ -319,7 +319,7 @@ case class AccountHandling(
   def getNewChangeAddressAction(account: AccountDb): DBIOAction[
     BitcoinAddress,
     NoStream,
-    Effect.Read with Effect.Write with Effect.Transactional
+    Effect.Read & Effect.Write & Effect.Transactional
   ] = {
     getNewAddressHelperAction(account, HDChainType.Change)
   }
@@ -385,13 +385,13 @@ case class AccountHandling(
   ): DBIOAction[
     BitcoinAddress,
     NoStream,
-    Effect.Read with Effect.Write with Effect.Transactional
+    Effect.Read & Effect.Write & Effect.Transactional
   ] = {
     logger.debug(s"Processing $account $chainType in our address request queue")
     val resultA: DBIOAction[
       BitcoinAddress,
       NoStream,
-      Effect.Read with Effect.Write with Effect.Transactional
+      Effect.Read & Effect.Write & Effect.Transactional
     ] = for {
       addressDb <- getNewAddressDbAction(account, chainType)
       writtenAddressDb <- addressDAO.createAction(addressDb)

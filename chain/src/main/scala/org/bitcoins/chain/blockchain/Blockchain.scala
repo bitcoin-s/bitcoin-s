@@ -10,6 +10,10 @@ case class Blockchain(headers: Vector[BlockHeaderDb]) extends BaseBlockChain {
   ) =
     Blockchain.fromHeaders(headers)
 
+  override def find(
+      predicate: BlockHeaderDb => Boolean): Option[BlockHeaderDb] =
+    headers.find(predicate)
+
 }
 
 object Blockchain extends BaseBlockChainCompObject {
