@@ -79,17 +79,7 @@ case class DLCDAO()(implicit
   ): Future[Option[DLCDb]] = {
     val q = table.filter(_.tempContractId === tempContractId)
 
-    safeDatabase.run(q.result).map { dlcs =>
-      if (dlcs.isEmpty) {
-        None
-      } else if (dlcs.length == 1) {
-        dlcs.headOption
-      } else {
-        throw new RuntimeException(
-          s"More than one DLC per tempContractId (${tempContractId.hex}), got: $dlcs"
-        )
-      }
-    }
+    safeDatabase.run(q.result).map(_.headOption)
   }
 
   def findByTempContractId(
