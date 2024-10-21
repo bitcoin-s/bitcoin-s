@@ -149,6 +149,8 @@ class TorProtocolHandler(
   override def unhandled(message: Any): Unit = message match {
     case GetOnionAddress =>
       sender() ! address
+    case a: Any =>
+      log.warning(s"Unhandled TorProtocolHandler message=$a")
   }
 
   private def processOnionResponse(res: Map[String, String]): String = {

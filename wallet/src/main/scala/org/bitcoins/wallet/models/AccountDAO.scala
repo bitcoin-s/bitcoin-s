@@ -64,17 +64,7 @@ case class AccountDAO()(implicit
       .filter(_.purpose === account.purpose)
       .filter(_.index === account.index)
 
-    q.result.map {
-      case h +: Vector() =>
-        Some(h)
-      case Vector() =>
-        None
-      case accounts: Vector[AccountDb] =>
-        // yikes, we should not have more the one account per coin type/purpose
-        throw new RuntimeException(
-          s"More than one account per account=${account}, got=${accounts}"
-        )
-    }
+    q.result.map(_.headOption)
   }
 
   def findByAccount(account: HDAccount): Future[Option[AccountDb]] = {

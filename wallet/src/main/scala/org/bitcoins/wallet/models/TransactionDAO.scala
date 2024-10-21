@@ -81,17 +81,7 @@ trait TxDAO[DbEntryType <: TxDB]
     table
       .filter(_.txIdBE === txIdBE)
       .result
-      .map {
-        case h +: Vector() =>
-          Some(h)
-        case Vector() =>
-          None
-        case txs: Vector[DbEntryType] =>
-          // yikes, we should not have more the one transaction per id
-          throw new RuntimeException(
-            s"More than one transaction per id=${txIdBE.hex}, got=$txs"
-          )
-      }
+      .map(_.headOption)
   }
 
   def findByTxId(txIdBE: DoubleSha256DigestBE): Future[Option[DbEntryType]] = {

@@ -50,7 +50,7 @@ object RescanState {
       case RescanTerminatedEarly =>
         recursiveRescanP.failure(RescanTerminatedEarly)
         _isCompletedEarly.set(true)
-      case scala.util.control.NonFatal(_) => // do nothing
+      case _: Throwable => // do nothing
     }
 
     /** Useful for determining if the rescan was completed externally by the

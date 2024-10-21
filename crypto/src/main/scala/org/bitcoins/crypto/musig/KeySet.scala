@@ -11,7 +11,7 @@ import scodec.bits.ByteVector
 /** Represents an ordered set of MuSig signers and their tweaks. This is the
   * data required to (non-interactively) compute the aggPubKey.
   */
-trait KeySet {
+sealed trait KeySet {
   def keys: Vector[SchnorrPublicKey]
 
   def tweaks: Vector[MuSigTweak]

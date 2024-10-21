@@ -28,12 +28,6 @@ trait Merkle {
   def computeBlockMerkleRoot(block: Block): DoubleSha256Digest =
     computeMerkleRoot(block.transactions)
 
-  /** Computes the merkle root for the given sequence of transactions
-    * @param transactions
-    *   the list of transactions whose merkle root needs to be computed
-    * @return
-    *   the merkle root for the sequence of transactions
-    */
   def computeMerkleRoot(
       transactions: Vector[Transaction]): DoubleSha256Digest = {
     val result = if (transactions.isEmpty) {

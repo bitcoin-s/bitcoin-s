@@ -51,8 +51,8 @@ sealed abstract class P2WPKHWitnessV0 extends ScriptWitnessV0 {
 
   def signature: ECDigitalSignature =
     stack(1) match {
-      case ByteVector.empty  => EmptyDigitalSignature
-      case bytes: ByteVector => ECDigitalSignature(bytes)
+      case ByteVector.empty     => EmptyDigitalSignature
+      case nonEmpty: ByteVector => ECDigitalSignature(nonEmpty)
     }
 
   override def toString =
@@ -479,8 +479,8 @@ object TaprootScriptPath extends Factory[TaprootScriptPath] {
       annexOpt: Option[ByteVector],
       spk: RawScriptPubKey): TaprootScriptPath = {
     annexOpt match {
-      case Some(annex) =>
-        fromStack(Vector(annex, controlBlock.bytes, spk.asmBytes))
+      case Some(annexBytes) =>
+        fromStack(Vector(annexBytes, controlBlock.bytes, spk.asmBytes))
       case None =>
         fromStack(Vector(controlBlock.bytes, spk.asmBytes))
     }

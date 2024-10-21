@@ -66,7 +66,7 @@ sealed abstract class ScriptParser
               BytesUtil.decodeHex(BytesUtil.flipEndianness(b))
             }
 
-            val bytesToPushOntoStack: Vector[ScriptToken] =
+            val bytesToPushOntoStack: Vector[ScriptToken] = {
               (bytes.size > 75) match {
                 case true =>
                   val scriptNumber = ScriptNumber(
@@ -79,9 +79,13 @@ sealed abstract class ScriptParser
                       Vector(scriptNumber, OP_PUSHDATA2)
                     case size if size < Int.MaxValue =>
                       Vector(scriptNumber, OP_PUSHDATA4)
+                    case size =>
+                      sys.error(
+                        s"Cannot have size large than Int.MaxValue (${Int.MaxValue}), got=$size")
                   }
                 case false => Vector(BytesToPushOntoStack(bytes.size.toInt))
               }
+            }
 
             val pushOpBytes: ByteVector =
               bytesToPushOntoStack.foldLeft(ByteVector.empty)(_ ++ _.bytes)

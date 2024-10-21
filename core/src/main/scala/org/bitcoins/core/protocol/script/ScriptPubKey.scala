@@ -1620,7 +1620,7 @@ object WitnessCommitment extends ScriptFactory[WitnessCommitment] {
     else {
       val minCommitmentSize = 38
       val asmBytes = BytesUtil.toByteVector(asm)
-      val Seq(opReturn, pushOp, constant) = asm.take(3)
+      val (opReturn, pushOp, constant) = (asm.head, asm(1), asm(2))
       opReturn == OP_RETURN && pushOp == BytesToPushOntoStack(36) &&
       constant.hex.take(
         8) == commitmentHeader && asmBytes.size >= minCommitmentSize

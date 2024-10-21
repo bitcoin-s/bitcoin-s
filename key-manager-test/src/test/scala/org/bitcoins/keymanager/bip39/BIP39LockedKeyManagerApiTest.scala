@@ -27,7 +27,7 @@ class BIP39LockedKeyManagerApiTest extends KeyManagerApiUnitTest {
       )
 
     val unlockedKm = unlockedE match {
-      case Right(km) => km
+      case Right(k)  => k
       case Left(err) => fail(s"Failed to unlock key manager ${err}")
     }
 

@@ -24,10 +24,8 @@ class DLCTestVectorTest extends BitcoinSJvmTest {
     val vecResult = DLCTestVectorGen.readFromDefaultTestFile()
     assert(vecResult.isSuccess)
 
-    val vecF = vecResult.get.map(runTest(_))
-    Future
-      .sequence(vecF)
-      .map(_ => succeed)
+    val vecF = Future.traverse(vecResult.get)(runTest)
+    vecF.map(_ => succeed)
   }
 
   private def runTest(testVec: TestVector): Future[Assertion] = {
@@ -41,6 +39,7 @@ class DLCTestVectorTest extends BitcoinSJvmTest {
             case Success(regenerated) => assert(regenerated == testVec)
             case Failure(err)         => fail(err)
           }
+        case t: TestVector => sys.error(s"Incorrect test vector type=$t")
       }
     }
   }
