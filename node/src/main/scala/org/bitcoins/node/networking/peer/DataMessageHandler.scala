@@ -59,39 +59,36 @@ case class DataMessageHandler(
   ): Future[DataMessageHandler] = {
     state match {
       case syncState: SyncNodeState =>
-        syncState match {
-          case state @ (_: HeaderSync | _: FilterHeaderSync | _: FilterSync) =>
-            val syncPeer = state.syncPeer
-            val isQueryTimedOut = state.isQueryTimedOut(appConfig.queryWaitTime)
-            if (peerData.peer != syncPeer && !isQueryTimedOut) {
-              // ignore message from peers that we aren't syncing with during IBD
-              logger.debug(
-                s"Ignoring message ${payload.commandName} from peer=${peerData.peer} in state=$state because we are syncing with this peer currently. syncPeer=$syncPeer"
-              )
-              Future.successful(this)
-            } else {
-              val dmh = if (isQueryTimedOut) {
-                // if query is timed out, we need to transition back to DoneSyncing
-                // to avoid getting stuck in a state when a peer does not respond to us
-                // see: https://github.com/bitcoin-s/bitcoin-s/issues/5429
-                logger.info(
-                  s"Query timed out with in state=$state, received payload=${payload.commandName}")
-                copy(state = state.toDoneSyncing)
-              } else {
-                this
-              }
-              val resultF =
-                dmh.handleDataPayloadValidState(payload, peerData)
-              resultF.failed.foreach { err =>
-                logger.error(
-                  s"Failed to handle data payload=${payload} from peer=${peerData.peer} in state=$state errMsg=${err.getMessage}",
-                  err
-                )
-              }
-              resultF.recoverWith { case NonFatal(_) =>
-                Future.successful(this)
-              }
-            }
+        val syncPeer = syncState.syncPeer
+        val isQueryTimedOut = syncState.isQueryTimedOut(appConfig.queryWaitTime)
+        if (peerData.peer != syncPeer && !isQueryTimedOut) {
+          // ignore message from peers that we aren't syncing with during IBD
+          logger.debug(
+            s"Ignoring message ${payload.commandName} from peer=${peerData.peer} in state=$state because we are syncing with this peer currently. syncPeer=$syncPeer"
+          )
+          Future.successful(this)
+        } else {
+          val dmh = if (isQueryTimedOut) {
+            // if query is timed out, we need to transition back to DoneSyncing
+            // to avoid getting stuck in a state when a peer does not respond to us
+            // see: https://github.com/bitcoin-s/bitcoin-s/issues/5429
+            logger.info(
+              s"Query timed out with in state=$state, received payload=${payload.commandName}")
+            copy(state = state.toDoneSyncing)
+          } else {
+            this
+          }
+          val resultF =
+            dmh.handleDataPayloadValidState(payload, peerData)
+          resultF.failed.foreach { err =>
+            logger.error(
+              s"Failed to handle data payload=${payload} from peer=${peerData.peer} in state=$state errMsg=${err.getMessage}",
+              err
+            )
+          }
+          resultF.recoverWith { case NonFatal(_) =>
+            Future.successful(this)
+          }
         }
       case _: DoneSyncing =>
         val resultF = handleDataPayloadValidState(payload, peerData)
@@ -964,8 +961,8 @@ case class DataMessageHandler(
           syncIfHeadersAhead(filterSyncState, peerMessageSenderApi)
         } else {
           val res = filterHeaderSyncStateOpt match {
-            case Some(filterSyncState) =>
-              filterSyncState.copy(filterBatchCache = newBatch)
+            case Some(f) =>
+              f.copy(filterBatchCache = newBatch)
             case None =>
               val d = filterSyncState.toDoneSyncing
               d

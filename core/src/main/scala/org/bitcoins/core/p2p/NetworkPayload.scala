@@ -208,10 +208,10 @@ trait GetHeadersMessage extends DataPayload with ExpectsResponse {
   override def toString(): String = {
     val count = hashCount.toInt
     // only display first hash, otherwise this gets really long
-    val hashesStr = hashes match {
-      case Nil         => "empty"
-      case head +: Nil => head.toString
-      case head +: _   => s"$head, ..."
+    val hashesStr = {
+      if (hashes.isEmpty) "empty"
+      else if (hashes.length == 1) hashes.head
+      else s"${hashes.head}, ..."
     }
     s"GetHeadersMessage($version, hashCount=$count, hashes=$hashesStr, stop=$hashStop)"
   }

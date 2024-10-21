@@ -198,9 +198,9 @@ object Bech32Address extends AddressFactory[Bech32Address] {
     * [[org.bitcoins.core.protocol.BtcHumanReadablePart HumanReadablePart]] &
     * data part
     */
-  override def fromString(bech32: String): Bech32Address = {
+  override def fromString(bech32Str: String): Bech32Address = {
     val bech32T = for {
-      (hrp, data) <- Bech32.splitToHrpAndData(bech32, Bech32Encoding.Bech32)
+      (hrp, data) <- Bech32.splitToHrpAndData(bech32Str, Bech32Encoding.Bech32)
       network = BtcHumanReadablePart.fromString(hrp).network
     } yield Bech32Address(network, data)
 
@@ -346,9 +346,10 @@ object Bech32mAddress extends AddressFactory[Bech32mAddress] {
     * [[org.bitcoins.core.protocol.BtcHumanReadablePart HumanReadablePart]] &
     * data part
     */
-  override def fromString(bech32m: String): Bech32mAddress = {
+  override def fromString(bech32mStr: String): Bech32mAddress = {
     val bech32T = for {
-      (hrp, data) <- Bech32.splitToHrpAndData(bech32m, Bech32Encoding.Bech32m)
+      (hrp, data) <- Bech32.splitToHrpAndData(bech32mStr,
+                                              Bech32Encoding.Bech32m)
       network = BtcHumanReadablePart.fromString(hrp).network
     } yield Bech32mAddress(network, data)
 

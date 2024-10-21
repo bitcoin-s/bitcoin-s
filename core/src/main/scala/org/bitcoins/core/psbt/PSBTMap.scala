@@ -540,9 +540,9 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
           */
         def addLeaves(rawSPK: RawScriptPubKey, path: Vector[Boolean]): Unit = {
           rawSPK match {
-            case conditional: ConditionalScriptPubKey =>
-              addLeaves(conditional.trueSPK, path :+ true)
-              addLeaves(conditional.falseSPK, path :+ false)
+            case conditionalSPK: ConditionalScriptPubKey =>
+              addLeaves(conditionalSPK.trueSPK, path :+ true)
+              addLeaves(conditionalSPK.falseSPK, path :+ false)
             case p2pkWithTimeout: P2PKWithTimeoutScriptPubKey =>
               addLeaves(P2PKScriptPubKey.fromP2PKWithTimeout(p2pkWithTimeout,
                                                              timeoutBranch =

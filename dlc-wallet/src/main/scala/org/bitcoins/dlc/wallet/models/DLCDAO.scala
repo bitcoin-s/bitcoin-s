@@ -79,15 +79,16 @@ case class DLCDAO()(implicit
   ): Future[Option[DLCDb]] = {
     val q = table.filter(_.tempContractId === tempContractId)
 
-    safeDatabase.run(q.result).map {
-      case h +: Vector() =>
-        Some(h)
-      case Vector() =>
+    safeDatabase.run(q.result).map { dlcs =>
+      if (dlcs.isEmpty) {
         None
-      case dlcs: Vector[DLCDb] =>
+      } else if (dlcs.length == 1) {
+        dlcs.headOption
+      } else {
         throw new RuntimeException(
           s"More than one DLC per tempContractId (${tempContractId.hex}), got: $dlcs"
         )
+      }
     }
   }
 
@@ -99,16 +100,7 @@ case class DLCDAO()(implicit
   def findByContractId(contractId: ByteVector): Future[Option[DLCDb]] = {
     val q = table.filter(_.contractId === contractId)
 
-    safeDatabase.run(q.result).map {
-      case h +: Vector() =>
-        Some(h)
-      case Vector() =>
-        None
-      case dlcs: Vector[DLCDb] =>
-        throw new RuntimeException(
-          s"More than one DLC per contractId (${contractId.toHex}), got: $dlcs"
-        )
-    }
+    safeDatabase.run(q.result).map(_.headOption)
   }
 
   def findByFundingOutPoint(

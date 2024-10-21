@@ -82,7 +82,7 @@ case class DLCContactDAO()(implicit
 
     def memo: Rep[String] = column("memo")
 
-    def * : ProvenShape[DLCContactDb] =
-      (alias, address, memo) <> (DLCContactDb.tupled, DLCContactDb.unapply)
+    override def * : ProvenShape[DLCContactDb] =
+      (alias, address, memo).<>(DLCContactDb.tupled, DLCContactDb.unapply)
   }
 }

@@ -474,6 +474,8 @@ case class AccountHandling(
             nestedPath,
             networkParameters
           )
+        case h: HDPath =>
+          sys.error(s"Unsupported HDPath type=$h for calculating addresses")
       }
     }
   }

@@ -40,6 +40,8 @@ case class NodeRoutes(nodeApi: NodeApi)(implicit system: ActorSystem)
             system.scheduler.scheduleOnce(7.seconds)(sys.exit())
             nodeStopping
           }
+        case n: NodeApi =>
+          sys.error(s"Unsupported NodeApi type=$n")
       }
   }
 }

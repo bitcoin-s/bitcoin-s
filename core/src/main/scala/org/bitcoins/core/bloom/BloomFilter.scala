@@ -235,16 +235,18 @@ sealed abstract class BloomFilter extends NetworkElement {
       txId: DoubleSha256Digest): BloomFilter = {
     @tailrec
     def loop(
-        constantsWithIndex: Seq[(ScriptToken, Int)],
-        accumFilter: BloomFilter): BloomFilter =
+        constantsWithIndex: List[(ScriptToken, Int)],
+        accumFilter: BloomFilter): BloomFilter = {
       constantsWithIndex match {
-        case h +: t if accumFilter.contains(h._1.bytes) =>
+        case h :: t if accumFilter.contains(h._1.bytes) =>
           val filter =
             accumFilter.insert(TransactionOutPoint(txId, UInt32(h._2)))
           loop(t, filter)
-        case _ +: t => loop(t, accumFilter)
+        case _ :: t => loop(t, accumFilter)
         case Nil    => accumFilter
       }
+    }
+
     val p2pkOrMultiSigScriptPubKeys: Seq[(ScriptPubKey, Int)] =
       scriptPubKeysWithIndex.filter { case (s, _) =>
         s.isInstanceOf[P2PKScriptPubKey] ||
@@ -257,7 +259,7 @@ sealed abstract class BloomFilter extends NetworkElement {
           case (token, _) => token.isInstanceOf[ScriptConstant]
         }
       }
-    loop(scriptConstantsWithOutputIndex, this)
+    loop(scriptConstantsWithOutputIndex.toList, this)
   }
 
   /** Performs the [[scala.util.hashing.MurmurHash3 MurmurHash3]] on the given

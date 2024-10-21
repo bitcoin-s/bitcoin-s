@@ -63,9 +63,9 @@ class BIP39KeyManagerApiTest extends KeyManagerApiUnitTest {
       WalletStorage.decryptSeedFromDisk(seedPath, aesPasswordOpt)
 
     decryptedE match {
-      case Right(mnemonic: DecryptedMnemonic) =>
+      case Right(m: DecryptedMnemonic) =>
         assert(
-          mnemonic.mnemonicCode.toEntropy == entropy,
+          m.mnemonicCode.toEntropy == entropy,
           s"We did not read the same entropy that we wrote!"
         )
       case Right(xprv: DecryptedExtPrivKey) =>

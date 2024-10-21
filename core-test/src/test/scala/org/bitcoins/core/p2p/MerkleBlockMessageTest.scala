@@ -24,7 +24,8 @@ class MerkleBlockMessageTest extends BitcoinSUnitTest {
 
     assert(merkle.hashes.length == 4)
 
-    val Seq(first, second, third, fourth) = merkle.hashes
+    val h = merkle.hashes
+    val (first, second, third, fourth) = (h.head, h(1), h(2), h(3))
     val expectedFirst =
       DoubleSha256Digest.fromHex(
         "3612262624047ee87660be1a707519a443b1c1ce3d248cbfc6c15870f6c5daa2"

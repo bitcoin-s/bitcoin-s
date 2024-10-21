@@ -195,8 +195,8 @@ object BitcoindInstanceLocal
   def fromConfFile(
       file: File = BitcoindConfig.DEFAULT_CONF_FILE,
       binary: File = DEFAULT_BITCOIND_LOCATION match {
-        case Some(file) => file
-        case None       => bitcoindLocationFromConfigFile
+        case Some(f) => f
+        case None    => bitcoindLocationFromConfigFile
       }
   )(implicit system: ActorSystem): BitcoindInstanceLocal = {
     require(file.exists, s"${file.getPath} does not exist!")
@@ -213,8 +213,8 @@ object BitcoindInstanceLocal
     fromConfFile(
       file,
       DEFAULT_BITCOIND_LOCATION match {
-        case Some(file) => file
-        case None       => bitcoindLocationFromConfigFile
+        case Some(f) => f
+        case None    => bitcoindLocationFromConfigFile
       }
     )
   }
