@@ -1,3 +1,3 @@
--Xms512M         # Set minimum heap size
--Xmx4G           # Set maximum heap size
--Xss2M           # Set stack size to 2MB (needed for https://github.com/bitcoin-s/bitcoin-s/pull/5728)
+-Xms512M
+-Xmx4G
+-Xss2M
