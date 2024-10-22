@@ -1152,7 +1152,7 @@ trait DLCTest {
     constructAndSetupDLC(contractParams)
       .flatMap {
         case (dlcOffer, offerSetup, dlcAccept, acceptSetup, outcomes) =>
-          val testFs = outcomeIndices.map {
+          val testFs = Future.traverse(outcomeIndices) {
             case (contractIndex, outcomeIndex) =>
               executeForOutcome(
                 outcomeIndex = outcomeIndex,
@@ -1164,8 +1164,7 @@ trait DLCTest {
                 contractIndex = contractIndex
               )
           }
-
-          Future.sequence(testFs).map(_ => succeed)
+          testFs.map(_ => succeed)
       }
   }
 

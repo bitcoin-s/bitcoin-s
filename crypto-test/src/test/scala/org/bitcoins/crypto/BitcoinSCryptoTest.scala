@@ -67,7 +67,7 @@ trait BitcoinSCryptoAsyncTest
       .toVector
       .flatten
 
-    val testRunsF = Future.sequence(samples.map(func))
+    val testRunsF = Future.traverse(samples)(func)
 
     checkRunResults(testRunsF)
   }
@@ -84,7 +84,7 @@ trait BitcoinSCryptoAsyncTest
         (a, b)
       }
 
-    val testRunsF = Future.sequence(samples.map(x => func(x._1, x._2)))
+    val testRunsF = Future.traverse(samples)(x => func(x._1, x._2))
 
     checkRunResults(testRunsF)
   }

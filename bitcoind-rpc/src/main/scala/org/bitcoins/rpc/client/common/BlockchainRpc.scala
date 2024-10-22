@@ -332,7 +332,7 @@ trait BlockchainRpc extends ChainApi { self: Client =>
     val allHeights = startHeight.to(endHeight)
 
     def f(range: Vector[Int]): Future[Vector[FilterResponse]] = {
-      val filterFs = range.map { height =>
+      val filterFs = Future.traverse(range) { height =>
         for {
           hash <- getBlockHash(height)
           filter <- getBlockFilter(hash, FilterType.Basic)
@@ -340,7 +340,7 @@ trait BlockchainRpc extends ChainApi { self: Client =>
           FilterResponse(filter.filter, hash, height)
         }
       }
-      Future.sequence(filterFs)
+      filterFs
     }
 
     FutureUtil.batchAndSyncExecute(
