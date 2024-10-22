@@ -80,12 +80,12 @@ trait LndRouterClient { self: LndRpcClient =>
       routeHints: Vector[LnRoute]
   ): Future[Vector[Route]] = {
     queryRoutes(amount, node, routeHints).map(_.routes).flatMap { routes =>
-      val fs = routes.toVector.map { route =>
+      val fs = Future.traverse(routes.toVector) { route =>
         val fakeHash = CryptoUtil.sha256(ECPrivateKey.freshPrivateKey.bytes)
         sendToRoute(fakeHash, route).map(t => (route, t))
       }
 
-      Future.sequence(fs).map { results =>
+      fs.map { results =>
         results
           .filter(
             _._2.failure.exists(_.code == INCORRECT_OR_UNKNOWN_PAYMENT_DETAILS)

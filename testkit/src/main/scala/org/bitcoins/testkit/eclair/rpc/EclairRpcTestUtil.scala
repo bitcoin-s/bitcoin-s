@@ -659,14 +659,12 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
   def sendPayments(c1: EclairApi, c2: EclairApi, numPayments: Int = 5)(implicit
       ec: ExecutionContext
   ): Future[Vector[PaymentId]] = {
-    val payments = (1 to numPayments)
-      .map(MilliSatoshis(_))
-      .map(sats =>
+    val range = 1.to(numPayments).toVector
+    val amounts = range.map(MilliSatoshis(_))
+    val resultF =
+      Future.traverse(amounts)(sats =>
         c1.createInvoice(s"this is a note for $sats")
           .flatMap(invoice => c2.payInvoice(invoice, sats)))
-
-    val resultF = Future.sequence(payments).map(_.toVector)
-
     resultF.onComplete {
       case Success(_) =>
       case Failure(_) =>
@@ -832,7 +830,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
 
     def shutdown()(implicit ec: ExecutionContext): Future[Unit] =
       for {
-        _ <- Future.sequence(networkEclairNodes.map(_.stop()))
+        _ <- Future.traverse(networkEclairNodes)(_.stop())
         _ <- testEclairNode.stop()
         _ <- bitcoind.stop()
       } yield ()
@@ -882,13 +880,10 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
             )
           )
         )
-        _ <- Future.sequence(networkEclairNodes.map(_.start()))
-        _ <- Future.sequence(
-          networkEclairNodes.map(awaitEclairInSync(_, bitcoind))
-        )
-        _ <- Future.sequence(
-          networkEclairNodes.map(connectLNNodes(_, testEclairNode))
-        )
+        _ <- Future.traverse(networkEclairNodes)(_.start())
+        _ <- Future.traverse(networkEclairNodes)(awaitEclairInSync(_, bitcoind))
+        _ <- Future.traverse(networkEclairNodes)(
+          connectLNNodes(_, testEclairNode))
         channelIds <- networkEclairNodes.foldLeft(
           Future.successful(Vector.empty[FundedChannelId])
         ) { (accF, node) =>

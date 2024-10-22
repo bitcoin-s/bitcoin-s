@@ -488,10 +488,10 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       hashes <- clients.head.generateToAddress(blocks, address)
       _ <- {
         val pairs = ListUtil.uniquePairs(clients)
-        val syncFuts = pairs.map { case (first, second) =>
+        val syncFuts = Future.traverse(pairs) { case (first, second) =>
           awaitSynced(first, second)
         }
-        Future.sequence(syncFuts)
+        syncFuts
       }
     } yield hashes
   }
@@ -635,10 +635,10 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       pairs: Vector[(BitcoindRpcClient, BitcoindRpcClient)]
   )(implicit system: ActorSystem): Future[Unit] = {
     import system.dispatcher
-    val futures = pairs.map { case (first, second) =>
+    val futures = Future.traverse(pairs) { case (first, second) =>
       BitcoindRpcTestUtil.awaitSynced(first, second)
     }
-    Future.sequence(futures).map(_ => ())
+    futures.map(_ => ())
   }
 
   /** Connects and waits non-blockingly until all the provided pairs of clients
@@ -649,18 +649,18 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   )(implicit system: ActorSystem): Future[Unit] = {
     import system.dispatcher
     val addNodesF: Future[Vector[Unit]] = {
-      val addedF = pairs.map { case (first, second) =>
+      val addedF = Future.traverse(pairs) { case (first, second) =>
         first.addNode(second.getDaemon.uri, AddNodeArgument.Add)
       }
-      Future.sequence(addedF)
+      addedF
     }
 
     val connectedPairsF = addNodesF.flatMap { _ =>
-      val futures = pairs.map { case (first, second) =>
+      val futures = Future.traverse(pairs) { case (first, second) =>
         BitcoindRpcTestUtil
           .awaitConnection(first, second, interval = 1.second)
       }
-      Future.sequence(futures)
+      futures
     }
 
     connectedPairsF.map(_ => ())
@@ -1025,7 +1025,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
   def deleteNodePair(client1: BitcoindRpcClient, client2: BitcoindRpcClient)(
       implicit executionContext: ExecutionContext
   ): Future[Unit] = {
-    val stopsF = List(client1, client2).map { client =>
+    val stopsF = Future.traverse(List(client1, client2)) { client =>
       implicit val sys = client.system
       for {
         _ <- client.stop()
@@ -1033,7 +1033,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
         _ <- removeDataDirectory(client)
       } yield ()
     }
-    Future.sequence(stopsF).map(_ => ())
+    stopsF.map(_ => ())
   }
 
   /** Checks whether the provided client has seen the given block hash

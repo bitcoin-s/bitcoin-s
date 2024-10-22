@@ -952,10 +952,9 @@ class ChainHandler(
       case Some(blockHeight) =>
         for {
           tips <- getBestChainTips()
-          getNAncestorsFs = tips.map { tip =>
+          ancestorChains <- Future.traverse(tips) { tip =>
             blockHeaderDAO.getNAncestors(tip.hashBE, tip.height - blockHeight)
           }
-          ancestorChains <- Future.sequence(getNAncestorsFs)
         } yield {
           val confs = ancestorChains.flatMap { chain =>
             if (chain.last.hashBE == blockHash) {

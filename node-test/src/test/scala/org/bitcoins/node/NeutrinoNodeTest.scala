@@ -75,9 +75,8 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
       val node = nodeConnectedWithBitcoind.node
       def peerManager = node.peerManager
       def peers = peerManager.peers
-      val ourPeersF: Future[Vector[Peer]] = Future.sequence(
-        nodeConnectedWithBitcoind.bitcoinds.map(NodeTestUtil.getBitcoindPeer)
-      )
+      val ourPeersF: Future[Vector[Peer]] = Future.traverse(
+        nodeConnectedWithBitcoind.bitcoinds)(NodeTestUtil.getBitcoindPeer)
 
       def has2Peers: Future[Unit] =
         AsyncUtil.retryUntilSatisfied(
@@ -89,10 +88,10 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         assert(ours.map(peers.contains(_)).forall(_ == true))
       }
       def allConnected: Future[Assertion] = for {
-        conns <- Future.sequence(peers.map(peerManager.isConnected))
+        conns <- Future.traverse(peers)(peerManager.isConnected)
       } yield assert(conns.forall(_ == true))
       def allInitialized: Future[Assertion] = for {
-        inits <- Future.sequence(peers.map(peerManager.isInitialized))
+        inits <- Future.traverse(peers)(peerManager.isInitialized)
       } yield assert(inits.forall(_ == true))
 
       for {
@@ -144,9 +143,8 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
 
       for {
         _ <- assertConnAndInit
-        ourPeers <- Future.sequence(
-          nodeConnectedWithBitcoind.bitcoinds.map(NodeTestUtil.getBitcoindPeer)
-        )
+        ourPeers <- Future.traverse(nodeConnectedWithBitcoind.bitcoinds)(
+          NodeTestUtil.getBitcoindPeer)
         peerDbs <- PeerDAO()(node.nodeAppConfig, executionContext).findAll()
       } yield {
 

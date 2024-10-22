@@ -27,8 +27,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
 
   lazy val bitcoinPeersF: Future[Vector[Peer]] = {
     bitcoindsF.flatMap { bitcoinds =>
-      val peersF = bitcoinds.map(NodeTestUtil.getBitcoindPeer)
-      Future.sequence(peersF)
+      Future.traverse(bitcoinds)(NodeTestUtil.getBitcoindPeer)
     }
   }
 

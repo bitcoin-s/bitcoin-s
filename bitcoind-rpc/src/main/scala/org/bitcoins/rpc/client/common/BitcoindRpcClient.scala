@@ -223,9 +223,10 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
       from: BlockHeaderDb,
       to: BlockHeaderDb
   ): Future[Vector[BlockHeaderDb]] = {
+    val range = from.height.to(to.height).toVector
     val headerFs =
-      from.height.to(to.height).map(height => getHeaderAtHeight(height))
-    Future.sequence(headerFs).map(_.toVector)
+      Future.traverse(range)(height => getHeaderAtHeight(height))
+    headerFs
   }
 
   private def getHeaderAtHeight(height: Int): Future[BlockHeaderDb] =

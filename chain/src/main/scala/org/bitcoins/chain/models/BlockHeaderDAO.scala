@@ -400,17 +400,19 @@ case class BlockHeaderDAO()(implicit
     val chainTipsF = getForkedChainTips
     val bestTipF = getBestChainTips
     val staleChainsF = chainTipsF.flatMap { tips =>
-      val nestedFuture: Vector[Future[Option[Blockchain]]] = tips.map { tip =>
-        getBlockchainFrom(tip)
-      }
-      Future.sequence(nestedFuture).map(_.flatten)
+      Future
+        .traverse(tips) { tip =>
+          getBlockchainFrom(tip)
+        }
+        .map(_.flatten)
     }
 
     val bestChainsF = bestTipF.flatMap { tips =>
-      val nestedFuture: Vector[Future[Option[Blockchain]]] = tips.map { tip =>
-        getBlockchainFrom(tip)
-      }
-      Future.sequence(nestedFuture).map(_.flatten)
+      Future
+        .traverse(tips) { tip =>
+          getBlockchainFrom(tip)
+        }
+        .map(_.flatten)
     }
 
     for {
