@@ -74,22 +74,22 @@ sealed abstract class RawMerkleBlockSerializer
     */
   private def parseTransactionHashes(
       bytes: ByteVector,
-      hashCount: CompactSizeUInt): (Seq[DoubleSha256Digest], ByteVector) = {
+      hashCount: CompactSizeUInt): (Vector[DoubleSha256Digest], ByteVector) = {
     @tailrec
     def loop(
         remainingHashes: Long,
         remainingBytes: ByteVector,
-        accum: List[DoubleSha256Digest])
-        : (Seq[DoubleSha256Digest], ByteVector) = {
+        accum: Vector[DoubleSha256Digest])
+        : (Vector[DoubleSha256Digest], ByteVector) = {
       if (remainingHashes <= 0) (accum.reverse, remainingBytes)
       else {
         val (hashBytes, newRemainingBytes) = remainingBytes.splitAt(32)
         loop(remainingHashes - 1,
              newRemainingBytes,
-             DoubleSha256Digest(hashBytes) :: accum)
+             DoubleSha256Digest(hashBytes) +: accum)
       }
     }
-    loop(hashCount.num.toInt, bytes, Nil)
+    loop(hashCount.num.toInt, bytes, Vector.empty)
   }
 }
 

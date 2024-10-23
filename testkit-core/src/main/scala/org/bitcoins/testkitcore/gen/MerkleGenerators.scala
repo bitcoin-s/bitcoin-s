@@ -65,7 +65,7 @@ abstract class MerkleGenerator {
     * indicating if the txid was matched
     */
   def partialMerkleTree
-      : Gen[(PartialMerkleTree, Seq[(Boolean, DoubleSha256Digest)])] =
+      : Gen[(PartialMerkleTree, Vector[(Boolean, DoubleSha256Digest)])] =
     for {
       randomNum <- Gen.choose(1, 25)
       txMatches <- txIdsWithMatchIndication(randomNum)
@@ -87,8 +87,10 @@ abstract class MerkleGenerator {
     */
   def txIdsWithMatchIndication(
       num: Int
-  ): Gen[Seq[(Boolean, DoubleSha256Digest)]] =
-    Gen.listOfN(num, txIdWithMatchIndication)
+  ): Gen[Vector[(Boolean, DoubleSha256Digest)]] =
+    Gen
+      .listOfN(num, txIdWithMatchIndication)
+      .map(_.toVector)
 }
 
 object MerkleGenerator extends MerkleGenerator

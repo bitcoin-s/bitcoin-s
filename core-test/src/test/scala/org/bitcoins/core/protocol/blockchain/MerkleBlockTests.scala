@@ -463,17 +463,21 @@ class MerkleBlockTests extends BitcoinSUnitTest {
 
   // TODO: This is *extremely* slow, this is currently the longest running property we have taking about 6 minutes to run
   // I think it is the generator MerkleGenerator.merkleBlockWithInsertTxIds
-  it must "contains all inserted txids when we directly create a merkle block from the txids && " +
-    "contains all txids matched by a bloom filter && " +
-    "serialization symmetry" in {
-      forAll(MerkleGenerator.merkleBlockWithInsertedTxIds) {
-        case (merkleBlock: MerkleBlock, _, txIds: Seq[DoubleSha256Digest]) =>
-          val extractedMatches = merkleBlock.partialMerkleTree.extractMatches
-          assert(
-            extractedMatches == txIds &&
-              extractedMatches.intersect(txIds) == txIds &&
-              MerkleBlock(merkleBlock.hex) == merkleBlock
-          )
-      }
+  it must "contains all inserted txids when we directly create a merkle block from the txids" in {
+    var counter = 0
+    forAll(MerkleGenerator.merkleBlockWithInsertedTxIds) {
+      case (merkleBlock: MerkleBlock, _, txIds: Seq[DoubleSha256Digest]) =>
+        println(s"Starting run=$counter")
+
+        val extractedMatches = merkleBlock.partialMerkleTree.extractMatches
+        println(s"Done w/ matches counter=$counter")
+        val result = assert(
+          extractedMatches == txIds &&
+            extractedMatches.intersect(txIds) == txIds &&
+            MerkleBlock(merkleBlock.hex) == merkleBlock
+        )
+        counter += 1
+        result
     }
+  }
 }
