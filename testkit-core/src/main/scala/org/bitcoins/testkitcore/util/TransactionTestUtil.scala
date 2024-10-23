@@ -68,8 +68,8 @@ trait TransactionTestUtil {
 
     val tx = BaseTransaction(
       TransactionConstants.version,
-      Seq(input),
-      Seq(output),
+      Vector(input),
+      Vector(output),
       TransactionConstants.lockTime
     )
     (tx, UInt32.zero)
@@ -115,8 +115,8 @@ trait TransactionTestUtil {
         val output = TransactionOutput(amount, EmptyScriptPubKey)
         WitnessTransaction(
           TransactionConstants.version,
-          Seq(input),
-          Seq(output),
+          Vector(input),
+          Vector(output),
           TransactionConstants.lockTime,
           txWitness
         )
@@ -124,8 +124,8 @@ trait TransactionTestUtil {
         val output = TransactionOutput(CurrencyUnits.zero, EmptyScriptPubKey)
         BaseTransaction(
           TransactionConstants.version,
-          Seq(input),
-          Seq(output),
+          Vector(input),
+          Vector(output),
           TransactionConstants.lockTime
         )
 
@@ -252,8 +252,8 @@ trait TransactionTestUtil {
   def testTransaction: Transaction =
     BaseTransaction(
       EmptyTransaction.version,
-      Seq(EmptyTransactionInput),
-      Nil,
+      Vector(EmptyTransactionInput),
+      Vector.empty,
       EmptyTransaction.lockTime
     )
 

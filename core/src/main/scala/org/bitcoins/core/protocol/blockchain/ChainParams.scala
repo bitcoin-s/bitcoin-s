@@ -168,15 +168,15 @@ sealed abstract class ChainParams {
     val input = CoinbaseInput(scriptSignature, TransactionConstants.sequence)
     val output = TransactionOutput(amount, scriptPubKey)
     val tx = BaseTransaction(TransactionConstants.version,
-                             Seq(input),
-                             Seq(output),
+                             Vector(input),
+                             Vector(output),
                              TransactionConstants.lockTime)
     val prevBlockHash = DoubleSha256Digest(
       "0000000000000000000000000000000000000000000000000000000000000000")
     val merkleRootHash = Merkle.computeMerkleRoot(Seq(tx))
     val genesisBlockHeader =
       BlockHeader(version, prevBlockHash, merkleRootHash, time, nBits, nonce)
-    val genesisBlock = Block(genesisBlockHeader, Seq(tx))
+    val genesisBlock = Block(genesisBlockHeader, Vector(tx))
     genesisBlock
   }
 

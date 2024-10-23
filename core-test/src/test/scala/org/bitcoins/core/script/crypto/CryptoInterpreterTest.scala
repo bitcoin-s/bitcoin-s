@@ -225,7 +225,10 @@ class CryptoInterpreterTest extends BitcoinSJvmTest {
     )
     val empty = EmptyTransaction
     val tx =
-      BaseTransaction(empty.version, Seq(input), empty.outputs, empty.lockTime)
+      BaseTransaction(empty.version,
+                      Vector(input),
+                      empty.outputs,
+                      empty.lockTime)
     val t = BaseTxSigComponent(
       transaction = tx,
       inputIndex = UInt32.zero,

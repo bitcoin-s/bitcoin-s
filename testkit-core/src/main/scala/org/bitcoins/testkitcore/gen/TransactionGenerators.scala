@@ -51,8 +51,11 @@ object TransactionGenerators {
       ScriptGenerators.scriptPubKey.map(spk => TransactionOutput(amt, spk._1))
     }
 
-  def realisticOutputs: Gen[Seq[TransactionOutput]] =
-    Gen.choose(1, 5).flatMap(n => Gen.listOfN(n, realisticOutput))
+  def realisticOutputs: Gen[Vector[TransactionOutput]] =
+    Gen
+      .choose(1, 5)
+      .flatMap(n => Gen.listOfN(n, realisticOutput))
+      .map(_.toVector)
 
   def realisticWitnessOutput: Gen[TransactionOutput] = {
     CurrencyUnitGenerator.positiveRealistic.flatMap { amt =>
@@ -61,21 +64,30 @@ object TransactionGenerators {
     }
   }
 
-  def realisticWitnessOutputs: Gen[Seq[TransactionOutput]] = {
-    Gen.choose(1, 5).flatMap(n => Gen.listOfN(n, realisticWitnessOutput))
+  def realisticWitnessOutputs: Gen[Vector[TransactionOutput]] = {
+    Gen
+      .choose(1, 5)
+      .flatMap(n => Gen.listOfN(n, realisticWitnessOutput))
+      .map(_.toVector)
   }
 
   /** Generates a small list of TX outputs paying to the given SPK */
-  def smallOutputsTo(spk: ScriptPubKey): Gen[Seq[TransactionOutput]] =
-    Gen.choose(1, 5).flatMap(i => Gen.listOfN(i, outputTo(spk)))
+  def smallOutputsTo(spk: ScriptPubKey): Gen[Vector[TransactionOutput]] =
+    Gen
+      .choose(1, 5)
+      .flatMap(i => Gen.listOfN(i, outputTo(spk)))
+      .map(_.toVector)
 
   /** Generates a small list of
     * [[org.bitcoins.core.protocol.transaction.TransactionOutput TransactionOutput]]
     */
-  def smallOutputs: Gen[Seq[TransactionOutput]] =
-    Gen.choose(0, 5).flatMap(i => Gen.listOfN(i, output))
+  def smallOutputs: Gen[Vector[TransactionOutput]] =
+    Gen
+      .choose(0, 5)
+      .flatMap(i => Gen.listOfN(i, output))
+      .map(_.toVector)
 
-  private def genAmounts(totalAmount: CurrencyUnit): Seq[CurrencyUnit] = {
+  private def genAmounts(totalAmount: CurrencyUnit): Vector[CurrencyUnit] = {
     val numOutputs = Gen.choose(0, 5).sampleSome
     @tailrec
     def loop(
@@ -93,7 +105,7 @@ object TransactionGenerators {
         loop(remaining - 1, remainingAmount - amt, amt +: accum)
       }
     }
-    loop(numOutputs, totalAmount, Nil)
+    loop(numOutputs, totalAmount, Nil).toVector
   }
 
   /** Creates a small sequence of outputs whose total sum is <= totalAmount */
@@ -156,14 +168,20 @@ object TransactionGenerators {
   /** Generates a small list of
     * [[org.bitcoins.core.protocol.transaction.TransactionInput TransactionInput]]
     */
-  def smallInputs: Gen[Seq[TransactionInput]] =
-    Gen.choose(1, 5).flatMap(i => Gen.listOfN(i, input))
+  def smallInputs: Gen[Vector[TransactionInput]] =
+    Gen
+      .choose(1, 5)
+      .flatMap(i => Gen.listOfN(i, input))
+      .map(_.toVector)
 
   /** Generates a small non empty list of
     * [[org.bitcoins.core.protocol.transaction.TransactionInput TransactionInput]]
     */
-  def smallInputsNonEmpty: Gen[Seq[TransactionInput]] =
-    Gen.choose(1, 5).flatMap(i => Gen.listOfN(i, input))
+  def smallInputsNonEmpty: Gen[Vector[TransactionInput]] =
+    Gen
+      .choose(1, 5)
+      .flatMap(i => Gen.listOfN(i, input))
+      .map(_.toVector)
 
   def outputReference: Gen[OutputReference] = {
     for {
@@ -186,16 +204,24 @@ object TransactionGenerators {
     * will not evaluate to true inside of the
     * [[org.bitcoins.core.script.interpreter.ScriptInterpreter ScriptInterpreter]]
     */
-  def transactions: Gen[Seq[Transaction]] = Gen.listOf(transaction)
+  def transactions: Gen[Vector[Transaction]] = Gen
+    .listOf(transaction)
+    .map(_.toVector)
 
   /** Generates a small list of
     * [[org.bitcoins.core.protocol.transaction.Transaction Transaction]]
     */
-  def smallTransactions: Gen[Seq[Transaction]] =
-    Gen.choose(0, 10).flatMap(i => Gen.listOfN(i, transaction))
+  def smallTransactions: Gen[Vector[Transaction]] =
+    Gen
+      .choose(0, 10)
+      .flatMap(i => Gen.listOfN(i, transaction))
+      .map(_.toVector)
 
-  def nonEmptySmallTransactions: Gen[Seq[Transaction]] = {
-    Gen.choose(1, 10).flatMap(i => Gen.listOfN(i, transaction))
+  def nonEmptySmallTransactions: Gen[Vector[Transaction]] = {
+    Gen
+      .choose(1, 10)
+      .flatMap(i => Gen.listOfN(i, transaction))
+      .map(_.toVector)
   }
 
   def transaction: Gen[Transaction] =
@@ -257,7 +283,7 @@ object TransactionGenerators {
 
   /** To avoid duplicating logic */
   private def witnessTxHelper(
-      outputs: Seq[TransactionOutput]
+      outputs: Vector[TransactionOutput]
   ): Gen[WitnessTransaction] = {
     for {
       version <- NumberGenerator.int32s
@@ -638,7 +664,7 @@ object TransactionGenerators {
       outputIndex,
       locktime,
       sequence,
-      Seq(output)
+      Vector(output)
     )
   }
 
@@ -649,16 +675,16 @@ object TransactionGenerators {
       outputIndex: UInt32,
       locktime: UInt32,
       sequence: UInt32,
-      outputs: Seq[TransactionOutput]
+      outputs: Vector[TransactionOutput]
   ): (Transaction, UInt32) = {
     val os = if (outputs.isEmpty) {
-      Seq(TransactionOutput(CurrencyUnits.zero, EmptyScriptPubKey))
+      Vector(TransactionOutput(CurrencyUnits.zero, EmptyScriptPubKey))
     } else {
       outputs
     }
     val outpoint = TransactionOutPoint(creditingTx.txId, outputIndex)
     val input = TransactionInput(outpoint, scriptSignature, sequence)
-    val tx = BaseTransaction(version, Seq(input), os, locktime)
+    val tx = BaseTransaction(version, Vector(input), os, locktime)
     (tx, UInt32.zero)
   }
 
@@ -729,8 +755,8 @@ object TransactionGenerators {
     )
   }
 
-  def dummyOutputs: Seq[TransactionOutput] =
-    Seq(TransactionOutput(CurrencyUnits.zero, EmptyScriptPubKey))
+  val dummyOutputs: Vector[TransactionOutput] =
+    Vector(TransactionOutput(CurrencyUnits.zero, EmptyScriptPubKey))
 
   def buildSpendingTransaction(
       version: Int32,
@@ -740,12 +766,12 @@ object TransactionGenerators {
       locktime: UInt32,
       sequence: UInt32,
       witness: TransactionWitness,
-      outputs: Seq[TransactionOutput]
+      outputs: Vector[TransactionOutput]
   ): (WitnessTransaction, UInt32) = {
     val outpoint = TransactionOutPoint(creditingTx.txId, outputIndex)
     val input = TransactionInput(outpoint, scriptSignature, sequence)
     (
-      WitnessTransaction(version, Seq(input), outputs, locktime, witness),
+      WitnessTransaction(version, Vector(input), outputs, locktime, witness),
       UInt32.zero
     )
   }
@@ -849,8 +875,8 @@ object TransactionGenerators {
       TransactionInput(outpoint, scriptSignature, TransactionConstants.sequence)
     val tx = BaseTransaction(
       version,
-      Seq(input),
-      Seq(output),
+      Vector(input),
+      Vector(output),
       TransactionConstants.lockTime
     )
     (tx, UInt32.zero)

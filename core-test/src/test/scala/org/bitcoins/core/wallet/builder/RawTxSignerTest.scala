@@ -39,7 +39,7 @@ class RawTxSignerTest extends BitcoinSUnitTest {
       Vector(TransactionOutput(Satoshis.one, EmptyScriptPubKey))
     val creditingTx = BaseTransaction(
       TransactionConstants.validLockVersion,
-      Nil,
+      Vector.empty,
       Vector(creditingOutput),
       TransactionConstants.lockTime
     )
@@ -81,7 +81,7 @@ class RawTxSignerTest extends BitcoinSUnitTest {
       Vector(TransactionOutput(Satoshis.one, EmptyScriptPubKey))
     val creditingTx = BaseTransaction(
       TransactionConstants.validLockVersion,
-      Nil,
+      Vector.empty,
       Vector(creditingOutput),
       TransactionConstants.lockTime
     )
@@ -121,7 +121,7 @@ class RawTxSignerTest extends BitcoinSUnitTest {
       Vector(TransactionOutput(Satoshis.one, EmptyScriptPubKey))
     val creditingTx = BaseTransaction(
       version = TransactionConstants.validLockVersion,
-      inputs = Nil,
+      inputs = Vector.empty,
       outputs = Vector(creditingOutput),
       lockTime = TransactionConstants.lockTime
     )
@@ -168,7 +168,7 @@ class RawTxSignerTest extends BitcoinSUnitTest {
 
     val creditingTx = BaseTransaction(
       version = TransactionConstants.validLockVersion,
-      inputs = Nil,
+      inputs = Vector.empty,
       outputs = Vector(TransactionOutput(Bitcoins.one, cltvSPK)),
       lockTime = TransactionConstants.lockTime
     )
@@ -219,7 +219,7 @@ class RawTxSignerTest extends BitcoinSUnitTest {
 
     val creditingTx = BaseTransaction(
       version = TransactionConstants.validLockVersion,
-      inputs = Nil,
+      inputs = Vector.empty,
       outputs = Vector(TransactionOutput(Bitcoins.one, cltvSPK)),
       lockTime = TransactionConstants.lockTime
     )

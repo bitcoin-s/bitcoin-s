@@ -60,7 +60,7 @@ class LockTimeInterpreterTest extends BitcoinSUnitTest {
     val txAdjustedSequenceNumber =
       BaseTransaction(
         emptyTx.version,
-        Seq(txInputAdjustedSequenceNumber),
+        Vector(txInputAdjustedSequenceNumber),
         emptyTx.outputs,
         emptyTx.lockTime
       )
@@ -101,7 +101,7 @@ class LockTimeInterpreterTest extends BitcoinSUnitTest {
     val txAdjustedSequenceNumber =
       BaseTransaction(
         emptyTx.version,
-        Seq(txInputAdjustedSequenceNumber),
+        Vector(txInputAdjustedSequenceNumber),
         emptyTx.outputs,
         emptyTx.lockTime
       )
@@ -134,7 +134,7 @@ class LockTimeInterpreterTest extends BitcoinSUnitTest {
     val txAdjustedSequenceNumber =
       BaseTransaction(
         emptyTx.version,
-        Seq(txInputAdjustedSequenceNumber),
+        Vector(txInputAdjustedSequenceNumber),
         emptyTx.outputs,
         emptyTx.lockTime
       )
@@ -167,7 +167,7 @@ class LockTimeInterpreterTest extends BitcoinSUnitTest {
     val txAdjustedSequenceNumber =
       BaseTransaction(
         emptyTx.version,
-        Seq(txInputAdjustedSequenceNumber),
+        Vector(txInputAdjustedSequenceNumber),
         emptyTx.outputs,
         emptyTx.lockTime
       )
@@ -204,7 +204,7 @@ class LockTimeInterpreterTest extends BitcoinSUnitTest {
     val txAdjustedSequenceNumber =
       BaseTransaction(
         emptyTx.version,
-        Seq(txInputAdjustedSequenceNumber),
+        Vector(txInputAdjustedSequenceNumber),
         emptyTx.outputs,
         emptyTx.lockTime
       )
@@ -238,7 +238,7 @@ class LockTimeInterpreterTest extends BitcoinSUnitTest {
     val txAdjustedSequenceNumber =
       BaseTransaction(
         emptyTx.version,
-        Seq(txInputAdjustedSequenceNumber),
+        Vector(txInputAdjustedSequenceNumber),
         emptyTx.outputs,
         emptyTx.lockTime
       )

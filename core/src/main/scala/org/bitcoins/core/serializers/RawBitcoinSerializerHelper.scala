@@ -17,7 +17,7 @@ sealed abstract class RawSerializerHelper {
     */
   final def parseCmpctSizeUIntSeq[T <: NetworkElement](
       bytes: ByteVector,
-      constructor: ByteVector => T): (Seq[T], ByteVector) = {
+      constructor: ByteVector => T): (Vector[T], ByteVector) = {
     val count = CompactSizeUInt.parse(bytes)
     val (_, payload) = bytes.splitAt(count.byteSize.toInt)
     var counter = 0

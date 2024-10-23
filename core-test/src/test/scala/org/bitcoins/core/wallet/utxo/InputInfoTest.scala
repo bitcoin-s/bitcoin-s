@@ -59,7 +59,7 @@ class InputInfoTest extends BitcoinSUnitTest {
     val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2sh)
     val creditingTx = BaseTransaction(
       version = TransactionConstants.validLockVersion,
-      inputs = Nil,
+      inputs = Vector.empty,
       outputs = Vector(creditingOutput),
       lockTime = TransactionConstants.lockTime
     )
@@ -84,7 +84,7 @@ class InputInfoTest extends BitcoinSUnitTest {
     val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2sh)
     val creditingTx = BaseTransaction(
       version = TransactionConstants.validLockVersion,
-      inputs = Nil,
+      inputs = Vector.empty,
       outputs = Vector(creditingOutput),
       lockTime = TransactionConstants.lockTime
     )

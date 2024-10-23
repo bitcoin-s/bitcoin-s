@@ -23,9 +23,11 @@ sealed abstract class CreditingTxGen {
   private val max = 3
 
   /** Note this generator does NOT generate outputs with negative values */
-  private def nonEmptyOutputs: Gen[Seq[TransactionOutput]] =
+  private def nonEmptyOutputs: Gen[Vector[TransactionOutput]] =
     Gen.choose(1, 5).flatMap { n =>
-      Gen.listOfN(n, TransactionGenerators.realisticOutput)
+      Gen
+        .listOfN(n, TransactionGenerators.realisticOutput)
+        .map(_.toVector)
     }
 
   /** Generator for non-script hash based output */
@@ -233,7 +235,10 @@ sealed abstract class CreditingTxGen {
         val oldOutputs = o.prevTransaction.outputs
         val updated = oldOutputs.updated(o.outPoint.vout.toInt, updatedOutput)
         val creditingTx =
-          BaseTransaction(tc.validLockVersion, Nil, updated, tc.lockTime)
+          BaseTransaction(tc.validLockVersion,
+                          Vector.empty,
+                          updated,
+                          tc.lockTime)
 
         ScriptSignatureParams(
           InputInfo(
@@ -267,7 +272,10 @@ sealed abstract class CreditingTxGen {
           val updated =
             oldOutputs.updated(o.outPoint.vout.toInt, updatedOutput)
           val creditingTx =
-            BaseTransaction(tc.validLockVersion, Nil, updated, tc.lockTime)
+            BaseTransaction(tc.validLockVersion,
+                            Vector.empty,
+                            updated,
+                            tc.lockTime)
 
           ScriptSignatureParams(
             InputInfo(
@@ -301,7 +309,10 @@ sealed abstract class CreditingTxGen {
           val updated =
             oldOutputs.updated(o.outPoint.vout.toInt, updatedOutput)
           val creditingTx =
-            BaseTransaction(tc.validLockVersion, Nil, updated, tc.lockTime)
+            BaseTransaction(tc.validLockVersion,
+                            Vector.empty,
+                            updated,
+                            tc.lockTime)
 
           ScriptSignatureParams(
             InputInfo(
@@ -370,7 +381,10 @@ sealed abstract class CreditingTxGen {
               val tc = TransactionConstants
               val signers: Vector[Sign] = keys.toVector
               val creditingTx =
-                BaseTransaction(tc.validLockVersion, Nil, outputs, tc.lockTime)
+                BaseTransaction(tc.validLockVersion,
+                                Vector.empty,
+                                outputs,
+                                tc.lockTime)
               ScriptSignatureParams(
                 InputInfo(
                   TransactionOutPoint(
@@ -459,7 +473,8 @@ sealed abstract class CreditingTxGen {
           val old = outputs(idx)
           val updated = outputs.updated(idx, TransactionOutput(old.value, spk))
           val tc = TransactionConstants
-          val btx = BaseTransaction(tc.version, Nil, updated, tc.lockTime)
+          val btx =
+            BaseTransaction(tc.version, Vector.empty, updated, tc.lockTime)
           ScriptSignatureParams(
             InputInfo(
               TransactionOutPoint(btx.txId, UInt32.apply(idx)),

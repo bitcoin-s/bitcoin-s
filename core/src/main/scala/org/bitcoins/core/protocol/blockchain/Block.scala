@@ -24,9 +24,9 @@ sealed abstract class Block extends NetworkElement {
   def txCount: CompactSizeUInt
 
   /** The transactions contained in this block */
-  def transactions: Seq[Transaction]
+  def transactions: Vector[Transaction]
 
-  override def bytes = RawBlockSerializer.write(this)
+  override lazy val bytes: ByteVector = RawBlockSerializer.write(this)
 
   /** This is the new computation to determine the maximum size of a block as
     * per BIP141
@@ -52,7 +52,7 @@ object Block extends Factory[Block] {
   private case class BlockImpl(
       blockHeader: BlockHeader,
       txCount: CompactSizeUInt,
-      transactions: Seq[Transaction])
+      transactions: Vector[Transaction])
       extends Block {
 
     override def toString: String = {
@@ -63,11 +63,13 @@ object Block extends Factory[Block] {
   def apply(
       blockHeader: BlockHeader,
       txCount: CompactSizeUInt,
-      transactions: Seq[Transaction]): Block = {
+      transactions: Vector[Transaction]): Block = {
     BlockImpl(blockHeader, txCount, transactions)
   }
 
-  def apply(blockHeader: BlockHeader, transactions: Seq[Transaction]): Block = {
+  def apply(
+      blockHeader: BlockHeader,
+      transactions: Vector[Transaction]): Block = {
     val txCount = CompactSizeUInt(UInt64(transactions.size))
     Block(blockHeader, txCount, transactions)
   }

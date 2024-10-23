@@ -31,10 +31,10 @@ sealed abstract class Transaction extends NetworkElement {
   def version: Int32
 
   /** The inputs for this transaction */
-  def inputs: Seq[TransactionInput]
+  def inputs: Vector[TransactionInput]
 
   /** The outputs for this transaction */
-  def outputs: Seq[TransactionOutput]
+  def outputs: Vector[TransactionOutput]
 
   /** The locktime for this transaction */
   def lockTime: UInt32
@@ -156,8 +156,8 @@ sealed abstract class NonWitnessTransaction extends Transaction {
 
 case class BaseTransaction(
     version: Int32,
-    inputs: Seq[TransactionInput],
-    outputs: Seq[TransactionOutput],
+    inputs: Vector[TransactionInput],
+    outputs: Vector[TransactionOutput],
     lockTime: UInt32)
     extends NonWitnessTransaction
 
@@ -177,7 +177,7 @@ object BaseTransaction extends Factory[BaseTransaction] {
   }
 
   def unapply(tx: NonWitnessTransaction): Option[
-    (Int32, Seq[TransactionInput], Seq[TransactionOutput], UInt32)] = {
+    (Int32, Vector[TransactionInput], Vector[TransactionOutput], UInt32)] = {
     Some((tx.version, tx.inputs, tx.outputs, tx.lockTime))
   }
 }
@@ -192,8 +192,8 @@ case object EmptyTransaction extends NonWitnessTransaction {
 
 case class WitnessTransaction(
     version: Int32,
-    inputs: Seq[TransactionInput],
-    outputs: Seq[TransactionOutput],
+    inputs: Vector[TransactionInput],
+    outputs: Vector[TransactionOutput],
     lockTime: UInt32,
     witness: TransactionWitness)
     extends Transaction {
