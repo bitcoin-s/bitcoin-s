@@ -36,7 +36,7 @@ trait Merkle {
     */
   def computeMerkleRoot(
       transactions: Vector[Transaction]): DoubleSha256Digest = {
-    if (transactions.isEmpty) {
+    val result = if (transactions.isEmpty) {
       throw new IllegalArgumentException(
         "We cannot have zero transactions in the block. There always should be ATLEAST one - the coinbase tx")
     } else if (transactions.length == 1) {
@@ -46,6 +46,7 @@ trait Merkle {
       val merkleTree = build(leafs, Vector.empty)
       merkleTree.value.get
     }
+    result
   }
 
   /** Builds a [[MerkleTree]] from sequence of sub merkle trees. This subTrees
@@ -69,7 +70,7 @@ trait Merkle {
       } else {
         build(accum.reverse, Vector.empty)
       }
-    } else if (subTrees.length > 2) {
+    } else if (subTrees.length >= 2) {
       val newTree = computeTree(subTrees.head, subTrees(1))
       build(subTrees.drop(2), newTree +: accum)
     } else {

@@ -24,7 +24,9 @@ abstract class MerkleGenerator {
       block <- BlockchainElementsGenerator.block(txs)
       txIds = txs.map(_.txId)
       merkleBlock = MerkleBlock(block, txIds)
-    } yield (merkleBlock, block, txIds)
+    } yield {
+      (merkleBlock, block, txIds)
+    }
 
   /** Returns a
     * [[org.bitcoins.core.protocol.blockchain.MerkleBlock MerkleBlock]]
