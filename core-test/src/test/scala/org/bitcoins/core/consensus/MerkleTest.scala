@@ -20,7 +20,7 @@ class MerkleTest extends BitcoinSUnitTest {
   }
 
   it must "fail to compute the merkle root for a block which has 0 transactions" in {
-    val transactions = Seq()
+    val transactions = Vector.empty
     Try(Merkle.computeMerkleRoot(transactions)).isFailure must be(true)
   }
 
@@ -44,7 +44,7 @@ class MerkleTest extends BitcoinSUnitTest {
       )
     )
 
-    val transactions = Seq(coinbaseTx, tx1)
+    val transactions = Vector(coinbaseTx, tx1)
     Merkle.computeMerkleRoot(transactions).hex must be(
       BytesUtil.flipEndianness(
         "8fb300e3fdb6f30a4c67233b997f99fdd518b968b9a3fd65857bfe78b2600719"
@@ -78,7 +78,7 @@ class MerkleTest extends BitcoinSUnitTest {
         "d8c9d6a13a7fb8236833b1e93d298f4626deeb78b2f1814aa9a779961c08ce39"
       )
     )
-    val transactions = Seq(coinbaseTx, tx1, tx2)
+    val transactions = Vector(coinbaseTx, tx1, tx2)
 
     Merkle.computeMerkleRoot(transactions).hex must be(
       BytesUtil.flipEndianness(
@@ -103,7 +103,7 @@ class MerkleTest extends BitcoinSUnitTest {
       "01000000010b6072b386d4a773235237f64c1126ac3b240c84b917a3909ba1c43ded5f51f4000000008c493046022100bb1ad26df930a51cce110cf44f7a48c3c561fd977500b1ae5d6b6fd13d0b3f4a022100c5b42951acedff14abba2736fd574bdb465f3e6f8da12e2c5303954aca7f78f3014104a7135bfe824c97ecc01ec7d7e336185c81e2aa2c41ab175407c09484ce9694b44953fcb751206564a9c24dd094d42fdbfdd5aad3e063ce6af4cfaaea4ea14fbbffffffff0140420f00000000001976a91439aa3d569e06a1d7926dc4be1193c99bf2eb9ee088ac00000000"
     )
 
-    val transactions = Seq(coinbaseTx, tx1, tx2, tx3)
+    val transactions = Vector(coinbaseTx, tx1, tx2, tx3)
 
     Merkle.computeMerkleRoot(transactions).hex must be(
       BytesUtil.flipEndianness(
@@ -156,7 +156,7 @@ class MerkleTest extends BitcoinSUnitTest {
       )
     )
 
-    val transactions = Seq(coinbaseTx, tx1, tx2, tx3, tx4)
+    val transactions = Vector(coinbaseTx, tx1, tx2, tx3, tx4)
     Merkle.computeMerkleRoot(transactions).hex must be(
       BytesUtil.flipEndianness(
         "36b38854f9adf76b4646ab2c0f949846408cfab2c045f110d01f84f4122c5add"
@@ -256,7 +256,7 @@ class MerkleTest extends BitcoinSUnitTest {
     )
 
     val transactions =
-      Seq(coinbaseTx, tx1, tx2, tx3, tx4, tx5, tx6, tx7, tx8, tx9, tx10)
+      Vector(coinbaseTx, tx1, tx2, tx3, tx4, tx5, tx6, tx7, tx8, tx9, tx10)
 
     Merkle.computeMerkleRoot(transactions).hex must be(
       BytesUtil.flipEndianness(

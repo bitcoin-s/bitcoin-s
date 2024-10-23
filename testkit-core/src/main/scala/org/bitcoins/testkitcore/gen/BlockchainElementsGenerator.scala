@@ -66,7 +66,9 @@ sealed abstract class BlockchainElementsGenerator {
   ): Gen[BlockHeader] =
     for {
       numTxs <- Gen.choose(1, 5)
-      txs <- Gen.listOfN(numTxs, TransactionGenerators.transaction)
+      txs <- Gen
+        .listOfN(numTxs, TransactionGenerators.transaction)
+        .map(_.toVector)
       header <- blockHeader(previousBlockHash, nBits, txs)
     } yield header
 
@@ -77,7 +79,7 @@ sealed abstract class BlockchainElementsGenerator {
   def blockHeader(
       previousBlockHash: DoubleSha256Digest,
       nBits: UInt32,
-      txs: Seq[Transaction]
+      txs: Vector[Transaction]
   ): Gen[BlockHeader] =
     for {
       version <- NumberGenerator.int32s
@@ -97,7 +99,7 @@ sealed abstract class BlockchainElementsGenerator {
     * [[org.bitcoins.core.protocol.blockchain.BlockHeader BlockHeader]] that has
     * a merkle root hash corresponding to the given txs
     */
-  def blockHeader(txs: Seq[Transaction]): Gen[BlockHeader] =
+  def blockHeader(txs: Vector[Transaction]): Gen[BlockHeader] =
     for {
       previousBlockHash <- CryptoGenerators.doubleSha256Digest
       nBits <- NumberGenerator.uInt32s

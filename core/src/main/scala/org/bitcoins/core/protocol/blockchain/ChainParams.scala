@@ -173,7 +173,7 @@ sealed abstract class ChainParams {
                              TransactionConstants.lockTime)
     val prevBlockHash = DoubleSha256Digest(
       "0000000000000000000000000000000000000000000000000000000000000000")
-    val merkleRootHash = Merkle.computeMerkleRoot(Seq(tx))
+    val merkleRootHash = Merkle.computeMerkleRoot(Vector(tx))
     val genesisBlockHeader =
       BlockHeader(version, prevBlockHash, merkleRootHash, time, nBits, nonce)
     val genesisBlock = Block(genesisBlockHeader, Vector(tx))

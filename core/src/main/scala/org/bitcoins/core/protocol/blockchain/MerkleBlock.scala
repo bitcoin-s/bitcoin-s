@@ -26,7 +26,7 @@ sealed abstract class MerkleBlock extends NetworkElement {
   /** One or more hashes of both transactions and merkle nodes used to build the
     * partial merkle tree
     */
-  def hashes: Seq[DoubleSha256Digest] = partialMerkleTree.hashes
+  def hashes: Vector[DoubleSha256Digest] = partialMerkleTree.hashes
 
   /** The
     * [[org.bitcoins.core.protocol.blockchain.PartialMerkleTree PartialMerkleTree]]
@@ -34,7 +34,7 @@ sealed abstract class MerkleBlock extends NetworkElement {
     */
   def partialMerkleTree: PartialMerkleTree
 
-  def bytes = RawMerkleBlockSerializer.write(this)
+  override def bytes: ByteVector = RawMerkleBlockSerializer.write(this)
 }
 
 object MerkleBlock extends Factory[MerkleBlock] {
@@ -64,10 +64,10 @@ object MerkleBlock extends Factory[MerkleBlock] {
   def apply(block: Block, filter: BloomFilter): (MerkleBlock, BloomFilter) = {
     @tailrec
     def loop(
-        remainingTxs: Seq[Transaction],
+        remainingTxs: Vector[Transaction],
         accumFilter: BloomFilter,
-        txMatches: Seq[(Boolean, DoubleSha256Digest)])
-        : (Seq[(Boolean, DoubleSha256Digest)], BloomFilter) = {
+        txMatches: Vector[(Boolean, DoubleSha256Digest)])
+        : (Vector[(Boolean, DoubleSha256Digest)], BloomFilter) = {
       if (remainingTxs.isEmpty) (txMatches.reverse, accumFilter)
       else {
         val tx = remainingTxs.head
@@ -76,7 +76,7 @@ object MerkleBlock extends Factory[MerkleBlock] {
         loop(remainingTxs.tail, newFilter, newTxMatches)
       }
     }
-    val (matchedTxs, newFilter) = loop(block.transactions, filter, Nil)
+    val (matchedTxs, newFilter) = loop(block.transactions, filter, Vector.empty)
     val partialMerkleTree = PartialMerkleTree(matchedTxs)
     val txCount = UInt32(block.transactions.size)
     (MerkleBlock(block.blockHeader, txCount, partialMerkleTree), newFilter)
@@ -90,9 +90,9 @@ object MerkleBlock extends Factory[MerkleBlock] {
     // https://github.com/bitcoin/bitcoin/blob/master/src/merkleblock.cpp#L40
     @tailrec
     def loop(
-        remainingTxs: Seq[Transaction],
-        txMatches: Seq[(Boolean, DoubleSha256Digest)])
-        : (Seq[(Boolean, DoubleSha256Digest)]) = {
+        remainingTxs: Vector[Transaction],
+        txMatches: Vector[(Boolean, DoubleSha256Digest)])
+        : (Vector[(Boolean, DoubleSha256Digest)]) = {
       if (remainingTxs.isEmpty) txMatches.reverse
       else {
         val tx = remainingTxs.head
@@ -101,7 +101,7 @@ object MerkleBlock extends Factory[MerkleBlock] {
       }
     }
 
-    val txMatches = loop(block.transactions, Nil)
+    val txMatches = loop(block.transactions, Vector.empty)
 
     val partialMerkleTree = PartialMerkleTree(txMatches)
     val txCount = UInt32(block.transactions.size)
@@ -118,7 +118,7 @@ object MerkleBlock extends Factory[MerkleBlock] {
   def apply(
       blockHeader: BlockHeader,
       txCount: UInt32,
-      hashes: Seq[DoubleSha256Digest],
+      hashes: Vector[DoubleSha256Digest],
       bits: BitVector): MerkleBlock = {
     val partialMerkleTree = PartialMerkleTree(txCount, hashes, bits)
     MerkleBlock(blockHeader, txCount, partialMerkleTree)

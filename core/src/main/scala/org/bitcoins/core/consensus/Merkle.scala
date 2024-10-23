@@ -34,17 +34,20 @@ trait Merkle {
     * @return
     *   the merkle root for the sequence of transactions
     */
-  def computeMerkleRoot(transactions: Seq[Transaction]): DoubleSha256Digest =
-    transactions match {
-      case Nil =>
-        throw new IllegalArgumentException(
-          "We cannot have zero transactions in the block. There always should be ATLEAST one - the coinbase tx")
-      case h +: Nil => h.txId
-      case _ +: _ =>
-        val leafs = transactions.map(tx => LeafDoubleSha256Digest(tx.txId))
-        val merkleTree = build(leafs, Nil)
-        merkleTree.value.get
+  def computeMerkleRoot(
+      transactions: Vector[Transaction]): DoubleSha256Digest = {
+    val result = if (transactions.isEmpty) {
+      throw new IllegalArgumentException(
+        "We cannot have zero transactions in the block. There always should be ATLEAST one - the coinbase tx")
+    } else if (transactions.length == 1) {
+      transactions.head.txId
+    } else {
+      val leafs = transactions.map(tx => LeafDoubleSha256Digest(tx.txId))
+      val merkleTree = build(leafs, Vector.empty)
+      merkleTree.value.get
     }
+    result
+  }
 
   /** Builds a [[MerkleTree]] from sequence of sub merkle trees. This subTrees
     * can be individual txids (leafs) or full blown subtrees
@@ -57,28 +60,30 @@ trait Merkle {
     */
   @tailrec
   final def build(
-      subTrees: Seq[MerkleTree],
-      accum: Seq[MerkleTree]): MerkleTree =
-    subTrees match {
-      case Nil =>
-        if (accum.size == 1) accum.head
-        else if (accum.isEmpty)
-          throw new IllegalArgumentException(
-            "Should never have sub tree size of zero, this implies there was zero hashes given")
-        else build(accum.reverse, Nil)
-      case h +: h1 +: t =>
-        val newTree = computeTree(h, h1)
-        build(t, newTree +: accum)
-      case h +: t =>
-        // means that we have an odd amount of txids, this means we duplicate the last hash in the tree
-        val newTree = computeTree(h, h)
-        build(t, newTree +: accum)
+      subTrees: Vector[MerkleTree],
+      accum: Vector[MerkleTree]): MerkleTree = {
+    if (subTrees.isEmpty) {
+      if (accum.length == 1) accum.head
+      else if (accum.isEmpty) {
+        throw new IllegalArgumentException(
+          "Should never have sub tree size of zero, this implies there was zero hashes given")
+      } else {
+        build(accum.reverse, Vector.empty)
+      }
+    } else if (subTrees.length >= 2) {
+      val newTree = computeTree(subTrees.head, subTrees(1))
+      build(subTrees.drop(2), newTree +: accum)
+    } else {
+      // means that we have an odd amount of txids, this means we duplicate the last hash in the tree
+      val newTree = computeTree(subTrees.head, subTrees.head)
+      build(subTrees.drop(1), newTree +: accum)
     }
+  }
 
   /** Builds a merkle tree from a sequence of hashes */
-  def build(hashes: Seq[DoubleSha256Digest]): MerkleTree = {
+  def build(hashes: Vector[DoubleSha256Digest]): MerkleTree = {
     val leafs = hashes.map(LeafDoubleSha256Digest.apply)
-    build(leafs, Nil)
+    build(leafs, Vector.empty)
   }
 
   /** Computes the merkle tree of two sub merkle trees */

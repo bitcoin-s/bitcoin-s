@@ -225,7 +225,7 @@ class PartialMerkleTreeTests extends BitcoinSUnitTest {
   }
 
   it must "build a partial merkle tree with no matches and 1 transaction in the original block" in {
-    val txMatches = Seq(
+    val txMatches = Vector(
       (
         false,
         DoubleSha256Digest(
@@ -249,7 +249,7 @@ class PartialMerkleTreeTests extends BitcoinSUnitTest {
   }
 
   it must "build a partial merkle tree with 1 match and 2 transactions inside the original block" in {
-    val txMatches = Seq(
+    val txMatches = Vector(
       (
         false,
         DoubleSha256Digest(
@@ -294,7 +294,7 @@ class PartialMerkleTreeTests extends BitcoinSUnitTest {
   }
 
   it must "calculate bits correctly for a tree of height 1" in {
-    val matches = List(
+    val matches = Vector(
       (
         true,
         DoubleSha256Digest(
@@ -318,7 +318,7 @@ class PartialMerkleTreeTests extends BitcoinSUnitTest {
   it must "correctly compute a merkle tree that has an odd amount of txids on the merkle tree" in {
     // this test is meant to prevent these failures on travis ci
     // https://travis-ci.org/bitcoin-s/bitcoin-s-core/builds/205812075#L2774
-    val hashes: Seq[DoubleSha256Digest] = List(
+    val hashes: Vector[DoubleSha256Digest] = Vector(
       DoubleSha256Digest(
         "1563b82f187da1067f5000dabe3a4f4ae8650e207aa163e1d25ded8175e2bae1"
       ),

@@ -40,7 +40,7 @@ class RawMerkleBlockSerializerTest extends BitcoinSUnitTest {
                                 BitVector.bits(
                                   Vector(false, false, false, false, false,
                                          false, false, false)),
-                                List(DoubleSha256Digest(
+                                Vector(DoubleSha256Digest(
                                   "442abdc8e74ad35ebd9571f88fda91ff511dcda8d241a5aed52cea1e00d69e03"))
                               )
                             ),
@@ -97,7 +97,7 @@ class RawMerkleBlockSerializerTest extends BitcoinSUnitTest {
                                   List(true, true, true, false, true, true,
                                        false, true, false, false, false, false,
                                        false, false, false, false)),
-                                List(
+                                Vector(
                                   DoubleSha256Digest(
                                     "e4aeaf729035a7fb939e12c4f6a2072a9b2e7da784207ce7852d398593210a45"),
                                   DoubleSha256Digest(
