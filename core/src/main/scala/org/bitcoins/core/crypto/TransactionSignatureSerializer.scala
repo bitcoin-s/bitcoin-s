@@ -493,8 +493,8 @@ sealed abstract class TransactionSignatureSerializer {
     * inputIndex.
     */
   private def setSequenceNumbersZero(
-      inputs: Seq[TransactionInput],
-      inputIndex: UInt32): Seq[TransactionInput] =
+      inputs: Vector[TransactionInput],
+      inputIndex: UInt32): Vector[TransactionInput] =
     for {
       (input, index) <- inputs.zipWithIndex
     } yield {
@@ -515,11 +515,11 @@ sealed abstract class TransactionSignatureSerializer {
     // [[https://github.com/bitcoinj/bitcoinj/blob/09a2ca64d2134b0dcbb27b1a6eb17dda6087f448/core/src/main/java/org/bitcoinj/core/Transaction.java#L957]]
     // means that no outputs are signed at all
     // set the sequence number of all inputs to 0 EXCEPT the input at inputIndex
-    val updatedInputs: Seq[TransactionInput] =
+    val updatedInputs: Vector[TransactionInput] =
       setSequenceNumbersZero(spendingTransaction.inputs, inputIndex)
     val sigHashNoneTx = BaseTransaction(spendingTransaction.version,
                                         updatedInputs,
-                                        Nil,
+                                        Vector.empty,
                                         spendingTransaction.lockTime)
     // append hash type byte onto the end of the tx bytes
     sigHashNoneTx
@@ -535,7 +535,7 @@ sealed abstract class TransactionSignatureSerializer {
     // [[https://github.com/bitcoinj/bitcoinj/blob/09a2ca64d2134b0dcbb27b1a6eb17dda6087f448/core/src/main/java/org/bitcoinj/core/Transaction.java#L964]]
     // In SIGHASH_SINGLE the outputs after the matching input index are deleted, and the outputs before
     // that position are "nulled out". Unintuitively, the value in a "null" transaction is set to -1.
-    val updatedOutputsOpt: Seq[Option[TransactionOutput]] = for {
+    val updatedOutputsOpt: Vector[Option[TransactionOutput]] = for {
       (output, index) <- spendingTransaction.outputs.zipWithIndex
     } yield {
       if (UInt32(index) < inputIndex) {
@@ -543,11 +543,11 @@ sealed abstract class TransactionSignatureSerializer {
       } else if (UInt32(index) == inputIndex) Some(output)
       else None
     }
-    val updatedOutputs: Seq[TransactionOutput] = updatedOutputsOpt.flatten
+    val updatedOutputs: Vector[TransactionOutput] = updatedOutputsOpt.flatten
 
     // create blank inputs with sequence numbers set to zero EXCEPT
     // the input at the inputIndex
-    val updatedInputs: Seq[TransactionInput] =
+    val updatedInputs: Vector[TransactionInput] =
       setSequenceNumbersZero(spendingTransaction.inputs, inputIndex)
     val sigHashSingleTx = BaseTransaction(spendingTransaction.version,
                                           updatedInputs,
@@ -570,7 +570,7 @@ sealed abstract class TransactionSignatureSerializer {
       spendingTransaction: Transaction,
       input: TransactionInput): Transaction = {
     BaseTransaction(spendingTransaction.version,
-                    Seq(input),
+                    Vector(input),
                     spendingTransaction.outputs,
                     spendingTransaction.lockTime)
   }

@@ -118,7 +118,7 @@ class StandardNonInteractiveFinalizerTest extends BitcoinSUnitTest {
       Vector(TransactionOutput(Satoshis.one, EmptyScriptPubKey))
     val creditingTx = BaseTransaction(
       version = TransactionConstants.validLockVersion,
-      inputs = Nil,
+      inputs = Vector.empty,
       outputs = Vector(creditingOutput),
       lockTime = TransactionConstants.lockTime
     )
@@ -155,7 +155,7 @@ class StandardNonInteractiveFinalizerTest extends BitcoinSUnitTest {
       Vector(TransactionOutput(Satoshis.one, EmptyScriptPubKey))
     val creditingTx = BaseTransaction(
       version = TransactionConstants.validLockVersion,
-      inputs = Nil,
+      inputs = Vector.empty,
       outputs = Vector(creditingOutput),
       lockTime = TransactionConstants.lockTime
     )

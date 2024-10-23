@@ -21,7 +21,9 @@ sealed abstract class BlockchainElementsGenerator {
     for {
       randomNum <- Gen.choose(1, 10)
       neededTxs = if ((randomNum - txs.size) >= 0) randomNum else 0
-      genTxs <- Gen.listOfN(neededTxs, TransactionGenerators.transaction)
+      genTxs <- Gen
+        .listOfN(neededTxs, TransactionGenerators.transaction)
+        .map(_.toVector)
       allTxs = genTxs ++ txs
       header <- blockHeader(allTxs)
     } yield Block(header, allTxs)

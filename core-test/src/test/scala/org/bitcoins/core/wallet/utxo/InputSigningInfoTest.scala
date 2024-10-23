@@ -19,7 +19,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
     val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2sh)
     val creditingTx = BaseTransaction(
       version = TransactionConstants.validLockVersion,
-      inputs = Nil,
+      inputs = Vector.empty,
       outputs = Vector(creditingOutput),
       lockTime = TransactionConstants.lockTime
     )
@@ -56,7 +56,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
     val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2wsh)
     val creditingTx = BaseTransaction(
       TransactionConstants.validLockVersion,
-      Nil,
+      Vector.empty,
       Vector(creditingOutput),
       TransactionConstants.lockTime
     )
@@ -100,7 +100,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
       TransactionOutput(value = CurrencyUnits.zero, scriptPubKey = p2wpkh)
     val creditingTx = BaseTransaction(
       version = TransactionConstants.validLockVersion,
-      inputs = Nil,
+      inputs = Vector.empty,
       outputs = Vector(creditingOutput),
       lockTime = TransactionConstants.lockTime
     )
@@ -138,7 +138,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
     val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2wpkh)
     val creditingTx = BaseTransaction(
       TransactionConstants.validLockVersion,
-      Nil,
+      Vector.empty,
       Vector(creditingOutput),
       TransactionConstants.lockTime
     )
@@ -181,7 +181,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
     val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2wpkh)
     val creditingTx = BaseTransaction(
       TransactionConstants.validLockVersion,
-      Nil,
+      Vector.empty,
       Vector(creditingOutput),
       TransactionConstants.lockTime
     )
@@ -226,7 +226,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
     val creditingTx =
       BaseTransaction(
         TransactionConstants.validLockVersion,
-        Nil,
+        Vector.empty,
         Vector(TransactionOutput(CurrencyUnits.oneBTC, p2wpkh)),
         TransactionConstants.lockTime
       )
