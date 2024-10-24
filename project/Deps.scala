@@ -33,7 +33,7 @@ object Deps {
     val typesafeConfigV = "1.4.3"
 
     val flywayV =
-      "10.20.0" // https://flywaydb.org/documentation/learnmore/releaseNotes
+      "10.20.1" // https://flywaydb.org/documentation/learnmore/releaseNotes
     val postgresV = "42.7.4" // https://jdbc.postgresql.org/
     val akkaActorV = akkaStreamv
 
@@ -130,8 +130,8 @@ object Deps {
     val gson =
       "com.google.code.gson" % "gson" % V.gsonV // https://github.com/google/gson
 
-    val guava = "com.google.guava" % "guava" % "33.3.1-jre" //https://github.com/google/guava/
-
+    val guava =
+      "com.google.guava" % "guava" % "33.3.1-jre" // https://github.com/google/guava/
 
     val jUnixSocket =
       "com.kohlschutter.junixsocket" % "junixsocket-core" % V.jUnixSocketV
