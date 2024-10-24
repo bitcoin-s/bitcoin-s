@@ -51,18 +51,13 @@ object CommonSettings {
         url("https://twitter.com/Chris_Stewart_5")
       )
     ),
-    Compile / scalacOptions ++= compilerOpts(scalaVersion = scalaVersion.value),
-    Test / scalacOptions ++= testCompilerOpts(scalaVersion =
-      scalaVersion.value),
+    Compile / scalacOptions ++= compilerOpts,
+    Test / scalacOptions ++= testCompilerOpts,
     Test / scalacOptions --= scala2_13SourceCompilerOpts,
     //remove annoying import unused things in the scala console
     //https://stackoverflow.com/questions/26940253/in-sbt-how-do-you-override-scalacoptions-for-console-in-all-configurations
     Compile / console / scalacOptions ~= (_ filterNot (s =>
-      s == "-Ywarn-unused-import"
-        || s == "-Ywarn-unused"
-        || s == "-Xfatal-warnings"
-        //for 2.13 -- they use different compiler opts
-        || s == "-Xlint:unused")),
+      s == "-Xfatal-warnings" || s == "-Xlint:unused")),
     //we don't want -Xfatal-warnings for publishing with publish/publishLocal either
     Compile / doc / scalacOptions ~= (_ filterNot (s =>
       s == "-Xfatal-warnings")),
@@ -134,8 +129,8 @@ object CommonSettings {
     "--no-man-pages"
   )
 
-  private val commonCompilerOpts = {
-    List(
+  private val commonCompilerOpts: Vector[String] = {
+    Vector(
       //https://stackoverflow.com/a/43103038/967713
       "-release",
       "8"
@@ -143,47 +138,30 @@ object CommonSettings {
   }
 
   /** Linting options for scalac */
-  private val scala2_13CompilerLinting = {
-    Seq(
+  private val scala2_13CompilerLinting: Vector[String] = {
+    Vector(
       "-Xfatal-warnings",
       "-Xlint"
     )
   }
 
   /** Compiler options for source code */
-  private val scala2_13SourceCompilerOpts = {
-    Seq("-Xlint:valpattern")
+  private val scala2_13SourceCompilerOpts: Vector[String] = {
+    Vector("-Xlint:valpattern")
   }
-
-  private val nonScala2_13CompilerOpts = Seq(
-    "-Xmax-classfile-name",
-    "128",
-    "-Ywarn-unused",
-    "-Ywarn-unused-import"
-  )
-
   //https://docs.scala-lang.org/overviews/compiler-options/index.html
-  def compilerOpts(scalaVersion: String): Seq[String] = {
-    Seq(
+  lazy val compilerOpts: Seq[String] = {
+    Vector(
       "-unchecked",
       "-feature",
       "-deprecation",
-      "-Ywarn-dead-code",
-      "-Ywarn-value-discard",
-      "-Ywarn-unused",
-      "-unchecked",
-      "-deprecation",
-      "-feature",
-      "-Ypatmat-exhaust-depth",
-      "off"
+      "-Ypatmat-exhaust-depth", "off"
     ) ++ commonCompilerOpts ++ {
-      if (scalaVersion.startsWith("2.13")) {
-        scala2_13SourceCompilerOpts ++ scala2_13CompilerLinting
-      } else nonScala2_13CompilerOpts
+      scala2_13SourceCompilerOpts ++ scala2_13CompilerLinting
     }
   }
 
-  def testCompilerOpts(scalaVersion: String): Seq[String] = {
+  lazy val testCompilerOpts: Vector[String] = {
     //initialization checks: https://docs.scala-lang.org/tutorials/FAQ/initialization-order.html
     Vector("-Xcheckinit")
   }
