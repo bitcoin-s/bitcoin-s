@@ -38,7 +38,7 @@ object Deps {
     val akkaActorV = akkaStreamv
 
     val slickV = "3.5.2"
-    val sqliteV = "3.46.1.3" // https://github.com/xerial/sqlite-jdbc
+    val sqliteV = "3.47.0.0" // https://github.com/xerial/sqlite-jdbc
 
     val scalameterV = "0.17"
     val scalamockV = "6.0.0"
@@ -130,8 +130,8 @@ object Deps {
     val gson =
       "com.google.code.gson" % "gson" % V.gsonV // https://github.com/google/gson
 
-    val guava = "com.google.guava" % "guava" % "33.3.1-jre" //https://github.com/google/guava/
-
+    val guava =
+      "com.google.guava" % "guava" % "33.3.1-jre" // https://github.com/google/guava/
 
     val jUnixSocket =
       "com.kohlschutter.junixsocket" % "junixsocket-core" % V.jUnixSocketV
