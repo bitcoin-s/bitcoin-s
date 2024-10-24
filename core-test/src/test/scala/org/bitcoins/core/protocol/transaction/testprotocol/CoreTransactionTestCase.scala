@@ -76,6 +76,7 @@ object CoreTransactionTestCase {
           case index
               if index >= UInt32.min.toLong && index <= UInt32.max.toLong =>
             UInt32(index)
+          case l: Long => sys.error(s"Out of bounds=$l")
         }
 
         val amount =

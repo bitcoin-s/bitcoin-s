@@ -152,7 +152,7 @@ sealed trait DLCWalletLoaderApi
           resetStateCallbackF.failed.foreach {
             case RescanState.RescanTerminatedEarly =>
               rescanStateOpt = None
-            case scala.util.control.NonFatal(exn) =>
+            case exn: Throwable =>
               logger.error(
                 s"Failed to reset rescanState in wallet loader. Resetting rescan state",
                 exn

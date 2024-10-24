@@ -92,11 +92,15 @@ object InternalAddressTag {
             StorageLocationTag.DeepColdStorage
           case unknownName: UnknownAddressTagName =>
             UnknownAddressTag(unknownName, StorageLocationTagType)
+          case a: AddressTagName =>
+            UnknownAddressTag(a.name, StorageLocationTagType)
         }
       case AddressLabelTagType =>
         AddressLabelTag(tagName.name)
       case unknownType: UnknownAddressTagType =>
         UnknownAddressTag(tagName, unknownType)
+      case a: AddressTagType =>
+        UnknownAddressTag(a.typeName, a)
     }
   }
 }

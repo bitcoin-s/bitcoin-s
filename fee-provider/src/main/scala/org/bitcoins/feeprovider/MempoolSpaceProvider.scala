@@ -76,7 +76,7 @@ object MempoolSpaceProvider extends FeeProviderFactory[MempoolSpaceProvider] {
   }
 }
 
-abstract class MempoolSpaceTarget
+sealed abstract class MempoolSpaceTarget
 
 object MempoolSpaceTarget {
 

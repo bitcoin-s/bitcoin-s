@@ -67,12 +67,12 @@ object TxUtil {
   def calcLockTimeForInfos(utxos: Seq[InputInfo]): Try[UInt32] = {
     @tailrec
     def loop(
-        remaining: Seq[InputInfo],
+        remaining: List[InputInfo],
         currentLockTimeOpt: Option[UInt32]): Try[UInt32] =
       remaining match {
         case Nil =>
           Success(currentLockTimeOpt.getOrElse(TransactionConstants.lockTime))
-        case spendingInfo +: newRemaining =>
+        case spendingInfo :: newRemaining =>
           spendingInfo match {
             case lockTime: LockTimeInputInfo =>
               lockTime.scriptPubKey match {
@@ -117,7 +117,7 @@ object TxUtil {
           }
       }
 
-    loop(utxos, None)
+    loop(utxos.toList, None)
   }
 
   /** This helper function calculates the appropriate locktime for a

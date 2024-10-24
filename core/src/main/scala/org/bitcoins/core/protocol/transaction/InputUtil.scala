@@ -44,11 +44,11 @@ object InputUtil {
       defaultSequence: UInt32 = Policy.sequence): Seq[TransactionInput] = {
     @tailrec
     def loop(
-        remaining: Seq[InputInfo],
-        accum: Seq[TransactionInput]): Seq[TransactionInput] =
+        remaining: List[InputInfo],
+        accum: List[TransactionInput]): Seq[TransactionInput] =
       remaining match {
         case Nil => accum.reverse
-        case spendingInfo +: newRemaining =>
+        case spendingInfo :: newRemaining =>
           spendingInfo match {
             case lockTime: LockTimeInputInfo =>
               val sequence = lockTime.scriptPubKey match {
@@ -92,7 +92,7 @@ object InputUtil {
           }
       }
 
-    loop(utxos, Nil)
+    loop(utxos.toList, Nil).toVector
   }
 
   /** This helper function calculates the appropriate sequence number for each

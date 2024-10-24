@@ -50,6 +50,8 @@ sealed trait InputSigningInfo[+InputType <: InputInfo] {
         SigVersionWitnessV0
       case _: P2SHNonSegwitInputInfo | _: RawInputInfo =>
         SigVersionBase
+      case i: InputInfo =>
+        sys.error(s"Cannot determine SigVersion for unsupported inputInfo=$i")
     }
 }
 

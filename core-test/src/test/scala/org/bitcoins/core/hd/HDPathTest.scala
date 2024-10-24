@@ -110,6 +110,8 @@ class HDPathTest extends BitcoinSUnitTest {
           assert(value == path.asInstanceOf[SegWitHDPath])
         case value: NestedSegWitHDPath =>
           assert(value == path.asInstanceOf[NestedSegWitHDPath])
+        case h: HDPath =>
+          sys.error(s"Unsupported HDPath=$h")
       }
       resultOpt.getOrElse(
         fail(s"$path did not have toString/fromString symmetry")
