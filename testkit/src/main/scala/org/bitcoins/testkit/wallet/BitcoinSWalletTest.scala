@@ -514,7 +514,7 @@ object BitcoinSWalletTest extends WalletLogger {
     * so it can be re-used in [[CachedBitcoind]] tests
     */
   def destroyOnlyWalletWithBitcoindCached(
-      walletWithBitcoind: WalletWithBitcoind[_]
+      walletWithBitcoind: WalletWithBitcoind[?]
   )(implicit ec: ExecutionContext): Future[Unit] = {
     for {
       _ <- destroyWalletAppConfig(walletWithBitcoind.walletConfig)
@@ -553,7 +553,7 @@ object BitcoinSWalletTest extends WalletLogger {
     * balances satisfy [[isSameWalletBalances()]]
     */
   def awaitWalletBalances(
-      fundedWallet: WalletWithBitcoind[_]
+      fundedWallet: WalletWithBitcoind[?]
   )(implicit config: WalletAppConfig, system: ActorSystem): Future[Unit] = {
     AsyncUtil.retryUntilSatisfiedF(
       conditionF = () => isSameWalletBalances(fundedWallet),
@@ -563,7 +563,7 @@ object BitcoinSWalletTest extends WalletLogger {
   }
 
   private def isSameWalletBalances(
-      fundedWallet: WalletWithBitcoind[_]
+      fundedWallet: WalletWithBitcoind[?]
   )(implicit config: WalletAppConfig, system: ActorSystem): Future[Boolean] = {
     import system.dispatcher
     val defaultAccount = config.defaultAccount

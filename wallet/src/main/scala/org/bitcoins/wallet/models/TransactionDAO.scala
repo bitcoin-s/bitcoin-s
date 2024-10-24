@@ -42,12 +42,16 @@ trait TxDAO[DbEntryType <: TxDB]
   override def findByPrimaryKeys(
       txIdBEs: Vector[DoubleSha256DigestBE]
   ): Query[TxTable, DbEntryType, Seq] =
-    table.filter(_.txIdBE.inSet(txIdBEs))
+    table
+      .filter(_.txIdBE.inSet(txIdBEs))
+      .asInstanceOf[Query[TxTable, DbEntryType, Seq]]
 
   override def findByPrimaryKey(
       txIdBE: DoubleSha256DigestBE
   ): Query[TxTable, DbEntryType, Seq] = {
-    table.filter(_.txIdBE === txIdBE)
+    table
+      .filter(_.txIdBE === txIdBE)
+      .asInstanceOf[Query[TxTable, DbEntryType, Seq]]
   }
 
   override def findAll(
@@ -70,7 +74,7 @@ trait TxDAO[DbEntryType <: TxDB]
   def findByTxIds(
       txIdBEs: Vector[DoubleSha256DigestBE]
   ): Future[Vector[DbEntryType]] = {
-    val q = table.filter(_.txIdBE.inSet(txIdBEs))
+    val q = findByPrimaryKeys(txIdBEs)
 
     safeDatabase.runVec(q.result)
   }
@@ -78,10 +82,18 @@ trait TxDAO[DbEntryType <: TxDB]
   def findByTxIdAction(
       txIdBE: DoubleSha256DigestBE
   ): DBIOAction[Option[DbEntryType], NoStream, Effect.Read] = {
-    table
-      .filter(_.txIdBE === txIdBE)
-      .result
-      .map(_.headOption)
+    findByPrimaryKey(txIdBE).result
+      .map {
+        case h +: Vector() =>
+          Some(h)
+        case Vector() =>
+          None
+        case txs: Vector[DbEntryType] =>
+          // yikes, we should not have more the one transaction per id
+          throw new RuntimeException(
+            s"More than one transaction per id=${txIdBE.hex}, got=$txs"
+          )
+      }
   }
 
   def findByTxId(txIdBE: DoubleSha256DigestBE): Future[Option[DbEntryType]] = {
@@ -158,7 +170,7 @@ case class TransactionDAO()(implicit
         numOutputs,
         locktime,
         blockHash
-      ).<>(TransactionDb.tupled, TransactionDb.unapply)
+      ).<>(TransactionDb.apply, TransactionDb.unapply)
 
     def primaryKey: PrimaryKey =
       primaryKey("pk_tx", sourceColumns = txIdBE)
