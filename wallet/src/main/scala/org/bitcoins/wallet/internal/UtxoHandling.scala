@@ -399,15 +399,16 @@ case class UtxoHandling(
       // make sure exception isn't thrown outside of a future to fix
       // see: https://github.com/bitcoin-s/bitcoin-s/issues/3813
       val unreserved = utxos.filterNot(_.state == TxoState.Reserved)
-      require(
-        unreserved.isEmpty,
-        s"Some utxos are not reserved, got $unreserved"
-      )
-
-      // unmark all utxos are reserved
-      val updatedUtxos = utxos
-        .map(_.copyWithState(TxoState.PendingConfirmationsReceived))
-      getDbsByRelevantBlock(updatedUtxos)
+      if (unreserved.nonEmpty) {
+        val exn = new IllegalArgumentException(
+          s"Some utxos are not reserved, got unreserved=$unreserved utxos=$utxos")
+        Future.failed(exn)
+      } else {
+        // unmark all utxos are reserved
+        val updatedUtxos = utxos
+          .map(_.copyWithState(TxoState.PendingConfirmationsReceived))
+        getDbsByRelevantBlock(updatedUtxos)
+      }
     }
 
     for {
