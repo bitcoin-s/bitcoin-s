@@ -340,6 +340,12 @@ case class TransactionProcessing(
         relevantOutputs
       )
       result <- safeDatabase.run(action)
+      _ <-
+        if (
+          result.updatedIncoming.nonEmpty || result.updatedOutgoing.nonEmpty
+        ) {
+          walletCallbacks.executeOnTransactionProcessed(transaction)
+        } else Future.unit
     } yield {
       val txid = txDb.transaction.txIdBE
       val changeOutputs = result.updatedIncoming.length
