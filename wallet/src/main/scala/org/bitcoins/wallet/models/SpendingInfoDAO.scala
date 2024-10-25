@@ -1,15 +1,15 @@
 package org.bitcoins.wallet.models
 
-import org.bitcoins.core.api.wallet.db._
+import org.bitcoins.core.api.wallet.db.*
 import org.bitcoins.core.currency.CurrencyUnit
-import org.bitcoins.core.hd._
+import org.bitcoins.core.hd.*
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.core.wallet.utxo._
+import org.bitcoins.core.wallet.utxo.*
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.db.CRUDAutoInc
-import org.bitcoins.wallet.config._
+import org.bitcoins.wallet.config.*
 import slick.ast.{TableExpansion, TableNode}
 
 import java.sql.{PreparedStatement, SQLException}
@@ -70,20 +70,24 @@ case class SpendingInfoDAO()(implicit
       }
   }
 
-  def createUnless(
+  def createUnlessAction(
       si: SpendingInfoDb
-  )(condition: (UTXORecord, UTXORecord) => Boolean): Future[SpendingInfoDb] = {
-    val actions = for {
+  )(condition: (UTXORecord, UTXORecord) => Boolean)
+      : DBIOAction[SpendingInfoDb, NoStream, Effect.Write & Effect.Read] = {
+    val actions: DBIOAction[(UTXORecord, Option[ScriptPubKeyDb]),
+                            NoStream,
+                            Effect.Read & Effect.Write] = for {
       foundOpt <- table.filter(_.outPoint === si.outPoint).result.headOption
       cond <- foundOpt match {
         case Some(foundUtxo) =>
           val utxoToCreate =
             UTXORecord.fromSpendingInfoDb(si, foundUtxo.scriptPubKeyId)
-          DBIO.successful(condition(foundUtxo, utxoToCreate))
-        case None => DBIO.successful(false)
+          slick.dbio.DBIOAction.successful(condition(foundUtxo, utxoToCreate))
+        case None => slick.dbio.DBIOAction.successful(false)
       }
       utxo <-
-        if (cond) DBIO.successful(foundOpt.get) else insertAction(si)
+        if (cond) slick.dbio.DBIOAction.successful(foundOpt.get)
+        else insertAction(si)
       spk <-
         spkTable
           .filter(_.id === utxo.scriptPubKeyId)
@@ -91,15 +95,21 @@ case class SpendingInfoDAO()(implicit
           .headOption
     } yield (utxo, spk)
 
-    safeDatabase
-      .run(actions)
+    actions
       .map {
         case (utxo, Some(spk)) => utxo.toSpendingInfoDb(spk.scriptPubKey)
-        case _ =>
-          throw new SQLException(
-            s"Unexpected result: Cannot create either a UTXO or a SPK record for $si"
-          )
+        case (utxo, None) =>
+          throw new RuntimeException(
+            s"Unexpected result: Cannot create either a UTXO or a SPK record for spendingInfoDb=$si utxo=$utxo")
+
       }
+  }
+
+  def createUnless(
+      si: SpendingInfoDb
+  )(condition: (UTXORecord, UTXORecord) => Boolean): Future[SpendingInfoDb] = {
+    val action = createUnlessAction(si)(condition)
+    safeDatabase.run(action)
   }
 
   private def insertAction(
@@ -138,14 +148,30 @@ case class SpendingInfoDAO()(implicit
       upsert(si).map(res => acc :+ res))
   }
 
-  def updateAllSpendingInfoDb(
+  def upsertAllSpendingInfoDbAction(
       ts: Vector[SpendingInfoDb]
-  ): Future[Vector[SpendingInfoDb]] = {
-    FutureUtil.foldLeftAsync(Vector.empty[SpendingInfoDb], ts)((acc, si) =>
-      update(si).map(res => acc :+ res))
+  ): DBIOAction[Vector[SpendingInfoDb],
+                NoStream,
+                Effect.Read & Effect.Write] = {
+    slick.dbio.DBIOAction.sequence(ts.map(upsertAction))
   }
 
-  def update(si: SpendingInfoDb): Future[SpendingInfoDb] = {
+  def updateAllSpendingInfoDbAction(
+      ts: Vector[SpendingInfoDb]
+  ): DBIOAction[Vector[SpendingInfoDb],
+                NoStream,
+                Effect.Read & Effect.Write] = {
+    slick.dbio.DBIOAction.sequence(ts.map(updateAction))
+  }
+
+  def updateAllSpendingInfoDb(
+      ts: Vector[SpendingInfoDb]): Future[Vector[SpendingInfoDb]] = {
+    val action = updateAllSpendingInfoDbAction(ts)
+    safeDatabase.run(action)
+  }
+
+  def updateAction(si: SpendingInfoDb)
+      : DBIOAction[SpendingInfoDb, NoStream, Effect.Read & Effect.Write] = {
     val actions = for {
       spkOpt <-
         spkTable
@@ -174,18 +200,21 @@ case class SpendingInfoDAO()(implicit
           .result
           .headOption
     } yield (utxo, spk)
-    safeDatabase
-      .run(actions)
-      .map {
-        case (Some(utxo), Some(spk)) => utxo.toSpendingInfoDb(spk.scriptPubKey)
-        case _ =>
-          throw new SQLException(
-            s"Unexpected result: Cannot update either a UTXO or a SPK record for $si"
-          )
-      }
+    actions.map {
+      case (Some(utxo), Some(spk)) => utxo.toSpendingInfoDb(spk.scriptPubKey)
+      case _ =>
+        throw new SQLException(
+          s"Unexpected result: Cannot update either a UTXO or a SPK record for $si"
+        )
+    }
+  }
+  def update(si: SpendingInfoDb): Future[SpendingInfoDb] = {
+    val action = updateAction(si)
+    safeDatabase.run(action)
   }
 
-  def upsert(si: SpendingInfoDb): Future[SpendingInfoDb] = {
+  def upsertAction(si: SpendingInfoDb)
+      : DBIOAction[SpendingInfoDb, NoStream, Effect.Read & Effect.Write] = {
     val actions = for {
       spkOpt <-
         spkTable
@@ -214,15 +243,20 @@ case class SpendingInfoDAO()(implicit
           .result
           .headOption
     } yield (utxo, spk)
+
+    actions.map {
+      case (Some(utxo), Some(spk)) => utxo.toSpendingInfoDb(spk.scriptPubKey)
+      case _ =>
+        throw new SQLException(
+          s"Unexpected result: Cannot upsert either a UTXO or a SPK record for $si"
+        )
+    }
+  }
+
+  def upsert(si: SpendingInfoDb): Future[SpendingInfoDb] = {
+    val actions = upsertAction(si)
     safeDatabase
       .run(actions)
-      .map {
-        case (Some(utxo), Some(spk)) => utxo.toSpendingInfoDb(spk.scriptPubKey)
-        case _ =>
-          throw new SQLException(
-            s"Unexpected result: Cannot upsert either a UTXO or a SPK record for $si"
-          )
-      }
   }
 
   def delete(si: SpendingInfoDb): Future[Int] = {

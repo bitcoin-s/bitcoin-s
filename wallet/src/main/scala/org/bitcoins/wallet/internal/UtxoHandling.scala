@@ -158,13 +158,17 @@ case class UtxoHandling(
 
   private[wallet] def updateUtxoSpentConfirmedStates(
       relevantBlocks: Map[Option[BlockHashWithConfs], Vector[SpendingInfoDb]]
-  ): Future[Vector[SpendingInfoDb]] = {
+  ): DBIOAction[Vector[SpendingInfoDb],
+                NoStream,
+                Effect.Read & Effect.Write] = {
     updateUtxoStates(relevantBlocks, UtxoHandling.updateSpentTxoWithConfs)
   }
 
   private[wallet] def updateUtxoReceiveConfirmedStates(
       relevantBlocks: Map[Option[BlockHashWithConfs], Vector[SpendingInfoDb]]
-  ): Future[Vector[SpendingInfoDb]] = {
+  ): DBIOAction[Vector[SpendingInfoDb],
+                NoStream,
+                Effect.Read & Effect.Write] = {
     updateUtxoStates(relevantBlocks, UtxoHandling.updateReceivedTxoWithConfs)
   }
 
@@ -218,7 +222,9 @@ case class UtxoHandling(
   private def updateUtxoStates(
       txsByBlock: Map[Option[BlockHashWithConfs], Vector[SpendingInfoDb]],
       fn: (SpendingInfoDb, Int, Int) => SpendingInfoDb
-  ): Future[Vector[SpendingInfoDb]] = {
+  ): DBIOAction[Vector[SpendingInfoDb],
+                NoStream,
+                Effect.Read & Effect.Write] = {
     val toUpdates: Vector[SpendingInfoDb] = txsByBlock.flatMap {
       case (Some(blockHashWithConfs), txos) =>
         blockHashWithConfs.confirmationsOpt match {
@@ -239,7 +245,7 @@ case class UtxoHandling(
     if (toUpdates.nonEmpty)
       logger.info(s"${toUpdates.size} txos are now confirmed!")
     else logger.trace("No txos to be confirmed")
-    spendingInfoDAO.upsertAllSpendingInfoDb(toUpdates)
+    spendingInfoDAO.upsertAllSpendingInfoDbAction(toUpdates)
   }
 
   /** Fetches confirmations for the given blocks in parallel */
@@ -268,30 +274,18 @@ case class UtxoHandling(
   /** Constructs a DB level representation of the given UTXO, and persist it to
     * disk
     */
-  protected def writeUtxo(
+  private def writeUtxo(
       tx: Transaction,
-      blockHashOpt: Option[DoubleSha256DigestBE],
+      blockHashWithConfsOpt: Option[BlockHashWithConfs],
       output: TransactionOutput,
       outPoint: TransactionOutPoint,
       addressDb: AddressDb
-  ): Future[SpendingInfoDb] = {
-    val confirmationsF: Future[Int] = blockHashOpt match {
-      case Some(blockHash) =>
-        chainQueryApi
-          .getNumberOfConfirmations(blockHash)
-          .map {
-            case Some(confs) =>
-              confs
-            case None =>
-              sys.error(
-                s"Could not find block with our chain data source, hash=${blockHash}"
-              )
-          }
-      case None =>
-        Future.successful(0) // no confirmations on the tx
-    }
+  ): DBIOAction[SpendingInfoDb, NoStream, Effect.Read & Effect.Write] = {
+    val confs: Int = blockHashWithConfsOpt
+      .flatMap(_.confirmationsOpt)
+      .getOrElse(0)
 
-    val stateF: Future[TxoState] = confirmationsF.map { confs =>
+    val state: TxoState = {
       if (
         tx.inputs.head
           .isInstanceOf[CoinbaseInput] && confs <= Consensus.coinbaseMaturity
@@ -305,7 +299,7 @@ case class UtxoHandling(
       }
     }
 
-    val utxoF: Future[SpendingInfoDb] = stateF.map { state =>
+    val utxo: SpendingInfoDb =
       addressDb match {
         case segwitAddr: SegWitAddressDb =>
           SegwitV0SpendingInfo(
@@ -336,11 +330,9 @@ case class UtxoHandling(
             id = None
           )
       }
-    }
 
     for {
-      utxo <- utxoF
-      written <- spendingInfoDAO.createUnless(utxo) {
+      written <- spendingInfoDAO.createUnlessAction(utxo) {
         (foundUtxo, utxoToCreate) =>
           foundUtxo.state.isInstanceOf[SpentState] && utxoToCreate.state
             .isInstanceOf[ReceivedState]
@@ -411,21 +403,32 @@ case class UtxoHandling(
       }
     }
 
-    for {
-      updatedUtxos <- updatedUtxosF
-      // update the confirmed utxos
-      updatedConfirmed <- updateUtxoReceiveConfirmedStates(updatedUtxos)
+    val updatedActionF: Future[DBIOAction[Vector[SpendingInfoDb],
+                                          NoStream,
+                                          Effect.Read & Effect.Write]] = {
+      updatedUtxosF.map { updatedUtxos =>
+        for {
+          // update the confirmed utxos
+          updatedConfirmed <- updateUtxoReceiveConfirmedStates(updatedUtxos)
 
-      // update the utxos that are in blocks but not considered confirmed yet
-      pendingConf = updatedUtxos.values.flatten
-        .filterNot(utxo => updatedConfirmed.exists(_.outPoint == utxo.outPoint))
-        .toVector
-      updated <- spendingInfoDAO.updateAllSpendingInfoDb(
-        pendingConf ++ updatedConfirmed
-      )
+          // update the utxos that are in blocks but not considered confirmed yet
+          pendingConf =
+            updatedUtxos.values.flatten
+              .filterNot(utxo =>
+                updatedConfirmed.exists(_.outPoint == utxo.outPoint))
+          updated <-
+            spendingInfoDAO.updateAllSpendingInfoDbAction(
+              (pendingConf ++ updatedConfirmed).toVector)
+        } yield updated
+      }
+    }
 
-      _ <- walletCallbacks.executeOnReservedUtxos(updated)
-    } yield updated
+    val runF = updatedActionF.flatMap(safeDatabase.run)
+    runF.flatMap { vec =>
+      walletCallbacks
+        .executeOnReservedUtxos(vec)
+        .map(_ => vec)
+    }
   }
 
   /** @inheritdoc */
@@ -448,28 +451,30 @@ case class UtxoHandling(
       spentUtxos = infos.filter(_.state.isInstanceOf[SpentState])
       receivedWithBlocks <- getDbsByRelevantBlock(receivedUtxos)
       spentWithBlocks <- getDbsByRelevantBlock(spentUtxos)
-      updatedReceivedInfos <- updateUtxoReceiveConfirmedStates(
+      updatedReceivedInfosA = updateUtxoReceiveConfirmedStates(
         receivedWithBlocks)
-      updatedSpentInfos <- updateUtxoSpentConfirmedStates(spentWithBlocks)
+      updatedReceivedInfos <- safeDatabase.run(updatedReceivedInfosA)
+      updatedSpentInfosA = updateUtxoSpentConfirmedStates(spentWithBlocks)
+      updatedSpentInfos <- safeDatabase.run(updatedSpentInfosA)
     } yield (updatedReceivedInfos ++ updatedSpentInfos)
   }
 
   /** Inserts the UTXO at the given index into our DB, swallowing the error if
     * any (this is because we're operating on data we've already verified).
     */
-  def processReceivedUtxo(
+  def processReceivedUtxoAction(
       transaction: Transaction,
       index: Int,
-      blockHashOpt: Option[DoubleSha256DigestBE],
+      blockHashWithConfsOpt: Option[BlockHashWithConfs],
       addressDb: AddressDb
-  ): Future[SpendingInfoDb] = {
+  ): DBIOAction[SpendingInfoDb, NoStream, Effect.Read & Effect.Write] = {
     val output = transaction.outputs(index)
     val outPoint = TransactionOutPoint(transaction.txId, UInt32(index))
 
     // insert the UTXO into the DB
     val utxoF = writeUtxo(
       tx = transaction,
-      blockHashOpt = blockHashOpt,
+      blockHashWithConfsOpt = blockHashWithConfsOpt,
       output = output,
       outPoint = outPoint,
       addressDb = addressDb
