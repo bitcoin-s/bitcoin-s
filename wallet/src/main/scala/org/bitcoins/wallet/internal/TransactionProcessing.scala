@@ -442,7 +442,8 @@ case class TransactionProcessing(
       toBeUpdated = outputsBeingSpent.flatMap(
         markAsSpent(_, transaction.txIdBE)
       )
-      processed <- utxoHandling.updateUtxoSpentConfirmedStates(toBeUpdated)
+      withBlocks <- utxoHandling.getDbsByRelevantBlock(toBeUpdated)
+      processed <- utxoHandling.updateUtxoSpentConfirmedStates(withBlocks)
     } yield {
       processed
     }
@@ -619,19 +620,25 @@ case class TransactionProcessing(
           )
 
           val updateTxDbF = insertTransaction(transaction, blockHashOpt)
-
+          val withBlocksF = updateTxDbF.flatMap(_ =>
+            utxoHandling.getDbsByRelevantBlock(Vector(foundTxo)))
           // Update Txo State
-          updateTxDbF.flatMap(_ =>
-            utxoHandling.updateUtxoReceiveConfirmedStates(foundTxo).flatMap {
-              case Some(txo) =>
-                logger.debug(
-                  s"Updated block_hash of txo=${txo.txid.hex} new block hash=${blockHash.hex}"
-                )
-                Future.successful(txo)
-              case None =>
-                // State was not updated so we need to update it so it's block hash is in the database
-                spendingInfoDAO.update(foundTxo)
-            })
+          withBlocksF.flatMap { withBlocks =>
+            utxoHandling
+              .updateUtxoReceiveConfirmedStates(withBlocks)
+              .flatMap { txos =>
+                if (txos.length == 1) {
+                  val txo = txos.head
+                  logger.debug(
+                    s"Updated block_hash of txo=${txo.txid.hex} new block hash=${blockHash.hex}"
+                  )
+                  Future.successful(txo)
+                } else {
+                  // State was not updated so we need to update it so it's block hash is in the database
+                  spendingInfoDAO.update(foundTxo)
+                }
+              }
+          }
         case None =>
           logger.debug(
             s"Skipping further processing of transaction=${transaction.txIdBE.hex}, already processed."
