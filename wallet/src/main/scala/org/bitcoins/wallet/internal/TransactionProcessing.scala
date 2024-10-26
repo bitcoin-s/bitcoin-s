@@ -179,7 +179,7 @@ case class TransactionProcessing(
     // fetch all received spending info dbs relevant to txs in this block to improve performance
     val receivedSpendingInfoDbsF =
       spendingInfoDAO
-        .findTxs(block.transactions.toVector)
+        .findTxs(block.transactions)
 
     val cachedReceivedOptF = receivedSpendingInfoDbsF
       .map(Some(_)) // reduce allocations by creating Some here
@@ -196,71 +196,42 @@ case class TransactionProcessing(
     // as an optimization
     val relevantReceivedOutputsForBlockF = getRelevantOutputsForBlock(block)
 
-    val resultF: Future[Future[Unit]] = for {
-      // map on these first so we don't have to call
-      // .map everytime we iterate through a tx
-      // which is costly (thread overhead)
-      receivedSpendingInfoDbsOpt <- cachedReceivedOptF
-      spentSpendingInfoDbs <- spentSpendingInfoDbsF
-      relevantReceivedOutputsForBlock <-
-        relevantReceivedOutputsForBlockF
-      blockHashWithConfsOpt <- blockHashWithConfsOptF
-    } yield {
-      // we need to keep a cache of spentSpendingInfoDb
-      // for the case where we receive & then spend that
-      // same utxo in the same block
-      var cachedSpentOpt: Option[Vector[SpendingInfoDb]] = {
-        Some(spentSpendingInfoDbs)
-      }
-      val blockInputs = block.transactions.flatMap(_.inputs)
-      val processedF: Future[Unit] = {
-        block.transactions.foldLeft(Future.unit) { (walletF, transaction) =>
-          for {
-            _ <- walletF
-            relevantReceivedOutputsForTx = relevantReceivedOutputsForBlock
+    val actionsF: Future[Vector[
+      DBIOAction[ProcessTxResult, NoStream, Effect.Read & Effect.Write]]] =
+      for {
+        // map on these first so we don't have to call
+        // .map everytime we iterate through a tx
+        // which is costly (thread overhead)
+        receivedSpendingInfoDbsOpt <- cachedReceivedOptF
+        relevantReceivedOutputsForBlock <-
+          relevantReceivedOutputsForBlockF
+        blockHashWithConfsOpt <- blockHashWithConfsOptF
+        actions = {
+          block.transactions.map { transaction =>
+            val relevantReceivedOutputsForTx = relevantReceivedOutputsForBlock
               .getOrElse(transaction.txIdBE, Vector.empty)
-            action =
-              processTransactionImpl(
-                transaction = transaction,
-                blockHashWithConfsOpt = blockHashWithConfsOpt,
-                newTags = Vector.empty,
-                receivedSpendingInfoDbsOpt = receivedSpendingInfoDbsOpt,
-                spentSpendingInfoDbsOpt = cachedSpentOpt,
-                relevantReceivedOutputs = relevantReceivedOutputsForTx
-              )
-
-            processTxResult <- safeDatabase.run(action)
-            _ = {
-              // need to look if a received utxo is spent in the same block
-              // if so, we need to update our cachedSpentF
-              val spentInSameBlock: Vector[SpendingInfoDb] = {
-                processTxResult.updatedIncoming.filter { spendingInfoDb =>
-                  blockInputs.exists(
-                    _.previousOutput == spendingInfoDb.outPoint
-                  )
-                }
-              }
-
-              // add it to the cache
-              val newCachedSpentOpt = {
-                cachedSpentOpt match {
-                  case Some(spentSpendingInfo) =>
-                    Some(spentSpendingInfo ++ spentInSameBlock)
-                  case None =>
-                    Some(spentInSameBlock)
-                }
-              }
-              cachedSpentOpt = newCachedSpentOpt
+            for {
+              action <-
+                processTransactionImpl(
+                  transaction = transaction,
+                  blockHashWithConfsOpt = blockHashWithConfsOpt,
+                  newTags = Vector.empty,
+                  receivedSpendingInfoDbsOpt = receivedSpendingInfoDbsOpt,
+                  spentSpendingInfoDbsOpt = None,
+                  relevantReceivedOutputs = relevantReceivedOutputsForTx
+                )
+            } yield {
+              action
             }
-          } yield {
-            ()
           }
         }
+      } yield {
+        actions
       }
-      processedF
-    }
 
-    resultF.flatten
+    actionsF
+      .flatMap(actions => Future.sequence(actions.map(safeDatabase.run)))
+      .map(_ => ())
   }
 
   override def findTransaction(
