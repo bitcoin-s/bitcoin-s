@@ -157,28 +157,15 @@ case class UtxoHandling(
   }
 
   private[wallet] def updateUtxoSpentConfirmedStates(
-      txo: SpendingInfoDb
-  ): Future[Option[SpendingInfoDb]] = {
-    updateUtxoSpentConfirmedStates(Vector(txo)).map(_.headOption)
-  }
-
-  private[wallet] def updateUtxoSpentConfirmedStates(
-      txos: Vector[SpendingInfoDb]
+      relevantBlocks: Map[Option[BlockHashWithConfs], Vector[SpendingInfoDb]]
   ): Future[Vector[SpendingInfoDb]] = {
-    updateUtxoStates(txos, UtxoHandling.updateSpentTxoWithConfs)
+    updateUtxoStates(relevantBlocks, UtxoHandling.updateSpentTxoWithConfs)
   }
 
   private[wallet] def updateUtxoReceiveConfirmedStates(
-      txo: SpendingInfoDb
-  ): Future[Option[SpendingInfoDb]] = {
-    updateUtxoReceiveConfirmedStates(Vector(txo))
-      .map(_.headOption)
-  }
-
-  private[wallet] def updateUtxoReceiveConfirmedStates(
-      txos: Vector[SpendingInfoDb]
+      relevantBlocks: Map[Option[BlockHashWithConfs], Vector[SpendingInfoDb]]
   ): Future[Vector[SpendingInfoDb]] = {
-    updateUtxoStates(txos, UtxoHandling.updateReceivedTxoWithConfs)
+    updateUtxoStates(relevantBlocks, UtxoHandling.updateReceivedTxoWithConfs)
   }
 
   /** Returns a map of the SpendingInfoDbs with their relevant block. If the
@@ -189,7 +176,7 @@ case class UtxoHandling(
     */
   private[wallet] def getDbsByRelevantBlock(
       spendingInfoDbs: Vector[SpendingInfoDb]
-  ): Future[Map[Option[DoubleSha256DigestBE], Vector[SpendingInfoDb]]] = {
+  ): Future[Map[Option[BlockHashWithConfs], Vector[SpendingInfoDb]]] = {
     val txIds =
       spendingInfoDbs.map { db =>
         db.spendingTxIdOpt match {
@@ -200,7 +187,7 @@ case class UtxoHandling(
         }
       }
 
-    transactionDAO.findByTxIdBEs(txIds).map { txDbs =>
+    val blockHashMapF = transactionDAO.findByTxIdBEs(txIds).map { txDbs =>
       val blockHashMap = txDbs.map(db => db.txIdBE -> db.blockHashOpt).toMap
       val blockHashAndDb = spendingInfoDbs.map { txo =>
         val txToUse = txo.state match {
@@ -216,6 +203,8 @@ case class UtxoHandling(
         blockHashOpt -> vec.map(_._2)
       }
     }
+
+    blockHashMapF.flatMap(getConfirmationsForBlocks)
   }
 
   /** Updates all the given SpendingInfoDbs to the correct state based on how
@@ -227,54 +216,30 @@ case class UtxoHandling(
     *   of confirmations
     */
   private def updateUtxoStates(
-      spendingInfoDbs: Vector[SpendingInfoDb],
+      txsByBlock: Map[Option[BlockHashWithConfs], Vector[SpendingInfoDb]],
       fn: (SpendingInfoDb, Int, Int) => SpendingInfoDb
   ): Future[Vector[SpendingInfoDb]] = {
-    val relevantBlocksF
-        : Future[Map[Option[DoubleSha256DigestBE], Vector[SpendingInfoDb]]] = {
-      getDbsByRelevantBlock(spendingInfoDbs)
-    }
-
-    // fetch all confirmations for those blocks, do it in parallel
-    // as an optimzation, previously we would fetch sequentially
-    val blocksWithConfsF
-        : Future[Map[Option[BlockHashWithConfs], Vector[SpendingInfoDb]]] = {
-      for {
-        relevantBlocks <- relevantBlocksF
-        blocksWithConfirmations <- getConfirmationsForBlocks(relevantBlocks)
-      } yield blocksWithConfirmations
-    }
-
-    val toUpdateF = blocksWithConfsF.map { txsByBlock =>
-      val toUpdateFs: Vector[SpendingInfoDb] = txsByBlock.flatMap {
-        case (Some(blockHashWithConfs), txos) =>
-          blockHashWithConfs.confirmationsOpt match {
-            case None =>
-              logger.warn(
-                s"Given txos exist in block (${blockHashWithConfs.blockHash.hex}) that we do not have or that has been reorged! $txos"
-              )
-              Vector.empty
-            case Some(confs) =>
-              txos.map(fn(_, confs, walletConfig.requiredConfirmations))
-          }
-        case (None, txos) =>
-          logger.debug(
-            s"Currently have ${txos.size} transactions in the mempool"
-          )
-          txos
-      }.toVector
-
-      toUpdateFs
-    }
-
-    for {
-      toUpdate <- toUpdateF
-      _ =
-        if (toUpdate.nonEmpty)
-          logger.info(s"${toUpdate.size} txos are now confirmed!")
-        else logger.trace("No txos to be confirmed")
-      updated <- spendingInfoDAO.upsertAllSpendingInfoDb(toUpdate)
-    } yield updated
+    val toUpdates: Vector[SpendingInfoDb] = txsByBlock.flatMap {
+      case (Some(blockHashWithConfs), txos) =>
+        blockHashWithConfs.confirmationsOpt match {
+          case None =>
+            logger.warn(
+              s"Given txos exist in block (${blockHashWithConfs.blockHash.hex}) that we do not have or that has been reorged! $txos"
+            )
+            Vector.empty
+          case Some(confs) =>
+            txos.map(fn(_, confs, walletConfig.requiredConfirmations))
+        }
+      case (None, txos) =>
+        logger.debug(
+          s"Currently have ${txos.size} transactions in the mempool"
+        )
+        txos
+    }.toVector
+    if (toUpdates.nonEmpty)
+      logger.info(s"${toUpdates.size} txos are now confirmed!")
+    else logger.trace("No txos to be confirmed")
+    spendingInfoDAO.upsertAllSpendingInfoDb(toUpdates)
   }
 
   /** Fetches confirmations for the given blocks in parallel */
@@ -429,19 +394,21 @@ case class UtxoHandling(
       utxos: Vector[SpendingInfoDb]
   ): Future[Vector[SpendingInfoDb]] = {
     logger.info(s"Unreserving utxos ${utxos.map(_.outPoint)}")
-    val updatedUtxosF = Future {
+    val updatedUtxosF
+        : Future[Map[Option[BlockHashWithConfs], Vector[SpendingInfoDb]]] = {
       // make sure exception isn't thrown outside of a future to fix
       // see: https://github.com/bitcoin-s/bitcoin-s/issues/3813
       val unreserved = utxos.filterNot(_.state == TxoState.Reserved)
-      require(
-        unreserved.isEmpty,
-        s"Some utxos are not reserved, got $unreserved"
-      )
-
-      // unmark all utxos are reserved
-      val updatedUtxos = utxos
-        .map(_.copyWithState(TxoState.PendingConfirmationsReceived))
-      updatedUtxos
+      if (unreserved.nonEmpty) {
+        val exn = new IllegalArgumentException(
+          s"Some utxos are not reserved, got unreserved=$unreserved utxos=$utxos")
+        Future.failed(exn)
+      } else {
+        // unmark all utxos are reserved
+        val updatedUtxos = utxos
+          .map(_.copyWithState(TxoState.PendingConfirmationsReceived))
+        getDbsByRelevantBlock(updatedUtxos)
+      }
     }
 
     for {
@@ -450,8 +417,9 @@ case class UtxoHandling(
       updatedConfirmed <- updateUtxoReceiveConfirmedStates(updatedUtxos)
 
       // update the utxos that are in blocks but not considered confirmed yet
-      pendingConf = updatedUtxos.filterNot(utxo =>
-        updatedConfirmed.exists(_.outPoint == utxo.outPoint))
+      pendingConf = updatedUtxos.values.flatten
+        .filterNot(utxo => updatedConfirmed.exists(_.outPoint == utxo.outPoint))
+        .toVector
       updated <- spendingInfoDAO.updateAllSpendingInfoDb(
         pendingConf ++ updatedConfirmed
       )
@@ -478,9 +446,12 @@ case class UtxoHandling(
       _ = logger.debug(s"Updating states of ${infos.size} pending utxos...")
       receivedUtxos = infos.filter(_.state.isInstanceOf[ReceivedState])
       spentUtxos = infos.filter(_.state.isInstanceOf[SpentState])
-      updatedReceivedInfos <- updateUtxoReceiveConfirmedStates(receivedUtxos)
-      updatedSpentInfos <- updateUtxoSpentConfirmedStates(spentUtxos)
-    } yield (updatedReceivedInfos ++ updatedSpentInfos).toVector
+      receivedWithBlocks <- getDbsByRelevantBlock(receivedUtxos)
+      spentWithBlocks <- getDbsByRelevantBlock(spentUtxos)
+      updatedReceivedInfos <- updateUtxoReceiveConfirmedStates(
+        receivedWithBlocks)
+      updatedSpentInfos <- updateUtxoSpentConfirmedStates(spentWithBlocks)
+    } yield (updatedReceivedInfos ++ updatedSpentInfos)
   }
 
   /** Inserts the UTXO at the given index into our DB, swallowing the error if
