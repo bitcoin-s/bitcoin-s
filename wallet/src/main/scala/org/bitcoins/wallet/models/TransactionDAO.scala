@@ -78,10 +78,16 @@ trait TxDAO[DbEntryType <: TxDB]
   def findByTxIdAction(
       txIdBE: DoubleSha256DigestBE
   ): DBIOAction[Option[DbEntryType], NoStream, Effect.Read] = {
+    findByTxIdsAction(Vector(txIdBE)).map(_.headOption)
+  }
+
+  def findByTxIdsAction(
+      txIdBEs: Vector[DoubleSha256DigestBE]
+  ): DBIOAction[Vector[DbEntryType], NoStream, Effect.Read] = {
     table
-      .filter(_.txIdBE === txIdBE)
+      .filter(_.txIdBE.inSet(txIdBEs))
       .result
-      .map(_.headOption)
+      .map(_.toVector)
   }
 
   def findByTxId(txIdBE: DoubleSha256DigestBE): Future[Option[DbEntryType]] = {

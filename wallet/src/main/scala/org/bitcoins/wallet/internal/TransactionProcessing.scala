@@ -18,7 +18,7 @@ import org.bitcoins.core.protocol.transaction.{
   Transaction,
   TransactionOutPoint
 }
-import org.bitcoins.core.util.TimeUtil
+import org.bitcoins.core.util.{BlockHashWithConfs, TimeUtil}
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.TxoState.*
 import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
@@ -86,7 +86,7 @@ case class TransactionProcessing(
   ): Future[Unit] = {
     for {
       relevantReceivedOutputs <- getRelevantOutputs(transaction)
-      result <- processTransactionImpl(
+      action <- processTransactionImpl(
         transaction = transaction,
         blockHashOpt = blockHashOpt,
         newTags = Vector.empty,
@@ -94,14 +94,18 @@ case class TransactionProcessing(
         spentSpendingInfoDbsOpt = None,
         relevantReceivedOutputs = relevantReceivedOutputs
       )
+      processTx <- safeDatabase.run(action)
+      // only notify about our transactions
+      _ <-
+        if (
+          processTx.updatedIncoming.nonEmpty || processTx.updatedOutgoing.nonEmpty
+        ) {
+          walletCallbacks.executeOnTransactionProcessed(transaction)
+        } else Future.unit
     } yield {
-      if (result.updatedIncoming.nonEmpty || result.updatedOutgoing.nonEmpty) {
-        logger.info(
-          s"Finished processing of transaction=${transaction.txIdBE.hex}. Relevant incomingTXOs=${result.updatedIncoming.length}, outgoingTXOs=${result.updatedOutgoing.length}"
-        )
-
-      }
-      ()
+      logger.info(
+        s"Finished processing of transaction=${transaction.txIdBE.hex}. Relevant incomingTXOs=${processTx.updatedIncoming.length}, outgoingTXOs=${processTx.updatedOutgoing.length}"
+      )
     }
   }
 
@@ -205,47 +209,47 @@ case class TransactionProcessing(
       }
       val blockInputs = block.transactions.flatMap(_.inputs)
       val processedF: Future[Unit] = {
-        block.transactions.foldLeft(Future.successful(())) {
-          (walletF, transaction) =>
-            for {
-              _ <- walletF
-              relevantReceivedOutputsForTx = relevantReceivedOutputsForBlock
-                .getOrElse(transaction.txIdBE, Vector.empty)
-              processTxResult <- {
-                processTransactionImpl(
-                  transaction = transaction,
-                  blockHashOpt = blockHashOpt,
-                  newTags = Vector.empty,
-                  receivedSpendingInfoDbsOpt = receivedSpendingInfoDbsOpt,
-                  spentSpendingInfoDbsOpt = cachedSpentOpt,
-                  relevantReceivedOutputs = relevantReceivedOutputsForTx
-                )
-              }
-              _ = {
-                // need to look if a received utxo is spent in the same block
-                // if so, we need to update our cachedSpentF
-                val spentInSameBlock: Vector[SpendingInfoDb] = {
-                  processTxResult.updatedIncoming.filter { spendingInfoDb =>
-                    blockInputs.exists(
-                      _.previousOutput == spendingInfoDb.outPoint
-                    )
-                  }
-                }
+        block.transactions.foldLeft(Future.unit) { (walletF, transaction) =>
+          for {
+            _ <- walletF
+            relevantReceivedOutputsForTx = relevantReceivedOutputsForBlock
+              .getOrElse(transaction.txIdBE, Vector.empty)
+            action <-
+              processTransactionImpl(
+                transaction = transaction,
+                blockHashOpt = blockHashOpt,
+                newTags = Vector.empty,
+                receivedSpendingInfoDbsOpt = receivedSpendingInfoDbsOpt,
+                spentSpendingInfoDbsOpt = cachedSpentOpt,
+                relevantReceivedOutputs = relevantReceivedOutputsForTx
+              )
 
-                // add it to the cache
-                val newCachedSpentOpt = {
-                  cachedSpentOpt match {
-                    case Some(spentSpendingInfo) =>
-                      Some(spentSpendingInfo ++ spentInSameBlock)
-                    case None =>
-                      Some(spentInSameBlock)
-                  }
+            processTxResult <- safeDatabase.run(action)
+            _ = {
+              // need to look if a received utxo is spent in the same block
+              // if so, we need to update our cachedSpentF
+              val spentInSameBlock: Vector[SpendingInfoDb] = {
+                processTxResult.updatedIncoming.filter { spendingInfoDb =>
+                  blockInputs.exists(
+                    _.previousOutput == spendingInfoDb.outPoint
+                  )
                 }
-                cachedSpentOpt = newCachedSpentOpt
               }
-            } yield {
-              ()
+
+              // add it to the cache
+              val newCachedSpentOpt = {
+                cachedSpentOpt match {
+                  case Some(spentSpendingInfo) =>
+                    Some(spentSpendingInfo ++ spentInSameBlock)
+                  case None =>
+                    Some(spentInSameBlock)
+                }
+              }
+              cachedSpentOpt = newCachedSpentOpt
             }
+          } yield {
+            ()
+          }
         }
       }
       processedF
@@ -327,7 +331,7 @@ case class TransactionProcessing(
           blockHashOpt
         )
       relevantOutputs <- relevantOutputsF
-      result <- processTransactionImpl(
+      action <- processTransactionImpl(
         transaction = txDb.transaction,
         blockHashOpt = blockHashOpt,
         newTags = newTags,
@@ -335,6 +339,13 @@ case class TransactionProcessing(
         spentSpendingInfoDbsOpt = None,
         relevantOutputs
       )
+      result <- safeDatabase.run(action)
+      _ <-
+        if (
+          result.updatedIncoming.nonEmpty || result.updatedOutgoing.nonEmpty
+        ) {
+          walletCallbacks.executeOnTransactionProcessed(transaction)
+        } else Future.unit
     } yield {
       val txid = txDb.transaction.txIdBE
       val changeOutputs = result.updatedIncoming.length
@@ -384,6 +395,41 @@ case class TransactionProcessing(
     }
   }
 
+  private def processReceivedUtxosAction(
+      transaction: Transaction,
+      blockHashWithConfsOpt: Option[BlockHashWithConfs],
+      spendingInfoDbs: Vector[SpendingInfoDb],
+      newTags: Vector[AddressTag],
+      relevantReceivedOutputs: Vector[OutputWithIndex]
+  ): DBIOAction[Vector[SpendingInfoDb],
+                NoStream,
+                Effect.Read & Effect.Write] = {
+    if (spendingInfoDbs.isEmpty && relevantReceivedOutputs.isEmpty) {
+      // as an optimization if we don't have any relevant utxos
+      // and any relevant outputs that match scripts in our wallet
+      // we can just return now
+      DBIOAction.successful(Vector.empty)
+    } else {
+      val newOutputs = relevantReceivedOutputs.filterNot { output =>
+        val outPoint =
+          TransactionOutPoint(transaction.txId, UInt32(output.index))
+        spendingInfoDbs.exists(_.outPoint == outPoint)
+      }
+      if (newOutputs.nonEmpty) {
+        processNewReceivedTx(transaction,
+                             blockHashWithConfirmations = blockHashWithConfsOpt,
+                             newTags,
+                             newOutputs)
+          .map(_.toVector)
+      } else {
+        val processedVec = spendingInfoDbs.map { txo =>
+          processExistingReceivedTxo(transaction, blockHashWithConfsOpt, txo)
+        }
+        slick.dbio.DBIOAction.sequence(processedVec)
+      }
+    }
+  }
+
   /** Processes received utxos that are contained in the given transaction
     * @param transaction
     *   the transaction that we are receiving utxos from
@@ -402,48 +448,67 @@ case class TransactionProcessing(
       newTags: Vector[AddressTag],
       relevantReceivedOutputs: Vector[OutputWithIndex]
   ): Future[Vector[SpendingInfoDb]] = {
-    if (spendingInfoDbs.isEmpty && relevantReceivedOutputs.isEmpty) {
-      // as an optimization if we don't have any relevant utxos
-      // and any relevant outputs that match scripts in our wallet
-      // we can just return now
-      Future.successful(Vector.empty)
-    } else {
-      val newOutputs = relevantReceivedOutputs.filterNot { output =>
-        val outPoint =
-          TransactionOutPoint(transaction.txId, UInt32(output.index))
-        spendingInfoDbs.exists(_.outPoint == outPoint)
-      }
-      if (newOutputs.nonEmpty) {
-        processNewReceivedTx(transaction, blockHashOpt, newTags, newOutputs)
-          .map(_.toVector)
-      } else {
-        val processedVec = spendingInfoDbs.map { txo =>
-          processExistingReceivedTxo(transaction, blockHashOpt, txo)
-        }
-        Future.sequence(processedVec)
-      }
+    val confsOptF: Future[Option[BlockHashWithConfs]] = blockHashOpt match {
+      case Some(blockHash) =>
+        chainQueryApi
+          .getNumberOfConfirmations(blockHash)
+          .map(confsOpt => Some(BlockHashWithConfs(blockHash, confsOpt)))
+      case None => Future.successful(None)
     }
+
+    val actionF = confsOptF.map { confsOpt =>
+      processReceivedUtxosAction(transaction,
+                                 confsOpt,
+                                 spendingInfoDbs,
+                                 newTags,
+                                 relevantReceivedOutputs)
+    }
+    actionF.flatMap(a => safeDatabase.run(a))
   }
 
-  /** Searches for outputs on the given transaction that are being spent from
-    * our wallet
-    */
   override def processSpentUtxos(
       transaction: Transaction,
       outputsBeingSpent: Vector[SpendingInfoDb],
       blockHashOpt: Option[DoubleSha256DigestBE]
   ): Future[Vector[SpendingInfoDb]] = {
+    val blockHashWithConfsF: Future[Option[BlockHashWithConfs]] =
+      blockHashOpt match {
+        case Some(blockHash) =>
+          chainQueryApi
+            .getNumberOfConfirmations(blockHash)
+            .map(BlockHashWithConfs(blockHash, _))
+            .map(Some.apply)
+        case None => Future.successful(None)
+      }
+    val actionF = blockHashWithConfsF.map { confsOpt =>
+      processSpentUtxosAction(transaction, outputsBeingSpent, confsOpt)
+    }
+
+    actionF.flatMap(safeDatabase.run)
+  }
+
+  /** Searches for outputs on the given transaction that are being spent from
+    * our wallet
+    */
+  private def processSpentUtxosAction(
+      transaction: Transaction,
+      outputsBeingSpent: Vector[SpendingInfoDb],
+      blockHashWithConfs: Option[BlockHashWithConfs]
+  ): DBIOAction[Vector[SpendingInfoDb],
+                NoStream,
+                Effect.Read & Effect.Write] = {
     for {
       _ <- {
         if (outputsBeingSpent.nonEmpty)
-          insertTransaction(transaction, blockHashOpt)
-        else Future.unit
+          insertTransactionAction(transaction,
+                                  blockHashWithConfs.map(_.blockHash))
+        else DBIOAction.unit
       }
       toBeUpdated = outputsBeingSpent.flatMap(
         markAsSpent(_, transaction.txIdBE)
       )
-      withBlocks <- utxoHandling.getDbsByRelevantBlock(toBeUpdated)
-      processed <- utxoHandling.updateUtxoSpentConfirmedStates(withBlocks)
+      m = Map(blockHashWithConfs -> toBeUpdated)
+      processed <- utxoHandling.updateUtxoSpentConfirmedStates(m)
     } yield {
       processed
     }
@@ -460,85 +525,87 @@ case class TransactionProcessing(
       receivedSpendingInfoDbsOpt: Option[Vector[SpendingInfoDb]],
       spentSpendingInfoDbsOpt: Option[Vector[SpendingInfoDb]],
       relevantReceivedOutputs: Vector[OutputWithIndex]
-  ): Future[ProcessTxResult] = {
+  ): Future[
+    DBIOAction[ProcessTxResult, NoStream, Effect.Read & Effect.Write]] = {
 
     logger.debug(
       s"Processing transaction=${transaction.txIdBE.hex} with blockHash=${blockHashOpt
           .map(_.hex)}"
     )
-    val receivedSpendingInfoDbsF: Future[Vector[SpendingInfoDb]] = {
+    val receivedSpendingInfoDbsA
+        : DBIOAction[Vector[SpendingInfoDb], NoStream, Effect.Read] = {
       receivedSpendingInfoDbsOpt match {
         case Some(received) =>
           // spending info dbs are cached, so fetch the one relevant for this tx
           val filtered = received.filter(_.txid == transaction.txIdBE)
-          Future.successful(filtered)
+          DBIOAction.successful(filtered)
         case None =>
           // no caching, just fetch from the database
-          spendingInfoDAO.findTx(transaction)
+          spendingInfoDAO.findTxAction(transaction)
       }
 
     }
 
-    val spentSpendingInfoDbsF: Future[Vector[SpendingInfoDb]] = {
+    val spentSpendingInfoDbsF
+        : DBIOAction[Vector[SpendingInfoDb], NoStream, Effect.Read] = {
       spentSpendingInfoDbsOpt match {
         case Some(spent) =>
           // spending info dbs are cached, so filter for outpoints related to this tx
           val filtered = spent.filter { s =>
             transaction.inputs.exists(_.previousOutput == s.outPoint)
           }
-          Future.successful(filtered)
+          DBIOAction.successful(filtered)
         case None =>
           // no caching, just fetch from db
-          spendingInfoDAO.findOutputsBeingSpent(transaction)
+          spendingInfoDAO.findOutputsBeingSpentAction(Vector(transaction))
       }
     }
-
-    val processTxF = for {
-      receivedSpendingInfoDbs <- receivedSpendingInfoDbsF
-      receivedStart = TimeUtil.currentEpochMs
-      incoming <- processReceivedUtxos(
-        transaction = transaction,
-        blockHashOpt = blockHashOpt,
-        spendingInfoDbs = receivedSpendingInfoDbs,
-        newTags = newTags,
-        relevantReceivedOutputs = relevantReceivedOutputs
-      )
-      _ = if (incoming.nonEmpty) {
-        logger.info(
-          s"Finished processing ${incoming.length} received outputs, balance=${incoming
-              .map(_.output.value)
-              .sum} it took=${TimeUtil.currentEpochMs - receivedStart}ms"
-        )
-      }
-
-      spentSpendingInfoDbs <- spentSpendingInfoDbsF
-      spentStart = TimeUtil.currentEpochMs
-      outgoing <- processSpentUtxos(
-        transaction = transaction,
-        outputsBeingSpent = spentSpendingInfoDbs,
-        blockHashOpt = blockHashOpt
-      )
-      _ = if (outgoing.nonEmpty) {
-        logger.info(
-          s"Finished processing ${outgoing.length} spent outputs, it took=${TimeUtil.currentEpochMs - spentStart}ms"
-        )
-      }
-      _ <-
-        // only notify about our transactions
-        if (incoming.nonEmpty || outgoing.nonEmpty) {
-          walletCallbacks.executeOnTransactionProcessed(transaction)
-        } else Future.unit
-    } yield {
-      ProcessTxResult(incoming, outgoing)
+    val confsOptF: Future[Option[BlockHashWithConfs]] = blockHashOpt match {
+      case Some(blockHash) =>
+        chainQueryApi
+          .getNumberOfConfirmations(blockHash)
+          .map(confsOpt => Some(BlockHashWithConfs(blockHash, confsOpt)))
+      case None => Future.successful(None)
     }
+    val actionF: Future[
+      DBIOAction[ProcessTxResult, NoStream, Effect.Write & Effect.Read]] =
+      confsOptF.map { confsOpt =>
+        for {
+          receivedSpendingInfoDbs <- receivedSpendingInfoDbsA
+          receivedStart = TimeUtil.currentEpochMs
+          incoming <- processReceivedUtxosAction(
+            transaction = transaction,
+            blockHashWithConfsOpt = confsOpt,
+            spendingInfoDbs = receivedSpendingInfoDbs,
+            newTags = newTags,
+            relevantReceivedOutputs = relevantReceivedOutputs
+          )
+          _ = if (incoming.nonEmpty) {
+            logger.info(
+              s"Finished processing ${incoming.length} received outputs, balance=${incoming
+                  .map(_.output.value)
+                  .sum} it took=${TimeUtil.currentEpochMs - receivedStart}ms"
+            )
+          }
 
-    processTxF.failed.foreach { case err =>
-      logger.error(
-        s"Failed to process transaction=${transaction.txIdBE.hex} blockHash=${blockHashOpt}",
-        err
-      )
-    }
-    processTxF
+          spentSpendingInfoDbs <- spentSpendingInfoDbsF
+          spentStart = TimeUtil.currentEpochMs
+          outgoing <- processSpentUtxosAction(
+            transaction = transaction,
+            outputsBeingSpent = spentSpendingInfoDbs,
+            blockHashWithConfs = confsOpt
+          )
+          _ = if (outgoing.nonEmpty) {
+            logger.info(
+              s"Finished processing ${outgoing.length} spent outputs, it took=${TimeUtil.currentEpochMs - spentStart}ms"
+            )
+          }
+        } yield {
+          ProcessTxResult(incoming, outgoing)
+        }
+      }
+    actionF
+
   }
 
   /** If the given UTXO is marked as unspent and returns it so it can be updated
@@ -601,9 +668,9 @@ case class TransactionProcessing(
     */
   private def processExistingReceivedTxo(
       transaction: Transaction,
-      blockHashOpt: Option[DoubleSha256DigestBE],
+      blockHashWithConfsOpt: Option[BlockHashWithConfs],
       foundTxo: SpendingInfoDb
-  ): Future[SpendingInfoDb] = {
+  ): DBIOAction[SpendingInfoDb, NoStream, Effect.Read & Effect.Write] = {
     if (foundTxo.txid != transaction.txIdBE) {
       val errMsg =
         Seq(
@@ -611,39 +678,38 @@ case class TransactionProcessing(
           "This is either a reorg or a double spent, which is not implemented yet"
         ).mkString(" ")
       logger.error(errMsg)
-      Future.failed(new RuntimeException(errMsg))
+      slick.dbio.DBIOAction.failed(new RuntimeException(errMsg))
     } else {
-      blockHashOpt match {
-        case Some(blockHash) =>
+      blockHashWithConfsOpt match {
+        case Some(blockHashWithConfs) =>
+          val blockHash = blockHashWithConfs.blockHash
           logger.debug(
             s"Updating block_hash of txo=${transaction.txIdBE.hex}, new block hash=${blockHash.hex}"
           )
+          val updateTxDbA =
+            insertTransactionAction(transaction, Some(blockHash))
 
-          val updateTxDbF = insertTransaction(transaction, blockHashOpt)
-          val withBlocksF = updateTxDbF.flatMap(_ =>
-            utxoHandling.getDbsByRelevantBlock(Vector(foundTxo)))
           // Update Txo State
-          withBlocksF.flatMap { withBlocks =>
-            utxoHandling
-              .updateUtxoReceiveConfirmedStates(withBlocks)
-              .flatMap { txos =>
-                if (txos.length == 1) {
-                  val txo = txos.head
+          val map = Map(blockHashWithConfsOpt -> Vector(foundTxo))
+          updateTxDbA.flatMap(_ =>
+            utxoHandling.updateUtxoReceiveConfirmedStates(map).flatMap { vec =>
+              vec.headOption match {
+                case Some(txo) =>
                   logger.debug(
                     s"Updated block_hash of txo=${txo.txid.hex} new block hash=${blockHash.hex}"
                   )
-                  Future.successful(txo)
-                } else {
+                  slick.dbio.DBIOAction.successful(txo)
+                case None =>
                   // State was not updated so we need to update it so it's block hash is in the database
-                  spendingInfoDAO.update(foundTxo)
-                }
+                  spendingInfoDAO.updateAction(foundTxo)
               }
-          }
+            })
+
         case None =>
           logger.debug(
             s"Skipping further processing of transaction=${transaction.txIdBE.hex}, already processed."
           )
-          Future.successful(foundTxo)
+          slick.dbio.DBIOAction.successful(foundTxo)
       }
     }
   }
@@ -652,8 +718,10 @@ case class TransactionProcessing(
   private def addReceivedUTXOs(
       outputsWithIndex: Seq[OutputWithIndex],
       transaction: Transaction,
-      blockHashOpt: Option[DoubleSha256DigestBE]
-  ): Future[Seq[SpendingInfoDb]] = {
+      blockHashWithConfsOpt: Option[BlockHashWithConfs]
+  ): DBIOAction[Vector[SpendingInfoDb],
+                NoStream,
+                Effect.Write & Effect.Read] = {
 
     val spks = outputsWithIndex.map(_.output.scriptPubKey).toVector
 
@@ -668,22 +736,22 @@ case class TransactionProcessing(
       matchAddressDbWithOutputs(addressDbs, outputsWithIndex.toVector)
     }
 
-    val nested = for {
-      addressDbWithOutput <- safeDatabase.run(addressDbWithOutputA)
+    val action = for {
+      addressDbWithOutput <- addressDbWithOutputA
     } yield {
       val outputsVec = addressDbWithOutput.map { case (addressDb, out) =>
         require(addressDb.scriptPubKey == out.output.scriptPubKey)
-        utxoHandling.processReceivedUtxo(
+        utxoHandling.processReceivedUtxoAction(
           transaction,
           out.index,
-          blockHashOpt,
+          blockHashWithConfsOpt,
           addressDb
         )
       }
-      Future.sequence(outputsVec)
+      slick.dbio.DBIOAction.sequence(outputsVec)
     }
 
-    nested.flatten
+    action.flatten
   }
 
   /** Matches address dbs with outputs, drops addressDb/outputs that do not have
@@ -774,17 +842,19 @@ case class TransactionProcessing(
     */
   private def processNewReceivedTx(
       transaction: Transaction,
-      blockHashOpt: Option[DoubleSha256DigestBE],
+      blockHashWithConfirmations: Option[BlockHashWithConfs],
       newTags: Vector[AddressTag],
       relevantReceivedOutputs: Vector[OutputWithIndex]
-  ): Future[Seq[SpendingInfoDb]] = {
+  ): DBIOAction[Vector[SpendingInfoDb],
+                NoStream,
+                Effect.Write & Effect.Read] = {
     if (relevantReceivedOutputs.isEmpty) {
 
       logger.trace(
         s"Found no outputs relevant to us in transaction${transaction.txIdBE.hex}"
       )
 
-      Future.successful(Vector.empty)
+      DBIOAction.successful(Vector.empty)
     } else {
       val filteredOutputs =
         transaction.outputs.zipWithIndex.filter(o =>
@@ -792,7 +862,7 @@ case class TransactionProcessing(
 
       if (filteredOutputs.isEmpty) {
         // no relevant outputs in this tx, return early
-        Future.successful(Vector.empty)
+        DBIOAction.successful(Vector.empty)
       } else {
         val relevantReceivedOutputsForTx: Vector[OutputWithIndex] = {
 
@@ -820,7 +890,7 @@ case class TransactionProcessing(
           incomingTx <- insertIncomingTransaction(
             transaction,
             totalIncoming,
-            blockHashOpt
+            blockHashWithConfirmations.map(_.blockHash)
           )
         } yield incomingTx
 
@@ -851,8 +921,11 @@ case class TransactionProcessing(
         } yield (ourOutputs, txDb)
 
         for {
-          (ourOutputs, txDb) <- safeDatabase.run(action)
-          utxos <- addReceivedUTXOs(ourOutputs, txDb.transaction, blockHashOpt)
+          (ourOutputs, txDb) <- action
+          utxos <- addReceivedUTXOs(outputsWithIndex = ourOutputs,
+                                    transaction = txDb.transaction,
+                                    blockHashWithConfsOpt =
+                                      blockHashWithConfirmations)
         } yield utxos
       }
     }
