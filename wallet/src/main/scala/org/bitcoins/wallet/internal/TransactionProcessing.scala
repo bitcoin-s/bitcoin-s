@@ -184,10 +184,6 @@ case class TransactionProcessing(
     val cachedReceivedOptF = receivedSpendingInfoDbsF
       .map(Some(_)) // reduce allocations by creating Some here
 
-    // fetch all spending infoDbs for this block to improve performance
-    val spentSpendingInfoDbsF =
-      spendingInfoDAO.findOutputsBeingSpent(block.transactions.toVector)
-
     val blockHash = block.blockHeader.hashBE
     val blockHashWithConfsOptF: Future[Option[BlockHashWithConfs]] =
       WalletUtil.getBlockHashWithConfs(chainQueryApi, blockHash)
