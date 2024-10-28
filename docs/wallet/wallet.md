@@ -64,7 +64,9 @@ import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config._
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.core.api.wallet.WalletApi
+import org.bitcoins.core.util.BlockHashWithConfs
 import org.bitcoins.wallet.Wallet
+import org.bitcoins.wallet.util.WalletUtil
 
 import com.typesafe.config.ConfigFactory
 import java.nio.file.Files
@@ -157,12 +159,13 @@ val walletF: Future[WalletApi] = configF.flatMap { _ =>
 
 // when this future completes, ww have sent a transaction
 // from bitcoind to the Bitcoin-S wallet
-val transactionF: Future[(Transaction, Option[DoubleSha256DigestBE])] = for {
+val transactionF: Future[(Transaction, Option[BlockHashWithConfs])] = for {
     wallet <- walletF
     address <- wallet.getNewAddress()
     txid <- bitcoind.sendToAddress(address, 3.bitcoin)
     transaction <- bitcoind.getRawTransaction(txid)
-} yield (transaction.hex, transaction.blockhash)
+    blockHashWithConfs <- WalletUtil.getBlockHashWithConfs(bitcoind,transaction.blockhash)
+} yield (transaction.hex, blockHashWithConfs)
 
 // when this future completes, we have processed
 // the transaction from bitcoind, and we have
