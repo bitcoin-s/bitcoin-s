@@ -25,6 +25,7 @@ import org.bitcoins.testkit.wallet.FundWalletUtil.{
 import org.bitcoins.testkitcore.gen.TransactionGenerators
 import org.bitcoins.testkitcore.util.TransactionTestUtil
 import org.bitcoins.wallet.config.WalletAppConfig
+import org.bitcoins.wallet.util.WalletUtil
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -107,7 +108,10 @@ trait FundWalletUtil extends BitcoinSLogger {
       addresses <- addressesF
       addressAmountMap = addresses.zip(amts).toMap
       (tx, blockHash) <- fundAddressesWithBitcoind(addressAmountMap, bitcoind)
-      _ <- wallet.transactionProcessing.processTransaction(tx, Some(blockHash))
+      blockHashWithConfs <- WalletUtil.getBlockHashWithConfs(bitcoind,
+                                                             blockHash)
+      _ <- wallet.transactionProcessing.processTransaction(tx,
+                                                           blockHashWithConfs)
     } yield (tx, blockHash)
 
     txAndHashF.map(_ => wallet)

@@ -232,7 +232,8 @@ case class Wallet(
     for {
       _ <- nodeApi.broadcastTransaction(transaction)
       _ <- transactionProcessing.processTransaction(transaction,
-                                                    blockHashOpt = None)
+                                                    blockHashWithConfsOpt =
+                                                      None)
       _ <- walletCallbacks.executeOnTransactionBroadcast(transaction)
     } yield ()
 

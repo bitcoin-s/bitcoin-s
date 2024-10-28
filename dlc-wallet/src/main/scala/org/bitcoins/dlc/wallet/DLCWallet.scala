@@ -1935,7 +1935,8 @@ case class DLCWallet(override val walletApi: Wallet)(implicit
       _ <- updateClosingTxId(contractId, refundTx.txIdBE)
 
       _ <- transactionProcessing.processTransaction(refundTx,
-                                                    blockHashOpt = None)
+                                                    blockHashWithConfsOpt =
+                                                      None)
       status <- findDLC(dlcDb.dlcId)
       _ <- dlcConfig.walletCallbacks.executeOnDLCStateChange(status.get)
     } yield refundTx

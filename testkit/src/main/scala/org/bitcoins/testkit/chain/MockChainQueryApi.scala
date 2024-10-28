@@ -5,7 +5,7 @@ import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.core.gcs.BlockFilter
 import org.bitcoins.core.protocol.BlockStamp
 import org.bitcoins.core.protocol.blockchain.RegTestNetChainParams
-import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.util.{BlockHashWithConfs, FutureUtil}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 
 import scala.concurrent.Future
@@ -18,6 +18,9 @@ object MockChainQueryApi extends ChainQueryApi {
   val testBlockHash: DoubleSha256DigestBE = DoubleSha256DigestBE.fromHex(
     "00000000496dcc754fabd97f3e2df0a7337eab417d75537fecf97a7ebb0e7c75"
   )
+
+  val blockHashWithConfs: BlockHashWithConfs =
+    BlockHashWithConfs(testBlockHash, Some(6))
 
   /** Gets the height of the given block */
   override def getBlockHeight(
@@ -41,7 +44,7 @@ object MockChainQueryApi extends ChainQueryApi {
       blockHash: DoubleSha256DigestBE
   ): Future[Option[Int]] = {
     if (blockHash == testBlockHash) {
-      Future.successful(Some(6))
+      Future.successful(blockHashWithConfs.confirmationsOpt)
     } else FutureUtil.none
   }
 

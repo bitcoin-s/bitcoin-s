@@ -11,6 +11,8 @@ import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTestCachedBitcoindNewest,
   WalletWithBitcoindRpc
 }
+import org.bitcoins.wallet.util.WalletUtil
+
 import scala.concurrent.duration.DurationInt
 
 class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
@@ -110,9 +112,12 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         bitcoindAddr <- bitcoindAddrF
         blockHashes <-
           bitcoind.generateToAddress(blocks = numBlocks, address = bitcoindAddr)
+        blockHashWithConfs <- WalletUtil.getBlockHashWithConfs(
+          bitcoind,
+          blockHashes.headOption)
         _ <- wallet.transactionProcessing.processTransaction(
           transaction = tx,
-          blockHashOpt = blockHashes.headOption
+          blockHashWithConfsOpt = blockHashWithConfs
         )
         balance <- wallet.getBalance()
         unconfirmedBalance <- wallet.getUnconfirmedBalance()
@@ -171,9 +176,12 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         bitcoindAddr <- bitcoindAddrF
         blockHashes <-
           bitcoind.generateToAddress(blocks = numBlocks, address = bitcoindAddr)
+        blockHashWithConfs <- WalletUtil.getBlockHashWithConfs(
+          bitcoind,
+          blockHashes.headOption)
         _ <- wallet.transactionProcessing.processTransaction(
           transaction = tx,
-          blockHashOpt = blockHashes.headOption
+          blockHashWithConfsOpt = blockHashWithConfs
         )
         balance <- wallet.getBalance()
         unconfirmedBalance <- wallet.getUnconfirmedBalance()
@@ -235,9 +243,12 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         bitcoindAddr <- bitcoindAddrF
         blockHashes <-
           bitcoind.generateToAddress(blocks = numBlocks, address = bitcoindAddr)
+        blockHashWithConfs <- WalletUtil.getBlockHashWithConfs(
+          bitcoind,
+          blockHashes.headOption)
         _ <- wallet.transactionProcessing.processTransaction(
           transaction = tx,
-          blockHashOpt = blockHashes.headOption
+          blockHashWithConfsOpt = blockHashWithConfs
         )
         balance <- wallet.getBalance()
         unconfirmedBalance <- wallet.getUnconfirmedBalance()
@@ -523,9 +534,12 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         bitcoindAddr <- bitcoindAddrF
         blockHashes <-
           bitcoind.generateToAddress(blocks = numBlocks, address = bitcoindAddr)
+        blockHashWithConfs <- WalletUtil.getBlockHashWithConfs(
+          bitcoind,
+          blockHashes.headOption)
         _ <- wallet.transactionProcessing.processTransaction(
           transaction = tx,
-          blockHashOpt = blockHashes.headOption
+          blockHashWithConfsOpt = blockHashWithConfs
         )
         balance <- wallet.getBalance()
         unconfirmedBalance <- wallet.getUnconfirmedBalance()

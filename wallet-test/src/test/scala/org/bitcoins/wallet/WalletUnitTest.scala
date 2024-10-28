@@ -254,9 +254,9 @@ class WalletUnitTest extends BitcoinSWalletTest {
         spk = addr.scriptPubKey
         _ = assert(spk == P2PKHScriptPubKey(walletKey))
         dummyPrevTx = dummyTx(spk = spk)
-        _ <- wallet.transactionProcessing.processTransaction(dummyPrevTx,
-                                                             blockHashOpt =
-                                                               None)
+        _ <- wallet.transactionProcessing.processTransaction(
+          dummyPrevTx,
+          blockHashWithConfsOpt = None)
 
         psbt = dummyPSBT(prevTxId = dummyPrevTx.txId)
 
@@ -280,9 +280,9 @@ class WalletUnitTest extends BitcoinSWalletTest {
         spk = addr.scriptPubKey
         _ = assert(spk == P2SHScriptPubKey(P2WPKHWitnessSPKV0(walletKey)))
         dummyPrevTx = dummyTx(spk = spk)
-        _ <- wallet.transactionProcessing.processTransaction(dummyPrevTx,
-                                                             blockHashOpt =
-                                                               None)
+        _ <- wallet.transactionProcessing.processTransaction(
+          dummyPrevTx,
+          blockHashWithConfsOpt = None)
 
         psbt = dummyPSBT(prevTxId = dummyPrevTx.txId)
 
@@ -306,9 +306,9 @@ class WalletUnitTest extends BitcoinSWalletTest {
         spk = addr.scriptPubKey
         _ = assert(spk == P2WPKHWitnessSPKV0(walletKey))
         dummyPrevTx = dummyTx(spk = spk)
-        _ <- wallet.transactionProcessing.processTransaction(dummyPrevTx,
-                                                             blockHashOpt =
-                                                               None)
+        _ <- wallet.transactionProcessing.processTransaction(
+          dummyPrevTx,
+          blockHashWithConfsOpt = None)
 
         psbt = dummyPSBT(prevTxId = dummyPrevTx.txId)
           .addUTXOToInput(dummyPrevTx, 0)
@@ -339,12 +339,14 @@ class WalletUnitTest extends BitcoinSWalletTest {
       spk = addr.scriptPubKey
       _ = assert(spk == P2WPKHWitnessSPKV0(walletKey))
       dummyPrevTx = dummyTx(spk = spk)
-      _ <- wallet.transactionProcessing.processTransaction(dummyPrevTx,
-                                                           blockHashOpt = None)
+      _ <- wallet.transactionProcessing.processTransaction(
+        dummyPrevTx,
+        blockHashWithConfsOpt = None)
 
       dummyPrevTx1 = dummyTx(prevTxId = dummyPrevTx.txId, spk = spk)
-      _ <- wallet.transactionProcessing.processTransaction(dummyPrevTx1,
-                                                           blockHashOpt = None)
+      _ <- wallet.transactionProcessing.processTransaction(
+        dummyPrevTx1,
+        blockHashWithConfsOpt = None)
 
       toBroadcast <- wallet.sendFundsHandling.getTransactionsToBroadcast
     } yield assert(toBroadcast.map(_.txIdBE) == Vector(dummyPrevTx1.txIdBE))

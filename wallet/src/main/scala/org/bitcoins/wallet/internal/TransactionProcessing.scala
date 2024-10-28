@@ -38,6 +38,7 @@ import org.bitcoins.wallet.models.{
   WalletDAOs,
   WalletStateDescriptorDAO
 }
+import org.bitcoins.wallet.util.WalletUtil
 import slick.dbio.{DBIOAction, Effect, NoStream}
 
 import scala.collection.mutable
@@ -82,13 +83,13 @@ case class TransactionProcessing(
   /** @inheritdoc */
   override def processTransaction(
       transaction: Transaction,
-      blockHashOpt: Option[DoubleSha256DigestBE]
+      blockHashWithConfsOpt: Option[BlockHashWithConfs]
   ): Future[Unit] = {
     for {
       relevantReceivedOutputs <- getRelevantOutputs(transaction)
-      action <- processTransactionImpl(
+      action = processTransactionImpl(
         transaction = transaction,
-        blockHashOpt = blockHashOpt,
+        blockHashWithConfsOpt = blockHashWithConfsOpt,
         newTags = Vector.empty,
         receivedSpendingInfoDbsOpt = None,
         spentSpendingInfoDbsOpt = None,
@@ -187,7 +188,9 @@ case class TransactionProcessing(
     val spentSpendingInfoDbsF =
       spendingInfoDAO.findOutputsBeingSpent(block.transactions.toVector)
 
-    val blockHashOpt = Some(block.blockHeader.hash.flip)
+    val blockHash = block.blockHeader.hashBE
+    val blockHashWithConfsOptF: Future[Option[BlockHashWithConfs]] =
+      WalletUtil.getBlockHashWithConfs(chainQueryApi, blockHash)
 
     // fetch all outputs we may have received in this block in advance
     // as an optimization
@@ -201,6 +204,7 @@ case class TransactionProcessing(
       spentSpendingInfoDbs <- spentSpendingInfoDbsF
       relevantReceivedOutputsForBlock <-
         relevantReceivedOutputsForBlockF
+      blockHashWithConfsOpt <- blockHashWithConfsOptF
     } yield {
       // we need to keep a cache of spentSpendingInfoDb
       // for the case where we receive & then spend that
@@ -215,10 +219,10 @@ case class TransactionProcessing(
             _ <- walletF
             relevantReceivedOutputsForTx = relevantReceivedOutputsForBlock
               .getOrElse(transaction.txIdBE, Vector.empty)
-            action <-
+            action =
               processTransactionImpl(
                 transaction = transaction,
-                blockHashOpt = blockHashOpt,
+                blockHashWithConfsOpt = blockHashWithConfsOpt,
                 newTags = Vector.empty,
                 receivedSpendingInfoDbsOpt = receivedSpendingInfoDbsOpt,
                 spentSpendingInfoDbsOpt = cachedSpentOpt,
@@ -314,12 +318,12 @@ case class TransactionProcessing(
       feeRate: FeeUnit,
       inputAmount: CurrencyUnit,
       sentAmount: CurrencyUnit,
-      blockHashOpt: Option[DoubleSha256DigestBE],
+      blockHashWithConfsOpt: Option[BlockHashWithConfs],
       newTags: Vector[AddressTag]
   ): Future[ProcessTxResult] = {
     logger.info(
-      s"Processing TX from our wallet, transaction=${transaction.txIdBE.hex} with blockHash=${blockHashOpt
-          .map(_.hex)}"
+      s"Processing TX from our wallet, transaction=${transaction.txIdBE.hex} with blockHash=${blockHashWithConfsOpt
+          .map(_.blockHash.hex)}"
     )
     val relevantOutputsF = getRelevantOutputs(transaction)
     for {
@@ -329,12 +333,12 @@ case class TransactionProcessing(
           feeRate,
           inputAmount,
           sentAmount,
-          blockHashOpt
+          blockHashWithConfsOpt.map(_.blockHash)
         )
       relevantOutputs <- relevantOutputsF
-      action <- processTransactionImpl(
+      action = processTransactionImpl(
         transaction = txDb.transaction,
-        blockHashOpt = blockHashOpt,
+        blockHashWithConfsOpt = blockHashWithConfsOpt,
         newTags = newTags,
         receivedSpendingInfoDbsOpt = None,
         spentSpendingInfoDbsOpt = None,
@@ -444,48 +448,30 @@ case class TransactionProcessing(
     */
   override def processReceivedUtxos(
       transaction: Transaction,
-      blockHashOpt: Option[DoubleSha256DigestBE],
+      blockHashWithConfsOpt: Option[BlockHashWithConfs],
       spendingInfoDbs: Vector[SpendingInfoDb],
       newTags: Vector[AddressTag],
       relevantReceivedOutputs: Vector[OutputWithIndex]
   ): Future[Vector[SpendingInfoDb]] = {
-    val confsOptF: Future[Option[BlockHashWithConfs]] = blockHashOpt match {
-      case Some(blockHash) =>
-        chainQueryApi
-          .getNumberOfConfirmations(blockHash)
-          .map(confsOpt => Some(BlockHashWithConfs(blockHash, confsOpt)))
-      case None => Future.successful(None)
-    }
 
-    val actionF = confsOptF.map { confsOpt =>
-      processReceivedUtxosAction(transaction,
-                                 confsOpt,
-                                 spendingInfoDbs,
-                                 newTags,
-                                 relevantReceivedOutputs)
-    }
-    actionF.flatMap(a => safeDatabase.run(a))
+    val action = processReceivedUtxosAction(transaction,
+                                            blockHashWithConfsOpt,
+                                            spendingInfoDbs,
+                                            newTags,
+                                            relevantReceivedOutputs)
+    safeDatabase.run(action)
   }
 
   override def processSpentUtxos(
       transaction: Transaction,
       outputsBeingSpent: Vector[SpendingInfoDb],
-      blockHashOpt: Option[DoubleSha256DigestBE]
+      blockHashWithConfsOpt: Option[BlockHashWithConfs]
   ): Future[Vector[SpendingInfoDb]] = {
-    val blockHashWithConfsF: Future[Option[BlockHashWithConfs]] =
-      blockHashOpt match {
-        case Some(blockHash) =>
-          chainQueryApi
-            .getNumberOfConfirmations(blockHash)
-            .map(BlockHashWithConfs(blockHash, _))
-            .map(Some.apply)
-        case None => Future.successful(None)
-      }
-    val actionF = blockHashWithConfsF.map { confsOpt =>
-      processSpentUtxosAction(transaction, outputsBeingSpent, confsOpt)
-    }
+    val action = processSpentUtxosAction(transaction,
+                                         outputsBeingSpent,
+                                         blockHashWithConfsOpt)
 
-    actionF.flatMap(safeDatabase.run)
+    safeDatabase.run(action)
   }
 
   /** Searches for outputs on the given transaction that are being spent from
@@ -521,17 +507,16 @@ case class TransactionProcessing(
     */
   private[internal] def processTransactionImpl(
       transaction: Transaction,
-      blockHashOpt: Option[DoubleSha256DigestBE],
+      blockHashWithConfsOpt: Option[BlockHashWithConfs],
       newTags: Vector[AddressTag],
       receivedSpendingInfoDbsOpt: Option[Vector[SpendingInfoDb]],
       spentSpendingInfoDbsOpt: Option[Vector[SpendingInfoDb]],
       relevantReceivedOutputs: Vector[OutputWithIndex]
-  ): Future[
-    DBIOAction[ProcessTxResult, NoStream, Effect.Read & Effect.Write]] = {
+  ): DBIOAction[ProcessTxResult, NoStream, Effect.Read & Effect.Write] = {
 
     logger.debug(
-      s"Processing transaction=${transaction.txIdBE.hex} with blockHash=${blockHashOpt
-          .map(_.hex)}"
+      s"Processing transaction=${transaction.txIdBE.hex} with blockHash=${blockHashWithConfsOpt
+          .map(_.blockHash.hex)}"
     )
     val receivedSpendingInfoDbsA
         : DBIOAction[Vector[SpendingInfoDb], NoStream, Effect.Read] = {
@@ -561,51 +546,43 @@ case class TransactionProcessing(
           spendingInfoDAO.findOutputsBeingSpentAction(Vector(transaction))
       }
     }
-    val confsOptF: Future[Option[BlockHashWithConfs]] = blockHashOpt match {
-      case Some(blockHash) =>
-        chainQueryApi
-          .getNumberOfConfirmations(blockHash)
-          .map(confsOpt => Some(BlockHashWithConfs(blockHash, confsOpt)))
-      case None => Future.successful(None)
-    }
-    val actionF: Future[
-      DBIOAction[ProcessTxResult, NoStream, Effect.Write & Effect.Read]] =
-      confsOptF.map { confsOpt =>
-        for {
-          receivedSpendingInfoDbs <- receivedSpendingInfoDbsA
-          receivedStart = TimeUtil.currentEpochMs
-          incoming <- processReceivedUtxosAction(
-            transaction = transaction,
-            blockHashWithConfsOpt = confsOpt,
-            spendingInfoDbs = receivedSpendingInfoDbs,
-            newTags = newTags,
-            relevantReceivedOutputs = relevantReceivedOutputs
+    val action
+        : DBIOAction[ProcessTxResult, NoStream, Effect.Write & Effect.Read] =
+      for {
+        receivedSpendingInfoDbs <- receivedSpendingInfoDbsA
+        receivedStart = TimeUtil.currentEpochMs
+        incoming <- processReceivedUtxosAction(
+          transaction = transaction,
+          blockHashWithConfsOpt = blockHashWithConfsOpt,
+          spendingInfoDbs = receivedSpendingInfoDbs,
+          newTags = newTags,
+          relevantReceivedOutputs = relevantReceivedOutputs
+        )
+        _ = if (incoming.nonEmpty) {
+          logger.info(
+            s"Finished processing ${incoming.length} received outputs, balance=${incoming
+                .map(_.output.value)
+                .sum} it took=${TimeUtil.currentEpochMs - receivedStart}ms"
           )
-          _ = if (incoming.nonEmpty) {
-            logger.info(
-              s"Finished processing ${incoming.length} received outputs, balance=${incoming
-                  .map(_.output.value)
-                  .sum} it took=${TimeUtil.currentEpochMs - receivedStart}ms"
-            )
-          }
-
-          spentSpendingInfoDbs <- spentSpendingInfoDbsF
-          spentStart = TimeUtil.currentEpochMs
-          outgoing <- processSpentUtxosAction(
-            transaction = transaction,
-            outputsBeingSpent = spentSpendingInfoDbs,
-            blockHashWithConfs = confsOpt
-          )
-          _ = if (outgoing.nonEmpty) {
-            logger.info(
-              s"Finished processing ${outgoing.length} spent outputs, it took=${TimeUtil.currentEpochMs - spentStart}ms"
-            )
-          }
-        } yield {
-          ProcessTxResult(incoming, outgoing)
         }
+
+        spentSpendingInfoDbs <- spentSpendingInfoDbsF
+        spentStart = TimeUtil.currentEpochMs
+        outgoing <- processSpentUtxosAction(
+          transaction = transaction,
+          outputsBeingSpent = spentSpendingInfoDbs,
+          blockHashWithConfs = blockHashWithConfsOpt
+        )
+        _ = if (outgoing.nonEmpty) {
+          logger.info(
+            s"Finished processing ${outgoing.length} spent outputs, it took=${TimeUtil.currentEpochMs - spentStart}ms"
+          )
+        }
+      } yield {
+        ProcessTxResult(incoming, outgoing)
       }
-    actionF
+
+    action
 
   }
 

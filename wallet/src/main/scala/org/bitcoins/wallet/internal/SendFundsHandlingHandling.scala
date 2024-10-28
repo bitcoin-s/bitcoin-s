@@ -604,7 +604,7 @@ case class SendFundsHandlingHandling(
         feeRate = feeRate,
         inputAmount = creditingAmount,
         sentAmount = sentAmount,
-        blockHashOpt = None,
+        blockHashWithConfsOpt = None,
         newTags = newTags
       )
     } yield {

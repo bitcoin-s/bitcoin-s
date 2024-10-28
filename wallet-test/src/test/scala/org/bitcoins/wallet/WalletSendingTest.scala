@@ -19,6 +19,7 @@ import org.bitcoins.testkitcore.Implicits.GeneratorOps
 import org.bitcoins.testkitcore.gen.FeeUnitGen
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models.{OutgoingTransactionDAO, SpendingInfoDAO}
+import org.bitcoins.wallet.util.WalletUtil
 import org.scalatest.{Assertion, FutureOutcome}
 import scodec.bits.ByteVector
 
@@ -379,9 +380,12 @@ class WalletSendingTest extends BitcoinSWalletTest {
       tx <- wallet.sendFundsHandling.sendToAddress(testAddress,
                                                    amountToSend,
                                                    feeRate)
+      blockHashWithConfsOpt <- WalletUtil.getBlockHashWithConfs(
+        chainQueryApi,
+        Some(DoubleSha256DigestBE.empty))
       _ <- wallet.transactionProcessing.processTransaction(
         tx,
-        Some(DoubleSha256DigestBE.empty))
+        blockHashWithConfsOpt)
 
       res <- recoverToSucceededIf[IllegalArgumentException] {
         wallet.sendFundsHandling.bumpFeeRBF(tx.txIdBE, newFeeRate)
@@ -470,9 +474,12 @@ class WalletSendingTest extends BitcoinSWalletTest {
       tx <- wallet.sendFundsHandling.sendToAddress(testAddress,
                                                    amountToSend,
                                                    feeRate)
+      blockHashWithConfsOpt <- WalletUtil.getBlockHashWithConfs(
+        chainQueryApi,
+        Some(DoubleSha256DigestBE.empty))
       _ <- wallet.transactionProcessing.processTransaction(
         tx,
-        Some(DoubleSha256DigestBE.empty))
+        blockHashWithConfsOpt)
 
       res <- recoverToSucceededIf[IllegalArgumentException] {
         wallet.sendFundsHandling.bumpFeeCPFP(tx.txIdBE, feeRate)
