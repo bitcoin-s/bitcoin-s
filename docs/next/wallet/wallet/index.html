@@ -161,12 +161,13 @@ val walletF: Future[WalletApi] = configF.flatMap { _ =&gt;
 
 // when this future completes, ww have sent a transaction
 // from bitcoind to the Bitcoin-S wallet
-val transactionF: Future[(Transaction, Option[DoubleSha256DigestBE])] = for {
+val transactionF: Future[(Transaction, Option[BlockHashWithConfs])] = for {
     wallet &lt;- walletF
     address &lt;- wallet.getNewAddress()
     txid &lt;- bitcoind.sendToAddress(address, 3.bitcoin)
     transaction &lt;- bitcoind.getRawTransaction(txid)
-} yield (transaction.hex, transaction.blockhash)
+    blockHashWithConfs &lt;- WalletUtil.getBlockHashWithConfs(bitcoind,transaction.blockhash)
+} yield (transaction.hex, blockHashWithConfs)
 
 // when this future completes, we have processed
 // the transaction from bitcoind, and we have
