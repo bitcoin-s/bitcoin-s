@@ -100,12 +100,13 @@ case class TransactionProcessing(
         if (
           processTx.updatedIncoming.nonEmpty || processTx.updatedOutgoing.nonEmpty
         ) {
+          logger.info(
+            s"Finished processing of transaction=${transaction.txIdBE.hex}. Relevant incomingTXOs=${processTx.updatedIncoming.length}, outgoingTXOs=${processTx.updatedOutgoing.length}"
+          )
           walletCallbacks.executeOnTransactionProcessed(transaction)
         } else Future.unit
     } yield {
-      logger.info(
-        s"Finished processing of transaction=${transaction.txIdBE.hex}. Relevant incomingTXOs=${processTx.updatedIncoming.length}, outgoingTXOs=${processTx.updatedOutgoing.length}"
-      )
+      ()
     }
   }
 
