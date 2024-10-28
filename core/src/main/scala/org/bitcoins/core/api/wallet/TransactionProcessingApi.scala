@@ -4,6 +4,7 @@ import org.bitcoins.core.api.wallet.db.{SpendingInfoDb, TransactionDb}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.{OutputWithIndex, Transaction}
+import org.bitcoins.core.util.BlockHashWithConfs
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.AddressTag
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
@@ -26,7 +27,7 @@ trait TransactionProcessingApi {
 
   def processTransaction(
       transaction: Transaction,
-      blockHashOpt: Option[DoubleSha256DigestBE]
+      blockHashWithConfsOpt: Option[BlockHashWithConfs]
   ): Future[Unit]
 
   /** Processes TXs originating from our wallet. This is called right after
@@ -37,7 +38,7 @@ trait TransactionProcessingApi {
       feeRate: FeeUnit,
       inputAmount: CurrencyUnit,
       sentAmount: CurrencyUnit,
-      blockHashOpt: Option[DoubleSha256DigestBE],
+      blockHashWithConfsOpt: Option[BlockHashWithConfs],
       newTags: Vector[AddressTag]
   ): Future[ProcessTxResult]
 
@@ -52,7 +53,7 @@ trait TransactionProcessingApi {
 
   def processReceivedUtxos(
       tx: Transaction,
-      blockHashOpt: Option[DoubleSha256DigestBE],
+      blockHashWithConfsOpt: Option[BlockHashWithConfs],
       spendingInfoDbs: Vector[SpendingInfoDb],
       newTags: Vector[AddressTag],
       relevantReceivedOutputs: Vector[OutputWithIndex]
@@ -61,7 +62,7 @@ trait TransactionProcessingApi {
   def processSpentUtxos(
       transaction: Transaction,
       outputsBeingSpent: Vector[SpendingInfoDb],
-      blockHashOpt: Option[DoubleSha256DigestBE]
+      blockHashWithConfsOpt: Option[BlockHashWithConfs]
   ): Future[Vector[SpendingInfoDb]]
 
   def insertTransaction(

@@ -24,6 +24,7 @@ import org.bitcoins.db.SafeDatabase
 import org.bitcoins.wallet.callback.WalletCallbacks
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models.{AddressDAO, SpendingInfoDAO, TransactionDAO}
+import org.bitcoins.wallet.util.WalletUtil
 import slick.dbio.{DBIOAction, Effect, NoStream}
 
 import scala.concurrent.Future
@@ -258,9 +259,8 @@ case class UtxoHandling(
         case (blockHashOpt, spendingInfoDbs) =>
           blockHashOpt match {
             case Some(blockHash) =>
-              chainQueryApi
-                .getNumberOfConfirmations(blockHash)
-                .map(confs => Some(BlockHashWithConfs(blockHash, confs)))
+              WalletUtil
+                .getBlockHashWithConfs(chainQueryApi, blockHash)
                 .map(blockWithConfsOpt => (blockWithConfsOpt, spendingInfoDbs))
             case None =>
               Future.successful((None, spendingInfoDbs))

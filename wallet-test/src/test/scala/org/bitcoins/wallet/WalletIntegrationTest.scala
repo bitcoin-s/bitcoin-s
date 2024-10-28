@@ -19,6 +19,7 @@ import org.bitcoins.wallet.models.{
   IncomingTransactionDAO,
   OutgoingTransactionDAO
 }
+import org.bitcoins.wallet.util.WalletUtil
 import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
@@ -92,7 +93,11 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
       rawTx <- bitcoind.getRawTransaction(txId)
 
       // after this, tx should be confirmed
-      _ <- wallet.transactionProcessing.processTransaction(tx, rawTx.blockhash)
+      blockHashWithConfsOpt <- WalletUtil.getBlockHashWithConfs(bitcoind,
+                                                                rawTx.blockhash)
+      _ <- wallet.transactionProcessing.processTransaction(
+        tx,
+        blockHashWithConfsOpt)
       _ <-
         wallet.utxoHandling
           .listUtxos()
@@ -176,8 +181,11 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
       txId <- bitcoind.sendToAddress(addr, valueFromBitcoind)
       rawTx <- bitcoind.getRawTransaction(txId)
       _ <- bitcoind.generate(6)
-      _ <- wallet.transactionProcessing.processTransaction(rawTx.hex,
-                                                           rawTx.blockhash)
+      blockHashWithConfsOpt <- WalletUtil.getBlockHashWithConfs(bitcoind,
+                                                                rawTx.blockhash)
+      _ <- wallet.transactionProcessing.processTransaction(
+        rawTx.hex,
+        blockHashWithConfsOpt)
 
       // Verify we funded the wallet
       balance <- wallet.getBalance()
@@ -243,8 +251,11 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
       txId <- bitcoind.sendToAddress(addr, valueFromBitcoind)
       _ <- bitcoind.generate(6)
       rawTx <- bitcoind.getRawTransaction(txId)
-      _ <- wallet.transactionProcessing.processTransaction(rawTx.hex,
-                                                           rawTx.blockhash)
+      blockHashWithConfsOpt <- WalletUtil.getBlockHashWithConfs(bitcoind,
+                                                                rawTx.blockhash)
+      _ <- wallet.transactionProcessing.processTransaction(
+        rawTx.hex,
+        blockHashWithConfsOpt)
 
       // Verify we funded the wallet
       balance <- wallet.getBalance()
@@ -262,8 +273,11 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
       _ <- bitcoind.generate(1)
       rawTx1 <- bitcoind.getRawTransaction(rbf.txIdBE)
       _ = require(rawTx1.blockhash.isDefined)
-      _ <- wallet.transactionProcessing.processTransaction(rbf,
-                                                           rawTx1.blockhash)
+      blockHashWithConfsOpt <- WalletUtil.getBlockHashWithConfs(bitcoind,
+                                                                rawTx.blockhash)
+      _ <- wallet.transactionProcessing.processTransaction(
+        rbf,
+        blockHashWithConfsOpt)
 
       // fail to RBF confirmed tx
       res <- recoverToSucceededIf[IllegalArgumentException] {
@@ -283,8 +297,11 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
       txId <- bitcoind.sendToAddress(addr, valueFromBitcoind)
       rawTx <- bitcoind.getRawTransaction(txId)
       _ <- bitcoind.generate(6)
-      _ <- wallet.transactionProcessing.processTransaction(rawTx.hex,
-                                                           rawTx.blockhash)
+      blockHashWithConfsOpt <- WalletUtil.getBlockHashWithConfs(bitcoind,
+                                                                rawTx.blockhash)
+      _ <- wallet.transactionProcessing.processTransaction(
+        rawTx.hex,
+        blockHashWithConfsOpt)
 
       // Verify we funded the wallet
       balance <- wallet.getBalance()

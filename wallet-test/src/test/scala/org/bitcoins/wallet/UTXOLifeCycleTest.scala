@@ -4,21 +4,22 @@ import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
-import org.bitcoins.core.number._
+import org.bitcoins.core.number.*
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.script.*
+import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.builder.RawTxSigner
 import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.TxoState
-import org.bitcoins.core.wallet.utxo.TxoState._
+import org.bitcoins.core.wallet.utxo.TxoState.*
 import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPublicKey}
 import org.bitcoins.testkit.wallet.{
   BitcoinSWalletTestCachedBitcoindNewest,
   WalletWithBitcoindRpc
 }
 import org.bitcoins.wallet.models.SpendingInfoDAO
+import org.bitcoins.wallet.util.WalletUtil
 import org.scalatest.{Assertion, FutureOutcome, Outcome}
 
 import scala.concurrent.Future
@@ -83,7 +84,9 @@ class UTXOLifeCycleTest
 
       // Give tx a fake hash so it can appear as it's in a block
       hash <- bitcoind.getBestBlockHash()
-      _ <- wallet.transactionProcessing.processTransaction(tx, Some(hash))
+      blockHashWithConfs <- WalletUtil.getBlockHashWithConfs(bitcoind, hash)
+      _ <- wallet.transactionProcessing.processTransaction(tx,
+                                                           blockHashWithConfs)
 
       _ <- wallet.utxoHandling.updateUtxoPendingStates()
       pendingCoins <- wallet.utxoHandling.findOutputsBeingSpent(tx)
@@ -345,7 +348,9 @@ class UTXOLifeCycleTest
 
       // Give tx a fake hash so it can appear as it's in a block
       hash <- bitcoind.getBestBlockHash()
-      _ <- wallet.transactionProcessing.processTransaction(tx, Some(hash))
+      blockHashWithConfs <- WalletUtil.getBlockHashWithConfs(bitcoind, hash)
+      _ <- wallet.transactionProcessing.processTransaction(tx,
+                                                           blockHashWithConfs)
 
       _ <- wallet.utxoHandling.updateUtxoPendingStates()
       pendingCoins <- wallet.utxoHandling.findOutputsBeingSpent(tx)
@@ -390,7 +395,7 @@ class UTXOLifeCycleTest
         feeRate = SatoshisPerByte(Satoshis(3)),
         inputAmount = Satoshis(4000),
         sentAmount = Satoshis(3000),
-        blockHashOpt = None,
+        blockHashWithConfsOpt = None,
         newTags = Vector.empty
       )
 
@@ -419,7 +424,7 @@ class UTXOLifeCycleTest
         feeRate = SatoshisPerByte(Satoshis(3)),
         inputAmount = Satoshis(4000),
         sentAmount = Satoshis(3000),
-        blockHashOpt = None,
+        blockHashWithConfsOpt = None,
         newTags = Vector.empty
       )
 
@@ -431,7 +436,10 @@ class UTXOLifeCycleTest
       hash <- bitcoind.getNewAddress
         .flatMap(bitcoind.generateToAddress(1, _))
         .map(_.head)
-      _ <- wallet.transactionProcessing.processTransaction(tx, Some(hash))
+      blockHashWithConfsOpt <- WalletUtil.getBlockHashWithConfs(bitcoind, hash)
+      _ <- wallet.transactionProcessing.processTransaction(
+        tx,
+        blockHashWithConfsOpt)
 
       pendingCoins <-
         wallet.utxoHandling.findByScriptPubKey(addr.scriptPubKey)
@@ -456,12 +464,14 @@ class UTXOLifeCycleTest
 
       txId <- bitcoind.sendToAddress(addr, Satoshis(3000))
       tx <- bitcoind.getRawTransactionRaw(txId)
+      blockHashWithConfsOpt <- WalletUtil.getBlockHashWithConfs(bitcoind,
+                                                                Some(blockHash))
       _ <- wallet.transactionProcessing.processOurTransaction(
         transaction = tx,
         feeRate = SatoshisPerByte(Satoshis(3)),
         inputAmount = Satoshis(4000),
         sentAmount = Satoshis(3000),
-        blockHashOpt = Some(blockHash), // give fake hash
+        blockHashWithConfsOpt = blockHashWithConfsOpt, // give fake hash
         newTags = Vector.empty
       )
 

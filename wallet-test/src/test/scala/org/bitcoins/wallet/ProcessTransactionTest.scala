@@ -75,17 +75,18 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
 
         _ <- wallet.transactionProcessing.processTransaction(
           tx,
-          Some(MockChainQueryApi.testBlockHash)
+          Some(MockChainQueryApi.blockHashWithConfs)
         )
         newConfirmed <- wallet.getConfirmedBalance()
         newUnconfirmed <- wallet.getUnconfirmedBalance()
         utxosPostAdd <- wallet.utxoHandling.listUtxos()
 
         // repeating the action should not make a difference
+
         _ <- checkUtxosAndBalance(wallet) {
           wallet.transactionProcessing.processTransaction(
             tx,
-            Some(MockChainQueryApi.testBlockHash))
+            Some(MockChainQueryApi.blockHashWithConfs))
         }
       } yield {
         val ourOutputs =
@@ -196,7 +197,7 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
         )
         _ <- wallet.transactionProcessing.processTransaction(
           transaction = rawTxHelper.signedTx,
-          blockHashOpt = None
+          blockHashWithConfsOpt = None
         )
         balance <- wallet.getBalance()
       } yield assert(balance == amount)

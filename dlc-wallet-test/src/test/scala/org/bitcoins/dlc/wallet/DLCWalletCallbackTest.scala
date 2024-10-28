@@ -5,6 +5,7 @@ import org.bitcoins.core.protocol.dlc.models.{
   DLCStatus,
   SingleContractInfo
 }
+import org.bitcoins.core.util.BlockHashWithConfs
 import org.bitcoins.dlc.wallet.callback.{DLCWalletCallbacks, OnDLCStateChange}
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
 import org.bitcoins.testkit.wallet.{BitcoinSDualWalletTest, DLCWalletUtil}
@@ -96,9 +97,11 @@ class DLCWalletCallbackTest extends BitcoinSDualWalletTest {
       _ <- initF
       contractId <- DLCWalletUtil.getContractId(wallets._1.wallet)
       fundingTx <- walletA.getDLCFundingTx(contractId)
+      blockHash = CryptoGenerators.doubleSha256DigestBE.sample.get
+      blockHashWithConfs = BlockHashWithConfs(blockHash, Some(1))
       _ <- walletA.transactionProcessing.processTransaction(
         transaction = fundingTx,
-        blockHashOpt = Some(CryptoGenerators.doubleSha256DigestBE.sample.get)
+        blockHashWithConfsOpt = Some(blockHashWithConfs)
       )
       sigs = {
         DLCWalletUtil.sampleContractInfo match {
@@ -207,9 +210,11 @@ class DLCWalletCallbackTest extends BitcoinSDualWalletTest {
       _ <- initF
       contractId <- DLCWalletUtil.getContractId(wallets._1.wallet)
       fundingTx <- walletA.getDLCFundingTx(contractId)
+      blockHash = CryptoGenerators.doubleSha256DigestBE.sample.get
+      blockHashWithConfs = BlockHashWithConfs(blockHash, Some(1))
       _ <- walletA.transactionProcessing.processTransaction(
         transaction = fundingTx,
-        blockHashOpt = Some(CryptoGenerators.doubleSha256DigestBE.sample.get)
+        blockHashWithConfsOpt = Some(blockHashWithConfs)
       )
       transaction <- walletA.executeDLCRefund(contractId)
       _ <- walletB.transactionProcessing.processTransaction(transaction, None)

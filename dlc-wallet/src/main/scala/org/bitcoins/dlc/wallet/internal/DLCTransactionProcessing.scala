@@ -22,7 +22,7 @@ import org.bitcoins.core.protocol.transaction.{
   WitnessTransaction
 }
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
-import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.util.{BlockHashWithConfs, FutureUtil}
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.utxo.{
   AddressTag,
@@ -519,23 +519,25 @@ case class DLCTransactionProcessing(
 
   override def processTransaction(
       transaction: Transaction,
-      blockHashOpt: Option[DoubleSha256DigestBE]): Future[Unit] = {
+      blockHashWithConfsOpt: Option[BlockHashWithConfs]): Future[Unit] = {
     txProcessing
-      .processTransaction(transaction, blockHashOpt)
-      .flatMap(_ => processFundingTx(transaction, blockHashOpt))
-      .flatMap(_ => processSettledDLCs(transaction, blockHashOpt))
+      .processTransaction(transaction, blockHashWithConfsOpt)
+      .flatMap(_ =>
+        processFundingTx(transaction, blockHashWithConfsOpt.map(_.blockHash)))
+      .flatMap(_ =>
+        processSettledDLCs(transaction, blockHashWithConfsOpt.map(_.blockHash)))
       .map(_ => ())
   }
 
   override def processReceivedUtxos(
       tx: Transaction,
-      blockHashOpt: Option[DoubleSha256DigestBE],
+      blockHashWithConfsOpt: Option[BlockHashWithConfs],
       spendingInfoDbs: Vector[SpendingInfoDb],
       newTags: Vector[AddressTag],
       relevantReceivedOutputs: Vector[OutputWithIndex])
       : Future[Vector[SpendingInfoDb]] = {
     txProcessing.processReceivedUtxos(tx,
-                                      blockHashOpt,
+                                      blockHashWithConfsOpt,
                                       spendingInfoDbs,
                                       newTags,
                                       relevantReceivedOutputs)
@@ -544,9 +546,11 @@ case class DLCTransactionProcessing(
   override def processSpentUtxos(
       transaction: Transaction,
       outputsBeingSpent: Vector[SpendingInfoDb],
-      blockHashOpt: Option[DoubleSha256DigestBE])
+      blockHashWithConfsOpt: Option[BlockHashWithConfs])
       : Future[Vector[SpendingInfoDb]] = {
-    txProcessing.processSpentUtxos(transaction, outputsBeingSpent, blockHashOpt)
+    txProcessing.processSpentUtxos(transaction,
+                                   outputsBeingSpent,
+                                   blockHashWithConfsOpt)
   }
 
   /** Processes TXs originating from our wallet. This is called right after
@@ -557,13 +561,13 @@ case class DLCTransactionProcessing(
       feeRate: FeeUnit,
       inputAmount: CurrencyUnit,
       sentAmount: CurrencyUnit,
-      blockHashOpt: Option[DoubleSha256DigestBE],
+      blockHashWithConfsOpt: Option[BlockHashWithConfs],
       newTags: Vector[AddressTag]): Future[ProcessTxResult] = {
     txProcessing.processOurTransaction(transaction,
                                        feeRate,
                                        inputAmount,
                                        sentAmount,
-                                       blockHashOpt,
+                                       blockHashWithConfsOpt,
                                        newTags)
   }
 
