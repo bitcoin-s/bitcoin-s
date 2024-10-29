@@ -36,7 +36,7 @@ import org.bitcoins.wallet.models.{
 import org.bitcoins.wallet.WalletLogger
 
 import java.time.Instant
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success}
 
 case class RescanHandling(
@@ -50,8 +50,7 @@ case class RescanHandling(
     system: ActorSystem)
     extends RescanHandlingApi
     with WalletLogger {
-  private implicit val rescanEC: ExecutionContext =
-    ExecutionContext.fromExecutor(walletConfig.rescanThreadPool)
+  import system.dispatcher
   private def walletCallbacks: WalletCallbacks = walletConfig.callBacks
   private val stateDescriptorDAO: WalletStateDescriptorDAO =
     walletDAOs.stateDescriptorDAO
