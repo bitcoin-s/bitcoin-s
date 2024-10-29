@@ -67,7 +67,11 @@ case class CallbackHandler[C, T <: Callback[C]](
       }.flatten
     }
 
-    Future.sequence(executeFs).map(_ => ())
+    val f = Future.sequence(executeFs).map(_ => ())
+
+    f.failed.foreach(err =>
+      println(s"callback execute failed, err=${err.getMessage}"))
+    f
   }
 }
 
