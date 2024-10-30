@@ -97,16 +97,6 @@ case class WalletAppConfig(
     )
   }
 
-  private lazy val rescanThreadFactory: ThreadFactory =
-    AsyncUtil.getNewThreadFactory("bitcoin-s-rescan")
-
-  /** Threads for rescanning the wallet */
-  private[wallet] lazy val rescanThreadPool: ExecutorService =
-    Executors.newFixedThreadPool(
-      Runtime.getRuntime.availableProcessors(),
-      rescanThreadFactory
-    )
-
   override lazy val callbackFactory: WalletCallbacks.type = WalletCallbacks
 
   lazy val kmConf: KeyManagerAppConfig =
@@ -280,7 +270,6 @@ case class WalletAppConfig(
       // in the future, we should actually cancel all things that are scheduled
       // manually, and then shutdown the scheduler
       scheduler.shutdownNow()
-      rescanThreadPool.shutdownNow()
       super.stop()
     }
 
