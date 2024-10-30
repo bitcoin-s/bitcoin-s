@@ -48,7 +48,9 @@ object RescanState {
 
     completeRescanEarlyP.future.failed.foreach {
       case RescanTerminatedEarly =>
-        recursiveRescanP.failure(RescanTerminatedEarly)
+        if (!recursiveRescanP.isCompleted) {
+          recursiveRescanP.failure(RescanTerminatedEarly)
+        }
         _isCompletedEarly.set(true)
       case _: Throwable => // do nothing
     }
@@ -65,14 +67,16 @@ object RescanState {
       * completed
       */
     def singleRescanDoneF: Future[Vector[BlockMatchingResponse]] =
-      blocksMatchedF
+      blocksMatchedF.recover { case RescanTerminatedEarly =>
+        Vector.empty
+      }
 
     /** Means the entire rescan is done (including recursive rescans). This
       * future is completed when we rescan filters with addresses do not contain
       * funds within [[WalletAppConfig.addressGapLimit]]
       */
     def entireRescanDoneF: Future[Vector[BlockMatchingResponse]] = {
-      for {
+      val f = for {
         b0 <- blocksMatchedF
         recursive <- recursiveRescanP.future
         b1 <- recursive match {
@@ -81,22 +85,35 @@ object RescanState {
             Future.successful(Vector.empty)
         }
       } yield b0 ++ b1
+
+      f.recover { case RescanTerminatedEarly =>
+        Vector.empty
+      }
     }
 
     /** Fails a rescan with the given exception */
     def fail(err: Throwable): Unit = {
+      if (!recursiveRescanP.isCompleted) {
+        recursiveRescanP.failure(err)
+      }
       completeRescanEarlyP.failure(err)
-      recursiveRescanP.failure(err)
     }
 
     /** Completes the stream that the rescan in progress uses. This aborts the
       * rescan early.
       */
     def stop(): Future[Vector[BlockMatchingResponse]] = {
-      val stoppedRecursiveRescanF = recursiveRescanP.future.flatMap {
-        case started: RescanStarted => started.stop()
-        case RescanDone | RescanAlreadyStarted | RescanNotNeeded =>
+      val stoppedRecursiveRescanF = {
+        if (recursiveRescanP.future.isCompleted) {
+          recursiveRescanP.future.flatMap {
+            case started: RescanStarted => started.stop()
+            case RescanDone | RescanAlreadyStarted | RescanNotNeeded =>
+              Future.unit
+          }
+        } else {
+          fail(RescanTerminatedEarly)
           Future.unit
+        }
       }
 
       val f = stoppedRecursiveRescanF.flatMap { _ =>
