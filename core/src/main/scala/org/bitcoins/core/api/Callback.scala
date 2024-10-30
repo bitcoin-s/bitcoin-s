@@ -1,6 +1,5 @@
 package org.bitcoins.core.api
 
-import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.util.{FutureUtil, SeqWrapper}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -62,21 +61,13 @@ case class CallbackHandler[C, T <: Callback[C]](
       // Need to wrap in another future so they are all started at once
       // and do not block each other
       FutureUtil.makeAsync { () =>
-        if (param.isInstanceOf[BitcoinAddress]) {
-          println(s"param=$param")
-        }
         callback(param).recover { case NonFatal(err) =>
-          println(s"callback.recover err=${err.getMessage}")
           recoverFunc(err)
         }
       }.flatten
     }
 
-    val f = Future.sequence(executeFs).map(_ => ())
-
-    f.failed.foreach(err =>
-      println(s"callback execute failed, err=${err.getMessage}"))
-    f
+    Future.sequence(executeFs).map(_ => ())
   }
 }
 

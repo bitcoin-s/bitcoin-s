@@ -79,7 +79,6 @@ trait WalletCallbacks
   def executeOnNewAddressGenerated(
       address: BitcoinAddress
   )(implicit ec: ExecutionContext): Future[Unit] = {
-    logger.error(s"executeOnNewAddressGenerated=$address")
     onNewAddressGenerated.execute(
       address,
       (err: Throwable) =>
