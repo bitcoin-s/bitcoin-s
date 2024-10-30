@@ -179,16 +179,21 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
         Http()
           .singleWebSocketRequest(req, websocketFlow)
       }
+      val connectionF = notificationsF._1
 
       val walletNotificationsF: Future[Seq[WsNotification[?]]] =
         notificationsF._2._1
 
       val promise: Promise[Option[Message]] = notificationsF._2._2
-      val expectedAddressStr =
-        exec(GetNewAddress(labelOpt = None), cliConfig).get
-      val expectedAddress = BitcoinAddress.fromString(expectedAddressStr)
+      val expectedAddressF = connectionF.map { _ =>
+        val expectedAddressStr =
+          exec(GetNewAddress(labelOpt = None), cliConfig).get
+        val expectedAddress = BitcoinAddress.fromString(expectedAddressStr)
+        expectedAddress
+      }
 
       for {
+        expectedAddress <- expectedAddressF
         _ <- PekkoUtil.nonBlockingSleep(1.second)
         _ = promise.success(None)
         notifications <- walletNotificationsF
@@ -216,6 +221,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
           .singleWebSocketRequest(req, websocketFlow)
       }
 
+      val connectionF = tuple._1
       val notificationsF = tuple._2._1
       val promise = tuple._2._2
 
@@ -223,6 +229,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
 
       for {
         address <- addressF
+        _ <- connectionF
         cmd = SendToAddress(
           destination = address,
           amount = Bitcoins.one,
@@ -259,12 +266,14 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
           .singleWebSocketRequest(req, websocketFlow)
       }
 
+      val connectionF = tuple._1
       val notificationsF = tuple._2._1
       val promise = tuple._2._2
 
       val addressF = bitcoind.getNewAddress
 
       for {
+        _ <- connectionF
         address <- addressF
         cmd = SendToAddress(
           destination = address,
@@ -301,6 +310,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
         .singleWebSocketRequest(req, websocketFlow)
     }
 
+    val connectionF = tuple._1
     val notificationsF = tuple._2._1
     val promise = tuple._2._2
 
@@ -308,6 +318,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
     val timeout =
       5.seconds // any way we can remove this timeout and just check?
     for {
+      _ <- connectionF
       address <- addressF
       hashes <- bitcoind.generateToAddress(1, address)
       cmd = GetBlockHeader(hash = hashes.head)
@@ -343,18 +354,20 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
           .singleWebSocketRequest(req, websocketFlow)
       }
 
+      val connectionF = tuple._1
       val notificationsF: Future[Seq[WsNotification[?]]] = tuple._2._1
       val promise = tuple._2._2
 
       // lock all utxos
       val lockCmd = LockUnspent(unlock = false, Vector.empty)
-      ConsoleCli.exec(lockCmd, cliConfig)
+      val lockedF = connectionF.map(_ => ConsoleCli.exec(lockCmd, cliConfig))
 
       // unlock all utxos
       val unlockCmd = LockUnspent(unlock = true, Vector.empty)
-      ConsoleCli.exec(unlockCmd, cliConfig)
+      val unlockedF = lockedF.map(_ => ConsoleCli.exec(unlockCmd, cliConfig))
 
       for {
+        _ <- unlockedF
         _ <- PekkoUtil.nonBlockingSleep(500.millis)
         _ = promise.success(None)
         notifications <- notificationsF
@@ -381,6 +394,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
           .singleWebSocketRequest(req, websocketFlow)
       }
 
+      val connectionF = notificationsF._1
       val walletNotificationsF: Future[Seq[WsNotification[?]]] =
         notificationsF._2._1
 
@@ -388,18 +402,25 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
 
       val expectedHash = CryptoUtil.sha256(offer.tlv.bytes)
 
-      ConsoleCli
-        .exec(
-          CliCommand.AddDLCOffer(offer = offer, message = "msg", peer = "uri"),
-          cliConfig
-        )
-        .get
+      val addOfferF = connectionF.map { _ =>
+        ConsoleCli
+          .exec(
+            CliCommand.AddDLCOffer(offer = offer,
+                                   message = "msg",
+                                   peer = "uri"),
+            cliConfig
+          )
+          .get
+      }
 
-      ConsoleCli
-        .exec(CliCommand.RemoveDLCOffer(offerHash = expectedHash), cliConfig)
-        .get
+      val removeOfferF = addOfferF.map { _ =>
+        ConsoleCli
+          .exec(CliCommand.RemoveDLCOffer(offerHash = expectedHash), cliConfig)
+          .get
+      }
 
       for {
+        _ <- removeOfferF
         _ <- PekkoUtil.nonBlockingSleep(500.millis)
         _ = promise.success(None)
         notifications <- walletNotificationsF
@@ -433,6 +454,7 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       Http()
         .singleWebSocketRequest(req, websocketFlow)
     }
+    val connectionF = tuple._1
     val notificationsF = tuple._2._1
     val promise = tuple._2._2
     val cmd = Rescan(
@@ -442,8 +464,9 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       force = true,
       ignoreCreationTime = false
     )
-    val _ = ConsoleCli.exec(cmd, cliConfig)
+    val rescanF = connectionF.map(_ => ConsoleCli.exec(cmd, cliConfig))
     for {
+      _ <- rescanF
       _ <- AsyncUtil.retryUntilSatisfied({
         val walletInfoStr = ConsoleCli.exec(WalletInfo, cliConfig)
         val i =
@@ -469,10 +492,12 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       Http()
         .singleWebSocketRequest(req, websocketFlow)
     }
+    val connectionF = tuple._1
     val notificationsF = tuple._2._1
     val promise = tuple._2._2
 
     for {
+      _ <- connectionF
       _ <- bitcoind.generate(1)
       _ <- PekkoUtil.nonBlockingSleep(5.seconds)
       _ = promise.success(None)
@@ -495,9 +520,11 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
       Http()
         .singleWebSocketRequest(req, websocketFlow)
     }
+    val connectionF = tuple._1
     val notificationsF = tuple._2._1
     val promise = tuple._2._2
     for {
+      _ <- connectionF
       _ <- PekkoUtil.nonBlockingSleep(2.seconds)
       _ = promise.success(None)
       notifications <- notificationsF
