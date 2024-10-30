@@ -58,7 +58,6 @@ class WebsocketTests extends BitcoinSServerMainBitcoindFixture {
   val sink: Sink[Message, Future[Seq[WsNotification[?]]]] = Flow[Message]
     .map {
       case message: TextMessage.Strict =>
-        println(s"message=$message")
         // we should be able to parse the address message
         val text = message.text
         val dlcNodeNotificationOpt: Option[DLCNodeNotification[?]] = Try(
