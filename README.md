@@ -8,7 +8,7 @@ For a complete guide on how to get started with Bitcoin-S, see our website at [B
 ### Contents
 
 - [Running bitcoin-s](#running-bitcoin-s)
-- [Getting started (non-developers)](#getting-started--non-developers-)
+- [Getting setup (developers)](#getting-setup-developers)
 - [Adding bitcoin-s to your library](#adding-bitcoin-s-to-your-library)
 - [Docker images](#docker-images)
 - [Contributing](#contributing)
