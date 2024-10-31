@@ -3,7 +3,7 @@ package org.bitcoins.crypto
 import scodec.bits.ByteVector
 
 case class SchnorrDigitalSignature(rx: SchnorrNonce, sig: FieldElement)
-    extends NetworkElement {
+    extends DigitalSignature {
   override def bytes: ByteVector = rx.bytes ++ sig.bytes
 }
 
