@@ -35,7 +35,7 @@ sealed abstract class WitnessGenerators {
       val spk = if (spkBytes.isEmpty) EmptyScriptPubKey else NonStandardScriptPubKey(cmpctSPK.bytes ++ spkBytes)
       P2WSHWitnessV0(spk,scriptSig)
     }*/
-    Gen.oneOf(p2wpkhWitnessV0, p2wshWitnessV0)
+    Gen.oneOf(p2wpkhWitnessV0, p2wshWitnessV0, taprootWitness)
   }
 
   def taprootWitness: Gen[TaprootWitness] = {

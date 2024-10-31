@@ -3,11 +3,19 @@ package org.bitcoins.core.wallet.utxo
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.script.{
   SigVersionBase,
+  SigVersionTaprootKeySpend,
   SigVersionWitnessV0,
   SignatureVersion
 }
-import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.crypto.{HashType, Sign}
+import org.bitcoins.core.protocol.transaction.*
+import org.bitcoins.crypto.{
+  ECPublicKey,
+  HashType,
+  PublicKey,
+  SchnorrPublicKey,
+  Sign,
+  XOnlyPubKey
+}
 
 /** Stores the information required to generate a signature (ECSignatureParams)
   * or to generate a script signature (ScriptSignatureParams) for a given
@@ -33,8 +41,13 @@ sealed trait InputSigningInfo[+InputType <: InputInfo] {
         .outputs(outPoint.vout.toInt)}) does match the corresponding value $amount"
   )
 
-  private val keysToSignFor = inputInfo.pubKeys
-  require(signers.map(_.publicKey).forall(keysToSignFor.contains),
+  private val keysToSignFor = inputInfo.pubKeys.map {
+    case ec: ECPublicKey     => ec.toXOnly
+    case s: SchnorrPublicKey => s.publicKey.toXOnly
+    case x: XOnlyPubKey      => x.publicKey.toXOnly
+    case p: PublicKey        => sys.error(s"Not supported=$p")
+  }
+  require(signers.map(_.publicKey.toXOnly).forall(keysToSignFor.contains),
           s"Cannot have signers that do not sign for one of $keysToSignFor")
 
   def outputReference: OutputReference = inputInfo.outputReference
@@ -50,6 +63,7 @@ sealed trait InputSigningInfo[+InputType <: InputInfo] {
         SigVersionWitnessV0
       case _: P2SHNonSegwitInputInfo | _: RawInputInfo =>
         SigVersionBase
+      case _: TaprootKeyPathInputInfo => SigVersionTaprootKeySpend
       case i: InputInfo =>
         sys.error(s"Cannot determine SigVersion for unsupported inputInfo=$i")
     }

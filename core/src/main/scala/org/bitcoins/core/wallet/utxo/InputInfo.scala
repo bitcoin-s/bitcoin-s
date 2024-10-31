@@ -14,7 +14,10 @@ import org.bitcoins.crypto.{
   ECPublicKeyBytes,
   HashType,
   NetworkElement,
-  Sign
+  PublicKey,
+  SchnorrDigitalSignature,
+  Sign,
+  XOnlyPubKey
 }
 
 import scala.annotation.tailrec
@@ -43,7 +46,7 @@ sealed trait InputInfo {
 
   def conditionalPath: ConditionalPath
 
-  def pubKeys: Vector[ECPublicKey]
+  def pubKeys: Vector[PublicKey]
 
   def requiredSigs: Int
 
@@ -87,7 +90,7 @@ object InputInfo {
   def getRedeemScript(inputInfo: InputInfo): Option[ScriptPubKey] = {
     inputInfo match {
       case _: RawInputInfo | _: SegwitV0NativeInputInfo |
-          _: UnassignedSegwitNativeInputInfo =>
+          _: UnassignedSegwitNativeInputInfo | _: TaprootKeyPathInputInfo =>
         None
       case info: P2SHInputInfo => Some(info.redeemScript)
     }
@@ -99,6 +102,7 @@ object InputInfo {
       case info: SegwitV0NativeInputInfo         => Some(info.scriptWitness)
       case info: P2SHNestedSegwitV0InputInfo     => Some(info.scriptWitness)
       case info: UnassignedSegwitNativeInputInfo => Some(info.scriptWitness)
+      case info: TaprootKeyPathInputInfo         => Some(info.scriptWitness)
     }
   }
 
@@ -111,7 +115,8 @@ object InputInfo {
       case info: ConditionalInputInfo => info.hashPreImages
       case _: UnassignedSegwitNativeInputInfo | _: EmptyInputInfo |
           _: P2PKInputInfo | _: P2PKWithTimeoutInputInfo |
-          _: MultiSignatureInputInfo | _: P2WPKHV0InputInfo =>
+          _: MultiSignatureInputInfo | _: P2WPKHV0InputInfo |
+          _: TaprootKeyPathInputInfo =>
         Vector.empty
     }
   }
@@ -200,7 +205,8 @@ object InputInfo {
     val dummyLowRHashType =
       ECDigitalSignature.dummyLowR.appendHashType(HashType.sigHashAll)
     info match {
-      case _: SegwitV0NativeInputInfo | _: UnassignedSegwitNativeInputInfo =>
+      case _: SegwitV0NativeInputInfo | _: UnassignedSegwitNativeInputInfo |
+          _: TaprootKeyPathInputInfo =>
         ScriptSigLenAndStackHeight(0, 0)
       case info: P2SHInputInfo =>
         val serializedRedeemScript = ScriptConstant(info.redeemScript.asmBytes)
@@ -263,6 +269,7 @@ object InputInfo {
         (stackHeightByteSize + redeemScriptSize + scriptSigLen).toInt
       case info: P2SHNestedSegwitV0InputInfo =>
         maxWitnessLen(info.nestedInputInfo)
+      case _: TaprootKeyPathInputInfo => 65 // schnorr signature + hash type
       case _: UnassignedSegwitNativeInputInfo =>
         throw new IllegalArgumentException(
           s"Cannot compute witness for unknown segwit InputInfo, got $info")
@@ -351,6 +358,8 @@ object InputInfo {
 sealed trait RawInputInfo extends InputInfo {
   override def scriptPubKey: RawScriptPubKey
   override def previousOutputMap: PreviousOutputMap = PreviousOutputMap.empty
+
+  override def pubKeys: Vector[ECPublicKey]
 }
 
 object RawInputInfo {
@@ -596,6 +605,8 @@ case class P2WPKHV0InputInfo(
   override def pubKeys: Vector[ECPublicKey] = Vector(pubKey)
 
   override def requiredSigs: Int = 1
+
+  override def previousOutputMap: PreviousOutputMap = PreviousOutputMap.empty
 }
 
 case class P2WSHV0InputInfo(
@@ -619,6 +630,8 @@ case class P2WSHV0InputInfo(
   override def pubKeys: Vector[ECPublicKey] = nestedInputInfo.pubKeys
 
   override def requiredSigs: Int = nestedInputInfo.requiredSigs
+
+  override def previousOutputMap: PreviousOutputMap = PreviousOutputMap.empty
 }
 
 case class UnassignedSegwitNativeInputInfo(
@@ -630,6 +643,7 @@ case class UnassignedSegwitNativeInputInfo(
     pubKeys: Vector[ECPublicKey])
     extends InputInfo {
   override def requiredSigs: Int = pubKeys.length
+
   override def previousOutputMap: PreviousOutputMap = PreviousOutputMap.empty
 }
 
@@ -642,7 +656,13 @@ sealed trait P2SHInputInfo extends InputInfo {
 
   def nestedInputInfo: InputInfo
 
-  override def pubKeys: Vector[ECPublicKey] = nestedInputInfo.pubKeys
+  override def pubKeys: Vector[ECPublicKey] = {
+    val p = nestedInputInfo.pubKeys
+    require(
+      p.forall(_.isInstanceOf[ECPublicKey]),
+      s"Cannot have non ECPublicKey inside P2SHInputInfo, got=${nestedInputInfo.pubKeys}")
+    p.map(_.asInstanceOf[ECPublicKey])
+  }
 
   override def requiredSigs: Int = nestedInputInfo.requiredSigs
 
@@ -659,6 +679,8 @@ case class P2SHNonSegwitInputInfo(
 
   override val nestedInputInfo: RawInputInfo =
     RawInputInfo(outPoint, amount, redeemScript, conditionalPath, hashPreImages)
+
+  override def previousOutputMap: PreviousOutputMap = PreviousOutputMap.empty
 }
 
 case class P2SHNestedSegwitV0InputInfo(
@@ -681,4 +703,38 @@ case class P2SHNestedSegwitV0InputInfo(
                             scriptWitness,
                             conditionalPath,
                             hashPreImages)
+
+  override def previousOutputMap: PreviousOutputMap = PreviousOutputMap.empty
+}
+
+sealed trait TaprootInputInfo extends InputInfo {
+  def scriptWitness: TaprootWitness
+
+  override def scriptPubKey: TaprootScriptPubKey
+
+  override def pubKeys: Vector[XOnlyPubKey]
+
+  override def conditionalPath: ConditionalPath = ConditionalPath.NoCondition
+}
+
+case class TaprootKeyPathInputInfo(
+    outPoint: TransactionOutPoint,
+    amount: CurrencyUnit,
+    scriptPubKey: TaprootScriptPubKey,
+    previousOutputMap: PreviousOutputMap)
+    extends TaprootInputInfo {
+  require(
+    previousOutputMap.outputMap.exists(_._2.scriptPubKey == scriptPubKey),
+    s"PreviousOutputMap did not contain spk we are spending=$scriptPubKey")
+  require(
+    previousOutputMap.outputMap.exists(_._1 == outPoint),
+    s"PreviousOutputMap did not contain outpoint we are spending=$outPoint")
+  override val requiredSigs: Int = 1
+
+  override def pubKeys: Vector[XOnlyPubKey] = Vector(scriptPubKey.pubKey)
+
+  override def scriptWitness: TaprootWitness = TaprootKeyPath(
+    SchnorrDigitalSignature.dummy)
+
+  def inputIndex: Int = TxUtil.inputIndex(this, previousOutputMap)
 }

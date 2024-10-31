@@ -2,10 +2,11 @@ package org.bitcoins.core.wallet.signer
 
 import org.bitcoins.core.crypto.{
   BaseTxSigComponent,
+  TaprootTxSigComponent,
   WitnessTxSigComponentP2SH,
   WitnessTxSigComponentRaw
 }
-import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
+import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.*
@@ -14,13 +15,14 @@ import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.wallet.builder.{
   RawTxSigner,
   StandardNonInteractiveFinalizer
 }
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.*
-import org.bitcoins.crypto.ECDigitalSignature
+import org.bitcoins.crypto.{ECDigitalSignature, ECPrivateKey, HashType}
 import org.bitcoins.testkitcore.gen.{
   CreditingTxGen,
   GenUtil,
@@ -178,7 +180,14 @@ class SignerTest extends BitcoinSUnitTest {
           o,
           Policy.standardFlags
         )
-      case _: UnassignedWitnessScriptPubKey | _: TaprootScriptPubKey => ???
+      case _: TaprootScriptPubKey =>
+        TaprootTxSigComponent(
+          tx.asInstanceOf[WitnessTransaction],
+          UInt32(idx),
+          utxo.inputInfo.asInstanceOf[TaprootInputInfo].previousOutputMap,
+          Policy.standardFlags
+        )
+      case _: UnassignedWitnessScriptPubKey => ???
       case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
           _: P2PKWithTimeoutScriptPubKey | _: MultiSignatureScriptPubKey |
           _: WitnessCommitment | _: CSVScriptPubKey | _: CLTVScriptPubKey |
@@ -213,10 +222,9 @@ class SignerTest extends BitcoinSUnitTest {
       utxos: Vector[InputSigningInfo[InputInfo]]
   ): Boolean = {
     val programs: Vector[PreExecutionScriptProgram] =
-      tx.inputs.zipWithIndex.toVector.map {
-        case (input: TransactionInput, idx: Int) =>
-          val utxo = utxos.find(_.outPoint == input.previousOutput).get
-          createProgram(tx, idx, utxo)
+      tx.inputs.zipWithIndex.map { case (input: TransactionInput, idx: Int) =>
+        val utxo = utxos.find(_.outPoint == input.previousOutput).get
+        createProgram(tx, idx, utxo)
       }
     ScriptInterpreter.runAllVerify(programs)
   }
@@ -274,5 +282,53 @@ class SignerTest extends BitcoinSUnitTest {
 
       assert(verifyScripts(signedTx.get, creditingTxsInfos.toVector))
     }
+  }
+
+  it must "sign a p2tr keypath utxo" in {
+    val privKey = ECPrivateKey.freshPrivateKey
+    val xonly = privKey.toXOnly
+    val spk = TaprootScriptPubKey(xonly)
+    val output = TransactionOutput(Bitcoins.one, spk)
+    val creditingTx = BaseTransaction(
+      version = TransactionConstants.version,
+      inputs = Vector.empty,
+      outputs = Vector(output),
+      lockTime = TransactionConstants.lockTime
+    )
+
+    val outPoint = TransactionOutPoint(creditingTx.txIdBE, 0)
+    val input = TransactionInput(outPoint,
+                                 ScriptSignature.empty,
+                                 TransactionConstants.sequence)
+    val output1 = TransactionOutput(Bitcoins.one, EmptyScriptPubKey)
+    val unsignedTx = WitnessTransaction(
+      version = TransactionConstants.version,
+      inputs = Vector(input),
+      outputs = Vector(output1),
+      lockTime = TransactionConstants.lockTime,
+      witness = EmptyWitness.fromN(1)
+    )
+
+    val previousOutputMap = PreviousOutputMap(Map(outPoint -> output))
+    val inputInfo: TaprootKeyPathInputInfo = TaprootKeyPathInputInfo(
+      outPoint,
+      output.value,
+      spk,
+      previousOutputMap = previousOutputMap
+    )
+    val sigParams = ECSignatureParams(inputInfo = inputInfo,
+                                      prevTransaction = creditingTx,
+                                      signer = privKey,
+                                      hashType = HashType.sigHashDefault)
+
+    val sigComponent = TaprootKeyPathSigner.sign(
+      spendingInfo = sigParams.toScriptSignatureParams,
+      unsignedTx = unsignedTx,
+      isDummySignature = false,
+      spendingInfoToSatisfy = sigParams.toScriptSignatureParams)
+
+    val result =
+      verifyScripts(sigComponent.transaction, utxos = Vector(sigParams))
+    assert(result)
   }
 }

@@ -34,7 +34,7 @@ sealed abstract class SignerUtils {
 
     val tx = spendingInfo.inputInfo match {
       case _: SegwitV0NativeInputInfo | _: P2SHNestedSegwitV0InputInfo |
-          _: UnassignedSegwitNativeInputInfo =>
+          _: UnassignedSegwitNativeInputInfo | _: TaprootKeyPathInputInfo =>
         TxUtil.addWitnessData(unsignedTx, spendingInfo)
       case _: RawInputInfo | _: P2SHNonSegwitInputInfo =>
         unsignedTx
@@ -185,7 +185,13 @@ object BitcoinSigner extends SignerUtils {
       case p2wpkh: P2WPKHV0InputInfo =>
         P2WPKHSigner.sign(spendingInfo, unsignedTx, spendingFrom(p2wpkh))
       case pw2sh: P2WSHV0InputInfo =>
-        P2WSHSigner.sign(spendingInfo, unsignedTx, spendingFrom(pw2sh))
+        P2WSHSigner.sign(spendingInfo,
+                         unsignedTx,
+                         spendingFrom(pw2sh))
+      case trk: TaprootKeyPathInputInfo =>
+        TaprootKeyPathSigner.sign(spendingInfo,
+                                  unsignedTx,
+                                  spendingInfoToSatisfy = spendingFrom(trk))
       case _: UnassignedSegwitNativeInputInfo =>
         throw new UnsupportedOperationException("Unsupported Segwit version")
     }
@@ -613,3 +619,72 @@ sealed abstract class ConditionalSigner extends Signer[ConditionalInputInfo] {
   }
 }
 object ConditionalSigner extends ConditionalSigner
+
+sealed abstract class TaprootKeyPathSigner
+    extends Signer[TaprootKeyPathInputInfo] {
+
+  /** The method used to sign a bitcoin unspent transaction output that is
+    * potentially nested
+    *
+    * @param spendingInfo
+    *   \- The information required for signing
+    * @param unsignedTx
+    *   the external Transaction that needs an input signed
+    * @param isDummySignature
+    *   \- do not sign the tx for real, just use a dummy signature this is
+    *   useful for fee estimation
+    * @param spendingInfoToSatisfy
+    *   \- specifies the NewSpendingInfo whose ScriptPubKey needs a
+    *   ScriptSignature to be generated
+    * @return
+    */
+  override def sign(
+      spendingInfo: ScriptSignatureParams[InputInfo],
+      unsignedTx: Transaction,
+      isDummySignature: Boolean,
+      spendingInfoToSatisfy: ScriptSignatureParams[TaprootKeyPathInputInfo])
+      : TaprootTxSigComponent = {
+    if (spendingInfoToSatisfy != spendingInfo) {
+      throw TxBuilderError.WrongSigner.exception
+    } else {
+      unsignedTx match {
+        case wtx: WitnessTransaction =>
+          val signer = spendingInfoToSatisfy.signer
+          val inputIndex = spendingInfoToSatisfy.inputInfo.inputIndex
+          val hashType = spendingInfo.hashType
+          val unsignedTxWitness = TransactionWitness(
+            wtx.witness
+              .updated(inputIndex,
+                       spendingInfoToSatisfy.inputInfo.scriptWitness)
+              .toVector)
+
+          val unsignedWtx = wtx.copy(witness = unsignedTxWitness)
+
+          val signature: SchnorrDigitalSignature =
+            doSign(unsignedTx,
+                   spendingInfo,
+                   signer.schnorrSignWithHashType,
+                   hashType,
+                   isDummySignature)
+          val scriptWitness = TaprootKeyPath(signature)
+          val signedTxWitness =
+            wtx.witness.updated(inputIndex, scriptWitness)
+          val signedTx = unsignedWtx.copy(witness = signedTxWitness)
+
+          TaprootTxSigComponent(
+            transaction = signedTx,
+            inputIndex = UInt32(inputIndex),
+            outputMap = spendingInfoToSatisfy.inputInfo.previousOutputMap,
+            flags = flags)
+
+        case btx: NonWitnessTransaction =>
+          val wtx = WitnessTransaction.toWitnessTx(btx)
+          sign(spendingInfo, wtx, isDummySignature, spendingInfoToSatisfy)
+      }
+
+    }
+  }
+
+}
+
+object TaprootKeyPathSigner extends TaprootKeyPathSigner

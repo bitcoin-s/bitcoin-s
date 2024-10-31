@@ -5,6 +5,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.*
 import org.bitcoins.core.script.control.OP_RETURN
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.wallet.builder.{
   AddWitnessDataFinalizer,
   RawTxBuilder,
@@ -111,7 +112,8 @@ object TxUtil {
                    currentLockTimeOpt)
             case _: P2WPKHV0InputInfo | _: UnassignedSegwitNativeInputInfo |
                 _: P2PKInputInfo | _: P2PKHInputInfo |
-                _: MultiSignatureInputInfo | _: EmptyInputInfo =>
+                _: MultiSignatureInputInfo | _: EmptyInputInfo |
+                _: TaprootKeyPathInputInfo =>
               // none of these scripts affect the locktime of a tx
               loop(newRemaining, currentLockTimeOpt)
           }
@@ -134,7 +136,9 @@ object TxUtil {
       outputs: Vector[TransactionOutput]): Transaction = {
     val dummySpendingInfos = utxos.map { inputInfo =>
       val mockSigners =
-        inputInfo.pubKeys.take(inputInfo.requiredSigs).map(Sign.dummySign)
+        inputInfo.pubKeys
+          .take(inputInfo.requiredSigs)
+          .map(p => Sign.dummySign(p))
 
       inputInfo.toSpendingInfo(EmptyTransaction,
                                mockSigners,
@@ -372,10 +376,30 @@ object TxUtil {
     }
   }
 
+  def inputIndexOpt(
+      inputInfo: InputInfo,
+      previousOutputMap: PreviousOutputMap): Option[Int] = {
+    previousOutputMap.zipWithIndex
+      .find(_._1._1 == inputInfo.outPoint)
+      .map(_._2)
+  }
+
+  def inputIndex(
+      inputInfo: InputInfo,
+      previousOutputMap: PreviousOutputMap): Int = {
+    inputIndexOpt(inputInfo, previousOutputMap) match {
+      case Some(i) => i
+      case None =>
+        throw new IllegalArgumentException(
+          s"The transaction did not contain the expected outPoint (${inputInfo.outPoint}), got $previousOutputMap")
+    }
+  }
+
   /** Returns the index of the InputInfo in the transaction */
   def inputIndexOpt(inputInfo: InputInfo, tx: Transaction): Option[Int] = {
     tx.inputs.zipWithIndex
       .find(_._1.previousOutput == inputInfo.outPoint)
       .map(_._2)
   }
+
 }

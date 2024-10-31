@@ -82,23 +82,17 @@ case object WitnessVersion1 extends WitnessVersion {
     programBytes.size match {
       case 32 =>
         // p2tr
-        if (scriptWitness.stack.isEmpty) {
-          Left(ScriptErrorWitnessProgramWitnessEmpty)
-        } else {
-          val rebuiltSPK = scriptWitness match {
-            case _: TaprootKeyPath =>
-              Right(witnessSPK)
-            case sp: TaprootScriptPath =>
-              Right(sp.script)
-            case _: TaprootUnknownPath =>
-              Right(witnessSPK)
-            case w @ (EmptyScriptWitness | _: P2WPKHWitnessV0 |
-                _: P2WSHWitnessV0) =>
-              sys.error(
-                s"Cannot rebuild witnessv1 with a non v1 witness, got=$w")
-          }
-          rebuiltSPK
+        val rebuiltSPK = scriptWitness match {
+          case _: TaprootKeyPath | EmptyScriptWitness =>
+            Right(witnessSPK)
+          case sp: TaprootScriptPath =>
+            Right(sp.script)
+          case _: TaprootUnknownPath =>
+            Right(witnessSPK)
+          case w @ (_: P2WPKHWitnessV0 | _: P2WSHWitnessV0) =>
+            sys.error(s"Cannot rebuild witnessv1 with a non v1 witness, got=$w")
         }
+        rebuiltSPK
       case _ =>
         // witness version 1 programs need to be 32 bytes in size
         // this is technically wrong as this is dependent on a policy flag
