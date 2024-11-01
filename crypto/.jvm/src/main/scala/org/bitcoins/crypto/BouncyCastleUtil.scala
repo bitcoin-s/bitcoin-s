@@ -144,14 +144,13 @@ object BouncyCastleUtil {
 
       val signer = new ECDSASigner
       signer.init(false, publicKeyParams)
-      signature match {
-        case EmptyDigitalSignature =>
-          signer.verifySignature(data.toArray,
-                                 java.math.BigInteger.valueOf(0),
-                                 java.math.BigInteger.valueOf(0))
-        case _: ECDigitalSignature =>
-          val (r, s) = signature.decodeSignature
-          signer.verifySignature(data.toArray, r.bigInteger, s.bigInteger)
+      if (signature == ECDigitalSignature.emptyDigitalSignature) {
+        signer.verifySignature(data.toArray,
+                               java.math.BigInteger.valueOf(0),
+                               java.math.BigInteger.valueOf(0))
+      } else {
+        val (r, s) = signature.decodeSignature
+        signer.verifySignature(data.toArray, r.bigInteger, s.bigInteger)
       }
     }
     resultTry.getOrElse(false)

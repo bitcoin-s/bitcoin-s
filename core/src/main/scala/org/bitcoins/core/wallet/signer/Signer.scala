@@ -22,7 +22,7 @@ sealed abstract class SignerUtils {
       hashType: HashType,
       isDummySignature: Boolean): ECDigitalSignature = {
     if (isDummySignature) {
-      DummyECDigitalSignature
+      ECDigitalSignature.dummyECDigitalSignature
     } else {
       TransactionSignatureCreator.createSig(sigComponent, sign, hashType)
     }
@@ -35,7 +35,7 @@ sealed abstract class SignerUtils {
       hashType: HashType,
       isDummySignature: Boolean): ECDigitalSignature = {
     if (isDummySignature) {
-      LowRDummyECDigitalSignature
+      ECDigitalSignature.lowRDummyECDigitalSignature
     } else {
       TransactionSignatureCreator.createSig(unsignedTx,
                                             signingInfo,

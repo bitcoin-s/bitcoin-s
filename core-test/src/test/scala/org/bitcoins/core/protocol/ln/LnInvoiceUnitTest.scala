@@ -488,7 +488,7 @@ class LnInvoiceUnitTest extends BitcoinSUnitTest {
 
   it must "fail to create an invoice if the digital signature is invalid" in {
     intercept[IllegalArgumentException] {
-      val sig = EmptyDigitalSignature
+      val sig = ECDigitalSignature.emptyDigitalSignature
       val tags =
         LnTaggedFields(
           paymentHash = paymentTag,

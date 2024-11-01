@@ -4,7 +4,7 @@ import scodec.bits.ByteVector
 
 /** Created by chris on 2/26/16.
   */
-sealed abstract class ECDigitalSignature extends DigitalSignature {
+case class ECDigitalSignature(bytes: ByteVector) extends DigitalSignature {
   require(r.signum == 1 || r.signum == 0, s"r must not be negative, got $r")
   require(s.signum == 1 || s.signum == 0, s"s must not be negative, got $s")
 
@@ -13,8 +13,6 @@ sealed abstract class ECDigitalSignature extends DigitalSignature {
       case sig: ECDigitalSignature => bytes == sig.bytes
       case _                       => other.equals(this)
     }
-
-  def bytes: ByteVector
 
   def isEmpty: Boolean = bytes.isEmpty
 
@@ -95,53 +93,54 @@ sealed abstract class ECDigitalSignature extends DigitalSignature {
   }
 }
 
-case object EmptyDigitalSignature extends ECDigitalSignature {
-  override val bytes: ByteVector = ByteVector.empty
-  override def r: BigInt = java.math.BigInteger.valueOf(0)
-  override def s: BigInt = r
-}
-
-/** The point of this case object is to help with fee estimation an average
-  * [[ECDigitalSignature]] is 72 bytes in size Technically this number can vary,
-  * 72 bytes is the most likely though according to
-  * https://en.bitcoin.it/wiki/Elliptic_Curve_Digital_Signature_Algorithm
-  */
-case object DummyECDigitalSignature extends ECDigitalSignature {
-  override val bytes: ByteVector = ByteVector(Array.fill(72)(0.toByte))
-  override def r: BigInt = EmptyDigitalSignature.r
-  override def s: BigInt = r
-}
-
-/** The point of this case object is to help with fee estimation when using low
-  * r signing. Technically this number can vary, 71 bytes is the most likely
-  * when using low r signing
-  */
-case object LowRDummyECDigitalSignature extends ECDigitalSignature {
-  override val bytes: ByteVector = ByteVector(Array.fill(71)(0.toByte))
-  override def r: BigInt = EmptyDigitalSignature.r
-  override def s: BigInt = r
-}
-
 object ECDigitalSignature extends Factory[ECDigitalSignature] {
 
-  private case class ECDigitalSignatureImpl(bytes: ByteVector)
-      extends ECDigitalSignature
+  lazy val emptyDigitalSignature: ECDigitalSignature = {
+    val bytes: ByteVector = ByteVector(Array.fill(72)(0.toByte))
+    new ECDigitalSignature(bytes)
+  }
+
+  /** The point of this case object is to help with fee estimation an average
+    * [[ECDigitalSignature]] is 72 bytes in size Technically this number can
+    * vary, 72 bytes is the most likely though according to
+    * https://en.bitcoin.it/wiki/Elliptic_Curve_Digital_Signature_Algorithm
+    */
+  lazy val dummyECDigitalSignature: ECDigitalSignature = {
+    val bytes: ByteVector = ByteVector(Array.fill(72)(0.toByte))
+    new ECDigitalSignature(bytes) {
+      override def r: BigInt = BigInt(0)
+      override def s: BigInt = r
+    }
+  }
+
+  /** The point of this case object is to help with fee estimation when using
+    * low r signing. Technically this number can vary, 71 bytes is the most
+    * likely when using low r signing
+    */
+  val lowRDummyECDigitalSignature: ECDigitalSignature = {
+    val bytes: ByteVector = ByteVector(Array.fill(71)(0.toByte))
+    new ECDigitalSignature(bytes) {
+      override def r: BigInt = emptyDigitalSignature.r
+      override def s: BigInt = r
+    }
+  }
 
   override def fromBytes(bytes: ByteVector): ECDigitalSignature = {
     // this represents the empty signature
-    if (bytes.size == 1 && bytes.head == 0x0) EmptyDigitalSignature
-    else if (bytes.size == 0)
-      EmptyDigitalSignature
-    else if (bytes == DummyECDigitalSignature.bytes)
-      DummyECDigitalSignature
-    else if (bytes == LowRDummyECDigitalSignature.bytes)
-      LowRDummyECDigitalSignature
+    if (bytes.size == 1 && bytes.head == 0x0) emptyDigitalSignature
+    else if (bytes.size == 0) {
+      println(s"here?")
+      emptyDigitalSignature
+    } else if (bytes == dummyECDigitalSignature.bytes)
+      dummyECDigitalSignature
+    else if (bytes == lowRDummyECDigitalSignature.bytes)
+      lowRDummyECDigitalSignature
     else {
       // make sure the signature follows BIP62's low-s value
       // https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#Low_S_values_in_signatures
       // bitcoinj implementation
       // https://github.com/bitcoinj/bitcoinj/blob/1e66b9a8e38d9ad425507bf5f34d64c5d3d23bb8/core/src/main/java/org/bitcoinj/core/ECKey.java#L551
-      ECDigitalSignatureImpl(bytes)
+      new ECDigitalSignature(bytes)
     }
   }
 

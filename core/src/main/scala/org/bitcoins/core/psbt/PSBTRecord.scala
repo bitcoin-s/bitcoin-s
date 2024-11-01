@@ -181,7 +181,7 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
 
     def dummyPartialSig(
         pubKey: ECPublicKey = ECPublicKey.freshPublicKey): PartialSignature = {
-      PartialSignature(pubKey, DummyECDigitalSignature)
+      PartialSignature(pubKey, ECDigitalSignature.dummyECDigitalSignature)
     }
 
     override def fromBytes(bytes: ByteVector): PartialSignature =

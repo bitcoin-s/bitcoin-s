@@ -4,7 +4,7 @@ import scodec.bits.ByteVector
 
 case class SchnorrDigitalSignature(rx: SchnorrNonce, sig: FieldElement)
     extends DigitalSignature {
-  override def bytes: ByteVector = rx.bytes ++ sig.bytes
+  override val bytes: ByteVector = rx.bytes ++ sig.bytes
 }
 
 object SchnorrDigitalSignature extends Factory[SchnorrDigitalSignature] {
