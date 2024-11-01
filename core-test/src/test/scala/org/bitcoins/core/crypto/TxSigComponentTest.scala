@@ -60,8 +60,7 @@ class TxSigComponentTest extends BitcoinSUnitTest {
       Vector(TransactionOutput(Satoshis.one, EmptyScriptPubKey)),
       UInt32.zero,
       TransactionWitness(
-        Vector(
-          P2WPKHWitnessV0(pubKey, ECDigitalSignature.dummyECDigitalSignature))
+        Vector(P2WPKHWitnessV0(pubKey, ECDigitalSignature.dummy))
       )
     )
 

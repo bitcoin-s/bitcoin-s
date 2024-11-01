@@ -83,7 +83,7 @@ sealed abstract class DERSignatureUtil {
     *   boolean indicating whether the signature was der encoded or not
     */
   def isValidSignatureEncoding(signature: ECDigitalSignature): Boolean = {
-    if (ECDigitalSignature.emptyDigitalSignature == signature) {
+    if (ECDigitalSignature.empty == signature) {
       true
     } else {
       isValidSignatureEncoding(signature.bytes)

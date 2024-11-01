@@ -216,24 +216,24 @@ object InputInfo {
       case _: P2PKInputInfo =>
         ScriptSigLenAndStackHeight(
           P2PKScriptSignature(
-            ECDigitalSignature.lowRDummyECDigitalSignature).asmBytes.length.toInt,
+            ECDigitalSignature.dummyLowR).asmBytes.length.toInt,
           1)
       case _: P2PKHInputInfo =>
         ScriptSigLenAndStackHeight(
-          P2PKHScriptSignature(ECDigitalSignature.lowRDummyECDigitalSignature,
+          P2PKHScriptSignature(ECDigitalSignature.dummyLowR,
                                ECPublicKey.dummy).asmBytes.length.toInt,
           2)
       case info: P2PKWithTimeoutInputInfo =>
         ScriptSigLenAndStackHeight(
           P2PKWithTimeoutScriptSignature(
             info.isBeforeTimeout,
-            ECDigitalSignature.lowRDummyECDigitalSignature).asmBytes.length.toInt,
+            ECDigitalSignature.dummyLowR).asmBytes.length.toInt,
           2)
       case info: MultiSignatureInputInfo =>
         ScriptSigLenAndStackHeight(
           MultiSignatureScriptSignature(
             Vector.fill(info.requiredSigs)(
-              ECDigitalSignature.lowRDummyECDigitalSignature)).asmBytes.length.toInt,
+              ECDigitalSignature.dummyLowR)).asmBytes.length.toInt,
           1 + info.requiredSigs
         )
       case info: ConditionalInputInfo =>

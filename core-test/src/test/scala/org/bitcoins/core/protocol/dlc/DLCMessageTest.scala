@@ -46,7 +46,7 @@ class DLCMessageTest extends BitcoinSJvmTest {
   )
 
   val dummySig: PartialSignature =
-    PartialSignature(dummyPubKey, ECDigitalSignature.emptyDigitalSignature)
+    PartialSignature(dummyPubKey, ECDigitalSignature.empty)
 
   it must "not allow a negative collateral for a DLCOffer" in {
     assertThrows[IllegalArgumentException](

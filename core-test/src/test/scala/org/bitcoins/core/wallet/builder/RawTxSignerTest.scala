@@ -377,7 +377,7 @@ class RawTxSignerTest extends BitcoinSUnitTest {
             assert(
               btx.inputs.forall(
                 _.scriptSignature.signatures.forall(
-                  _ == ECDigitalSignature.lowRDummyECDigitalSignature
+                  _ == ECDigitalSignature.dummyLowR
                 )
               )
             )
@@ -385,10 +385,9 @@ class RawTxSignerTest extends BitcoinSUnitTest {
             assert(
               wtx.witness.witnesses.forall {
                 case p2wsh: P2WSHWitnessV0 =>
-                  p2wsh.signatures.forall(
-                    _ == ECDigitalSignature.lowRDummyECDigitalSignature)
+                  p2wsh.signatures.forall(_ == ECDigitalSignature.dummyLowR)
                 case p2wpkh: P2WPKHWitnessV0 =>
-                  p2wpkh.signature == ECDigitalSignature.lowRDummyECDigitalSignature
+                  p2wpkh.signature == ECDigitalSignature.dummyLowR
                 case EmptyScriptWitness =>
                   true
 

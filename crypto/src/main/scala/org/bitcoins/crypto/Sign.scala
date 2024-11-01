@@ -109,7 +109,7 @@ object AsyncSign {
     * server
     */
   def dummySign(publicKey: ECPublicKey): AsyncSign = {
-    constant(ECDigitalSignature.emptyDigitalSignature, publicKey)
+    constant(ECDigitalSignature.empty, publicKey)
   }
 }
 
@@ -217,7 +217,7 @@ object Sign {
   }
 
   def dummySign(publicKey: ECPublicKey): Sign = {
-    constant(ECDigitalSignature.emptyDigitalSignature, publicKey)
+    constant(ECDigitalSignature.empty, publicKey)
   }
 }
 

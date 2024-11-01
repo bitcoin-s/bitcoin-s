@@ -173,8 +173,8 @@ object TxUtil {
       case (inputInfo, index) =>
         val mockSigners =
           inputInfo.pubKeys.take(inputInfo.requiredSigs).map { pubKey =>
-            Sign(_ => ECDigitalSignature.dummyECDigitalSignature,
-                 (_, _) => ECDigitalSignature.dummyECDigitalSignature,
+            Sign(_ => ECDigitalSignature.dummy,
+                 (_, _) => ECDigitalSignature.dummy,
                  pubKey)
           }
 

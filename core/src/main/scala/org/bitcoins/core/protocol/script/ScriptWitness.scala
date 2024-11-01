@@ -51,7 +51,7 @@ sealed abstract class P2WPKHWitnessV0 extends ScriptWitnessV0 {
 
   def signature: ECDigitalSignature =
     stack(1) match {
-      case ByteVector.empty     => ECDigitalSignature.emptyDigitalSignature
+      case ByteVector.empty     => ECDigitalSignature.empty
       case nonEmpty: ByteVector => ECDigitalSignature(nonEmpty)
     }
 
@@ -69,11 +69,11 @@ object P2WPKHWitnessV0 {
 
   private[bitcoins] def apply(
       pubKeyBytes: ECPublicKeyBytes): P2WPKHWitnessV0 = {
-    P2WPKHWitnessV0(pubKeyBytes, ECDigitalSignature.emptyDigitalSignature)
+    P2WPKHWitnessV0(pubKeyBytes, ECDigitalSignature.empty)
   }
 
   def apply(pubKey: ECPublicKey): P2WPKHWitnessV0 = {
-    P2WPKHWitnessV0(pubKey, ECDigitalSignature.emptyDigitalSignature)
+    P2WPKHWitnessV0(pubKey, ECDigitalSignature.empty)
   }
 
   private[bitcoins] def apply(

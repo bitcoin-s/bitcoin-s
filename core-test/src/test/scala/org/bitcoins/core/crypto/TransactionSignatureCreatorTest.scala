@@ -297,8 +297,8 @@ class TransactionSignatureCreatorTest extends BitcoinSJvmTest {
       val scriptPubKey = MultiSignatureScriptPubKey(1, Seq(publicKey))
       val (creditingTx, outputIndex) =
         TransactionTestUtil.buildCreditingTransaction(scriptPubKey)
-      val scriptSig = MultiSignatureScriptSignature(
-        Seq(ECDigitalSignature.emptyDigitalSignature))
+      val scriptSig =
+        MultiSignatureScriptSignature(Seq(ECDigitalSignature.empty))
       val (spendingTx, inputIndex) =
         TransactionTestUtil.buildSpendingTransaction(
           creditingTx,
@@ -351,8 +351,8 @@ class TransactionSignatureCreatorTest extends BitcoinSJvmTest {
       val scriptPubKey = P2SHScriptPubKey(redeemScript)
       val (creditingTx, outputIndex) =
         TransactionTestUtil.buildCreditingTransaction(scriptPubKey)
-      val scriptSig = MultiSignatureScriptSignature(
-        Seq(ECDigitalSignature.emptyDigitalSignature))
+      val scriptSig =
+        MultiSignatureScriptSignature(Seq(ECDigitalSignature.empty))
 
       val (spendingTx, inputIndex) =
         TransactionTestUtil.buildSpendingTransaction(
@@ -403,8 +403,7 @@ class TransactionSignatureCreatorTest extends BitcoinSJvmTest {
     val scriptPubKey = P2SHScriptPubKey(redeemScript)
     val (creditingTx, outputIndex) =
       TransactionTestUtil.buildCreditingTransaction(scriptPubKey)
-    val scriptSig = MultiSignatureScriptSignature(
-      Seq(ECDigitalSignature.emptyDigitalSignature))
+    val scriptSig = MultiSignatureScriptSignature(Seq(ECDigitalSignature.empty))
 
     val (spendingTx, inputIndex) =
       TransactionTestUtil.buildSpendingTransaction(

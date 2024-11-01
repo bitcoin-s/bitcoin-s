@@ -95,7 +95,7 @@ case class ECDigitalSignature(bytes: ByteVector) extends DigitalSignature {
 
 object ECDigitalSignature extends Factory[ECDigitalSignature] {
 
-  lazy val emptyDigitalSignature: ECDigitalSignature = {
+  val empty: ECDigitalSignature = {
     val bytes: ByteVector = ByteVector.empty
     new ECDigitalSignature(bytes) {
       override def r: BigInt = java.math.BigInteger.valueOf(0)
@@ -108,7 +108,7 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     * vary, 72 bytes is the most likely though according to
     * https://en.bitcoin.it/wiki/Elliptic_Curve_Digital_Signature_Algorithm
     */
-  lazy val dummyECDigitalSignature: ECDigitalSignature = {
+  val dummy: ECDigitalSignature = {
     val bytes: ByteVector = ByteVector(Array.fill(72)(0.toByte))
     new ECDigitalSignature(bytes) {
       override def r: BigInt = BigInt(0)
@@ -120,24 +120,23 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     * low r signing. Technically this number can vary, 71 bytes is the most
     * likely when using low r signing
     */
-  val lowRDummyECDigitalSignature: ECDigitalSignature = {
+  val dummyLowR: ECDigitalSignature = {
     val bytes: ByteVector = ByteVector(Array.fill(71)(0.toByte))
     new ECDigitalSignature(bytes) {
-      override def r: BigInt = emptyDigitalSignature.r
+      override def r: BigInt = empty.r
       override def s: BigInt = r
     }
   }
 
   override def fromBytes(bytes: ByteVector): ECDigitalSignature = {
     // this represents the empty signature
-    if (bytes.size == 1 && bytes.head == 0x0) emptyDigitalSignature
+    if (bytes.size == 1 && bytes.head == 0x0) empty
     else if (bytes.size == 0) {
-      println(s"here?")
-      emptyDigitalSignature
-    } else if (bytes == dummyECDigitalSignature.bytes)
-      dummyECDigitalSignature
-    else if (bytes == lowRDummyECDigitalSignature.bytes)
-      lowRDummyECDigitalSignature
+      empty
+    } else if (bytes == dummy.bytes)
+      dummy
+    else if (bytes == dummyLowR.bytes)
+      dummyLowR
     else {
       // make sure the signature follows BIP62's low-s value
       // https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#Low_S_values_in_signatures

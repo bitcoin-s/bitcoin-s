@@ -144,7 +144,7 @@ object BouncyCastleUtil {
 
       val signer = new ECDSASigner
       signer.init(false, publicKeyParams)
-      if (signature == ECDigitalSignature.emptyDigitalSignature) {
+      if (signature == ECDigitalSignature.empty) {
         signer.verifySignature(data.toArray,
                                java.math.BigInteger.valueOf(0),
                                java.math.BigInteger.valueOf(0))

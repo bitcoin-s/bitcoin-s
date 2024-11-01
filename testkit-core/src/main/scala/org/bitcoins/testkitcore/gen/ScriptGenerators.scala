@@ -744,8 +744,7 @@ sealed abstract class ScriptGenerators {
       publicKeys = privateKeys.map(_.publicKey)
       multiSigScriptPubKey =
         MultiSignatureScriptPubKey(requiredSigs, publicKeys)
-      emptyDigitalSignatures = privateKeys.map(_ =>
-        ECDigitalSignature.emptyDigitalSignature)
+      emptyDigitalSignatures = privateKeys.map(_ => ECDigitalSignature.empty)
       scriptSig = MultiSignatureScriptSignature(emptyDigitalSignatures)
       (creditingTx, outputIndex) =
         TransactionGenerators
