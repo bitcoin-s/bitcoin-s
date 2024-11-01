@@ -342,7 +342,7 @@ object WalletStorage extends KeyManagerLogger {
 
     readJsonTupleEither.flatMap {
       case (str, rawCreationTime, rawBackupTimeOpt, rawImported) =>
-        ExtPrivateKey.fromStringT(str) match {
+        ExtPrivateKeyEC.fromStringT(str) match {
           case Failure(_) =>
             Left(JsonParsingError("JSON contents was correctly formatted"))
           case Success(xprv) =>
@@ -547,7 +547,7 @@ object WalletStorage extends KeyManagerLogger {
       privKeyVersion: ExtKeyPrivVersion,
       passphraseOpt: Option[AesPassword],
       bip39PasswordOpt: Option[String]
-  ): ExtPrivateKeyHardened = {
+  ): ExtPrivateKeyHardenedEC = {
     val decryptedSeed = decryptSeedFromDisk(seedPath, passphraseOpt) match {
       case Left(error)     => sys.error(error.toString)
       case Right(mnemonic) => mnemonic

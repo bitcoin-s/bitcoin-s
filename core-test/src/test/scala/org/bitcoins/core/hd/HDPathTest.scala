@@ -365,8 +365,8 @@ class HDPathTest extends BitcoinSUnitTest {
     val xpriv = seed.toExtPrivateKey(ExtKeyVersion.SegWitMainNetPriv)
     val xpub = xpriv.extPublicKey
 
-    assert(ExtPrivateKey.fromStringT("zprvAWgYBB").isFailure)
-    val expectedXpriv = ExtPrivateKey.fromString(
+    assert(ExtPrivateKeyEC.fromStringT("zprvAWgYBB").isFailure)
+    val expectedXpriv = ExtPrivateKeyEC.fromString(
       "zprvAWgYBBk7JR8Gjrh4UJQ2uJdG1r3WNRRfURiABBE3RvMXYSrRJL62XuezvGdPvG6GFBZduosCc1YP5wixPox7zhZLfiUm8aunE96BBa4Kei5"
     )
     val expectedXpub = ExtPublicKey.fromString(
@@ -493,7 +493,7 @@ class HDPathTest extends BitcoinSUnitTest {
     // legacy mainnet
     {
       val rootXpriv =
-        ExtPrivateKey.fromBIP39Seed(ExtKeyVersion.LegacyMainNetPriv, seed)
+        ExtPrivateKeyEC.fromBIP39Seed(ExtKeyVersion.LegacyMainNetPriv, seed)
       val path = LegacyHDPath.fromString("m/44'/0'/0'/0/0")
       val xpub = rootXpriv.deriveChildPubKey(path).get
       val expectedXpub = ExtPublicKey.fromString(
@@ -505,7 +505,7 @@ class HDPathTest extends BitcoinSUnitTest {
     // legacy testnet
     {
       val rootXpriv =
-        ExtPrivateKey.fromBIP39Seed(ExtKeyVersion.LegacyTestNet3Priv, seed)
+        ExtPrivateKeyEC.fromBIP39Seed(ExtKeyVersion.LegacyTestNet3Priv, seed)
       val path = LegacyHDPath.fromString("m/44'/0'/0'/0/0")
       val xpub = rootXpriv.deriveChildPubKey(path).get
       val expectedXpub = ExtPublicKey.fromString(
@@ -517,7 +517,8 @@ class HDPathTest extends BitcoinSUnitTest {
     // nested segwit mainnet
     {
       val rootXpriv =
-        ExtPrivateKey.fromBIP39Seed(ExtKeyVersion.NestedSegWitMainNetPriv, seed)
+        ExtPrivateKeyEC.fromBIP39Seed(ExtKeyVersion.NestedSegWitMainNetPriv,
+                                      seed)
       val path = NestedSegWitHDPath.fromString("m/49'/0'/0'/0/0")
       val xpub = rootXpriv.deriveChildPubKey(path).get
       val expectedXpub = ExtPublicKey.fromString(
@@ -529,7 +530,7 @@ class HDPathTest extends BitcoinSUnitTest {
     // nested segwit testnet
     {
       val rootXpriv =
-        ExtPrivateKey.fromBIP39Seed(
+        ExtPrivateKeyEC.fromBIP39Seed(
           ExtKeyVersion.NestedSegWitTestNet3Priv,
           seed
         )
@@ -544,7 +545,7 @@ class HDPathTest extends BitcoinSUnitTest {
     // native segwit mainnet
     {
       val rootXpriv =
-        ExtPrivateKey.fromBIP39Seed(ExtKeyVersion.SegWitMainNetPriv, seed)
+        ExtPrivateKeyEC.fromBIP39Seed(ExtKeyVersion.SegWitMainNetPriv, seed)
       val path = SegWitHDPath.fromString("m/84'/0'/0'/0/0")
       val xpub = rootXpriv.deriveChildPubKey(path).get
       val expectedXpub = ExtPublicKey.fromString(
@@ -556,7 +557,7 @@ class HDPathTest extends BitcoinSUnitTest {
     // native segwit testnet
     {
       val rootXpriv =
-        ExtPrivateKey.fromBIP39Seed(ExtKeyVersion.SegWitTestNet3Priv, seed)
+        ExtPrivateKeyEC.fromBIP39Seed(ExtKeyVersion.SegWitTestNet3Priv, seed)
       val path = SegWitHDPath.fromString("m/84'/0'/0'/0/0")
       val xpub = rootXpriv.deriveChildPubKey(path).get
       val expectedXpub = ExtPublicKey.fromString(
@@ -568,7 +569,7 @@ class HDPathTest extends BitcoinSUnitTest {
     // multisig mainnet
     {
       val rootXpriv =
-        ExtPrivateKey.fromBIP39Seed(ExtKeyVersion.LegacyMainNetPriv, seed)
+        ExtPrivateKeyEC.fromBIP39Seed(ExtKeyVersion.LegacyMainNetPriv, seed)
       val path = MultisigHDPath.fromString("m/45'/0'/0'/0/0")
       val xpub = rootXpriv.deriveChildPubKey(path).get
       val expectedXpub = ExtPublicKey.fromString(
@@ -580,7 +581,7 @@ class HDPathTest extends BitcoinSUnitTest {
     // multisig testnet
     {
       val rootXpriv =
-        ExtPrivateKey.fromBIP39Seed(ExtKeyVersion.LegacyTestNet3Priv, seed)
+        ExtPrivateKeyEC.fromBIP39Seed(ExtKeyVersion.LegacyTestNet3Priv, seed)
       val path = MultisigHDPath.fromString("m/45'/0'/0'/0/0")
       val xpub = rootXpriv.deriveChildPubKey(path).get
       val expectedXpub = ExtPublicKey.fromString(
@@ -620,7 +621,7 @@ class HDPathTest extends BitcoinSUnitTest {
     // we pass in the wrong version bytes to make the test vector
     // from bip49 pass
     val rootXpriv = seed.toExtPrivateKey(ExtKeyVersion.LegacyTestNet3Priv)
-    val expectedRootXpriv = ExtPrivateKey.fromString(
+    val expectedRootXpriv = ExtPrivateKeyEC.fromString(
       "tprv8ZgxMBicQKsPe5YMU9gHen4Ez3ApihUfykaqUorj9t6FDqy3nP6eoXiAo2ssvpAjoLroQxHqr3R5nE3a5dU3DHTjTgJDd7zrbniJr6nrCzd"
     )
 
@@ -628,7 +629,7 @@ class HDPathTest extends BitcoinSUnitTest {
 
     val firstAccount = path.account
     val accountXpriv = rootXpriv.deriveChildPrivKey(firstAccount)
-    val expectedAccountXpriv = ExtPrivateKey.fromString(
+    val expectedAccountXpriv = ExtPrivateKeyEC.fromString(
       "tprv8gRrNu65W2Msef2BdBSUgFdRTGzC8EwVXnV7UGS3faeXtuMVtGfEdidVeGbThs4ELEoayCAzZQ4uUji9DUiAs7erdVskqju7hrBcDvDsdbY"
     )
     assert(expectedAccountXpriv == accountXpriv)
@@ -680,14 +681,14 @@ class HDPathTest extends BitcoinSUnitTest {
 
     {
       val rootXpriv =
-        ExtPrivateKey.fromBIP39Seed(ExtKeyVersion.LegacyMainNetPriv, seed)
+        ExtPrivateKeyEC.fromBIP39Seed(ExtKeyVersion.LegacyMainNetPriv, seed)
       val legacyPathString = "m/44'/0'/0'/0/0"
       val legacyPath = LegacyHDPath.fromString(legacyPathString)
       val legacyPathAccount = legacyPath.account
       val accountXpriv = rootXpriv.deriveChildPrivKey(legacyPathAccount)
       val accountXpub = accountXpriv.extPublicKey
 
-      val expectedAccountXpriv = ExtPrivateKey.fromString(
+      val expectedAccountXpriv = ExtPrivateKeyEC.fromString(
         "xprv9xpXFhFpqdQK3TmytPBqXtGSwS3DLjojFhTGht8gwAAii8py5X6pxeBnQ6ehJiyJ6nDjWGJfZ95WxByFXVkDxHXrqu53WCRGypk2ttuqncb"
       )
       val expectedAccountXpub = ExtPublicKey.fromString(
@@ -700,7 +701,8 @@ class HDPathTest extends BitcoinSUnitTest {
 
     {
       val rootXpriv =
-        ExtPrivateKey.fromBIP39Seed(ExtKeyVersion.NestedSegWitMainNetPriv, seed)
+        ExtPrivateKeyEC.fromBIP39Seed(ExtKeyVersion.NestedSegWitMainNetPriv,
+                                      seed)
       val nestedSegwitPathString = "m/49'/0'/0'/0/0"
       val nestedSegwitPath =
         NestedSegWitHDPath.fromString(nestedSegwitPathString)
@@ -708,7 +710,7 @@ class HDPathTest extends BitcoinSUnitTest {
       val accountXpriv = rootXpriv.deriveChildPrivKey(nestedSegwithPathAccount)
       val accountXpub = accountXpriv.extPublicKey
 
-      val expectedAccountXpriv = ExtPrivateKey.fromString(
+      val expectedAccountXpriv = ExtPrivateKeyEC.fromString(
         "yprvAHwhK6RbpuS3dgCYHM5jc2ZvEKd7Bi61u9FVhYMpgMSuZS613T1xxQeKTffhrHY79hZ5PsskBjcc6C2V7DrnsMsNaGDaWev3GLRQRgV7hxF"
       )
       val expectedAccountXpub = ExtPublicKey.fromString(
@@ -721,14 +723,14 @@ class HDPathTest extends BitcoinSUnitTest {
 
     {
       val rootXpriv =
-        ExtPrivateKey.fromBIP39Seed(ExtKeyVersion.SegWitMainNetPriv, seed)
+        ExtPrivateKeyEC.fromBIP39Seed(ExtKeyVersion.SegWitMainNetPriv, seed)
       val segwitPathString = "m/84'/0'/0'/0/0"
       val segwitPath = SegWitHDPath.fromString(segwitPathString)
       val segwithPathAccount = segwitPath.account
       val accountXpriv = rootXpriv.deriveChildPrivKey(segwithPathAccount)
       val accountXpub = accountXpriv.extPublicKey
 
-      val expectedAccountXpriv = ExtPrivateKey.fromString(
+      val expectedAccountXpriv = ExtPrivateKeyEC.fromString(
         "zprvAdG4iTXWBoARxkkzNpNh8r6Qag3irQB8PzEMkAFeTRXxHpbF9z4QgEvBRmfvqWvGp42t42nvgGpNgYSJA9iefm1yYNZKEm7z6qUWCroSQnE"
       )
       val expectedAccountXpub = ExtPublicKey.fromString(

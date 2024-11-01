@@ -6,13 +6,15 @@ import scodec.bits.ByteVector
 /** Wraps ECPrivateKey signing functionality but where adaptorSign uses a
   * constant ByteVector for auxRand resulting in deterministic adaptor signing.
   */
-case class ConstRandAdaptorSign(privKey: ECPrivateKey) extends AdaptorSign {
+case class ConstRandAdaptorSignEC(privKey: ECPrivateKey)
+    extends AdaptorSign
+    with SignEC {
 
   override def adaptorSign(
       adaptorPoint: ECPublicKey,
       msg: ByteVector
   ): ECAdaptorSignature = {
-    adaptorSign(adaptorPoint, msg, ConstRandAdaptorSign.constRand)
+    adaptorSign(adaptorPoint, msg, ConstRandAdaptorSignEC.constRand)
   }
 
   override def sign(bytes: ByteVector): ECDigitalSignature = {
@@ -39,7 +41,7 @@ case class ConstRandAdaptorSign(privKey: ECPrivateKey) extends AdaptorSign {
   }
 }
 
-object ConstRandAdaptorSign {
+object ConstRandAdaptorSignEC {
 
   val constRand: ByteVector =
     CryptoUtil.serializeForHash("DLC_TEST").padLeft(32)

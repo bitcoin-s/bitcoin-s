@@ -47,16 +47,16 @@ You can sign with `ExtPrivateKey` the same way you could with a normal `ECPrivat
 import org.bitcoins.core.hd._
 import org.bitcoins.core.crypto._
 
-val extPrivKey = ExtPrivateKey(ExtKeyVersion.SegWitMainNetPriv)
+val extPrivKey = ExtPrivateKeyEC(ExtKeyVersion.SegWitMainNetPriv)
 // extPrivKey: ExtPrivateKey = Masked(ExtPrivateKeyImpl)
 
 extPrivKey.sign(DoubleSha256Digest.empty.bytes)
 // res0: ECDigitalSignature = ECDigitalSignature(3045022100cfeda1a9e7ae6fbd4a608b2da83ce84ff5a58d3ce44f32cf8e6db53b34d66426022047e0573ab74730f4776ca53d653b884918225b5a869cb20890067faf14319ee9)
 
-val path = BIP32Path(Vector(BIP32Node(0,false)))
+val path = BIP32Path(Vector(BIP32Node(0, false)))
 // path: BIP32Path = m/0
 
-extPrivKey.sign(DoubleSha256Digest.empty.bytes,path)
+extPrivKey.sign(DoubleSha256Digest.empty.bytes, path)
 // res1: ECDigitalSignature = ECDigitalSignature(3045022100c799248b456a4ae3512d143d75e03ca0c6f26d845b39353ca9de8b3b2dff7a1e0220563285830a5a43562a35c005ff996911535ad70c38930f163c26b1650e05610c)
 ```
 

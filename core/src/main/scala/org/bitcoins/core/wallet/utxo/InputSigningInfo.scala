@@ -7,7 +7,7 @@ import org.bitcoins.core.protocol.script.{
   SignatureVersion
 }
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.crypto.{HashType, Sign}
+import org.bitcoins.crypto.{HashType, SignEC}
 
 /** Stores the information required to generate a signature (ECSignatureParams)
   * or to generate a script signature (ScriptSignatureParams) for a given
@@ -17,7 +17,7 @@ sealed trait InputSigningInfo[+InputType <: InputInfo] {
   def inputInfo: InputType
   def prevTransaction: Transaction
   def hashType: HashType
-  def signers: Vector[Sign]
+  def signers: Vector[SignEC]
 
   // If using EmptyTransaction we are testing or dummy signing
   require(
@@ -61,11 +61,11 @@ sealed trait InputSigningInfo[+InputType <: InputInfo] {
 case class ScriptSignatureParams[+InputType <: InputInfo](
     inputInfo: InputType,
     prevTransaction: Transaction,
-    signers: Vector[Sign],
+    signers: Vector[SignEC],
     hashType: HashType)
     extends InputSigningInfo[InputType] {
 
-  def signer: Sign = {
+  def signer: SignEC = {
     require(
       signers.length == 1,
       "This method is for spending infos with a single signer, if you mean signers.head be explicit")
@@ -98,7 +98,7 @@ object ScriptSignatureParams {
   def apply[InputType <: InputInfo](
       inputInfo: InputType,
       prevTransaction: Transaction,
-      signer: Sign,
+      signer: SignEC,
       hashType: HashType): ScriptSignatureParams[InputType] =
     ScriptSignatureParams(inputInfo, prevTransaction, Vector(signer), hashType)
 }
@@ -109,10 +109,10 @@ object ScriptSignatureParams {
 case class ECSignatureParams[+InputType <: InputInfo](
     inputInfo: InputType,
     prevTransaction: Transaction,
-    signer: Sign,
+    signer: SignEC,
     hashType: HashType)
     extends InputSigningInfo[InputType] {
-  override def signers: Vector[Sign] = Vector(signer)
+  override def signers: Vector[SignEC] = Vector(signer)
 
   def toScriptSignatureParams: ScriptSignatureParams[InputType] = {
     ScriptSignatureParams(inputInfo, prevTransaction, signer, hashType)

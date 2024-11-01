@@ -251,14 +251,14 @@ object DLCTxGen {
     val offerSigner = DLCTxSigner(
       builder,
       isInitiator = true,
-      ConstRandAdaptorSign(inputs.offerParams.fundingPrivKey),
+      ConstRandAdaptorSignEC(inputs.offerParams.fundingPrivKey),
       inputs.offerParams.payoutAddress,
       inputs.offerParams.fundingScriptSigParams
     )
     val acceptSigner = DLCTxSigner(
       builder,
       isInitiator = false,
-      ConstRandAdaptorSign(inputs.acceptParams.fundingPrivKey),
+      ConstRandAdaptorSignEC(inputs.acceptParams.fundingPrivKey),
       inputs.acceptParams.payoutAddress,
       inputs.acceptParams.fundingScriptSigParams
     )

@@ -45,7 +45,7 @@ case class DecryptedMnemonic(
 }
 
 case class DecryptedExtPrivKey(
-    private[keymanager] val xprv: ExtPrivateKey,
+    private[keymanager] val xprv: ExtPrivateKeyEC,
     creationTime: Instant,
     backupTimeOpt: Option[Instant],
     imported: Boolean
@@ -86,8 +86,8 @@ case class EncryptedSeed(
     }
   }
 
-  def toExtPrivKey(password: AesPassword): Try[ExtPrivateKey] = {
-    decryptStr(password).map(ExtPrivateKey.fromString)
+  def toExtPrivKey(password: AesPassword): Try[ExtPrivateKeyEC] = {
+    decryptStr(password).map(ExtPrivateKeyEC.fromString)
   }
 
   override def withBackupTime(backupTime: Instant): SeedState = {

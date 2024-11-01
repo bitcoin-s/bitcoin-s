@@ -4,7 +4,7 @@ import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.crypto.{
   ECPrivateKeyUtil,
   ExtKey,
-  ExtPrivateKey,
+  ExtPrivateKeyEC,
   ExtPublicKey
 }
 import org.bitcoins.core.hd.{BIP32Node, BIP32Path, HardenedType}
@@ -218,9 +218,9 @@ sealed abstract class ExtXOnlyPublicKeyExpression
   }
 }
 
-/** Produces [[ECPublicKey]] from [[ExtPrivateKey]] */
+/** Produces [[ECPublicKey]] from [[ExtPrivateKeyEC]] */
 case class XprvECPublicKeyExpression(
-    override val extKey: ExtPrivateKey,
+    override val extKey: ExtPrivateKeyEC,
     originOpt: Option[KeyOriginExpression],
     pathOpt: Option[BIP32Path],
     childrenHardenedOpt: Option[Option[HardenedType]])
@@ -400,7 +400,7 @@ object SingleECPublicKeyExpression
       val pathOpt = iter.takeBIP32PathOpt()
       val childrenHardenedOpt = iter.takeChildrenHardenedOpt()
       extKey match {
-        case xprv: ExtPrivateKey =>
+        case xprv: ExtPrivateKeyEC =>
           XprvECPublicKeyExpression(xprv,
                                     keyOriginOpt,
                                     pathOpt,

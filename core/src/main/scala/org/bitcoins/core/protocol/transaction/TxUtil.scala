@@ -14,7 +14,7 @@ import org.bitcoins.core.wallet.builder.{
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo.*
-import org.bitcoins.crypto.{ECDigitalSignature, HashType, Sign}
+import org.bitcoins.crypto.{ECDigitalSignature, HashType, SignEC}
 
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
@@ -134,7 +134,7 @@ object TxUtil {
       outputs: Vector[TransactionOutput]): Transaction = {
     val dummySpendingInfos = utxos.map { inputInfo =>
       val mockSigners =
-        inputInfo.pubKeys.take(inputInfo.requiredSigs).map(Sign.dummySign)
+        inputInfo.pubKeys.take(inputInfo.requiredSigs).map(SignEC.dummySign)
 
       inputInfo.toSpendingInfo(EmptyTransaction,
                                mockSigners,
@@ -173,9 +173,9 @@ object TxUtil {
       case (inputInfo, index) =>
         val mockSigners =
           inputInfo.pubKeys.take(inputInfo.requiredSigs).map { pubKey =>
-            Sign(_ => ECDigitalSignature.dummy,
-                 (_, _) => ECDigitalSignature.dummy,
-                 pubKey)
+            SignEC(_ => ECDigitalSignature.dummy,
+                   (_, _) => ECDigitalSignature.dummy,
+                   pubKey)
           }
 
         val mockSpendingInfo =

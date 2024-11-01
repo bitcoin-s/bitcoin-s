@@ -60,7 +60,7 @@ sealed abstract class SignerUtils {
   protected def relevantInfo(
       spendingInfo: InputSigningInfo[InputInfo],
       unsignedTx: Transaction)
-      : (Seq[Sign], TransactionOutput, UInt32, HashType) = {
+      : (Seq[SignEC], TransactionOutput, UInt32, HashType) = {
     (spendingInfo.signers,
      spendingInfo.output,
      inputIndex(spendingInfo, unsignedTx),
@@ -250,7 +250,7 @@ object BitcoinSigner extends SignerUtils {
   def sign(
       psbt: PSBT,
       inputIndex: Int,
-      signer: Sign,
+      signer: SignEC,
       conditionalPath: ConditionalPath = ConditionalPath.NoCondition,
       isDummySignature: Boolean = false): PSBT = {
     // if already signed by this signer

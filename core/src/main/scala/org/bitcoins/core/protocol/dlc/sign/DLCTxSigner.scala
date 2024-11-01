@@ -28,7 +28,7 @@ import scala.util.{Failure, Success, Try}
 case class DLCTxSigner(
     builder: DLCTxBuilder,
     isInitiator: Boolean,
-    fundingKey: AdaptorSign,
+    fundingKey: SignEC & AdaptorSign,
     finalAddress: BitcoinAddress,
     fundingUtxos: Vector[ScriptSignatureParams[InputInfo]]) {
 
@@ -300,7 +300,7 @@ object DLCTxSigner {
   def apply(
       builder: DLCTxBuilder,
       isInitiator: Boolean,
-      fundingKey: AdaptorSign,
+      fundingKey: ECPrivateKey,
       payoutPrivKey: AdaptorSign,
       network: BitcoinNetwork,
       fundingUtxos: Vector[ScriptSignatureParams[InputInfo]]): DLCTxSigner = {
@@ -313,7 +313,7 @@ object DLCTxSigner {
       fundOutputIndex: Int,
       fundingTx: Transaction,
       fundingMultiSig: MultiSignatureScriptPubKey,
-      fundingKey: Sign): ECSignatureParams[P2WSHV0InputInfo] = {
+      fundingKey: SignEC): ECSignatureParams[P2WSHV0InputInfo] = {
     val fundingOutPoint =
       TransactionOutPoint(fundingTx.txId, UInt32(fundOutputIndex))
 

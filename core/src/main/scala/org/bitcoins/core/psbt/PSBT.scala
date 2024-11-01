@@ -105,7 +105,7 @@ case class PSBT(
 
   lazy val estimateWeight: Option[Long] = {
     if (nextRole.order >= PSBTRole.SignerPSBTRole.order) {
-      val dummySigner = Sign.dummySign(ECPublicKey.freshPublicKey)
+      val dummySigner = SignEC.dummySign(ECPublicKey.freshPublicKey)
 
       val inputWeight =
         inputMaps.zip(transaction.inputs).foldLeft(0L) {
@@ -228,7 +228,7 @@ case class PSBT(
     */
   def sign(
       inputIndex: Int,
-      signer: Sign,
+      signer: SignEC,
       conditionalPath: ConditionalPath = ConditionalPath.NoCondition,
       isDummySignature: Boolean = false): PSBT = {
     require(
@@ -256,7 +256,7 @@ case class PSBT(
     */
   def getSpendingInfoUsingSigners(
       index: Int,
-      signers: Vector[Sign],
+      signers: Vector[SignEC],
       conditionalPath: ConditionalPath = ConditionalPath.NoCondition)
       : ScriptSignatureParams[InputInfo] = {
     require(index >= 0 && index < inputMaps.size,

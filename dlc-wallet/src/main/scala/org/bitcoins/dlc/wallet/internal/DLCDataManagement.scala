@@ -646,7 +646,7 @@ case class DLCDataManagement(dlcWalletDAOs: DLCWalletDAOs)(implicit
           val signer = DLCTxSigner(
             builder = builder,
             isInitiator = dlcDb.isInitiator,
-            fundingKey = fundingPrivKey,
+            fundingKey = fundingPrivKey.key,
             finalAddress = payoutAddress,
             fundingUtxos = fundingUtxoScriptSigParams
           )

@@ -1534,8 +1534,8 @@ object Picklers {
       str => MnemonicCode.fromWords(str.split(' ').toVector)
     )
 
-  implicit val extPrivateKeyPickler: ReadWriter[ExtPrivateKey] =
-    readwriter[String].bimap(ExtKey.toString, ExtPrivateKey.fromString)
+  implicit val extPrivateKeyPickler: ReadWriter[ExtPrivateKeyEC] =
+    readwriter[String].bimap(ExtKey.toString, ExtPrivateKeyEC.fromString)
 
   implicit val oracleAnnouncementTLV: ReadWriter[OracleAnnouncementV0TLV] =
     readwriter[String].bimap(_.hex, OracleAnnouncementV0TLV.fromHex)

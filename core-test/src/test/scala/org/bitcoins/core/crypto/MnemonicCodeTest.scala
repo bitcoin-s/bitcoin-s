@@ -194,7 +194,7 @@ class MnemonicCodeTest extends BitcoinSUnitTest {
       entropy: ByteVector,
       expectedWords: Vector[String],
       expectedSeed: BIP39Seed,
-      expectedXPriv: ExtPrivateKey
+      expectedXPriv: ExtPrivateKeyEC
   )
 
   private def testTrezorVector(
@@ -223,7 +223,7 @@ class MnemonicCodeTest extends BitcoinSUnitTest {
         entropy = ByteVector.fromValidHex(rawEntropy),
         expectedWords = rawWords.split(" ").toVector,
         expectedSeed = BIP39Seed.fromHex(rawSeed),
-        expectedXPriv = ExtPrivateKey.fromString(rawXpriv)
+        expectedXPriv = ExtPrivateKeyEC.fromString(rawXpriv)
       )
     }
 

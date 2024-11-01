@@ -11,7 +11,7 @@ import org.bitcoins.core.wallet.utxo.{
   P2SHNestedSegwitV0InputInfo,
   ScriptSignatureParams
 }
-import org.bitcoins.crypto.{HashType, Sign}
+import org.bitcoins.crypto.{HashType, SignEC}
 import org.scalacheck.Gen
 
 sealed abstract class CreditingTxGen {
@@ -379,7 +379,7 @@ sealed abstract class CreditingTxGen {
           WitnessGenerators.scriptWitness.flatMap { (wit: ScriptWitness) =>
             CryptoGenerators.hashType.map { (hashType: HashType) =>
               val tc = TransactionConstants
-              val signers: Vector[Sign] = keys.toVector
+              val signers: Vector[SignEC] = keys.toVector
               val creditingTx =
                 BaseTransaction(tc.validLockVersion,
                                 Vector.empty,
@@ -463,7 +463,7 @@ sealed abstract class CreditingTxGen {
 
   private def build(
       spk: ScriptPubKey,
-      signers: Seq[Sign],
+      signers: Seq[SignEC],
       redeemScript: Option[ScriptPubKey],
       scriptWitness: Option[ScriptWitness]
   ): Gen[ScriptSignatureParams[InputInfo]] =

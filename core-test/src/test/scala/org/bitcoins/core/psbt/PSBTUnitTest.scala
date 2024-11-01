@@ -314,8 +314,8 @@ class PSBTUnitTest extends BitcoinSUnitTest {
   private def getDummySigners(
       size: Int,
       pubKey: ECPublicKey = ECPublicKey.freshPublicKey
-  ): Vector[Sign] = {
-    Vector.fill(size)(Sign.dummySign(pubKey))
+  ): Vector[SignEC] = {
+    Vector.fill(size)(SignEC.dummySign(pubKey))
   }
 
   it must "create a valid UTXOSpendingInfo" in {
@@ -325,12 +325,12 @@ class PSBTUnitTest extends BitcoinSUnitTest {
     )
 
     val dummySigners = Vector(
-      Sign.dummySign(
+      SignEC.dummySign(
         ECPublicKey(
           "029583bf39ae0a609747ad199addd634fa6108559d6c5cd39b4c2183f1ab96e07f"
         )
       ),
-      Sign.dummySign(
+      SignEC.dummySign(
         ECPublicKey(
           "02dab61ff49a14db6a7d02b0cd1fbb78fc4b18312b5b4e54dae4dba2fbfef536d7"
         )

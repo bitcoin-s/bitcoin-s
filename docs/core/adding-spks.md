@@ -20,7 +20,7 @@ title: Adding New Script Types
  */
 
 import org.bitcoins.crypto._
-import org.bitcoins.core.crypto._                                                                                                                                                                                                                                                                               
+import org.bitcoins.core.crypto._
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.control._
 import org.bitcoins.core.script.crypto._
@@ -44,11 +44,13 @@ import scala.util._
 import scala.language.implicitConversions
 
 sealed trait RawScriptPubKey extends Script
+
 implicit def realToFakeRawSPK(real: org.bitcoins.core.protocol.script.RawScriptPubKey): RawScriptPubKey = ???
 implicit def fakeToRealRawSPK(fake: RawScriptPubKey): org.bitcoins.core.protocol.script.RawScriptPubKey = ???
 
 sealed trait InputInfo {
   def pubKeys: Vector[ECPublicKey]
+
   def conditionalPath: ConditionalPath
 }
 
@@ -58,47 +60,51 @@ trait MultiSignatureInputInfo extends RawInputInfo
 
 trait ConditionalInputInfo extends RawInputInfo {
   def nestedInputInfo: RawInputInfo
+
   def condition: Boolean
 }
 
 object RawInputInfo {
   def apply(
-        outPoint: TransactionOutPoint,
-        amount: CurrencyUnit,
-        scriptPubKey: RawScriptPubKey,
-        conditionalPath: ConditionalPath,
-        hashPreImages: Vector[NetworkElement] = Vector.empty): RawInputInfo = ???
+                   outPoint: TransactionOutPoint,
+                   amount: CurrencyUnit,
+                   scriptPubKey: RawScriptPubKey,
+                   conditionalPath: ConditionalPath,
+                   hashPreImages: Vector[NetworkElement] = Vector.empty): RawInputInfo = ???
 }
 
 sealed trait UTXOInfo[+InputType <: InputInfo] {
   def inputInfo: InputType
+
   def hashType: HashType
+
   def signers: Vector[ECPrivateKey]
 }
 
 case class UTXOSatisfyingInfo[+InputType <: InputInfo](
-    inputInfo: InputType,
-    signers: Vector[ECPrivateKey],
-    hashType: HashType)
-    extends UTXOInfo[InputType] {
-    def toSingle(index: Int): UTXOSigningInfo[InputType] = ???
-  
-    def toSingles: Vector[UTXOSigningInfo[InputType]] = {
-      signers.map { signer =>
-        UTXOSigningInfo(inputInfo, signer, hashType)
-      }
+                                                              inputInfo: InputType,
+                                                              signers: Vector[ECPrivateKey],
+                                                              hashType: HashType)
+        extends UTXOInfo[InputType] {
+  def toSingle(index: Int): UTXOSigningInfo[InputType] = ???
+
+  def toSingles: Vector[UTXOSigningInfo[InputType]] = {
+    signers.map { signer =>
+      UTXOSigningInfo(inputInfo, signer, hashType)
     }
+  }
 }
 
 case class UTXOSigningInfo[+InputType <: InputInfo](
-    inputInfo: InputType,
-    signer: ECPrivateKey,
-    hashType: HashType)
-    extends UTXOInfo[InputType] {
-    override def signers: Vector[ECPrivateKey] = Vector(signer)
+                                                           inputInfo: InputType,
+                                                           signer: ECPrivateKey,
+                                                           hashType: HashType)
+        extends UTXOInfo[InputType] {
+  override def signers: Vector[ECPrivateKey] = Vector(signer)
 }
 
 sealed trait ScriptSignature extends Script
+
 implicit def realToFakeRawScriptSig(real: org.bitcoins.core.protocol.script.ScriptSignature): ScriptSignature = ???
 implicit def fakeToRealRawScriptSig(fake: ScriptSignature): org.bitcoins.core.protocol.script.ScriptSignature = ???
 implicit def realMultiToFakeRawScriptSigInFuture(real: Future[MultiSignatureScriptSignature]): Future[ScriptSignature] = ???
@@ -107,10 +113,10 @@ implicit def realConditionalToFakeRawScriptSigInFuture(real: Future[ConditionalS
 sealed abstract class Signer[-InputType <: InputInfo] {
 
   def sign(
-      spendingInfo: UTXOSatisfyingInfo[InputType],
-      unsignedTx: Transaction,
-      isDummySignature: Boolean)(
-      implicit ec: ExecutionContext): Future[TxSigComponent] = {
+                  spendingInfo: UTXOSatisfyingInfo[InputType],
+                  unsignedTx: Transaction,
+                  isDummySignature: Boolean)(
+                  implicit ec: ExecutionContext): Future[TxSigComponent] = {
     sign(
       spendingInfo,
       unsignedTx,
@@ -120,32 +126,33 @@ sealed abstract class Signer[-InputType <: InputInfo] {
   }
 
   def sign(
-      spendingInfo: UTXOSatisfyingInfo[InputInfo],
-      unsignedTx: Transaction,
-      isDummySignature: Boolean,
-      spendingInfoToSatisfy: UTXOSatisfyingInfo[InputType])(
-      implicit ec: ExecutionContext): Future[TxSigComponent]
+                  spendingInfo: UTXOSatisfyingInfo[InputInfo],
+                  unsignedTx: Transaction,
+                  isDummySignature: Boolean,
+                  spendingInfoToSatisfy: UTXOSatisfyingInfo[InputType])(
+                  implicit ec: ExecutionContext): Future[TxSigComponent]
 
   def signSingle(
-      spendingInfo: UTXOSigningInfo[InputInfo],
-      unsignedTx: Transaction,
-      isDummySignature: Boolean)(
-      implicit ec: ExecutionContext): Future[PartialSignature] = ???
+                        spendingInfo: UTXOSigningInfo[InputInfo],
+                        unsignedTx: Transaction,
+                        isDummySignature: Boolean)(
+                        implicit ec: ExecutionContext): Future[PartialSignature] = ???
 }
+
 sealed abstract class RawSingleKeyBitcoinSigner[-InputType <: RawInputInfo]
-    extends Signer[InputType] {
+        extends Signer[InputType] {
 
   def keyAndSigToScriptSig(
-      key: ECPublicKey,
-      sig: ECDigitalSignature,
-      spendingInfo: UTXOInfo[InputType]): ScriptSignature
+                                  key: ECPublicKey,
+                                  sig: ECDigitalSignature,
+                                  spendingInfo: UTXOInfo[InputType]): ScriptSignature
 
   override def sign(
-      spendingInfo: UTXOSatisfyingInfo[InputInfo],
-      unsignedTx: Transaction,
-      isDummySignature: Boolean,
-      spendingInfoToSatisfy: UTXOSatisfyingInfo[InputType])(
-      implicit ec: ExecutionContext): Future[TxSigComponent] = ???
+                           spendingInfo: UTXOSatisfyingInfo[InputInfo],
+                           unsignedTx: Transaction,
+                           isDummySignature: Boolean,
+                           spendingInfoToSatisfy: UTXOSatisfyingInfo[InputType])(
+                           implicit ec: ExecutionContext): Future[TxSigComponent] = ???
 }
 /*
 object RawScriptUTXOSpendingInfoFull {
@@ -170,25 +177,25 @@ object RawScriptUTXOSpendingInfoSingle {
 
 object BitcoinSigner {
   def sign(
-        spendingInfo: UTXOSatisfyingInfo[InputInfo],
-        unsignedTx: Transaction,
-        isDummySignature: Boolean)(
-        implicit ec: ExecutionContext): Future[TxSigComponent] = {
-      sign(spendingInfo, unsignedTx, isDummySignature, spendingInfo)
-    }
-  
-    def sign(
-        spendingInfo: UTXOSatisfyingInfo[InputInfo],
-        unsignedTx: Transaction,
-        isDummySignature: Boolean,
-        spendingInfoToSatisfy: UTXOSatisfyingInfo[InputInfo])(
-        implicit ec: ExecutionContext): Future[TxSigComponent] = ???
+                  spendingInfo: UTXOSatisfyingInfo[InputInfo],
+                  unsignedTx: Transaction,
+                  isDummySignature: Boolean)(
+                  implicit ec: ExecutionContext): Future[TxSigComponent] = {
+    sign(spendingInfo, unsignedTx, isDummySignature, spendingInfo)
+  }
 
-    def signSingle(
-        spendingInfo: UTXOSigningInfo[InputInfo],
-        unsignedTx: Transaction,
-        isDummySignature: Boolean)(
-        implicit ec: ExecutionContext): Future[PartialSignature] = ???
+  def sign(
+                  spendingInfo: UTXOSatisfyingInfo[InputInfo],
+                  unsignedTx: Transaction,
+                  isDummySignature: Boolean,
+                  spendingInfoToSatisfy: UTXOSatisfyingInfo[InputInfo])(
+                  implicit ec: ExecutionContext): Future[TxSigComponent] = ???
+
+  def signSingle(
+                        spendingInfo: UTXOSigningInfo[InputInfo],
+                        unsignedTx: Transaction,
+                        isDummySignature: Boolean)(
+                        implicit ec: ExecutionContext): Future[PartialSignature] = ???
 }
 
 def asm: Seq[ScriptToken] = ???
@@ -198,7 +205,7 @@ def spendingInfoToSatisfy: UTXOSatisfyingInfo[InputInfo] = ???
 def conditionalPath: ConditionalPath = ???
 def outPoint: TransactionOutPoint = ???
 def amount: CurrencyUnit = ???
-def signer: Sign = ???
+def signer: SignEC = ???
 def hashType: HashType = ???
 def beforeTimeout: Boolean = ???
 def spendingInfo: UTXOSatisfyingInfo[InputInfo] = ???
@@ -207,20 +214,20 @@ def isDummySignature: Boolean = ???
 def min: Int = ???
 def max: Int = ???
 implicit def ec: ExecutionContext = ???
-def relevantInfo(spendingInfo: UTXOSatisfyingInfo[InputInfo], unsignedTx: Transaction): (Seq[Sign], TransactionOutput, UInt32, HashType) = ???
+def relevantInfo(spendingInfo: UTXOSatisfyingInfo[InputInfo], unsignedTx: Transaction): (Seq[SignEC], TransactionOutput, UInt32, HashType) = ???
 def updateScriptSigInSigComponent(
-      unsignedTx: Transaction,
-      inputIndex: Int,
-      output: TransactionOutput,
-      scriptSignatureF: Future[ScriptSignature])(
-      implicit ec: ExecutionContext): Future[BaseTxSigComponent] = ???
+                                         unsignedTx: Transaction,
+                                         inputIndex: Int,
+                                         output: TransactionOutput,
+                                         scriptSignatureF: Future[ScriptSignature])(
+                                         implicit ec: ExecutionContext): Future[BaseTxSigComponent] = ???
 def build(
-      spk: ScriptPubKey,
-      signers: Seq[Sign],
-      redeemScript: Option[ScriptPubKey],
-      scriptWitness: Option[ScriptWitness]): Gen[UTXOSatisfyingInfo[InputInfo]] = ???
+                 spk: ScriptPubKey,
+                 signers: Seq[SignEC],
+                 redeemScript: Option[ScriptPubKey],
+                 scriptWitness: Option[ScriptWitness]): Gen[UTXOSatisfyingInfo[InputInfo]] = ???
 def spendingFrom[Info <: InputInfo](
-        inputInfo: Info): UTXOSatisfyingInfo[Info] = ???
+                                           inputInfo: Info): UTXOSatisfyingInfo[Info] = ???
 ```
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->

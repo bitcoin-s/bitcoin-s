@@ -12,7 +12,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * process. Fundamentally a private key takes in a scodec.bits.ByteVector and
   * returns a [[ECDigitalSignature]] That is what this abstraction is meant to
   * represent. If you have a [[ECPrivateKey]] in your application, you can get
-  * it's [[Sign]] type by doing this:
+  * it's [[SignEC]] type by doing this:
   *
   * val key = ECPrivateKey() val sign: scodec.bits.ByteVector =>
   * Future[ECDigitalSignature] = key.signFunction
@@ -21,8 +21,8 @@ import scala.concurrent.{ExecutionContext, Future}
   * send a message to the hardware device. The type signature of the function
   * you implement must be scodec.bits.ByteVector => Future[ECDigitalSignature]
   */
-trait AsyncSign {
-  def asyncSign(bytes: ByteVector): Future[ECDigitalSignature]
+trait AsyncSign[PubKey <: PublicKey, Signature <: DigitalSignature] {
+  def asyncSign(bytes: ByteVector): Future[Signature]
 
   /** Note that using this function to generate digital signatures with specific
     * properties (by trying a bunch of entropy values) can reduce privacy as it
@@ -36,10 +36,10 @@ trait AsyncSign {
     */
   def asyncSignWithEntropy(
       bytes: ByteVector,
-      entropy: ByteVector): Future[ECDigitalSignature]
+      entropy: ByteVector): Future[Signature]
 
   private def asyncSignLowR(bytes: ByteVector, startAt: Long)(implicit
-      ec: ExecutionContext): Future[ECDigitalSignature] = {
+      ec: ExecutionContext): Future[Signature] = {
     val sigF = if (startAt == 0) { // On first try, use normal signing
       asyncSign(bytes)
     } else { // Subsequently, use additional entropy
@@ -57,22 +57,27 @@ trait AsyncSign {
   }
 
   def asyncSignLowR(bytes: ByteVector)(implicit
-      ec: ExecutionContext): Future[ECDigitalSignature] = {
+      ec: ExecutionContext): Future[Signature] = {
     asyncSignLowR(bytes, startAt = 0)
   }
 
-  def publicKey: ECPublicKey
+  def publicKey: PubKey
 }
 
-object AsyncSign {
+trait AsyncSignEC extends AsyncSign[ECPublicKey, ECDigitalSignature]
 
-  private case class AsyncSignImpl(
+trait AsyncSignSchnorr
+    extends AsyncSign[SchnorrPublicKey, SchnorrDigitalSignature]
+
+object AsyncSignEC {
+
+  private case class AsyncSignECImpl(
       asyncSignFunction: ByteVector => Future[ECDigitalSignature],
       asyncSignWithEntropyFunction: (
           ByteVector,
           ByteVector) => Future[ECDigitalSignature],
       override val publicKey: ECPublicKey)
-      extends AsyncSign {
+      extends AsyncSignEC {
 
     override def asyncSign(bytes: ByteVector): Future[ECDigitalSignature] = {
       asyncSignFunction(bytes)
@@ -90,14 +95,14 @@ object AsyncSign {
       asyncSignWithEntropy: (
           ByteVector,
           ByteVector) => Future[ECDigitalSignature],
-      pubKey: ECPublicKey): AsyncSign = {
-    AsyncSignImpl(asyncSign, asyncSignWithEntropy, pubKey)
+      pubKey: ECPublicKey): AsyncSignEC = {
+    AsyncSignECImpl(asyncSign, asyncSignWithEntropy, pubKey)
   }
 
-  def constant(sig: ECDigitalSignature, pubKey: ECPublicKey): AsyncSign = {
-    AsyncSignImpl(_ => Future.successful(sig),
-                  (_, _) => Future.successful(sig),
-                  pubKey)
+  def constant(sig: ECDigitalSignature, pubKey: ECPublicKey): AsyncSignEC = {
+    AsyncSignECImpl(_ => Future.successful(sig),
+                    (_, _) => Future.successful(sig),
+                    pubKey)
   }
 
   /** This dummySign function is useful for the case where we do not have the
@@ -108,12 +113,12 @@ object AsyncSign {
     * because it can be used to match against a specific private key on another
     * server
     */
-  def dummySign(publicKey: ECPublicKey): AsyncSign = {
+  def dummySign(publicKey: ECPublicKey): AsyncSignEC = {
     constant(ECDigitalSignature.empty, publicKey)
   }
 }
 
-trait AsyncAdaptorSign extends AsyncSign {
+trait AsyncAdaptorSign extends AsyncSignEC {
 
   def asyncAdaptorSign(
       adaptorPoint: ECPublicKey,
@@ -128,7 +133,7 @@ trait AsyncAdaptorSign extends AsyncSign {
   }
 }
 
-trait Sign extends AsyncSign {
+trait SignEC extends AsyncSignEC {
   def sign(bytes: ByteVector): ECDigitalSignature
   def signWithHashType(
       bytes: ByteVector,
@@ -199,13 +204,13 @@ trait Sign extends AsyncSign {
   }
 }
 
-object Sign {
+object SignEC {
 
-  private case class SignImpl(
+  private case class SignECImpl(
       signFunction: ByteVector => ECDigitalSignature,
       signWithEntropyFunction: (ByteVector, ByteVector) => ECDigitalSignature,
       override val publicKey: ECPublicKey)
-      extends Sign {
+      extends SignEC {
 
     override def sign(bytes: ByteVector): ECDigitalSignature = {
       signFunction(bytes)
@@ -221,20 +226,20 @@ object Sign {
   def apply(
       sign: ByteVector => ECDigitalSignature,
       signWithEntropy: (ByteVector, ByteVector) => ECDigitalSignature,
-      pubKey: ECPublicKey): Sign = {
-    SignImpl(sign, signWithEntropy, pubKey)
+      pubKey: ECPublicKey): SignEC = {
+    SignECImpl(sign, signWithEntropy, pubKey)
   }
 
-  def constant(sig: ECDigitalSignature, pubKey: ECPublicKey): Sign = {
-    SignImpl(_ => sig, (_, _) => sig, pubKey)
+  def constant(sig: ECDigitalSignature, pubKey: ECPublicKey): SignEC = {
+    SignECImpl(_ => sig, (_, _) => sig, pubKey)
   }
 
-  def dummySign(publicKey: ECPublicKey): Sign = {
+  def dummySign(publicKey: ECPublicKey): SignEC = {
     constant(ECDigitalSignature.empty, publicKey)
   }
 }
 
-trait AdaptorSign extends Sign with AsyncAdaptorSign {
+trait AdaptorSign extends AsyncAdaptorSign {
 
   def adaptorSign(
       adaptorPoint: ECPublicKey,

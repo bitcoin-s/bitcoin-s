@@ -2,14 +2,14 @@ package org.bitcoins.crypto
 
 import scodec.bits.ByteVector
 
-class SignTest extends BitcoinSCryptoTest {
+class SignECTest extends BitcoinSCryptoTest {
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
 
   // ECPrivateKey implements the sign interface
   // so just use it for testing purposes
-  val privKey: Sign = ECPrivateKey.freshPrivateKey
+  val privKey: SignEC = ECPrivateKey.freshPrivateKey
   val pubKey: ECPublicKey = privKey.publicKey
 
   behavior of "Sign"

@@ -2,7 +2,7 @@ package org.bitcoins.commons.jsonmodels.bitcoind
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LabelPurpose
 import org.bitcoins.commons.rpc.BitcoindException
-import org.bitcoins.core.crypto.{ExtPrivateKey, ExtPublicKey}
+import org.bitcoins.core.crypto.{ExtPrivateKeyEC, ExtPublicKey}
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.UInt32
@@ -47,7 +47,7 @@ case class HDKeyDescriptor(desc: Descriptor, active: Boolean)
 case class GetHDKeysResult(
     xpub: ExtPublicKey,
     has_private: Boolean,
-    xprv: Option[ExtPrivateKey],
+    xprv: Option[ExtPrivateKeyEC],
     descriptors: Vector[HDKeyDescriptor])
     extends WalletResult
 

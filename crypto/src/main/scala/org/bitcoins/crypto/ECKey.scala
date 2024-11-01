@@ -154,6 +154,7 @@ sealed abstract class BaseECKey extends NetworkElement
   */
 case class ECPrivateKey(bytes: ByteVector)
     extends BaseECKey
+    with SignEC
     with AdaptorSign
     with MaskedToString {
   require(CryptoUtil.secKeyVerify(bytes), s"Invalid key, hex: ${bytes.toHex}")

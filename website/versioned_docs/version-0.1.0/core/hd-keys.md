@@ -44,11 +44,11 @@ mnemonicCode.words // the phrase the user should write down
 // from the same seed as you'd like, by simply giving them
 // different passwords.
 val bip39Seed = BIP39Seed.fromMnemonic(mnemonicCode,
-                                       password = "secret password")
+  password = "secret password")
 // bip39Seed: BIP39Seed = BIP39SeedImpl(ByteVector(64 bytes, 0xf6bc20ecba293c86f6c5672ebda54b5eed4f718333ea89de7a782385d61b42b39b15751adbe3247f5baebdcaf57e60ca3eb8b1845cd61166d6b37b21cf7ad8cb))
 
-val xpriv = ExtPrivateKey.fromBIP39Seed(ExtKeyVersion.SegWitMainNetPriv,
-                                        bip39Seed)
+val xpriv = ExtPrivateKeyEC.fromBIP39Seed(ExtKeyVersion.SegWitMainNetPriv,
+  bip39Seed)
 // xpriv: ExtPrivateKey = zprvAWgYBBk7JR8GjdnxjoVfK12jRpQxjXM2hA6wkDwq624VkBcGsgprix1DtgtDMwtmahSBmfypGafJNFxLvjpMkKmH2nVq1cM4ddoFYkuRmhA
 val xpub = xpriv.extPublicKey
 // xpub: ExtPublicKey = zpub6jftahH18ngZx7sRqq2fg8yTyrFT8z4t4P2YYcMSeMbUcywRRE97GkKhjzA4s36tsp3ijNCSchMfUcrFTGWbCPzteku1CjmHmDqET8FeGSa
@@ -62,10 +62,10 @@ val segwitPath = SegWitHDPath.fromString("m/84'/0'/0'/0/0")
 
 // alternatively:
 val otherSegwitPath =
-SegWitHDPath(HDCoinType.Bitcoin,
-             accountIndex = 0,
-             HDChainType.External,
-             addressIndex = 0)
+  SegWitHDPath(HDCoinType.Bitcoin,
+    accountIndex = 0,
+    HDChainType.External,
+    addressIndex = 0)
 // otherSegwitPath: SegWitHDPath = m/84'/0'/0'/0/0
 
 segwitPath == otherSegwitPath

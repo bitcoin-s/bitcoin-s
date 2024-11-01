@@ -1,13 +1,13 @@
 package org.bitcoins.crypto
 
-class SignWithEntropyTest extends BitcoinSCryptoTest {
+class SignECWithEntropyTest extends BitcoinSCryptoTest {
 
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     generatorDrivenConfigNewCode
 
   // ECPrivateKey implements the sign interface
   // so just use it for testing purposes
-  val privKey: Sign = ECPrivateKey.freshPrivateKey
+  val privKey: SignEC = ECPrivateKey.freshPrivateKey
   val pubKey: ECPublicKey = privKey.publicKey
 
   behavior of "SignWithEntropy"

@@ -385,7 +385,7 @@ sealed abstract class TransactionSignatureSerializer {
   }
 
   /** Hashes a [[org.bitcoins.core.crypto.TxSigComponent TxSigComponent]] to
-    * give the value that needs to be signed by a [[Sign Sign]] to produce a
+    * give the value that needs to be signed by a [[SignEC Sign]] to produce a
     * valid [[ECDigitalSignature ECDigitalSignature]] for a transaction
     */
   def hashForSignature(
@@ -458,7 +458,7 @@ sealed abstract class TransactionSignatureSerializer {
   /** Hashes a
     * [[org.bitcoins.core.wallet.utxo.InputSigningInfo InputSigningInfo]] to
     * give the value that needs to be signed by a
-    * [[org.bitcoins.crypto.Sign Sign]] to produce a valid
+    * [[org.bitcoins.crypto.SignEC Sign]] to produce a valid
     * [[org.bitcoins.crypto.ECDigitalSignature ECDigitalSignature]] for a
     * transaction
     */

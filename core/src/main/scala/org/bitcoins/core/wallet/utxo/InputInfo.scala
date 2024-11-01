@@ -13,7 +13,7 @@ import org.bitcoins.crypto.{
   ECPublicKeyBytes,
   HashType,
   NetworkElement,
-  Sign
+  SignEC
 }
 
 import scala.annotation.tailrec
@@ -48,14 +48,14 @@ sealed trait InputInfo {
 
   def toSpendingInfo(
       prevTransaction: Transaction,
-      signers: Vector[Sign],
+      signers: Vector[SignEC],
       hashType: HashType): ScriptSignatureParams[InputInfo] = {
     ScriptSignatureParams(this, prevTransaction, signers, hashType)
   }
 
   def toSpendingInfo(
       prevTransaction: Transaction,
-      signer: Sign,
+      signer: SignEC,
       hashType: HashType): ECSignatureParams[InputInfo] = {
     ECSignatureParams(this, prevTransaction, signer, hashType)
   }

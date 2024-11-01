@@ -167,7 +167,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
           finalizeT match {
             case Failure(_) =>
               // Try to create a dummy signer, if we can then this input is signable
-              val dummySigner = Sign.dummySign(ECPublicKey.freshPublicKey)
+              val dummySigner = SignEC.dummySign(ECPublicKey.freshPublicKey)
               Try(toUTXOSigningInfo(txIn, dummySigner)) match {
                 case Failure(_) =>
                   PSBTRole.SignerPSBTRole
@@ -692,7 +692,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
     */
   def toUTXOSatisfyingInfoUsingSigners(
       txIn: TransactionInput,
-      signers: Vector[Sign],
+      signers: Vector[SignEC],
       conditionalPath: ConditionalPath = ConditionalPath.NoCondition)
       : ScriptSignatureParams[InputInfo] = {
     require(!isFinalized, s"Cannot update an InputPSBTMap that is finalized")
@@ -815,7 +815,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
 
   def toUTXOSigningInfo(
       txIn: TransactionInput,
-      signer: Sign,
+      signer: SignEC,
       conditionalPath: ConditionalPath = ConditionalPath.NoCondition)
       : ECSignatureParams[InputInfo] = {
     require(!isFinalized, s"Cannot update an InputPSBTMap that is finalized")

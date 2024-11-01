@@ -18,7 +18,7 @@ import org.bitcoins.crypto.{
   ECDigitalSignature,
   ECPrivateKey,
   HashType,
-  Sign
+  SignEC
 }
 import org.bitcoins.testkitcore.Implicits.*
 import org.bitcoins.testkitcore.gen.{CreditingTxGen, ScriptGenerators}
@@ -345,7 +345,7 @@ class RawTxSignerTest extends BitcoinSUnitTest {
         val dummySpendingInfos = creditingTxsInfo.map { spendingInfo =>
           val inputInfo = spendingInfo.inputInfo
           val mockSigners =
-            inputInfo.pubKeys.take(inputInfo.requiredSigs).map(Sign.dummySign)
+            inputInfo.pubKeys.take(inputInfo.requiredSigs).map(SignEC.dummySign)
 
           inputInfo.toSpendingInfo(
             EmptyTransaction,

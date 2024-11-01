@@ -6,17 +6,17 @@ import org.bitcoins.core.api.keymanager.{
   BIP39KeyManagerCreateApi,
   KeyManagerApi
 }
-import org.bitcoins.core.crypto._
+import org.bitcoins.core.crypto.*
 import org.bitcoins.core.hd.{HDAccount, HDPath}
 import org.bitcoins.core.util.{HDUtil, TimeUtil}
-import org.bitcoins.core.wallet.keymanagement.KeyManagerUnlockError._
+import org.bitcoins.core.wallet.keymanagement.KeyManagerUnlockError.*
 import org.bitcoins.core.wallet.keymanagement.{
   InitializeKeyManagerError,
   KeyManagerInitializeError,
   KeyManagerParams
 }
-import org.bitcoins.crypto.{AdaptorSign, AesPassword}
-import org.bitcoins.keymanager._
+import org.bitcoins.crypto.{AesPassword}
+import org.bitcoins.keymanager.*
 import scodec.bits.BitVector
 
 import java.nio.file.Files
@@ -34,7 +34,7 @@ import scala.util.{Failure, Success, Try}
   *   https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
   */
 class BIP39KeyManager(
-    private val rootExtPrivKey: ExtPrivateKey,
+    private val rootExtPrivKey: ExtPrivateKeyEC,
     val kmParams: KeyManagerParams,
     val creationTime: Instant,
     val imported: Boolean
@@ -54,7 +54,7 @@ class BIP39KeyManager(
   /** Converts a non-sensitive DB representation of a UTXO into a signable (and
     * sensitive) real-world UTXO
     */
-  def toSign(privKeyPath: HDPath): AdaptorSign = {
+  override def toSign(privKeyPath: HDPath): ExtPrivateKeyEC = {
     val xpriv =
       rootExtPrivKey.deriveChildPrivKey(privKeyPath)
 

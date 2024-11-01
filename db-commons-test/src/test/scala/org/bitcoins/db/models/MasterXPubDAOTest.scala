@@ -1,6 +1,6 @@
 package org.bitcoins.db.models
 
-import org.bitcoins.core.crypto.{ExtKeyVersion, ExtPrivateKey}
+import org.bitcoins.core.crypto.{ExtKeyVersion, ExtPrivateKeyEC}
 import org.bitcoins.testkit.db.{TestAppConfig, TestAppConfigFixture}
 
 import java.sql.SQLException
@@ -9,7 +9,7 @@ class MasterXPubDAOTest extends TestAppConfigFixture {
   behavior of "MasterXPubDAO"
 
   it must "create and find a master xpub" in { (testAppConfig: TestAppConfig) =>
-    val xpriv = ExtPrivateKey.freshRootKey(ExtKeyVersion.SegWitTestNet3Priv)
+    val xpriv = ExtPrivateKeyEC.freshRootKey(ExtKeyVersion.SegWitTestNet3Priv)
     val xpub = xpriv.extPublicKey
     val masterXpub =
       MasterXPubDAO()(executionContext, appConfig = testAppConfig)
@@ -34,10 +34,10 @@ class MasterXPubDAOTest extends TestAppConfigFixture {
     val masterXpubDAO =
       MasterXPubDAO()(executionContext, appConfig = testAppConfig)
 
-    val xpriv = ExtPrivateKey.freshRootKey(ExtKeyVersion.SegWitTestNet3Priv)
+    val xpriv = ExtPrivateKeyEC.freshRootKey(ExtKeyVersion.SegWitTestNet3Priv)
     val xpub = xpriv.extPublicKey
 
-    val xpriv2 = ExtPrivateKey.freshRootKey(ExtKeyVersion.SegWitTestNet3Priv)
+    val xpriv2 = ExtPrivateKeyEC.freshRootKey(ExtKeyVersion.SegWitTestNet3Priv)
     val xpub2 = xpriv2.extPublicKey
 
     for {
@@ -53,7 +53,7 @@ class MasterXPubDAOTest extends TestAppConfigFixture {
 
   it must "validate the masterxpub and succeed in the database" in {
     (testAppConfig: TestAppConfig) =>
-      val xpriv = ExtPrivateKey.freshRootKey(ExtKeyVersion.SegWitTestNet3Priv)
+      val xpriv = ExtPrivateKeyEC.freshRootKey(ExtKeyVersion.SegWitTestNet3Priv)
       val xpub = xpriv.extPublicKey
       val masterXpub =
         MasterXPubDAO()(executionContext, appConfig = testAppConfig)
@@ -68,14 +68,14 @@ class MasterXPubDAOTest extends TestAppConfigFixture {
 
   it must "throw an exception is the stored master xpub is different than the given" in {
     (testAppConfig: TestAppConfig) =>
-      val xpriv = ExtPrivateKey.freshRootKey(ExtKeyVersion.SegWitTestNet3Priv)
+      val xpriv = ExtPrivateKeyEC.freshRootKey(ExtKeyVersion.SegWitTestNet3Priv)
       val xpub = xpriv.extPublicKey
       val masterXpub =
         MasterXPubDAO()(executionContext, appConfig = testAppConfig)
 
       val createdF = masterXpub.create(xpub)
 
-      val differentXpub = ExtPrivateKey
+      val differentXpub = ExtPrivateKeyEC
         .freshRootKey(ExtKeyVersion.SegWitTestNet3Priv)
         .extPublicKey
 

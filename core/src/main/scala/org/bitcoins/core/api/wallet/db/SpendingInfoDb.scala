@@ -22,7 +22,7 @@ import org.bitcoins.core.wallet.utxo.{
   ScriptSignatureParams,
   TxoState
 }
-import org.bitcoins.crypto.{DoubleSha256DigestBE, HashType, Sign}
+import org.bitcoins.crypto.{DoubleSha256DigestBE, HashType, SignEC}
 
 /** DB representation of a native V0 SegWit UTXO
   */
@@ -171,13 +171,13 @@ sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
       keyManager: BIP39KeyManagerApi,
       prevTransaction: Transaction): ScriptSignatureParams[InputInfo] = {
 
-    val sign: Sign = keyManager.toSign(privKeyPath = privKeyPath)
+    val sign: SignEC = keyManager.toSign(privKeyPath = privKeyPath)
 
     toUTXOInfo(sign = sign, prevTransaction)
   }
 
   def toUTXOInfo(
-      sign: Sign,
+      sign: SignEC,
       prevTransaction: Transaction): ScriptSignatureParams[InputInfo] = {
     ScriptSignatureParams(
       InputInfo(

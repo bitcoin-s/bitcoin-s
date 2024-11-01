@@ -8,7 +8,7 @@ import org.bitcoins.core.config.{BitcoinNetwork, MainNet}
 import org.bitcoins.core.crypto.ExtKeyVersion.SegWitTestNet3Priv
 import org.bitcoins.core.crypto.{
   ECPrivateKeyUtil,
-  ExtPrivateKeyHardened,
+  ExtPrivateKeyHardenedEC,
   ExtPublicKey
 }
 import org.bitcoins.core.hd._
@@ -59,7 +59,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
   private val rValueChainIndex = 0
 
   /** The root private key for this oracle */
-  private val extPrivateKey: ExtPrivateKeyHardened = {
+  private val extPrivateKey: ExtPrivateKeyHardenedEC = {
     WalletStorage.getPrivateKeyFromDisk(
       conf.kmConf.seedPath,
       SegWitTestNet3Priv,

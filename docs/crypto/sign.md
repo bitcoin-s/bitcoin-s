@@ -47,13 +47,13 @@ You can sign with `ExtPrivateKey` the same way you could with a normal `ECPrivat
 import org.bitcoins.core.hd._
 import org.bitcoins.core.crypto._
 
-val extPrivKey = ExtPrivateKey(ExtKeyVersion.SegWitMainNetPriv)
+val extPrivKey = ExtPrivateKeyEC(ExtKeyVersion.SegWitMainNetPriv)
 
 extPrivKey.sign(DoubleSha256Digest.empty.bytes)
 
-val path = BIP32Path(Vector(BIP32Node(0,HardenedType.defaultOpt)))
+val path = BIP32Path(Vector(BIP32Node(0, HardenedType.defaultOpt)))
 
-extPrivKey.sign(DoubleSha256Digest.empty.bytes,path)
+extPrivKey.sign(DoubleSha256Digest.empty.bytes, path)
 ```
 
 With `ExtSign`, you can use `ExtPrivateKey` to sign transactions inside of `TxBuilder` since `UTXOSpendingInfo` takes in `Sign` as a parameter. 

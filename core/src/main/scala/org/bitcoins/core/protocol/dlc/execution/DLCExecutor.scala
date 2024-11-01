@@ -3,12 +3,12 @@ package org.bitcoins.core.protocol.dlc.execution
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.dlc.build.DLCTxBuilder
 import org.bitcoins.core.protocol.dlc.compute.{CETCalculator, DLCUtil}
-import org.bitcoins.core.protocol.dlc.models._
+import org.bitcoins.core.protocol.dlc.models.*
 import org.bitcoins.core.protocol.dlc.sign.DLCTxSigner
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.Indexed
-import org.bitcoins.crypto.{AdaptorSign, ECPublicKey}
+import org.bitcoins.crypto.{ECPublicKey, SignEC}
 
 import scala.util.{Success, Try}
 
@@ -133,7 +133,7 @@ object DLCExecutor {
   def executeDLC(
       remoteCETInfos: Vector[(ECPublicKey, CETInfo)],
       oracleSigs: Vector[OracleSignatures],
-      fundingKey: AdaptorSign,
+      fundingKey: SignEC,
       remoteFundingPubKey: ECPublicKey,
       contractInfo: ContractInfo,
       fundingTx: Transaction,

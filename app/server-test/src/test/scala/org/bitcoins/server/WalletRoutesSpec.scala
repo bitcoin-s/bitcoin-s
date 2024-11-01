@@ -8,7 +8,7 @@ import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
 import org.bitcoins.core.api.wallet.AccountHandlingApi
 import org.bitcoins.core.api.wallet.db.AccountDb
 import org.bitcoins.core.crypto.ExtKeyVersion.SegWitMainNetPriv
-import org.bitcoins.core.crypto.ExtPrivateKey
+import org.bitcoins.core.crypto.ExtPrivateKeyEC
 import org.bitcoins.core.hd.{HDAccount, HDPurpose}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.dlc.models.DLCMessage.{DLCAccept, DLCOffer}
@@ -165,7 +165,7 @@ class WalletRoutesSpec
 
     "createnewaccount" in {
       val keyVersion = SegWitMainNetPriv
-      val extPrivKey = ExtPrivateKey.freshRootKey(keyVersion)
+      val extPrivKey = ExtPrivateKeyEC.freshRootKey(keyVersion)
       val extPubKey = extPrivKey.extPublicKey
       val hdAccount = HDAccount.fromExtKeyVersion(version = keyVersion, idx = 0)
       val accountDb = AccountDb(extPubKey, hdAccount = hdAccount)
