@@ -22,7 +22,7 @@ class TransactionWitnessSpec extends BitcoinSUnitTest {
     val empty = EmptyWitness.fromN(0)
     val pubKey = ECPrivateKey.freshPrivateKey.publicKey
     val p2pkh =
-      P2PKHScriptSignature(ECDigitalSignature.emptyDigitalSignature, pubKey)
+      P2PKHScriptSignature(ECDigitalSignature.dummyECDigitalSignature, pubKey)
     val scriptWit = P2WPKHWitnessV0.fromP2PKHScriptSig(p2pkh)
     val updated = empty.updated(2, scriptWit)
 

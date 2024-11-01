@@ -96,8 +96,11 @@ case class ECDigitalSignature(bytes: ByteVector) extends DigitalSignature {
 object ECDigitalSignature extends Factory[ECDigitalSignature] {
 
   lazy val emptyDigitalSignature: ECDigitalSignature = {
-    val bytes: ByteVector = ByteVector(Array.fill(72)(0.toByte))
-    new ECDigitalSignature(bytes)
+    val bytes: ByteVector = ByteVector.empty
+    new ECDigitalSignature(bytes) {
+      override def r: BigInt = java.math.BigInteger.valueOf(0)
+      override def s: BigInt = r
+    }
   }
 
   /** The point of this case object is to help with fee estimation an average
