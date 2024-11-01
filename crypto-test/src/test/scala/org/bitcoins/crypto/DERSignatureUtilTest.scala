@@ -96,7 +96,7 @@ class DERSignatureUtilTest extends BitcoinSCryptoTest {
     DERSignatureUtil.isValidSignatureEncoding(ECDigitalSignature("")) must be(
       true
     )
-    DERSignatureUtil.isValidSignatureEncoding(EmptyDigitalSignature) must be(
+    DERSignatureUtil.isValidSignatureEncoding(ECDigitalSignature.empty) must be(
       true
     )
   }

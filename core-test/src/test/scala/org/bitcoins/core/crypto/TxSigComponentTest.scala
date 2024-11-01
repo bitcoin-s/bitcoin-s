@@ -3,13 +3,9 @@ package org.bitcoins.core.crypto
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.crypto.{
-  DoubleSha256Digest,
-  DummyECDigitalSignature,
-  ECPublicKey
-}
+import org.bitcoins.core.protocol.script.*
+import org.bitcoins.core.protocol.transaction.*
+import org.bitcoins.crypto.{DoubleSha256Digest, ECDigitalSignature, ECPublicKey}
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 class TxSigComponentTest extends BitcoinSUnitTest {
@@ -64,7 +60,7 @@ class TxSigComponentTest extends BitcoinSUnitTest {
       Vector(TransactionOutput(Satoshis.one, EmptyScriptPubKey)),
       UInt32.zero,
       TransactionWitness(
-        Vector(P2WPKHWitnessV0(pubKey, DummyECDigitalSignature))
+        Vector(P2WPKHWitnessV0(pubKey, ECDigitalSignature.dummy))
       )
     )
 

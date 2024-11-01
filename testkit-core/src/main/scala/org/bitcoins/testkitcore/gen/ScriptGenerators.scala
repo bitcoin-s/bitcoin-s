@@ -22,7 +22,6 @@ import org.bitcoins.crypto.{
   ECDigitalSignature,
   ECPrivateKey,
   ECPublicKey,
-  EmptyDigitalSignature,
   HashType
 }
 import org.scalacheck.Gen
@@ -745,7 +744,7 @@ sealed abstract class ScriptGenerators {
       publicKeys = privateKeys.map(_.publicKey)
       multiSigScriptPubKey =
         MultiSignatureScriptPubKey(requiredSigs, publicKeys)
-      emptyDigitalSignatures = privateKeys.map(_ => EmptyDigitalSignature)
+      emptyDigitalSignatures = privateKeys.map(_ => ECDigitalSignature.empty)
       scriptSig = MultiSignatureScriptSignature(emptyDigitalSignatures)
       (creditingTx, outputIndex) =
         TransactionGenerators

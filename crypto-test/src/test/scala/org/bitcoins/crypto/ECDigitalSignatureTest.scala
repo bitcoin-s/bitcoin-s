@@ -37,8 +37,8 @@ class ECDigitalSignatureTest extends BitcoinSCryptoTest {
   }
 
   it must "say that the empty digital signatures r,s values are both 0" in {
-    EmptyDigitalSignature.r must be(0)
-    EmptyDigitalSignature.s must be(0)
+    ECDigitalSignature.empty.r must be(0)
+    ECDigitalSignature.empty.s must be(0)
   }
 
   it must "create an empty digital signature when given 0 in hex or byte format" in {

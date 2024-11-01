@@ -7,7 +7,7 @@ title: Adding New Script Types
 /* In order to allow the code in this document to be compiled, we must add these
  * imports here in this invisible, executed code block. We must also not import any
  * sealed traits that get extended as this will cause errors, and so instead we define
- * new ones in this invisible code block of the same names and add implicit conversions
+ * new ones in this invisible code block of the same names a                                                                                                                                  nd add implicit conversions
  * where needed so that our fake type can be returned anywhere the real one is expected
  * and vice-versa. We also add defs to traits where there are overrides to avoid errors,
  * as well as defs for all vals that are out of scope in code executed below.
@@ -15,12 +15,12 @@ title: Adding New Script Types
  * Note that as this code is never used outside of simply defining things below (only
  * compiled), we can use ??? everywhere where implementations are expected.
  *
- * Also note that when defining our "new" traits in the actual doc, they must be put in
+ * Also note that when defining our "new" traits in the actual                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   doc, they must be put in
  * silent mode rather than compile-only mode to make them accessible to the rest of the doc.
  */
 
 import org.bitcoins.crypto._
-import org.bitcoins.core.crypto._
+import org.bitcoins.core.crypto._                                                                                                                                                                                                                                                                               
 import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.control._
 import org.bitcoins.core.script.crypto._
@@ -746,7 +746,7 @@ Lastly, we need to construct a generator that returns both a `ScriptPubKey` and 
       hashType <- CryptoGenerators.hashType
     } yield {
       val emptyScriptSig = P2PKWithTimeoutScriptSignature(beforeTimeout = true,
-                                                          EmptyDigitalSignature)
+                                                          ECDigitalSignature.empty)
       val (creditingTx, outputIndex) =
         TransactionGenerators.buildCreditingTransaction(spk)
       val (spendingTx, inputIndex) = TransactionGenerators

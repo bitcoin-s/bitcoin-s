@@ -2,8 +2,8 @@ package org.bitcoins.core.wallet.builder
 
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.script.*
+import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.script.constant.ScriptNumber
 import org.bitcoins.core.util.BitcoinScriptUtil
 import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerVirtualByte}
@@ -15,12 +15,12 @@ import org.bitcoins.core.wallet.utxo.{
 }
 import org.bitcoins.crypto.{
   DoubleSha256DigestBE,
+  ECDigitalSignature,
   ECPrivateKey,
   HashType,
-  LowRDummyECDigitalSignature,
   Sign
 }
-import org.bitcoins.testkitcore.Implicits._
+import org.bitcoins.testkitcore.Implicits.*
 import org.bitcoins.testkitcore.gen.{CreditingTxGen, ScriptGenerators}
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
@@ -377,7 +377,7 @@ class RawTxSignerTest extends BitcoinSUnitTest {
             assert(
               btx.inputs.forall(
                 _.scriptSignature.signatures.forall(
-                  _ == LowRDummyECDigitalSignature
+                  _ == ECDigitalSignature.dummyLowR
                 )
               )
             )
@@ -385,9 +385,9 @@ class RawTxSignerTest extends BitcoinSUnitTest {
             assert(
               wtx.witness.witnesses.forall {
                 case p2wsh: P2WSHWitnessV0 =>
-                  p2wsh.signatures.forall(_ == LowRDummyECDigitalSignature)
+                  p2wsh.signatures.forall(_ == ECDigitalSignature.dummyLowR)
                 case p2wpkh: P2WPKHWitnessV0 =>
-                  p2wpkh.signature == LowRDummyECDigitalSignature
+                  p2wpkh.signature == ECDigitalSignature.dummyLowR
                 case EmptyScriptWitness =>
                   true
 

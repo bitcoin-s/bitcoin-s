@@ -3,7 +3,7 @@ package org.bitcoins.core.protocol.transaction
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.script.*
 import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.wallet.builder.{
   AddWitnessDataFinalizer,
@@ -13,8 +13,8 @@ import org.bitcoins.core.wallet.builder.{
 }
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.signer.BitcoinSigner
-import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.crypto.{DummyECDigitalSignature, HashType, Sign}
+import org.bitcoins.core.wallet.utxo.*
+import org.bitcoins.crypto.{ECDigitalSignature, HashType, Sign}
 
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
@@ -173,8 +173,8 @@ object TxUtil {
       case (inputInfo, index) =>
         val mockSigners =
           inputInfo.pubKeys.take(inputInfo.requiredSigs).map { pubKey =>
-            Sign(_ => DummyECDigitalSignature,
-                 (_, _) => DummyECDigitalSignature,
+            Sign(_ => ECDigitalSignature.dummy,
+                 (_, _) => ECDigitalSignature.dummy,
                  pubKey)
           }
 

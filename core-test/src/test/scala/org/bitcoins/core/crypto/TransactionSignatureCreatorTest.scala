@@ -12,12 +12,7 @@ import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.wallet.builder.StandardNonInteractiveFinalizer
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{ECSignatureParams, P2PKHInputInfo}
-import org.bitcoins.crypto.{
-  ECDigitalSignature,
-  ECPrivateKey,
-  EmptyDigitalSignature,
-  HashType
-}
+import org.bitcoins.crypto.{ECDigitalSignature, ECPrivateKey, HashType}
 import org.bitcoins.testkitcore.util.TransactionTestUtil
 import org.bitcoins.testkitcore.gen.{CreditingTxGen, ScriptGenerators}
 import org.bitcoins.testkitcore.util.BitcoinSJvmTest
@@ -302,7 +297,8 @@ class TransactionSignatureCreatorTest extends BitcoinSJvmTest {
       val scriptPubKey = MultiSignatureScriptPubKey(1, Seq(publicKey))
       val (creditingTx, outputIndex) =
         TransactionTestUtil.buildCreditingTransaction(scriptPubKey)
-      val scriptSig = MultiSignatureScriptSignature(Seq(EmptyDigitalSignature))
+      val scriptSig =
+        MultiSignatureScriptSignature(Seq(ECDigitalSignature.empty))
       val (spendingTx, inputIndex) =
         TransactionTestUtil.buildSpendingTransaction(
           creditingTx,
@@ -355,7 +351,8 @@ class TransactionSignatureCreatorTest extends BitcoinSJvmTest {
       val scriptPubKey = P2SHScriptPubKey(redeemScript)
       val (creditingTx, outputIndex) =
         TransactionTestUtil.buildCreditingTransaction(scriptPubKey)
-      val scriptSig = MultiSignatureScriptSignature(Seq(EmptyDigitalSignature))
+      val scriptSig =
+        MultiSignatureScriptSignature(Seq(ECDigitalSignature.empty))
 
       val (spendingTx, inputIndex) =
         TransactionTestUtil.buildSpendingTransaction(
@@ -406,7 +403,7 @@ class TransactionSignatureCreatorTest extends BitcoinSJvmTest {
     val scriptPubKey = P2SHScriptPubKey(redeemScript)
     val (creditingTx, outputIndex) =
       TransactionTestUtil.buildCreditingTransaction(scriptPubKey)
-    val scriptSig = MultiSignatureScriptSignature(Seq(EmptyDigitalSignature))
+    val scriptSig = MultiSignatureScriptSignature(Seq(ECDigitalSignature.empty))
 
     val (spendingTx, inputIndex) =
       TransactionTestUtil.buildSpendingTransaction(

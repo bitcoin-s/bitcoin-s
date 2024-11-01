@@ -3,15 +3,15 @@ package org.bitcoins.core.wallet.utxo
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.script.*
+import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.script.constant.{OP_TRUE, ScriptConstant}
 import org.bitcoins.core.util.{BitcoinScriptUtil, BytesUtil}
 import org.bitcoins.crypto.{
+  ECDigitalSignature,
   ECPublicKey,
   ECPublicKeyBytes,
   HashType,
-  LowRDummyECDigitalSignature,
   NetworkElement,
   Sign
 }
@@ -216,25 +216,26 @@ object InputInfo {
       case _: P2PKInputInfo =>
         ScriptSigLenAndStackHeight(
           P2PKScriptSignature(
-            LowRDummyECDigitalSignature).asmBytes.length.toInt,
+            ECDigitalSignature.dummyLowR).asmBytes.length.toInt,
           1)
       case _: P2PKHInputInfo =>
         ScriptSigLenAndStackHeight(
-          P2PKHScriptSignature(LowRDummyECDigitalSignature,
+          P2PKHScriptSignature(ECDigitalSignature.dummyLowR,
                                ECPublicKey.dummy).asmBytes.length.toInt,
           2)
       case info: P2PKWithTimeoutInputInfo =>
         ScriptSigLenAndStackHeight(
           P2PKWithTimeoutScriptSignature(
             info.isBeforeTimeout,
-            LowRDummyECDigitalSignature).asmBytes.length.toInt,
+            ECDigitalSignature.dummyLowR).asmBytes.length.toInt,
           2)
       case info: MultiSignatureInputInfo =>
         ScriptSigLenAndStackHeight(
           MultiSignatureScriptSignature(
             Vector.fill(info.requiredSigs)(
-              LowRDummyECDigitalSignature)).asmBytes.length.toInt,
-          1 + info.requiredSigs)
+              ECDigitalSignature.dummyLowR)).asmBytes.length.toInt,
+          1 + info.requiredSigs
+        )
       case info: ConditionalInputInfo =>
         val ScriptSigLenAndStackHeight(maxLen, stackHeight) =
           maxScriptSigLenAndStackHeight(info.nestedInputInfo, forP2WSH)
