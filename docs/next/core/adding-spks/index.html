@@ -503,7 +503,7 @@
       hashType &lt;- <span class="hljs-type">CryptoGenerators</span>.hashType
     } <span class="hljs-keyword">yield</span> {
       <span class="hljs-keyword">val</span> emptyScriptSig = <span class="hljs-type">P2PKWithTimeoutScriptSignature</span>(beforeTimeout = <span class="hljs-literal">true</span>,
-                                                          <span class="hljs-type">EmptyDigitalSignature</span>)
+                                                          <span class="hljs-type">ECDigitalSignature</span>.empty)
       <span class="hljs-keyword">val</span> (creditingTx, outputIndex) =
         <span class="hljs-type">TransactionGenerators</span>.buildCreditingTransaction(spk)
       <span class="hljs-keyword">val</span> (spendingTx, inputIndex) = <span class="hljs-type">TransactionGenerators</span>
