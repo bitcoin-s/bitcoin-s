@@ -481,6 +481,6 @@ class ExtKeyTest extends BitcoinSUnitTest {
 
     val masterPriv =
       ExtPrivateKey(LegacyMainNetPriv, Some(seedBytes), BIP32Path.empty)
-    masterPriv.toString must be(s"Masked(ExtPrivateKeyImplEC)")
+    masterPriv.toString must be(s"Masked(ExtPrivateKeyImpl)")
   }
 }
