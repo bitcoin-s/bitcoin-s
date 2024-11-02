@@ -45,10 +45,10 @@ case class DecryptedMnemonic(
 }
 
 case class DecryptedExtPrivKey(
-                                private[keymanager] val xprv: ExtPrivateKey,
-                                creationTime: Instant,
-                                backupTimeOpt: Option[Instant],
-                                imported: Boolean
+    private[keymanager] val xprv: ExtPrivateKey,
+    creationTime: Instant,
+    backupTimeOpt: Option[Instant],
+    imported: Boolean
 ) extends DecryptedSeedState {
   override protected val strToEncrypt: String = xprv.toStringSensitive
 

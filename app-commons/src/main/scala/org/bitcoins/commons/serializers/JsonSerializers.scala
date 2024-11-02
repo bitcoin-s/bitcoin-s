@@ -116,10 +116,8 @@ object JsonSerializers {
     new Format[ExtPrivateKey] {
 
       override def reads(json: JsValue): JsResult[ExtPrivateKey] =
-        SerializerUtil.processJsStringOpt(ExtPrivateKey.fromStringOpt(_))(
-          json)
-      override def writes(key: ExtPrivateKey): JsValue = JsString(
-        key.toString)
+        SerializerUtil.processJsStringOpt(ExtPrivateKey.fromStringOpt(_))(json)
+      override def writes(key: ExtPrivateKey): JsValue = JsString(key.toString)
     }
 
   // Transaction Models

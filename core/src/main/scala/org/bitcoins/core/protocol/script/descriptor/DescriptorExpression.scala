@@ -220,10 +220,10 @@ sealed abstract class ExtXOnlyPublicKeyExpression
 
 /** Produces [[ECPublicKey]] from [[ExtPrivateKey]] */
 case class XprvECPublicKeyExpression(
-                                      override val extKey: ExtPrivateKey,
-                                      originOpt: Option[KeyOriginExpression],
-                                      pathOpt: Option[BIP32Path],
-                                      childrenHardenedOpt: Option[Option[HardenedType]])
+    override val extKey: ExtPrivateKey,
+    originOpt: Option[KeyOriginExpression],
+    pathOpt: Option[BIP32Path],
+    childrenHardenedOpt: Option[Option[HardenedType]])
     extends ExtECPublicKeyExpression
     with ECPublicKeyExpression {
 

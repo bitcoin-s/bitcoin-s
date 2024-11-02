@@ -210,12 +210,7 @@ sealed abstract class ExtPrivateKey
     val tweak = CryptoUtil.add(il, key)
     val childKey = ECPrivateKey(tweak)
     val fp = CryptoUtil.sha256Hash160(key.publicKey.bytes).bytes.take(4)
-    ExtPrivateKey(version,
-                    depth + UInt8.one,
-                    fp,
-                    idx,
-                    ChainCode(ir),
-                    childKey)
+    ExtPrivateKey(version, depth + UInt8.one, fp, idx, ChainCode(ir), childKey)
   }
 
   def extPublicKey: ExtPublicKey = {
@@ -269,12 +264,7 @@ sealed abstract class ExtPrivateKey
   }
 
   def toHardened: ExtPrivateKeyHardened = {
-    ExtPrivateKeyHardened(version,
-                            depth,
-                            fingerprint,
-                            childNum,
-                            chainCode,
-                            key)
+    ExtPrivateKeyHardened(version, depth, fingerprint, childNum, chainCode, key)
   }
 }
 
@@ -351,12 +341,7 @@ object ExtPrivateKey
       child: UInt32,
       chainCode: ChainCode,
       privateKey: ECPrivateKey): ExtPrivateKey = {
-    ExtPrivateKeyImpl(version,
-                        depth,
-                        fingerprint,
-                        child,
-                        chainCode,
-                        privateKey)
+    ExtPrivateKeyImpl(version, depth, fingerprint, child, chainCode, privateKey)
   }
 
   /** Hard coded value according to
@@ -386,11 +371,11 @@ object ExtPrivateKey
     val chaincode = ChainCode(chaincodeBytes)
     val fingerprint = UInt32.zero.bytes
     val root = ExtPrivateKey(version,
-                               depth = UInt8.zero,
-                               fingerprint = fingerprint,
-                               child = UInt32.zero,
-                               chaincode,
-                               masterPrivKey)
+                             depth = UInt8.zero,
+                             fingerprint = fingerprint,
+                             child = UInt32.zero,
+                             chaincode,
+                             masterPrivKey)
 
     path.foldLeft(root)((accum, curr) =>
       accum.deriveChildPrivKey(curr.toUInt32))

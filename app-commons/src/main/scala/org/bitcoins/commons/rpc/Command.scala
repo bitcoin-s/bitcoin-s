@@ -462,9 +462,9 @@ object ImportSeed extends ServerJsonModels {
 }
 
 case class ImportXprv(
-                       walletNameOpt: Option[String],
-                       xprv: ExtPrivateKey,
-                       passwordOpt: Option[AesPassword]
+    walletNameOpt: Option[String],
+    xprv: ExtPrivateKey,
+    passwordOpt: Option[AesPassword]
 ) extends CliCommand
     with AppServerCliCommand
 

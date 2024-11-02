@@ -123,7 +123,7 @@ object JsonWriters {
   implicit object ExtKeyWrites extends Writes[ExtKey] {
     override def writes(key: ExtKey): JsValue = {
       val str = key match {
-        case xpub: ExtPublicKey    => JsString(xpub.toString)
+        case xpub: ExtPublicKey  => JsString(xpub.toString)
         case xprv: ExtPrivateKey => JsString(xprv.toStringSensitive)
       }
       str

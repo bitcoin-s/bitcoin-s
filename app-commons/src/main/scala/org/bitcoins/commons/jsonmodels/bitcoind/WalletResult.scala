@@ -45,10 +45,10 @@ case class BumpFeeResult(
 
 case class HDKeyDescriptor(desc: Descriptor, active: Boolean)
 case class GetHDKeysResult(
-                            xpub: ExtPublicKey,
-                            has_private: Boolean,
-                            xprv: Option[ExtPrivateKey],
-                            descriptors: Vector[HDKeyDescriptor])
+    xpub: ExtPublicKey,
+    has_private: Boolean,
+    xprv: Option[ExtPrivateKey],
+    descriptors: Vector[HDKeyDescriptor])
     extends WalletResult
 
 sealed trait GetTransactionResult extends WalletResult {
