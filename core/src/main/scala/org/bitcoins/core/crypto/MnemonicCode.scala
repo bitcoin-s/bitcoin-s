@@ -11,7 +11,7 @@ import scala.annotation.tailrec
   * [[https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki BIP39]].
   * BIP39 mnemonic codes consist of a varying number of words (most often
   * English, possible with other languages as well) that can be used to generate
-  * an [[ExtPrivateKeyEC ExtPrivateKey]] which again can be the root of a
+  * an [[ExtPrivateKey ExtPrivateKey]] which again can be the root of a
   * [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki BIP32]] HD
   * wallet.
   */

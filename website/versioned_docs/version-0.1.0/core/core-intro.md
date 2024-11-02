@@ -79,7 +79,7 @@ val bip39Seed = BIP39Seed.fromMnemonic(mnemonicCode,
   password = "secret password")
 // bip39Seed: BIP39Seed = BIP39SeedImpl(ByteVector(64 bytes, 0x736cda24cdaa9d037276191a07f0bd067c0bf75366241f35830f7d99741428ec2d03fd7ff896e7f30f4776bba8bfa5fb4fc9692443f20d23c840d0a59a774541))
 
-val xpriv = ExtPrivateKeyEC.fromBIP39Seed(ExtKeyVersion.SegWitMainNetPriv,
+val xpriv = ExtPrivateKey.fromBIP39Seed(ExtKeyVersion.SegWitMainNetPriv,
   bip39Seed)
 // xpriv: ExtPrivateKey = zprvAWgYBBk7JR8GjK4toR1D3nBk7hzpR4Ub6teUFG29phdrKk9f1ERymniBTYR4586pZiTwC6FyCgrnG9SEeRNRqBehteqSsydiezHJfJTDPZL
 val xpub = xpriv.extPublicKey

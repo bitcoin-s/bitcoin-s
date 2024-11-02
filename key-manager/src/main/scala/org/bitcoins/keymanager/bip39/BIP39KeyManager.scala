@@ -34,10 +34,10 @@ import scala.util.{Failure, Success, Try}
   *   https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
   */
 class BIP39KeyManager(
-    private val rootExtPrivKey: ExtPrivateKeyEC,
-    val kmParams: KeyManagerParams,
-    val creationTime: Instant,
-    val imported: Boolean
+                       private val rootExtPrivKey: ExtPrivateKey,
+                       val kmParams: KeyManagerParams,
+                       val creationTime: Instant,
+                       val imported: Boolean
 ) extends BIP39KeyManagerApi
     with KeyManagerLogger {
 
@@ -54,7 +54,7 @@ class BIP39KeyManager(
   /** Converts a non-sensitive DB representation of a UTXO into a signable (and
     * sensitive) real-world UTXO
     */
-  override def toSign(privKeyPath: HDPath): ExtPrivateKeyEC = {
+  override def toSign(privKeyPath: HDPath): ExtPrivateKey = {
     val xpriv =
       rootExtPrivKey.deriveChildPrivKey(privKeyPath)
 

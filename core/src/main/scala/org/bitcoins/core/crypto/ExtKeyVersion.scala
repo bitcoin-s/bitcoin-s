@@ -41,7 +41,7 @@ object ExtKeyVersion extends Factory[ExtKeyVersion] {
   override def fromBytesOpt(bytes: ByteVector): Option[ExtKeyVersion] =
     all.find(_.bytes == bytes)
 
-  /** Generating a [[org.bitcoins.core.crypto.ExtPrivateKeyEC ExtPrivateKey]]
+  /** Generating a [[org.bitcoins.core.crypto.ExtPrivateKey ExtPrivateKey]]
     * with this version makes keys start with `xprv`
     */
   case object LegacyMainNetPriv extends ExtKeyPrivVersion {
@@ -50,7 +50,7 @@ object ExtKeyVersion extends Factory[ExtKeyVersion] {
     override def hdCoinType: HDCoinType = HDCoinType.Bitcoin
   }
 
-  /** Generating a [[org.bitcoins.core.crypto.ExtPrivateKeyEC ExtPrivateKey]]
+  /** Generating a [[org.bitcoins.core.crypto.ExtPrivateKey ExtPrivateKey]]
     * with this version makes keys start with `tprv`
     */
   case object LegacyTestNet3Priv extends ExtKeyPrivVersion {
@@ -58,7 +58,7 @@ object ExtKeyVersion extends Factory[ExtKeyVersion] {
     override def hdCoinType: HDCoinType = HDCoinType.Testnet
   }
 
-  /** Generating a [[org.bitcoins.core.crypto.ExtPrivateKeyEC ExtPrivateKey]]
+  /** Generating a [[org.bitcoins.core.crypto.ExtPrivateKey ExtPrivateKey]]
     * with this version makes keys start with `zprv`
     */
   case object SegWitMainNetPriv extends ExtKeyPrivVersion {
@@ -66,7 +66,7 @@ object ExtKeyVersion extends Factory[ExtKeyVersion] {
     override def hdCoinType: HDCoinType = HDCoinType.Bitcoin
   }
 
-  /** Generating a [[org.bitcoins.core.crypto.ExtPrivateKeyEC ExtPrivateKey]]
+  /** Generating a [[org.bitcoins.core.crypto.ExtPrivateKey ExtPrivateKey]]
     * with this version makes keys start with `vprv`
     */
   case object SegWitTestNet3Priv extends ExtKeyPrivVersion {
@@ -74,7 +74,7 @@ object ExtKeyVersion extends Factory[ExtKeyVersion] {
     override def hdCoinType: HDCoinType = HDCoinType.Testnet
   }
 
-  /** Generating a [[org.bitcoins.core.crypto.ExtPrivateKeyEC ExtPrivateKey]]
+  /** Generating a [[org.bitcoins.core.crypto.ExtPrivateKey ExtPrivateKey]]
     * with this version makes keys start with `yprv`
     *
     * @see
@@ -85,7 +85,7 @@ object ExtKeyVersion extends Factory[ExtKeyVersion] {
     override def hdCoinType: HDCoinType = HDCoinType.Bitcoin
   }
 
-  /** Generating a [[org.bitcoins.core.crypto.ExtPrivateKeyEC ExtPrivateKey]]
+  /** Generating a [[org.bitcoins.core.crypto.ExtPrivateKey ExtPrivateKey]]
     * with this version makes keys start with `uprv`
     *
     * @see

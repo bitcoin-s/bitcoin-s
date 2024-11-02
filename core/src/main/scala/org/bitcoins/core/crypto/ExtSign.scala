@@ -12,7 +12,7 @@ import scodec.bits.ByteVector
 import scala.concurrent.Future
 
 /** A signing interface for [[ExtKey]] */
-trait AsyncExtSignEC extends SignEC with AsyncAdaptorSign {
+trait AsyncExtSign extends SignEC with AsyncAdaptorSign {
 
   def asyncDeriveAndSign(
       bytes: ByteVector,
@@ -28,7 +28,7 @@ trait AsyncExtSignEC extends SignEC with AsyncAdaptorSign {
   }
 }
 
-trait ExtSignEC extends AsyncExtSignEC with AdaptorSign {
+trait ExtSign extends AsyncExtSign with AdaptorSign {
 
   def deriveAndSign(bytes: ByteVector, path: BIP32Path): ECDigitalSignature
 

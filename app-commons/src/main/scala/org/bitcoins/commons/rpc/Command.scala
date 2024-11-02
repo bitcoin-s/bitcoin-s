@@ -6,7 +6,7 @@ import org.bitcoins.commons.serializers.{JsonReaders, Picklers}
 import org.bitcoins.commons.util.{BitcoinSLogger, WalletNames}
 import org.bitcoins.core.api.dlc.wallet.db.DLCContactDb
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
-import org.bitcoins.core.crypto.{ExtPrivateKeyEC, MnemonicCode}
+import org.bitcoins.core.crypto.{ExtPrivateKey, MnemonicCode}
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.hd.{AddressType, HDPurpose}
 import org.bitcoins.core.hd.AddressType.SegWit
@@ -462,9 +462,9 @@ object ImportSeed extends ServerJsonModels {
 }
 
 case class ImportXprv(
-    walletNameOpt: Option[String],
-    xprv: ExtPrivateKeyEC,
-    passwordOpt: Option[AesPassword]
+                       walletNameOpt: Option[String],
+                       xprv: ExtPrivateKey,
+                       passwordOpt: Option[AesPassword]
 ) extends CliCommand
     with AppServerCliCommand
 
@@ -475,7 +475,7 @@ object ImportXprv extends ServerJsonModels {
       case walletNameJs :: xprvJs :: passJs :: Nil =>
         Try {
           val walletNameOpt = jsToWalletName(walletNameJs)
-          val xprv = ExtPrivateKeyEC.fromString(xprvJs.str)
+          val xprv = ExtPrivateKey.fromString(xprvJs.str)
           val pass = jsToAESPassword(passJs)
 
           ImportXprv(walletNameOpt, xprv, pass)
@@ -483,7 +483,7 @@ object ImportXprv extends ServerJsonModels {
       case walletNameJs :: xprvJs :: Nil =>
         Try {
           val walletNameOpt = jsToWalletName(walletNameJs)
-          val xprv = ExtPrivateKeyEC.fromString(xprvJs.str)
+          val xprv = ExtPrivateKey.fromString(xprvJs.str)
 
           ImportXprv(walletNameOpt, xprv, None)
         }

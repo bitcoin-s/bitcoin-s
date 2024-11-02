@@ -817,7 +817,7 @@ object ConsoleCli extends BitcoinSLogger {
                   ix.copy(walletNameOpt = Some(walletName))
                 case other => other
               })),
-          opt[ExtPrivateKeyEC]("xprv")
+          opt[ExtPrivateKey]("xprv")
             .text("base58 encoded extended private key")
             .required()
             .action((xprv, conf) =>

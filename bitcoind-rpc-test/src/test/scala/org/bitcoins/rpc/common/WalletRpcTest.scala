@@ -12,7 +12,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
   GetWalletInfoResultPostV22
 }
 import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.crypto.ExtPrivateKeyEC
+import org.bitcoins.core.crypto.ExtPrivateKey
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.UInt32
@@ -834,7 +834,7 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
     val client = nodePair.node1
     val walletName = "v28-createwalletdescriptor"
     val path = BIP32Path.fromString("m/44'/0'/0'/0")
-    val xpriv = ExtPrivateKeyEC.fromString(
+    val xpriv = ExtPrivateKey.fromString(
       "tprv8ZgxMBicQKsPds78rqEk8ATTSqn2fw1zXkwzcsUVattUrjDK8EEDJ3aGXanbUTwBKDmEKatJFNqy6XDt11Na18ZVwEtcxRuLVC5RCEkcNGP")
     val keyExpression =
       XprvECPublicKeyExpression(extKey = xpriv,

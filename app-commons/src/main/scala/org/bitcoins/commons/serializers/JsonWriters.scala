@@ -1,7 +1,7 @@
 package org.bitcoins.commons.serializers
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.*
-import org.bitcoins.core.crypto.{ExtKey, ExtPrivateKeyEC, ExtPublicKey}
+import org.bitcoins.core.crypto.{ExtKey, ExtPrivateKey, ExtPublicKey}
 import org.bitcoins.core.currency.*
 import org.bitcoins.core.number.*
 import org.bitcoins.core.protocol.BitcoinAddress
@@ -124,7 +124,7 @@ object JsonWriters {
     override def writes(key: ExtKey): JsValue = {
       val str = key match {
         case xpub: ExtPublicKey    => JsString(xpub.toString)
-        case xprv: ExtPrivateKeyEC => JsString(xprv.toStringSensitive)
+        case xprv: ExtPrivateKey => JsString(xprv.toStringSensitive)
       }
       str
     }

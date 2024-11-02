@@ -43,7 +43,7 @@ mnemonicCode.words // the phrase the user should write down
 val bip39Seed = BIP39Seed.fromMnemonic(mnemonicCode,
   password = "secret password")
 
-val xpriv = ExtPrivateKeyEC.fromBIP39Seed(ExtKeyVersion.SegWitMainNetPriv,
+val xpriv = ExtPrivateKey.fromBIP39Seed(ExtKeyVersion.SegWitMainNetPriv,
   bip39Seed)
 val xpub = xpriv.extPublicKey
 

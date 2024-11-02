@@ -4,7 +4,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParamet
 import org.bitcoins.commons.serializers.Picklers
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.config.{NetworkParameters, Networks}
-import org.bitcoins.core.crypto.{ExtPrivateKeyEC, MnemonicCode}
+import org.bitcoins.core.crypto.{ExtPrivateKey, MnemonicCode}
 import org.bitcoins.core.currency._
 import org.bitcoins.core.hd.AddressType
 import org.bitcoins.core.number.UInt32
@@ -378,11 +378,11 @@ object CliReaders {
         LnMessageFactory(DLCSignTLV).fromHex
     }
 
-  implicit val extPrivKeyReads: Read[ExtPrivateKeyEC] =
-    new Read[ExtPrivateKeyEC] {
+  implicit val extPrivKeyReads: Read[ExtPrivateKey] =
+    new Read[ExtPrivateKey] {
       override def arity: Int = 1
 
-      override def reads: String => ExtPrivateKeyEC = ExtPrivateKeyEC.fromString
+      override def reads: String => ExtPrivateKey = ExtPrivateKey.fromString
     }
 
   implicit val mnemonicCodeReads: Read[MnemonicCode] = new Read[MnemonicCode] {

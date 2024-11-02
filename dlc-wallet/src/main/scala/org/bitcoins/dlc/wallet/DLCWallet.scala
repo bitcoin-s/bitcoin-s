@@ -23,7 +23,7 @@ import org.bitcoins.core.api.wallet.{
 }
 import org.bitcoins.core.api.wallet.db.*
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.crypto.ExtPrivateKeyEC
+import org.bitcoins.core.crypto.ExtPrivateKey
 import org.bitcoins.core.currency.*
 import org.bitcoins.core.dlc.accounting.DLCWalletAccounting
 import org.bitcoins.core.gcs.GolombFilter
@@ -887,7 +887,7 @@ case class DLCWallet(override val walletApi: Wallet)(implicit
   private def getFundingPrivKey(
       account: AccountDb,
       keyIndex: Int
-  ): ExtPrivateKeyEC = {
+  ): ExtPrivateKey = {
     val bip32Path = BIP32Path(
       account.hdAccount.path ++ Vector(
         BIP32Node(0, hardenedOpt = None),

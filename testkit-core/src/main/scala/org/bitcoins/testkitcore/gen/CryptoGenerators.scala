@@ -296,11 +296,11 @@ sealed abstract class CryptoGenerators {
     Gen.oneOf(ExtKeyVersion.all)
   }
 
-  /** Generates an [[ExtPrivateKeyEC ExtPrivateKey]] */
-  def extPrivateKey: Gen[ExtPrivateKeyEC] = {
+  /** Generates an [[ExtPrivateKey ExtPrivateKey]] */
+  def extPrivateKey: Gen[ExtPrivateKey] = {
     for {
       version <- Gen.oneOf(ExtKeyVersion.allPrivs)
-      ext = core.crypto.ExtPrivateKeyEC(version)
+      ext = core.crypto.ExtPrivateKey(version)
     } yield ext
   }
 

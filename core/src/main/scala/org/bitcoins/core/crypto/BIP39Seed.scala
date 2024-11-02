@@ -13,8 +13,8 @@ sealed abstract class BIP39Seed extends NetworkElement with MaskedToString {
   private def MAX_SEED_LENGTH_BYTES = 64
 
   /** Generates an extended private key given a version */
-  def toExtPrivateKey(keyVersion: ExtKeyPrivVersion): ExtPrivateKeyEC =
-    ExtPrivateKeyEC.fromBIP39Seed(keyVersion, this)
+  def toExtPrivateKey(keyVersion: ExtKeyPrivVersion): ExtPrivateKey =
+    ExtPrivateKey.fromBIP39Seed(keyVersion, this)
 
   override def toStringSensitive: String = {
     s"BIP39Seed($hex)"
