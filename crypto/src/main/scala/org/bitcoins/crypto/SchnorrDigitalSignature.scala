@@ -29,7 +29,6 @@ case class SchnorrDigitalSignature(
 }
 
 object SchnorrDigitalSignature extends Factory[SchnorrDigitalSignature] {
-
   // If the sig is 65 bytes long, return sig[64] ≠ 0x00[20] and
   // Verify(q, hashTapSighash(0x00 || SigMsg(sig[64], 0)), sig[0:64]).
   override def fromBytes(bytes: ByteVector): SchnorrDigitalSignature = {
@@ -43,7 +42,7 @@ object SchnorrDigitalSignature extends Factory[SchnorrDigitalSignature] {
                             hashTypeOpt.map(HashType.fromByte))
   }
 
-  lazy val dummy: SchnorrDigitalSignature =
+  val dummy: SchnorrDigitalSignature =
     SchnorrDigitalSignature(FieldElement.one.getPublicKey.schnorrNonce,
                             FieldElement.one,
                             hashTypeOpt = None)

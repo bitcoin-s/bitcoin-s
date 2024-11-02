@@ -62,6 +62,8 @@ trait AsyncSign {
   }
 
   def publicKey: ECPublicKey
+
+  final def schnorrPublicKey: SchnorrPublicKey = publicKey.schnorrPublicKey
 }
 
 object AsyncSign {
@@ -196,6 +198,19 @@ trait Sign extends AsyncSign {
       ec: ExecutionContext): Future[ECDigitalSignature] = {
     Future.successful(signLowR(bytes))
   }
+
+  final def schnorrSign(dataToSign: ByteVector): SchnorrDigitalSignature = {
+    val auxRand = ECPrivateKey.freshPrivateKey.bytes
+    schnorrSign(dataToSign, auxRand)
+  }
+
+  def schnorrSign(
+      dataToSign: ByteVector,
+      auxRand: ByteVector): SchnorrDigitalSignature
+
+  def schnorrSignWithNonce(
+      dataToSign: ByteVector,
+      nonce: ECPrivateKey): SchnorrDigitalSignature
 }
 
 object Sign {
@@ -203,6 +218,10 @@ object Sign {
   private case class SignImpl(
       signFunction: ByteVector => ECDigitalSignature,
       signWithEntropyFunction: (ByteVector, ByteVector) => ECDigitalSignature,
+      schnorrSignFunction: (ByteVector, ByteVector) => SchnorrDigitalSignature,
+      schnorrSingWithNonceFunction: (
+          ByteVector,
+          ECPrivateKey) => SchnorrDigitalSignature,
       override val publicKey: ECPublicKey)
       extends Sign {
 
@@ -215,21 +234,50 @@ object Sign {
         entropy: ByteVector): ECDigitalSignature = {
       signWithEntropyFunction(bytes, entropy)
     }
+
+    override def schnorrSign(
+        dataToSign: ByteVector,
+        auxRand: ByteVector): SchnorrDigitalSignature = {
+      schnorrSignFunction(dataToSign, auxRand)
+    }
+
+    override def schnorrSignWithNonce(
+        dataToSign: ByteVector,
+        nonce: ECPrivateKey): SchnorrDigitalSignature = {
+      schnorrSingWithNonceFunction(dataToSign, nonce)
+    }
   }
 
   def apply(
       sign: ByteVector => ECDigitalSignature,
       signWithEntropy: (ByteVector, ByteVector) => ECDigitalSignature,
+      schnorrSignFunction: (ByteVector, ByteVector) => SchnorrDigitalSignature,
+      schnorrSingWithNonceFunction: (
+          ByteVector,
+          ECPrivateKey) => SchnorrDigitalSignature,
       pubKey: ECPublicKey): Sign = {
-    SignImpl(sign, signWithEntropy, pubKey)
+    SignImpl(sign,
+             signWithEntropy,
+             schnorrSignFunction,
+             schnorrSingWithNonceFunction,
+             pubKey)
   }
 
-  def constant(sig: ECDigitalSignature, pubKey: ECPublicKey): Sign = {
-    SignImpl(_ => sig, (_, _) => sig, pubKey)
+  def constant(
+      sig: ECDigitalSignature,
+      pubKey: ECPublicKey,
+      schnorrDigitalSignature: SchnorrDigitalSignature): Sign = {
+    SignImpl(
+      signFunction = (_ => sig),
+      signWithEntropyFunction = ((_, _) => sig),
+      schnorrSignFunction = (_, _) => schnorrDigitalSignature,
+      schnorrSingWithNonceFunction = (_, _) => schnorrDigitalSignature,
+      publicKey = pubKey
+    )
   }
 
   def dummySign(publicKey: ECPublicKey): Sign = {
-    constant(ECDigitalSignature.empty, publicKey)
+    constant(ECDigitalSignature.empty, publicKey, SchnorrDigitalSignature.dummy)
   }
 }
 

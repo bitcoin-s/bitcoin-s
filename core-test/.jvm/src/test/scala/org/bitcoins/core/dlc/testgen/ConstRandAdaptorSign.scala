@@ -37,6 +37,18 @@ case class ConstRandAdaptorSign(privKey: ECPrivateKey) extends AdaptorSign {
   ): ECAdaptorSignature = {
     privKey.adaptorSign(adaptorPoint, msg, auxRand)
   }
+
+  override def schnorrSign(
+      dataToSign: ByteVector,
+      auxRand: ByteVector): SchnorrDigitalSignature = {
+    privKey.schnorrSign(dataToSign, auxRand)
+  }
+
+  override def schnorrSignWithNonce(
+      dataToSign: ByteVector,
+      nonce: ECPrivateKey): SchnorrDigitalSignature = {
+    privKey.schnorrSignWithNonce(dataToSign, nonce)
+  }
 }
 
 object ConstRandAdaptorSign {

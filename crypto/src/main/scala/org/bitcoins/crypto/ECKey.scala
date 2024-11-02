@@ -176,18 +176,13 @@ case class ECPrivateKey(bytes: ByteVector)
     CryptoUtil.signWithEntropy(this, bytes, entropy)
   }
 
-  def schnorrSign(dataToSign: ByteVector): SchnorrDigitalSignature = {
-    val auxRand = ECPrivateKey.freshPrivateKey.bytes
-    schnorrSign(dataToSign, auxRand)
-  }
-
-  def schnorrSign(
+  override def schnorrSign(
       dataToSign: ByteVector,
       auxRand: ByteVector): SchnorrDigitalSignature = {
     CryptoUtil.schnorrSign(dataToSign, this, auxRand)
   }
 
-  def schnorrSignWithNonce(
+  override def schnorrSignWithNonce(
       dataToSign: ByteVector,
       nonce: ECPrivateKey): SchnorrDigitalSignature = {
     CryptoUtil.schnorrSignWithNonce(dataToSign, this, nonce)
@@ -244,10 +239,6 @@ case class ECPrivateKey(bytes: ByteVector)
   /** Derives the public for a the private key */
   override def publicKey: ECPublicKey =
     CryptoUtil.publicKey(toPrivateKeyBytes())
-
-  def schnorrPublicKey: SchnorrPublicKey = {
-    SchnorrPublicKey(publicKey.bytes)
-  }
 
   def toXOnly: XOnlyPubKey = schnorrPublicKey.toXOnly
 

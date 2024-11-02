@@ -266,6 +266,18 @@ sealed abstract class ExtPrivateKey
   def toHardened: ExtPrivateKeyHardened = {
     ExtPrivateKeyHardened(version, depth, fingerprint, childNum, chainCode, key)
   }
+
+  override def schnorrSign(
+      dataToSign: ByteVector,
+      auxRand: ByteVector): SchnorrDigitalSignature = {
+    key.schnorrSign(dataToSign, auxRand)
+  }
+
+  override def schnorrSignWithNonce(
+      dataToSign: ByteVector,
+      nonce: ECPrivateKey): SchnorrDigitalSignature = {
+    key.schnorrSignWithNonce(dataToSign, nonce)
+  }
 }
 
 object ExtPrivateKey
