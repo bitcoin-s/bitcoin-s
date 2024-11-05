@@ -162,7 +162,7 @@ class TransactionSignatureCreatorTest extends BitcoinSJvmTest {
               val oldSig =
                 TransactionSignatureCreator.createSig(
                   txSignatureComponent,
-                  signer.sign(_),
+                  signer.signWithHashType(_, _),
                   signInfo.hashType
                 )
 
@@ -170,7 +170,7 @@ class TransactionSignatureCreatorTest extends BitcoinSJvmTest {
                 TransactionSignatureCreator.createSig(
                   spendingTx,
                   signInfo,
-                  signer.sign(_),
+                  signer.signWithHashType,
                   signInfo.hashType
                 )
 
