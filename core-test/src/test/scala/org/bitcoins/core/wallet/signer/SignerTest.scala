@@ -2,26 +2,24 @@ package org.bitcoins.core.wallet.signer
 
 import org.bitcoins.core.crypto.{
   BaseTxSigComponent,
-  TxSigComponent,
   WitnessTxSigComponentP2SH,
   WitnessTxSigComponentRaw
 }
 import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.script.*
+import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
-import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.wallet.builder.{
   RawTxSigner,
   StandardNonInteractiveFinalizer
 }
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.core.wallet.utxo._
+import org.bitcoins.core.wallet.utxo.*
 import org.bitcoins.crypto.ECDigitalSignature
 import org.bitcoins.testkitcore.gen.{
   CreditingTxGen,
@@ -30,8 +28,6 @@ import org.bitcoins.testkitcore.gen.{
   TransactionGenerators
 }
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
-
-import scala.annotation.nowarn
 
 class SignerTest extends BitcoinSUnitTest {
 
@@ -157,64 +153,11 @@ class SignerTest extends BitcoinSUnitTest {
     }
   }
 
-  it should "have old and new doSign functions agree" in {
-    forAll(CreditingTxGen.inputsAndOutputs(), ScriptGenerators.scriptPubKey) {
-      case ((creditingTxsInfo, destinations), (changeSPK, _)) =>
-        val fee = SatoshisPerVirtualByte(Satoshis(100))
-
-        val spendingTx = StandardNonInteractiveFinalizer
-          .txFrom(
-            outputs = destinations,
-            utxos = creditingTxsInfo,
-            feeRate = fee,
-            changeSPK = changeSPK
-          )
-
-        val prevOutMap =
-          PreviousOutputMap.fromScriptSignatureParams(creditingTxsInfo)
-
-        val correctSigs =
-          creditingTxsInfo.flatMap { signInfo =>
-            signInfo.signers.map { signer =>
-              val txSignatureComponent =
-                TxSigComponent(signInfo.inputInfo, spendingTx, prevOutMap)
-              @nowarn val oldSig = BitcoinSigner.doSign(
-                txSignatureComponent,
-                signer.sign,
-                signInfo.hashType,
-                isDummySignature = false
-              )
-
-              val newSig = BitcoinSigner.doSign(
-                spendingTx,
-                signInfo,
-                signer.sign,
-                signInfo.hashType,
-                isDummySignature = false
-              )
-
-              (oldSig.r == newSig.r) &&
-              (oldSig.s == newSig.s) &&
-              (oldSig.hex == newSig.hex)
-            }
-          }
-
-        assert(correctSigs.forall(_ == true))
-    }
-  }
-
   def inputIndex(
       spendingInfo: InputSigningInfo[InputInfo],
       tx: Transaction
   ): Int = {
-    tx.inputs.zipWithIndex
-      .find(_._1.previousOutput == spendingInfo.outPoint) match {
-      case Some((_, index)) => index
-      case None =>
-        throw new IllegalArgumentException(
-          "Transaction did not contain expected input."
-        )
-    }
+    TxUtil.inputIndex(spendingInfo.inputInfo, tx)
   }
 
   def createProgram(

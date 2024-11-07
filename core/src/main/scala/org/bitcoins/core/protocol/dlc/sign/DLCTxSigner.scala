@@ -9,17 +9,16 @@ import org.bitcoins.core.crypto.{
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.dlc.build.DLCTxBuilder
-import org.bitcoins.core.protocol.dlc.models._
-import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.dlc.models.*
+import org.bitcoins.core.protocol.script.*
+import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.{FutureUtil, Indexed}
 import org.bitcoins.core.wallet.signer.BitcoinSigner
-import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.crypto.{HashType, _}
-import scodec.bits.ByteVector
+import org.bitcoins.core.wallet.utxo.*
+import org.bitcoins.crypto.{HashType, *}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -378,12 +377,11 @@ object DLCTxSigner {
       remoteAdaptorSig: ECAdaptorSignature,
       remoteFundingPubKey: ECPublicKey,
       oracleSigs: Vector[OracleSignatures]): WitnessTransaction = {
-    val signLowR: ByteVector => ECDigitalSignature =
-      cetSigningInfo.signer.signLowR(_: ByteVector)
-    val localSig = TransactionSignatureCreator.createSig(ucet,
-                                                         cetSigningInfo,
-                                                         signLowR,
-                                                         HashType.sigHashAll)
+    val localSig = TransactionSignatureCreator.createSig(
+      ucet,
+      cetSigningInfo,
+      cetSigningInfo.signer.signLowRWithHashType,
+      HashType.sigHashAll)
     val oracleSigSum =
       OracleSignatures.computeAggregateSignature(outcome, oracleSigs)
 
@@ -419,12 +417,11 @@ object DLCTxSigner {
   ): PartialSignature = {
     val fundingPubKey = refundSigningInfo.signer.publicKey
 
-    val signLowR: ByteVector => ECDigitalSignature =
-      refundSigningInfo.signer.signLowR(_: ByteVector)
-    val sig = TransactionSignatureCreator.createSig(refundTx,
-                                                    refundSigningInfo,
-                                                    signLowR,
-                                                    HashType.sigHashAll)
+    val sig = TransactionSignatureCreator.createSig(
+      refundTx,
+      refundSigningInfo,
+      refundSigningInfo.signer.signLowRWithHashType,
+      HashType.sigHashAll)
 
     PartialSignature(fundingPubKey, sig)
   }

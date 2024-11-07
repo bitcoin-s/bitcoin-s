@@ -15,23 +15,10 @@ import scodec.bits.ByteVector
 
 sealed abstract class SignerUtils {
 
-  @deprecated("use an InputSigningInfo[InputInfo] instead", since = "6/23/2020")
-  def doSign(
-      sigComponent: TxSigComponent,
-      sign: ByteVector => ECDigitalSignature,
-      hashType: HashType,
-      isDummySignature: Boolean): ECDigitalSignature = {
-    if (isDummySignature) {
-      ECDigitalSignature.dummy
-    } else {
-      TransactionSignatureCreator.createSig(sigComponent, sign, hashType)
-    }
-  }
-
   def doSign(
       unsignedTx: Transaction,
       signingInfo: InputSigningInfo[InputInfo],
-      sign: ByteVector => ECDigitalSignature,
+      sign: (ByteVector, HashType) => ECDigitalSignature,
       hashType: HashType,
       isDummySignature: Boolean): ECDigitalSignature = {
     if (isDummySignature) {
@@ -60,7 +47,7 @@ sealed abstract class SignerUtils {
     val signature = doSign(
       unsignedTx = tx,
       signingInfo = spendingInfo,
-      sign = spendingInfo.signer.signLowR,
+      sign = spendingInfo.signer.signLowRWithHashType,
       hashType = spendingInfo.hashType,
       isDummySignature = isDummySignature
     )
@@ -563,7 +550,7 @@ sealed abstract class P2WPKHSigner extends Signer[P2WPKHV0InputInfo] {
           val signature =
             doSign(unsignedTx,
                    spendingInfo,
-                   signer.signLowR,
+                   signer.signLowRWithHashType,
                    hashType,
                    isDummySignature)
 

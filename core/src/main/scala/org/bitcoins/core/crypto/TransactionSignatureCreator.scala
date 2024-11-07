@@ -4,6 +4,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.utxo.{InputInfo, InputSigningInfo}
 import org.bitcoins.crypto.{
   DERSignatureUtil,
+  DigitalSignature,
   ECAdaptorSignature,
   ECDigitalSignature,
   ECPrivateKey,
@@ -32,8 +33,7 @@ sealed abstract class TransactionSignatureCreator {
       txSignatureComponent: TxSigComponent,
       privateKey: ECPrivateKey,
       hashType: HashType): ECDigitalSignature = {
-    val sign: ByteVector => ECDigitalSignature = privateKey.sign(_: ByteVector)
-    createSig(txSignatureComponent, sign, hashType)
+    createSig(txSignatureComponent, privateKey.signWithHashType, hashType)
   }
 
   /** This is intended to be a low level hardware wallet API. At a fundamental
@@ -51,24 +51,17 @@ sealed abstract class TransactionSignatureCreator {
     * @return
     *   the digital signature returned by the hardware wallet
     */
-  def createSig(
+  def createSig[S <: DigitalSignature](
       component: TxSigComponent,
-      sign: ByteVector => ECDigitalSignature,
-      hashType: HashType): ECDigitalSignature = {
+      sign: (ByteVector, HashType) => S,
+      hashType: HashType): S = {
     val hash =
       TransactionSignatureSerializer.hashForSignature(
         component,
         hashType,
         taprootOptions = TaprootSerializationOptions.empty)
-    val signature = sign(hash.bytes)
-    // append 1 byte hash type onto the end
-    val sig = ECDigitalSignature(
-      signature.bytes ++ ByteVector.fromByte(hashType.byte))
-    require(
-      sig.isStrictEncoded,
-      "We did not create a signature that is strictly encoded, got: " + sig)
-    require(DERSignatureUtil.isLowS(sig), "Sig does not have a low s value")
-    sig
+    val signature = sign(hash.bytes, hashType)
+    signature
   }
 
   /** This is the same as createSig above, except the 'sign' function returns a
@@ -111,8 +104,10 @@ sealed abstract class TransactionSignatureCreator {
       signingInfo: InputSigningInfo[InputInfo],
       privateKey: ECPrivateKey,
       hashType: HashType): ECDigitalSignature = {
-    val sign: ByteVector => ECDigitalSignature = privateKey.sign(_: ByteVector)
-    createSig(spendingTransaction, signingInfo, sign, hashType)
+    createSig(spendingTransaction,
+              signingInfo,
+              privateKey.signWithHashType,
+              hashType)
   }
 
   /** This is intended to be a low level hardware wallet API. At a fundamental
@@ -131,7 +126,7 @@ sealed abstract class TransactionSignatureCreator {
   def createSig(
       spendingTransaction: Transaction,
       signingInfo: InputSigningInfo[InputInfo],
-      sign: ByteVector => ECDigitalSignature,
+      sign: (ByteVector, HashType) => ECDigitalSignature,
       hashType: HashType): ECDigitalSignature = {
     val hash = TransactionSignatureSerializer.hashForSignature(
       spendingTransaction = spendingTransaction,
@@ -139,15 +134,8 @@ sealed abstract class TransactionSignatureCreator {
       hashType = hashType,
       taprootOptions = TaprootSerializationOptions.empty)
 
-    val signature = sign(hash.bytes)
-    // append 1 byte hash type onto the end
-    val sig = ECDigitalSignature(
-      signature.bytes ++ ByteVector.fromByte(hashType.byte))
-    require(
-      sig.isStrictEncoded,
-      "We did not create a signature that is strictly encoded, got: " + sig)
-    require(DERSignatureUtil.isLowS(sig), "Sig does not have a low s value")
-    sig
+    val signature = sign(hash.bytes, hashType)
+    signature
   }
 
   /** This is the same as createSig above, except the 'sign' function returns a
@@ -156,26 +144,16 @@ sealed abstract class TransactionSignatureCreator {
   def createSig(
       spendingTransaction: Transaction,
       signingInfo: InputSigningInfo[InputInfo],
-      sign: ByteVector => Future[ECDigitalSignature],
-      hashType: HashType)(implicit
-      ec: ExecutionContext): Future[ECDigitalSignature] = {
+      sign: (ByteVector, HashType) => Future[ECDigitalSignature],
+      hashType: HashType): Future[ECDigitalSignature] = {
     val hash =
       TransactionSignatureSerializer.hashForSignature(
         spendingTransaction,
         signingInfo,
         hashType,
         taprootOptions = TaprootSerializationOptions.empty)
-    val signature = sign(hash.bytes)
-    // append 1 byte hash type onto the end
-    val sig = signature.map(s =>
-      ECDigitalSignature(s.bytes ++ ByteVector.fromByte(hashType.byte)))
-    sig.map { s =>
-      require(
-        s.isStrictEncoded,
-        "We did not create a signature that is strictly encoded, got: " + sig)
-      require(DERSignatureUtil.isLowS(s), "Sig does not have a low s value")
-      s
-    }
+    val signatureF = sign(hash.bytes, hashType)
+    signatureF
   }
 
   def createSig(
