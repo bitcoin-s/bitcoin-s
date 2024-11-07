@@ -15,19 +15,6 @@ import scodec.bits.ByteVector
 
 sealed abstract class SignerUtils {
 
-//  @deprecated("use an InputSigningInfo[InputInfo] instead", since = "6/23/2020")
-//  def doSign(
-//      sigComponent: TxSigComponent,
-//      sign: ByteVector => ECDigitalSignature,
-//      hashType: HashType,
-//      isDummySignature: Boolean): ECDigitalSignature = {
-//    if (isDummySignature) {
-//      ECDigitalSignature.dummy
-//    } else {
-//      TransactionSignatureCreator.createSig(sigComponent, sign, hashType)
-//    }
-//  }
-
   def doSign(
       unsignedTx: Transaction,
       signingInfo: InputSigningInfo[InputInfo],

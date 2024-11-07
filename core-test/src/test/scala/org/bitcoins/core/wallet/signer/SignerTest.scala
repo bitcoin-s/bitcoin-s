@@ -8,8 +8,8 @@ import org.bitcoins.core.crypto.{
 import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.script.*
+import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.PreExecutionScriptProgram
@@ -19,7 +19,7 @@ import org.bitcoins.core.wallet.builder.{
   StandardNonInteractiveFinalizer
 }
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.core.wallet.utxo._
+import org.bitcoins.core.wallet.utxo.*
 import org.bitcoins.crypto.ECDigitalSignature
 import org.bitcoins.testkitcore.gen.{
   CreditingTxGen,
@@ -152,52 +152,6 @@ class SignerTest extends BitcoinSUnitTest {
         succeed
     }
   }
-
-//  it should "have old and new doSign functions agree" in {
-//    forAll(CreditingTxGen.inputsAndOutputs(), ScriptGenerators.scriptPubKey) {
-//      case ((creditingTxsInfo, destinations), (changeSPK, _)) =>
-//        val fee = SatoshisPerVirtualByte(Satoshis(100))
-//
-//        val spendingTx = StandardNonInteractiveFinalizer
-//          .txFrom(
-//            outputs = destinations,
-//            utxos = creditingTxsInfo,
-//            feeRate = fee,
-//            changeSPK = changeSPK
-//          )
-//
-//        val prevOutMap =
-//          PreviousOutputMap.fromScriptSignatureParams(creditingTxsInfo)
-//
-//        val correctSigs =
-//          creditingTxsInfo.flatMap { signInfo =>
-//            signInfo.signers.map { signer =>
-//              val txSignatureComponent =
-//                TxSigComponent(signInfo.inputInfo, spendingTx, prevOutMap)
-//              @nowarn val oldSig = BitcoinSigner.doSign(
-//                txSignatureComponent,
-//                signer.sign,
-//                signInfo.hashType,
-//                isDummySignature = false
-//              )
-//
-//              val newSig = BitcoinSigner.doSign(
-//                spendingTx,
-//                signInfo,
-//                signer.sign,
-//                signInfo.hashType,
-//                isDummySignature = false
-//              )
-//
-//              (oldSig.r == newSig.r) &&
-//              (oldSig.s == newSig.s) &&
-//              (oldSig.hex == newSig.hex)
-//            }
-//          }
-//
-//        assert(correctSigs.forall(_ == true))
-//    }
-//  }
 
   def inputIndex(
       spendingInfo: InputSigningInfo[InputInfo],
