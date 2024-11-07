@@ -25,7 +25,6 @@ import org.bitcoins.crypto.{
   HashType
 }
 import org.scalacheck.Gen
-import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
 import scala.concurrent.duration.DurationInt
@@ -50,9 +49,7 @@ sealed abstract class ScriptGenerators {
     for {
       sig <- CryptoGenerators.digitalSignature
       hashType <- CryptoGenerators.hashType
-      digitalSignature = ECDigitalSignature(
-        sig.bytes ++ ByteVector.fromByte(hashType.byte)
-      )
+      digitalSignature = sig.appendHashType(hashType)
     } yield P2PKScriptSignature(digitalSignature)
 
   def p2pkhScriptSignature: Gen[P2PKHScriptSignature] =
@@ -60,9 +57,8 @@ sealed abstract class ScriptGenerators {
       privKey <- CryptoGenerators.privateKey
       hash <- CryptoGenerators.doubleSha256Digest
       hashType <- CryptoGenerators.hashType
-      signature = ECDigitalSignature.fromBytes(
-        privKey.sign(hash).bytes ++ ByteVector.fromByte(hashType.byte)
-      )
+      signature = privKey.sign(hash).appendHashType(hashType)
+
     } yield P2PKHScriptSignature(signature, privKey.publicKey)
 
   def p2pkWithTimeoutScriptSignature: Gen[ConditionalScriptSignature] =
@@ -70,9 +66,7 @@ sealed abstract class ScriptGenerators {
       privKey <- CryptoGenerators.privateKey
       hash <- CryptoGenerators.doubleSha256Digest
       hashType <- CryptoGenerators.hashType
-      signature = ECDigitalSignature.fromBytes(
-        privKey.sign(hash).bytes ++ ByteVector.fromByte(hashType.byte)
-      )
+      signature = privKey.sign(hash).appendHashType(hashType)
       beforeTimeout <- NumberGenerator.bool
     } yield P2PKWithTimeoutScriptSignature(beforeTimeout, signature)
 
@@ -84,9 +78,7 @@ sealed abstract class ScriptGenerators {
       privKeys <- CryptoGenerators.privateKeySeq(numKeys)
     } yield for {
       privKey <- privKeys
-    } yield ECDigitalSignature.fromBytes(
-      privKey.sign(hash).bytes ++ ByteVector.fromByte(hashType.byte)
-    )
+    } yield privKey.sign(hash).appendHashType(hashType)
     signatures.map(sigs => MultiSignatureScriptSignature(sigs))
   }
 
