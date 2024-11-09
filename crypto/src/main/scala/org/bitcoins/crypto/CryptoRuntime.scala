@@ -339,7 +339,7 @@ trait CryptoRuntime {
     val challenge = x.multiply(FieldElement(e))
     val sig = k.add(challenge)
 
-    SchnorrDigitalSignature(rx, sig)
+    SchnorrDigitalSignature(rx, sig, hashTypeOpt = None)
   }
 
   def schnorrVerify(

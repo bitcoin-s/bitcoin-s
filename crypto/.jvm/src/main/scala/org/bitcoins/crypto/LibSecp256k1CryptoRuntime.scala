@@ -186,9 +186,17 @@ trait LibSecp256k1CryptoRuntime extends CryptoRuntime {
       data: ByteVector,
       schnorrPubKey: SchnorrPublicKey,
       signature: SchnorrDigitalSignature): Boolean = {
-    NativeSecp256k1.schnorrVerify(signature.bytes.toArray,
-                                  data.toArray,
-                                  schnorrPubKey.bytes.toArray)
+    if (signature.hashTypeOpt.isDefined) {
+      // drop hashType byte
+      NativeSecp256k1.schnorrVerify(signature.bytes.dropRight(1).toArray,
+                                    data.toArray,
+                                    schnorrPubKey.bytes.toArray)
+    } else {
+      NativeSecp256k1.schnorrVerify(signature.bytes.toArray,
+                                    data.toArray,
+                                    schnorrPubKey.bytes.toArray)
+    }
+
   }
 
   // TODO: add a native implementation

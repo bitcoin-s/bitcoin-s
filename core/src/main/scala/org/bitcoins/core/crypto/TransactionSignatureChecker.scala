@@ -74,13 +74,13 @@ trait TransactionSignatureChecker {
       pubKey: SchnorrPublicKey,
       witness: TaprootKeyPath,
       taprootOptions: TaprootSerializationOptions): ScriptResult = {
-    if (witness.hashTypeOpt.contains(HashType.sigHashDefault)) {
+    if (witness.signature.hashTypeOpt.contains(HashType.sigHashDefault)) {
+      // cannot have DEFAULT hash type explicitly defined with BIP341
       ScriptErrorSchnorrSigHashType
     } else {
       checkSchnorrSignature(txSigComponent = txSigComponent,
                             pubKey = pubKey,
                             schnorrSignature = witness.signature,
-                            hashType = witness.hashType,
                             taprootOptions)
     }
   }
@@ -89,7 +89,6 @@ trait TransactionSignatureChecker {
       txSigComponent: TxSigComponent,
       pubKey: SchnorrPublicKey,
       schnorrSignature: SchnorrDigitalSignature,
-      hashType: HashType,
       taprootOptions: TaprootSerializationOptions): ScriptResult = {
     require(
       txSigComponent.sigVersion == SigVersionTaprootKeySpend
@@ -97,6 +96,8 @@ trait TransactionSignatureChecker {
       s"SigVerison must be Taproot or Tapscript, got=${txSigComponent.sigVersion}"
     )
 
+    val hashType =
+      schnorrSignature.hashTypeOpt.getOrElse(HashType.sigHashDefault)
     // bip341 restricts valid hash types: https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#common-signature-message
     val validHashType = checkTaprootHashType(hashType)
     if (!validHashType) {

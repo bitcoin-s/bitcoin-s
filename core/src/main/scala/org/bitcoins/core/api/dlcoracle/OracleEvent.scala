@@ -71,7 +71,8 @@ sealed trait CompletedOracleEvent extends OracleEvent {
   def signatures: OrderedSchnorrSignatures = {
     val unsorted = nonces.toVector
       .zip(attestations)
-      .map(sigPieces => SchnorrDigitalSignature(sigPieces._1, sigPieces._2))
+      .map(sigPieces =>
+        SchnorrDigitalSignature(sigPieces._1, sigPieces._2, hashTypeOpt = None))
     OrderedSchnorrSignatures.fromUnsorted(unsorted)
   }
 
@@ -84,7 +85,10 @@ sealed trait CompletedOracleEvent extends OracleEvent {
         // announcementSignatures evaluate to true
         val unsorted = ann.eventTLV.nonces
           .zip(attestations)
-          .map(sigPieces => SchnorrDigitalSignature(sigPieces._1, sigPieces._2))
+          .map(sigPieces =>
+            SchnorrDigitalSignature(sigPieces._1,
+                                    sigPieces._2,
+                                    hashTypeOpt = None))
         OracleAttestmentV0TLV(eventName,
                               pubkey,
                               unsorted,

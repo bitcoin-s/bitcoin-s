@@ -179,7 +179,8 @@ object DLCUtil {
       val index = allAdaptorPoints.indexOf(adaptorPoint)
       val outcome: OracleOutcome = contractInfo.allOutcomes(index)
 
-      (SchnorrDigitalSignature(outcome.aggregateNonce, s), outcome)
+      (SchnorrDigitalSignature(outcome.aggregateNonce, s, hashTypeOpt = None),
+       outcome)
     }
   }
 

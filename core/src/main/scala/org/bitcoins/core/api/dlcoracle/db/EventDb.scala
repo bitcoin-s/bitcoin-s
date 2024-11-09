@@ -37,7 +37,7 @@ case class EventDb(
     eventDescriptorTLV: EventDescriptorTLV) {
 
   lazy val sigOpt: Option[SchnorrDigitalSignature] =
-    attestationOpt.map(SchnorrDigitalSignature(nonce, _))
+    attestationOpt.map(SchnorrDigitalSignature(nonce, _, hashTypeOpt = None))
 
   lazy val toOracleEvent: OracleEvent = OracleEvent.fromEventDbs(Vector(this))
 }

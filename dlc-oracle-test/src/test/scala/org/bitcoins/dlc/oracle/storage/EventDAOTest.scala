@@ -34,7 +34,7 @@ class EventDAOTest extends DLCOracleDAOFixture {
     RValueDb(nonce, eventName, HDPurpose(0), HDCoinType.Bitcoin, 0, 0, 0)
 
   val dummySig: SchnorrDigitalSignature =
-    SchnorrDigitalSignature(nonce, FieldElement.one)
+    SchnorrDigitalSignature(nonce, FieldElement.one, hashTypeOpt = None)
 
   def descriptor: EventDescriptorTLV = TLVGen.eventDescriptorTLV.sampleSome
 

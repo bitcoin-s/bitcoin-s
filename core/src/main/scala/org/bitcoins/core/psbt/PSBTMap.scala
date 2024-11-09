@@ -650,10 +650,8 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
         keySpendSignatureOpt match {
           case Some(keySpendSignature) =>
             val sig = keySpendSignature.signature
-            val hashType =
-              sigHashTypeOpt.map(_.hashType).getOrElse(SIGHASH_DEFAULT)
 
-            val witnessScript = TaprootKeyPath(sig, hashType, None)
+            val witnessScript = TaprootKeyPath(sig, None)
             Success(wipeAndAdd(EmptyScriptSignature, Some(witnessScript)))
           case None =>
             // todo add script spend support

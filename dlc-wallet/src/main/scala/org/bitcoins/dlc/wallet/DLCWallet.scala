@@ -1871,7 +1871,8 @@ case class DLCWallet(override val walletApi: Wallet)(implicit
         OracleSignatures.computeAggregateSignature(outcome, sigsUsed)
       aggSig = SchnorrDigitalSignature(
         outcome.aggregateNonce,
-        oracleSigSum.fieldElement
+        oracleSigSum.fieldElement,
+        hashTypeOpt = None
       )
       _ <- updateAggregateSignature(contractId, aggSig)
 

@@ -314,7 +314,8 @@ class DLCOracleTest extends DLCOracleFixture {
           assert(
             SchnorrDigitalSignature(
               completedEvent.nonces.head,
-              completedEvent.attestation
+              completedEvent.attestation,
+              hashTypeOpt = None
             ) == sig
           )
           assert(
@@ -368,7 +369,8 @@ class DLCOracleTest extends DLCOracleFixture {
           assert(
             SchnorrDigitalSignature(
               completedEvent.nonces.head,
-              completedEvent.attestations.head
+              completedEvent.attestations.head,
+              hashTypeOpt = None
             ) == signSig
           )
 
@@ -382,7 +384,8 @@ class DLCOracleTest extends DLCOracleFixture {
           assert(
             SchnorrDigitalSignature(
               completedEvent.nonces(1),
-              completedEvent.attestations(1)
+              completedEvent.attestations(1),
+              hashTypeOpt = None
             ) == sig100
           )
 
@@ -396,7 +399,8 @@ class DLCOracleTest extends DLCOracleFixture {
           assert(
             SchnorrDigitalSignature(
               completedEvent.nonces(2),
-              completedEvent.attestations(2)
+              completedEvent.attestations(2),
+              hashTypeOpt = None
             ) == sig10
           )
 
@@ -410,7 +414,8 @@ class DLCOracleTest extends DLCOracleFixture {
           assert(
             SchnorrDigitalSignature(
               completedEvent.nonces(3),
-              completedEvent.attestations(3)
+              completedEvent.attestations(3),
+              hashTypeOpt = None
             ) == sig1
           )
         case _: PendingOracleEvent | _: CompletedOracleEvent =>
@@ -458,7 +463,8 @@ class DLCOracleTest extends DLCOracleFixture {
           assert(
             SchnorrDigitalSignature(
               completedEvent.nonces.head,
-              completedEvent.attestations.head
+              completedEvent.attestations.head,
+              hashTypeOpt = None
             ) == signSig
           )
 
@@ -472,7 +478,8 @@ class DLCOracleTest extends DLCOracleFixture {
           assert(
             SchnorrDigitalSignature(
               completedEvent.nonces(1),
-              completedEvent.attestations(1)
+              completedEvent.attestations(1),
+              hashTypeOpt = None
             ) == sig100
           )
 
@@ -486,7 +493,8 @@ class DLCOracleTest extends DLCOracleFixture {
           assert(
             SchnorrDigitalSignature(
               completedEvent.nonces(2),
-              completedEvent.attestations(2)
+              completedEvent.attestations(2),
+              hashTypeOpt = None
             ) == sig10
           )
 
@@ -500,7 +508,8 @@ class DLCOracleTest extends DLCOracleFixture {
           assert(
             SchnorrDigitalSignature(
               completedEvent.nonces(3),
-              completedEvent.attestations(3)
+              completedEvent.attestations(3),
+              hashTypeOpt = None
             ) == sig1
           )
         case _: PendingOracleEvent | _: CompletedOracleEvent =>
@@ -550,7 +559,8 @@ class DLCOracleTest extends DLCOracleFixture {
             assert(
               SchnorrDigitalSignature(
                 completedEvent.nonces.head,
-                completedEvent.attestations.head
+                completedEvent.attestations.head,
+                hashTypeOpt = None
               ) == sig100
             )
 
@@ -564,7 +574,8 @@ class DLCOracleTest extends DLCOracleFixture {
             assert(
               SchnorrDigitalSignature(
                 completedEvent.nonces(1),
-                completedEvent.attestations(1)
+                completedEvent.attestations(1),
+                hashTypeOpt = None
               ) == sig10
             )
 
@@ -578,7 +589,8 @@ class DLCOracleTest extends DLCOracleFixture {
             assert(
               SchnorrDigitalSignature(
                 completedEvent.nonces(2),
-                completedEvent.attestations(2)
+                completedEvent.attestations(2),
+                hashTypeOpt = None
               ) == sig1
             )
           case _: PendingOracleEvent | _: CompletedOracleEvent =>
@@ -725,7 +737,7 @@ class DLCOracleTest extends DLCOracleFixture {
         futureTime,
         None,
         None,
-        SchnorrDigitalSignature(nonce, FieldElement.one),
+        SchnorrDigitalSignature(nonce, FieldElement.one, hashTypeOpt = None),
         testDescriptor
       )
 

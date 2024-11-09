@@ -234,11 +234,29 @@ sealed abstract class CryptoGenerators {
     }
   }
 
-  def schnorrDigitalSignature: Gen[SchnorrDigitalSignature] = {
+  def schnorrDigitalSignatureNoHashType: Gen[SchnorrDigitalSignature] = {
     for {
       privKey <- privateKey
       hash <- CryptoGenerators.doubleSha256Digest
-    } yield privKey.schnorrSign(hash.bytes)
+      sigNoHashType = privKey.schnorrSign(hash.bytes)
+    } yield {
+      sigNoHashType
+    }
+  }
+
+  def schnorrDigitalSignatureHashType: Gen[SchnorrDigitalSignature] = {
+    for {
+      privKey <- privateKey
+      hash <- CryptoGenerators.doubleSha256Digest
+      sigNoHashType = privKey.schnorrSign(hash.bytes)
+      hashType <- hashType
+    } yield {
+      sigNoHashType.appendHashType(hashType)
+    }
+  }
+  def schnorrDigitalSignature: Gen[SchnorrDigitalSignature] = {
+    Gen.oneOf(schnorrDigitalSignatureHashType,
+              schnorrDigitalSignatureNoHashType)
   }
 
   def adaptorSignature: Gen[ECAdaptorSignature] = {

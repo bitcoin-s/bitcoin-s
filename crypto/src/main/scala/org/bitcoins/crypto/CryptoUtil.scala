@@ -184,8 +184,9 @@ trait CryptoUtil extends CryptoRuntime {
   override def schnorrVerify(
       data: ByteVector,
       schnorrPubKey: SchnorrPublicKey,
-      signature: SchnorrDigitalSignature): Boolean =
+      signature: SchnorrDigitalSignature): Boolean = {
     cryptoRuntime.schnorrVerify(data, schnorrPubKey, signature)
+  }
 
   override def schnorrComputeSigPoint(
       data: ByteVector,
