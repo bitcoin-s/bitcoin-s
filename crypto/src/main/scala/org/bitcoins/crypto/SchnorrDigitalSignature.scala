@@ -1,5 +1,6 @@
 package org.bitcoins.crypto
 
+import org.bitcoins.crypto.HashType.byte
 import scodec.bits.ByteVector
 
 case class SchnorrDigitalSignature(
@@ -7,7 +8,13 @@ case class SchnorrDigitalSignature(
     sig: FieldElement,
     hashTypeOpt: Option[HashType])
     extends DigitalSignature {
-  override val bytes: ByteVector = rx.bytes ++ sig.bytes
+  override val bytes: ByteVector = {
+    rx.bytes ++
+      sig.bytes ++
+      hashTypeOpt
+        .map(h => ByteVector.fromByte(byte(h)))
+        .getOrElse(ByteVector.empty)
+  }
   require(
     bytes.length == 64 || bytes.length == 65,
     s"SchnorrDigitalSignature must be 64/65 bytes in size, got=${bytes.length}")
@@ -30,7 +37,7 @@ object SchnorrDigitalSignature extends Factory[SchnorrDigitalSignature] {
             s"SchnorrDigitalSignature must be exactly 64 bytes, got $bytes")
     val r = bytes.take(32)
     val s = bytes.drop(32).take(32)
-    val hashTypeOpt = if (bytes.length == 65) Some(bytes(65)) else None
+    val hashTypeOpt = if (bytes.length == 65) Some(bytes(64)) else None
     SchnorrDigitalSignature(SchnorrNonce(r),
                             FieldElement(s),
                             hashTypeOpt.map(HashType.fromByte))

@@ -45,9 +45,8 @@ sealed abstract class WitnessGenerators {
   def taprootKeyPath: Gen[TaprootKeyPath] = {
     for {
       signature <- CryptoGenerators.schnorrDigitalSignature
-      hashType <- CryptoGenerators.hashType
       annexOpt <- Gen.option(annex)
-    } yield TaprootKeyPath(signature, hashType, annexOpt)
+    } yield TaprootKeyPath(signature, annexOpt)
   }
 
   def taprootScriptPath: Gen[TaprootScriptPath] = {

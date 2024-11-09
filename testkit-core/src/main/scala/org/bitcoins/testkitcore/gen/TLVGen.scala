@@ -146,7 +146,7 @@ trait TLVGen {
 
   def oracleAnnouncementV0TLV: Gen[OracleAnnouncementV0TLV] = {
     for {
-      sig <- CryptoGenerators.schnorrDigitalSignature
+      sig <- CryptoGenerators.schnorrDigitalSignatureNoHashType
       pubkey <- CryptoGenerators.schnorrPublicKey
       eventTLV <- oracleEventV0TLV
     } yield OracleAnnouncementV0TLV(sig, pubkey, eventTLV)
@@ -159,7 +159,7 @@ trait TLVGen {
       numSigs <- Gen.choose(1, 10)
       unsorted <-
         Gen
-          .listOfN(numSigs, CryptoGenerators.schnorrDigitalSignature)
+          .listOfN(numSigs, CryptoGenerators.schnorrDigitalSignatureNoHashType)
           .map(_.toVector)
       sigs = OrderedSchnorrSignatures.fromUnsorted(unsorted)
       outcomes <-
