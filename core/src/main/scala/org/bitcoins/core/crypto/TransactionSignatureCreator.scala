@@ -80,8 +80,7 @@ sealed abstract class TransactionSignatureCreator {
         taprootOptions = TaprootSerializationOptions.empty)
     val signature = sign(hash.bytes)
     // append 1 byte hash type onto the end
-    val sig = signature.map(s =>
-      ECDigitalSignature(s.bytes ++ ByteVector.fromByte(hashType.byte)))
+    val sig = signature.map(_.appendHashType(hashType))
     sig.map { s =>
       require(
         s.isStrictEncoded,

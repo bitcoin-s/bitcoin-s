@@ -134,15 +134,14 @@ trait Sign extends AsyncSign {
       bytes: ByteVector,
       hashType: HashType): ECDigitalSignature = {
     val sigNoHashType = sign(bytes)
-    sigNoHashType.copy(bytes =
-      sigNoHashType.bytes ++ ByteVector.fromByte(hashType.byte))
+    sigNoHashType.appendHashType(hashType)
   }
 
   def signLowRWithHashType(
       bytes: ByteVector,
       hashType: HashType): ECDigitalSignature = {
     val lowR = signLowR(bytes)
-    lowR.copy(lowR.bytes ++ ByteVector.fromByte(hashType.byte))
+    lowR.appendHashType(hashType)
   }
   override def asyncSign(bytes: ByteVector): Future[ECDigitalSignature] = {
     Future.successful(sign(bytes))
