@@ -49,7 +49,7 @@ class EventOutcomeDAOTest extends DLCOracleDAOFixture {
       time,
       None,
       None,
-      SchnorrDigitalSignature(nonce, FieldElement.one),
+      SchnorrDigitalSignature(nonce, FieldElement.one, hashTypeOpt = None),
       descriptor
     )
 

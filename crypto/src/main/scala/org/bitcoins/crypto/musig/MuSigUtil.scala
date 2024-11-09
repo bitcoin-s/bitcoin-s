@@ -170,6 +170,6 @@ object MuSigUtil {
       case None            => sSum
     }
 
-    SchnorrDigitalSignature(aggPubNonce.schnorrNonce, s)
+    SchnorrDigitalSignature(aggPubNonce.schnorrNonce, s, hashTypeOpt = None)
   }
 }

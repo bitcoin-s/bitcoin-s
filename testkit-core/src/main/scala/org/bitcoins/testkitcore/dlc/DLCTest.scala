@@ -1290,7 +1290,7 @@ trait DLCTest {
         sVals.reduce(_.add(_))
     }
 
-    val aggSig = SchnorrDigitalSignature(aggR, aggS)
+    val aggSig = SchnorrDigitalSignature(aggR, aggS, hashTypeOpt = None)
 
     // Must use stored adaptor sigs because adaptor signing nonce is not deterministic (auxRand)
     val offerRefundSig = dlcOffer.dlcTxSigner.signRefundTx

@@ -38,7 +38,10 @@ class MuSigTest extends BitcoinSCryptoTest {
 
         val sig = signAgg(Vector(s), aggNonce)
 
-        assert(sig == SchnorrDigitalSignature(aggNonce.schnorrNonce, s))
+        assert(
+          sig == SchnorrDigitalSignature(aggNonce.schnorrNonce,
+                                         s,
+                                         hashTypeOpt = None))
 
         val aggPub = keySet.aggPubKey
 

@@ -216,7 +216,7 @@ class DLCMultiOracleEnumExecutionTest extends BitcoinSDualWalletTest {
       .reduce(_.add(_))
 
     val aggregateSignature =
-      SchnorrDigitalSignature(aggR, aggS)
+      SchnorrDigitalSignature(aggR, aggS, hashTypeOpt = None)
     aggregateSignature == statusB.oracleSig
   }
 }
