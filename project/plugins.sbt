@@ -19,7 +19,7 @@ addSbtPlugin("com.github.sbt" % "sbt-unidoc" % "0.5.0")
 
 // export typed values from sbt configuration into Scala sources
 //https://github.com/sbt/sbt-buildinfo
-addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.13.0")
+addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.13.1")
 
 // ensure proper linkage across libraries in Scaladoc
 //https://github.com/ThoughtWorksInc/sbt-api-mappings
