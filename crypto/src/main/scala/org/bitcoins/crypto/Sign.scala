@@ -211,6 +211,12 @@ trait Sign extends AsyncSign {
   def schnorrSignWithNonce(
       dataToSign: ByteVector,
       nonce: ECPrivateKey): SchnorrDigitalSignature
+
+  final def schnorrSignWithHashType(
+      dataToSign: ByteVector,
+      hashType: HashType): SchnorrDigitalSignature = {
+    schnorrSign(dataToSign).appendHashType(hashType)
+  }
 }
 
 object Sign {
