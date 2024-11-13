@@ -6,6 +6,7 @@ import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.script.*
 import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.script.constant.{OP_TRUE, ScriptConstant}
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.util.{BitcoinScriptUtil, BytesUtil}
 import org.bitcoins.crypto.{
   ECDigitalSignature,
@@ -77,6 +78,8 @@ sealed trait InputInfo {
       : ECSignatureParams[this.type] = {
     signerMaterial.copy(inputInfo = this)
   }
+
+  def previousOutputMap: PreviousOutputMap
 }
 
 object InputInfo {
@@ -347,6 +350,7 @@ object InputInfo {
 
 sealed trait RawInputInfo extends InputInfo {
   override def scriptPubKey: RawScriptPubKey
+  override def previousOutputMap: PreviousOutputMap = PreviousOutputMap.empty
 }
 
 object RawInputInfo {
@@ -422,6 +426,8 @@ case class EmptyInputInfo(outPoint: TransactionOutPoint, amount: CurrencyUnit)
     ConditionalPath.NoCondition
   override def pubKeys: Vector[ECPublicKey] = Vector.empty
   override def requiredSigs: Int = 0
+
+  override def previousOutputMap: PreviousOutputMap = PreviousOutputMap.empty
 }
 
 case class P2PKInputInfo(
@@ -550,6 +556,7 @@ case class LockTimeInputInfo(
 
 sealed trait SegwitV0NativeInputInfo extends InputInfo {
   def scriptWitness: ScriptWitnessV0
+  override def previousOutputMap: PreviousOutputMap = PreviousOutputMap.empty
 }
 
 object SegwitV0NativeInputInfo {
@@ -623,6 +630,7 @@ case class UnassignedSegwitNativeInputInfo(
     pubKeys: Vector[ECPublicKey])
     extends InputInfo {
   override def requiredSigs: Int = pubKeys.length
+  override def previousOutputMap: PreviousOutputMap = PreviousOutputMap.empty
 }
 
 sealed trait P2SHInputInfo extends InputInfo {
@@ -637,6 +645,8 @@ sealed trait P2SHInputInfo extends InputInfo {
   override def pubKeys: Vector[ECPublicKey] = nestedInputInfo.pubKeys
 
   override def requiredSigs: Int = nestedInputInfo.requiredSigs
+
+  override def previousOutputMap: PreviousOutputMap = PreviousOutputMap.empty
 }
 
 case class P2SHNonSegwitInputInfo(

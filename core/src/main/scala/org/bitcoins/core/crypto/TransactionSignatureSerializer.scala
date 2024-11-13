@@ -1,15 +1,16 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.script.*
+import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.script.constant.ScriptToken
-import org.bitcoins.core.script.crypto._
+import org.bitcoins.core.script.crypto.*
 import org.bitcoins.core.serializers.transaction.RawTransactionOutputParser
 import org.bitcoins.core.util.{BitcoinScriptUtil, BytesUtil}
 import org.bitcoins.core.wallet.utxo.{InputInfo, InputSigningInfo}
-import org.bitcoins.crypto._
+import org.bitcoins.crypto.*
 import scodec.bits.ByteVector
 
 /** Created by chris on 2/16/16. Wrapper that serializes like Transaction, but
@@ -466,27 +467,13 @@ sealed abstract class TransactionSignatureSerializer {
       spendingTransaction: Transaction,
       signingInfo: InputSigningInfo[InputInfo],
       hashType: HashType,
-      taprootOptions: TaprootSerializationOptions): DoubleSha256Digest = {
-    val inputIndexOpt =
-      TxUtil.inputIndexOpt(signingInfo.inputInfo, spendingTransaction)
-
-    if (inputIndexOpt.isEmpty) {
-      errorHash
-    } else if (
-      (hashType.isInstanceOf[SIGHASH_SINGLE] || hashType
-        .isInstanceOf[SIGHASH_SINGLE_ANYONECANPAY]) &&
-      inputIndexOpt.get >= spendingTransaction.outputs.size &&
-      signingInfo.sigVersion != SigVersionWitnessV0
-    ) {
-      errorHash
-    } else {
-      val serializedTxForSignature =
-        serializeForSignature(spendingTransaction,
-                              signingInfo,
-                              hashType,
-                              taprootOptions)
-      CryptoUtil.doubleSHA256(serializedTxForSignature)
-    }
+      taprootOptions: TaprootSerializationOptions): HashDigest = {
+    val txSigComponent = TxSigComponent(
+      inputInfo = signingInfo.inputInfo,
+      unsignedTx = spendingTransaction,
+      outputMap = signingInfo.inputInfo.previousOutputMap,
+      flags = Policy.standardFlags)
+    hashForSignature(txSigComponent, hashType, taprootOptions)
   }
 
   /** Sets the input's sequence number to zero EXCEPT for the input at
