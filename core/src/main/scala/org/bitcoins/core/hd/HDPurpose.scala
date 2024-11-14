@@ -32,13 +32,15 @@ object HDPurpose extends StringFactory[HDPurpose] {
   final val Multisig = HDPurpose(MultisigHDPath.PURPOSE)
   final val SegWit = HDPurpose(SegWitHDPath.PURPOSE)
   final val NestedSegWit = HDPurpose(NestedSegWitHDPath.PURPOSE)
+  final val Taproot = HDPurpose(TaprootHDPath.PURPOSE)
 
   final val default: HDPurpose = SegWit
 
-  lazy val singleSigPurposes = Vector(Legacy, SegWit, NestedSegWit)
+  lazy val singleSigPurposes: Vector[HDPurpose] =
+    Vector(Legacy, SegWit, NestedSegWit, Taproot)
 
   lazy val all: Vector[HDPurpose] =
-    Vector(Legacy, Multisig, SegWit, NestedSegWit)
+    Vector(Legacy, Multisig, SegWit, NestedSegWit, Taproot)
 
   /** Tries to turn the provided integer into a HD purpose path segment */
   def fromConstant(i: Int): Option[HDPurpose] = all.find(_.constant == i)
