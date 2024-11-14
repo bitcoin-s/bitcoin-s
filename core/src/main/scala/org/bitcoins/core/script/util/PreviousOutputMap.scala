@@ -1,8 +1,10 @@
 package org.bitcoins.core.script.util
 
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.transaction.*
+import org.bitcoins.core.psbt.InputPSBTRecord.NonWitnessOrUnknownUTXO
+
 import org.bitcoins.core.util.MapWrapper
-import org.bitcoins.core.wallet.utxo._
+import org.bitcoins.core.wallet.utxo.*
 
 case class PreviousOutputMap(
     outputMap: Map[TransactionOutPoint, TransactionOutput])
@@ -27,5 +29,19 @@ object PreviousOutputMap {
     }.toMap
 
     PreviousOutputMap(inputMap)
+  }
+
+  def fromNonWitnessUtxos(
+      input: TransactionInput,
+      utxos: Vector[NonWitnessOrUnknownUTXO]): PreviousOutputMap = {
+    val m: Map[TransactionOutPoint, TransactionOutput] = utxos
+      .find(_.transactionSpent.txIdBE == input.previousOutput.txIdBE)
+      .map { x =>
+        val output = x.transactionSpent.outputs(input.previousOutput.vout.toInt)
+        (input.previousOutput, output)
+      }
+      .toMap
+
+    PreviousOutputMap(m)
   }
 }

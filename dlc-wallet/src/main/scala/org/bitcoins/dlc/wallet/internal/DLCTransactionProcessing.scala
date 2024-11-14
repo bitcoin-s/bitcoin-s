@@ -505,6 +505,7 @@ case class DLCTransactionProcessing(
     val utxosF = utxoHandling.listUtxos(outPoints)
     for {
       utxos <- utxosF
+      map = SpendingInfoDb.toPreviousOutputMap(utxos)
       scriptSigParams <-
         FutureUtil.foldLeftAsync(
           Vector.empty[ScriptSignatureParams[InputInfo]],
@@ -513,7 +514,7 @@ case class DLCTransactionProcessing(
           transactionDAO
             .findByOutPoint(utxo.outPoint)
             .map(txOpt =>
-              utxo.toUTXOInfo(keyManager, txOpt.get.transaction) +: accum)
+              utxo.toUTXOInfo(keyManager, txOpt.get.transaction, map) +: accum)
         }
     } yield scriptSigParams
   }

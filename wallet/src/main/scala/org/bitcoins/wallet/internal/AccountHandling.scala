@@ -140,9 +140,7 @@ case class AccountHandling(
       case Legacy       => HDCoin(HDPurpose.Legacy, DEFAULT_HD_COIN_TYPE)
       case NestedSegWit => HDCoin(HDPurpose.NestedSegWit, DEFAULT_HD_COIN_TYPE)
       case SegWit       => HDCoin(HDPurpose.SegWit, DEFAULT_HD_COIN_TYPE)
-      case P2TR =>
-        throw new UnsupportedOperationException(
-          s"Taproot not supported in wallet")
+      case P2TR         => HDCoin(HDPurpose.Taproot, DEFAULT_HD_COIN_TYPE)
     }
     for {
       account <- accountDAO.read((hdCoin, 0))
@@ -474,6 +472,10 @@ case class AccountHandling(
             nestedPath,
             networkParameters
           )
+        case taprootHDPath: TaprootHDPath =>
+          AddressDbHelper.getTaprootAddress(pubkey,
+                                            taprootHDPath,
+                                            networkParameters)
         case h: HDPath =>
           sys.error(s"Unsupported HDPath type=$h for calculating addresses")
       }

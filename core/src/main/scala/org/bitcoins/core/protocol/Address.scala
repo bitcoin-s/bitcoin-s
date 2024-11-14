@@ -281,7 +281,8 @@ object Bech32mAddress extends AddressFactory[Bech32mAddress] {
       data: Vector[UInt5])
       extends Bech32mAddress {
     require(verifyChecksum, "checksum did not pass")
-    require(Try(scriptPubKey).isSuccess, "invalid witness script pub key")
+    require(Try(scriptPubKey).isSuccess,
+            s"invalid witness script pub key, ${Try(scriptPubKey)}")
   }
 
   def empty(network: NetworkParameters = MainNet): Bech32mAddress =
@@ -317,7 +318,7 @@ object Bech32mAddress extends AddressFactory[Bech32mAddress] {
   def fromStringToWitSPK(string: String): Try[WitnessScriptPubKey] = {
     val decoded = Bech32.splitToHrpAndData(string, Bech32m)
     decoded.flatMap { case (_, bytes) =>
-      val (v, _) = (bytes.head, bytes.tail)
+      val v = bytes.head
       val convertedProg = NumberUtil.convertUInt5sToUInt8(bytes.tail)
       val progBytes = UInt8.toBytes(convertedProg)
       val witVersion = WitnessVersion(v.toInt)
@@ -325,7 +326,7 @@ object Bech32mAddress extends AddressFactory[Bech32mAddress] {
       witVersion match {
         case Some(v) =>
           val witSPK = Try(
-            WitnessScriptPubKey(
+            WitnessScriptPubKey.fromAsm(
               List(v.version) ++ pushOp ++ List(ScriptConstant(progBytes))))
           witSPK match {
             case Success(spk) => Success(spk)
@@ -363,17 +364,13 @@ object Bech32mAddress extends AddressFactory[Bech32mAddress] {
       spk: ScriptPubKey,
       np: NetworkParameters): Try[Bech32mAddress] =
     spk match {
-      case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
-          _: P2PKWithTimeoutScriptPubKey | _: MultiSignatureScriptPubKey |
-          _: P2SHScriptPubKey | _: LockTimeScriptPubKey |
-          _: ConditionalScriptPubKey | _: NonStandardScriptPubKey |
-          _: WitnessCommitment | _: WitnessScriptPubKeyV0 |
-          EmptyScriptPubKey) =>
+      case x @ (_: NonWitnessScriptPubKey | _: WitnessScriptPubKeyV0 |
+          _: UnassignedWitnessScriptPubKey) =>
         Failure(
           new IllegalArgumentException(
             "Cannot create a address for the scriptPubKey: " + x))
-      case witSPK: WitnessScriptPubKey =>
-        Success(Bech32mAddress(witSPK, np))
+      case t: TaprootScriptPubKey =>
+        Success(Bech32mAddress(t, np))
     }
 }
 
@@ -571,8 +568,8 @@ object BitcoinAddress extends AddressFactory[BitcoinAddress] {
       case witSPK: WitnessScriptPubKeyV0 => Success(Bech32Address(witSPK, np))
       case taprootSPK: TaprootScriptPubKey =>
         Success(Bech32mAddress(taprootSPK, np))
-      case unassigned: UnassignedWitnessScriptPubKey =>
-        Success(Bech32mAddress(unassigned, np))
+      case u: UnassignedWitnessScriptPubKey =>
+        Success(Bech32mAddress(u, np))
       case x @ (_: P2PKScriptPubKey | _: P2PKWithTimeoutScriptPubKey |
           _: MultiSignatureScriptPubKey | _: LockTimeScriptPubKey |
           _: ConditionalScriptPubKey | _: NonStandardScriptPubKey |

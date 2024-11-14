@@ -301,6 +301,15 @@ case class UtxoHandling(
 
     val utxo: SpendingInfoDb =
       addressDb match {
+        case taprootAddr: TaprootAddressDb =>
+          TaprootSpendingInfo(
+            outPoint = outPoint,
+            output = output,
+            privKeyPath = taprootAddr.path,
+            state = state,
+            spendingTxIdOpt = None,
+            id = None
+          )
         case segwitAddr: SegWitAddressDb =>
           SegwitV0SpendingInfo(
             state = state,

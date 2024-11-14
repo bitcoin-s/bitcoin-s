@@ -3,12 +3,13 @@ package org.bitcoins.core.api.wallet.db
 import org.bitcoins.core.api.db.DbRowAutoInc
 import org.bitcoins.core.api.keymanager.BIP39KeyManagerApi
 import org.bitcoins.core.api.wallet.CoinSelectorUtxo
-import org.bitcoins.core.hd._
+import org.bitcoins.core.hd.*
 import org.bitcoins.core.protocol.script.{
   P2SHScriptPubKey,
   RawScriptPubKey,
   ScriptPubKey,
   ScriptWitness,
+  TaprootWitness,
   WitnessScriptPubKey
 }
 import org.bitcoins.core.protocol.transaction.{
@@ -16,6 +17,7 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutPoint,
   TransactionOutput
 }
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.wallet.utxo.{
   ConditionalPath,
   InputInfo,
@@ -23,6 +25,127 @@ import org.bitcoins.core.wallet.utxo.{
   TxoState
 }
 import org.bitcoins.crypto.{DoubleSha256DigestBE, HashType, Sign}
+
+/** The database level representation of a UTXO. When storing a UTXO we don't
+  * want to store sensitive material such as private keys. We instead store the
+  * necessary information we need to derive the private keys, given the root
+  * wallet seed.
+  */
+sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
+
+  if (TxoState.spentStates.contains(state)) {
+    require(
+      spendingTxIdOpt.isDefined,
+      s"If we have spent a spendinginfodb, the spendingTxId must be defined. Outpoint=${outPoint.toString}")
+  }
+
+  /** This type is here to ensure copyWithSpent returns the same type as the one
+    * it was called on.
+    */
+  protected type SpendingInfoType <: SpendingInfoDb
+
+  def id: Option[Long]
+  def outPoint: TransactionOutPoint
+  def output: TransactionOutput
+  def privKeyPath: HDPath
+  def redeemScriptOpt: Option[ScriptPubKey]
+  def scriptWitnessOpt: Option[ScriptWitness]
+
+  val hashType: HashType = HashType.sigHashAll
+
+  def isChange: Boolean = privKeyPath.chain.chainType == HDChainType.Change
+
+  /** The current [[org.bitcoins.core.wallet.utxo.TxoState state]] of the utxo
+    */
+  def state: TxoState
+
+  /** The TXID of the transaction this output was received in */
+  def txid: DoubleSha256DigestBE = outPoint.txIdBE
+
+  /** TxId of the transaction that this output was spent by */
+  def spendingTxIdOpt: Option[DoubleSha256DigestBE]
+
+  require(
+    !spendingTxIdOpt.contains(txid),
+    s"txid and the spendingTxId cannot be the same, txid=${txid.hex} spendingTxId=${spendingTxIdOpt.get.hex}"
+  )
+
+  /** Converts the UTXO to the canonical `txid:vout` format */
+
+  def toHumanReadableString: String =
+    s"${outPoint.txId.flip.hex}:${outPoint.vout.toInt}"
+
+  /** Updates the `spent` field */
+  def copyWithState(state: TxoState): SpendingInfoType
+
+  /** Updates the `spendingTxId` field */
+  def copyWithSpendingTxId(txId: DoubleSha256DigestBE): SpendingInfoType
+
+  /** Converts a non-sensitive DB representation of a UTXO into a signable (and
+    * sensitive) real-world UTXO
+    */
+  def toUTXOInfo(
+      keyManager: BIP39KeyManagerApi,
+      prevTransaction: Transaction,
+      previousOutputMap: PreviousOutputMap)
+      : ScriptSignatureParams[InputInfo] = {
+
+    val sign: Sign = keyManager.toSign(privKeyPath = privKeyPath)
+
+    toUTXOInfo(sign = sign,
+               prevTransaction = prevTransaction,
+               previousOutputMap = previousOutputMap)
+  }
+
+  def toUTXOInfo(
+      sign: Sign,
+      prevTransaction: Transaction,
+      previousOutputMap: PreviousOutputMap)
+      : ScriptSignatureParams[InputInfo] = {
+    ScriptSignatureParams(
+      InputInfo(
+        outPoint,
+        output,
+        redeemScriptOpt,
+        scriptWitnessOpt,
+        ConditionalPath.NoCondition, // TODO: Migrate to add the Column for this (default: NoConditionsLeft)
+        previousOutputMap,
+        Vector(sign.publicKey)
+      ),
+      prevTransaction,
+      Vector(sign),
+      hashType
+    )
+  }
+
+  def toCoinSelectorUtxo: CoinSelectorUtxo = {
+    CoinSelectorUtxo.fromSpendingInfoDb(this)
+  }
+}
+
+case class TaprootSpendingInfo(
+    outPoint: TransactionOutPoint,
+    output: TransactionOutput,
+    privKeyPath: TaprootHDPath,
+    state: TxoState,
+    spendingTxIdOpt: Option[DoubleSha256DigestBE],
+    id: Option[Long] = None
+) extends SpendingInfoDb {
+  override type SpendingInfoType = TaprootSpendingInfo
+  override val redeemScriptOpt: Option[ScriptPubKey] =
+    None // look at this for ScriptPath spending?
+  override val scriptWitnessOpt: Option[TaprootWitness] = None
+  override def copyWithState(state: TxoState): TaprootSpendingInfo =
+    copy(state = state)
+
+  override def copyWithId(id: Long): TaprootSpendingInfo =
+    copy(id = Some(id))
+
+  /** Updates the `spendingTxId` field */
+  override def copyWithSpendingTxId(
+      txId: DoubleSha256DigestBE): TaprootSpendingInfo =
+    copy(spendingTxIdOpt = Some(txId))
+}
 
 /** DB representation of a native V0 SegWit UTXO
   */
@@ -109,96 +232,6 @@ case class NestedSegwitV0SpendingInfo(
     copy(spendingTxIdOpt = Some(txId))
 }
 
-/** The database level representation of a UTXO. When storing a UTXO we don't
-  * want to store sensitive material such as private keys. We instead store the
-  * necessary information we need to derive the private keys, given the root
-  * wallet seed.
-  */
-sealed trait SpendingInfoDb extends DbRowAutoInc[SpendingInfoDb] {
-
-  if (TxoState.spentStates.contains(state)) {
-    require(
-      spendingTxIdOpt.isDefined,
-      s"If we have spent a spendinginfodb, the spendingTxId must be defined. Outpoint=${outPoint.toString}")
-  }
-
-  /** This type is here to ensure copyWithSpent returns the same type as the one
-    * it was called on.
-    */
-  protected type SpendingInfoType <: SpendingInfoDb
-
-  def id: Option[Long]
-  def outPoint: TransactionOutPoint
-  def output: TransactionOutput
-  def privKeyPath: HDPath
-  def redeemScriptOpt: Option[ScriptPubKey]
-  def scriptWitnessOpt: Option[ScriptWitness]
-
-  val hashType: HashType = HashType.sigHashAll
-
-  def isChange: Boolean = privKeyPath.chain.chainType == HDChainType.Change
-
-  /** The current [[org.bitcoins.core.wallet.utxo.TxoState state]] of the utxo
-    */
-  def state: TxoState
-
-  /** The TXID of the transaction this output was received in */
-  def txid: DoubleSha256DigestBE = outPoint.txIdBE
-
-  /** TxId of the transaction that this output was spent by */
-  def spendingTxIdOpt: Option[DoubleSha256DigestBE]
-
-  require(
-    spendingTxIdOpt.map(_ != txid).getOrElse(true),
-    s"txid and the spendingTxId cannot be the same, txid=${txid.hex} spendingTxId=${spendingTxIdOpt.get.hex}"
-  )
-
-  /** Converts the UTXO to the canonical `txid:vout` format */
-
-  def toHumanReadableString: String =
-    s"${outPoint.txId.flip.hex}:${outPoint.vout.toInt}"
-
-  /** Updates the `spent` field */
-  def copyWithState(state: TxoState): SpendingInfoType
-
-  /** Updates the `spendingTxId` field */
-  def copyWithSpendingTxId(txId: DoubleSha256DigestBE): SpendingInfoType
-
-  /** Converts a non-sensitive DB representation of a UTXO into a signable (and
-    * sensitive) real-world UTXO
-    */
-  def toUTXOInfo(
-      keyManager: BIP39KeyManagerApi,
-      prevTransaction: Transaction): ScriptSignatureParams[InputInfo] = {
-
-    val sign: Sign = keyManager.toSign(privKeyPath = privKeyPath)
-
-    toUTXOInfo(sign = sign, prevTransaction)
-  }
-
-  def toUTXOInfo(
-      sign: Sign,
-      prevTransaction: Transaction): ScriptSignatureParams[InputInfo] = {
-    ScriptSignatureParams(
-      InputInfo(
-        outPoint,
-        output,
-        redeemScriptOpt,
-        scriptWitnessOpt,
-        ConditionalPath.NoCondition, // TODO: Migrate to add the Column for this (default: NoConditionsLeft)
-        Vector(sign.publicKey)
-      ),
-      prevTransaction,
-      Vector(sign),
-      hashType
-    )
-  }
-
-  def toCoinSelectorUtxo: CoinSelectorUtxo = {
-    CoinSelectorUtxo.fromSpendingInfoDb(this)
-  }
-}
-
 object SpendingInfoDb {
 
   def apply(
@@ -266,5 +299,10 @@ object SpendingInfoDb {
                            spendingTxIdOpt = spendingTxIdOpt,
                            id = id)
     }
+  }
+
+  def toPreviousOutputMap(utxos: Vector[SpendingInfoDb]): PreviousOutputMap = {
+    val m = utxos.map(u => (u.outPoint, u.output)).toMap
+    PreviousOutputMap(m)
   }
 }

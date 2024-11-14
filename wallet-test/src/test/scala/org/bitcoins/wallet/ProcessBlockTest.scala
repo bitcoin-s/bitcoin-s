@@ -3,7 +3,6 @@ package org.bitcoins.wallet
 import org.bitcoins.core.api.wallet.SyncHeightDescriptor
 import org.bitcoins.core.currency._
 import org.bitcoins.core.gcs.FilterType
-import org.bitcoins.core.hd.LegacyHDPath
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.script.EmptyScriptSignature
 import org.bitcoins.core.protocol.transaction._
@@ -194,17 +193,10 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoindNewest {
         .read((coin, path.accountIdx))
         .map(_.get)
 
-      bip32Path = LegacyHDPath(
-        path.coinType,
-        path.accountIdx,
-        path.chainType,
-        path.address.index
-      )
-
       psbt = PSBT
         .fromUnsignedTx(unsignedTx)
         .addUTXOToInput(recvTx, 0)
-        .addKeyPathToInput(accountDb.xpub, bip32Path, addrDb.pubkey, 0)
+        .addKeyPathToInput(accountDb.xpub, path, addrDb.pubkey, 0)
 
       signed <- wallet.sendFundsHandling.signPSBT(psbt)
       tx <- Future.fromTry(

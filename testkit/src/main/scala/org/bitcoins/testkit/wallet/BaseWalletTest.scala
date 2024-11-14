@@ -65,4 +65,7 @@ object BaseWalletTest {
   val segwitWalletConf: Config =
     ConfigFactory.parseString("bitcoin-s.wallet.defaultAccountType = segwit")
 
+  val taprootWalletConf: Config =
+    ConfigFactory.parseString("bitcoin-s.wallet.defaultAccountType = taproot")
+
 }

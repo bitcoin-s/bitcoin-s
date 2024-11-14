@@ -3,11 +3,11 @@ package org.bitcoins.core.crypto
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.script.*
+import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.script.flag.ScriptFlag
 import org.bitcoins.core.script.util.PreviousOutputMap
-import org.bitcoins.core.wallet.utxo._
+import org.bitcoins.core.wallet.utxo.*
 
 import scala.util.{Failure, Success, Try}
 
@@ -437,7 +437,13 @@ case class TaprootTxSigComponent(
   }
 
   override def witness: TaprootWitness = {
-    transaction.witness(inputIndex.toInt).asInstanceOf[TaprootWitness]
+    transaction.witness(inputIndex.toInt) match {
+      case t: TaprootWitness  => t
+      case EmptyScriptWitness => TaprootKeyPath.dummy
+      case s: ScriptWitnessV0 =>
+        sys.error(
+          s"Cannot have ScriptWitnessV0 in a TaprootTxSigComponent, got=$s")
+    }
   }
 
   override val witnessVersion: WitnessVersion1.type = WitnessVersion1

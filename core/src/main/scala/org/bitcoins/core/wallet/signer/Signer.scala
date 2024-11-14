@@ -228,7 +228,7 @@ object BitcoinSigner extends SignerUtils {
         .inputMaps(inputIndex)
         .toUTXOSigningInfo(tx.inputs(inputIndex), signer, conditionalPath)
 
-    val partialSignature = spendingInfo.output.scriptPubKey match {
+    spendingInfo.output.scriptPubKey match {
       case _: WitnessScriptPubKeyV0 =>
         val txToSign = tx match {
           case btx: NonWitnessTransaction =>
@@ -259,16 +259,21 @@ object BitcoinSigner extends SignerUtils {
                 wtx
             }
         }
-        signSingle(spendingInfo, txToSign, signer.signLowRWithHashType)
+        val partialSignature =
+          signSingle(spendingInfo, txToSign, signer.signLowRWithHashType)
+        psbt.addSignature(partialSignature, inputIndex)
       case _: TaprootScriptPubKey =>
-        signSingle(spendingInfo, tx, signer.schnorrSignWithHashType)
+        val keyPathSig =
+          signSingle(spendingInfo, tx, signer.schnorrSignWithHashType)
+        psbt.addKeyPathSignature(keyPathSig, inputIndex)
       case _: NonWitnessScriptPubKey =>
-        signSingle(spendingInfo, tx, signer.signLowRWithHashType)
+        val partialSignature =
+          signSingle(spendingInfo, tx, signer.signLowRWithHashType)
+        psbt.addSignature(partialSignature, inputIndex)
       case u: UnassignedWitnessScriptPubKey =>
         sys.error(s"Cannot sign unsupported witSPK=$u")
     }
 
-    psbt.addSignature(partialSignature, inputIndex)
   }
 }
 

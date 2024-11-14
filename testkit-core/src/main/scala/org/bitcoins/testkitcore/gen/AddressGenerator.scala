@@ -1,7 +1,6 @@
 package org.bitcoins.testkitcore.gen
 
 import org.bitcoins.core.protocol._
-import org.bitcoins.core.protocol.script.WitnessVersion0
 import org.scalacheck.Gen
 
 /** Created by chris on 6/12/17.
@@ -38,9 +37,7 @@ sealed trait AddressGenerator {
 
   def bech32mAddress: Gen[Bech32mAddress] =
     for {
-      (witSPK, _) <- ScriptGenerators.witnessScriptPubKey.suchThat(
-        _._1.witnessVersion != WitnessVersion0
-      )
+      (witSPK, _) <- ScriptGenerators.witnessScriptPubKeyV1
       network <- ChainParamsGenerator.networkParams
     } yield Bech32mAddress(witSPK, network)
 

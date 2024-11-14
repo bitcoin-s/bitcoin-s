@@ -102,21 +102,14 @@ case class WalletAppConfig(
   lazy val kmConf: KeyManagerAppConfig =
     kmConfOpt.getOrElse(KeyManagerAppConfig(baseDatadir, configOverrides))
 
-  lazy val defaultAccountKind: HDPurpose =
-    config.getString("bitcoin-s.wallet.defaultAccountType") match {
-      case "legacy"        => HDPurpose.Legacy
-      case "segwit"        => HDPurpose.SegWit
-      case "nested-segwit" => HDPurpose.NestedSegWit
-      // todo: validate this pre-app startup
-      case other: String =>
-        throw new RuntimeException(s"$other is not a valid account type!")
-    }
+  lazy val defaultAccountKind: HDPurpose = kmConf.defaultAccountKind
 
   lazy val defaultAddressType: AddressType = {
     defaultAccountKind match {
       case HDPurpose.Legacy       => AddressType.Legacy
       case HDPurpose.NestedSegWit => AddressType.NestedSegWit
       case HDPurpose.SegWit       => AddressType.SegWit
+      case HDPurpose.Taproot      => AddressType.P2TR
       // todo: validate this pre-app startup
       case other =>
         throw new RuntimeException(s"$other is not a valid account type!")

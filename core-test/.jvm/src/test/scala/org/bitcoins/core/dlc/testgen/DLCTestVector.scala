@@ -1,26 +1,27 @@
 package org.bitcoins.core.dlc.testgen
 
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
-import org.bitcoins.core.number._
+import org.bitcoins.core.number.*
 import org.bitcoins.core.protocol.dlc.build.DLCTxBuilder
 import org.bitcoins.core.protocol.dlc.models.DLCMessage.{
   DLCAccept,
   DLCAcceptWithoutSigs,
   DLCOffer
 }
-import org.bitcoins.core.protocol.dlc.models._
+import org.bitcoins.core.protocol.dlc.models.*
 import org.bitcoins.core.protocol.script.{
   ScriptWitness,
   ScriptWitnessV0,
   WitnessScriptPubKey
 }
-import org.bitcoins.core.protocol.tlv._
+import org.bitcoins.core.protocol.tlv.*
 import org.bitcoins.core.protocol.transaction.{
   OutputReference,
   Transaction,
   TransactionOutPoint
 }
 import org.bitcoins.core.protocol.{BitcoinAddress, BlockTimeStamp}
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.util.Indexed
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{
@@ -28,8 +29,8 @@ import org.bitcoins.core.wallet.utxo.{
   InputInfo,
   ScriptSignatureParams
 }
-import org.bitcoins.crypto.{HashType, _}
-import play.api.libs.json._
+import org.bitcoins.crypto.{HashType, *}
+import play.api.libs.json.*
 import scodec.bits.ByteVector
 
 sealed trait DLCTestVector extends TestVector
@@ -54,13 +55,17 @@ case class FundingInputTx(
     OutputReference(TransactionOutPoint(tx.txId, UInt32(idx)), tx.outputs(idx))
 
   lazy val scriptSignatureParams: ScriptSignatureParams[InputInfo] = {
+    val outPoint = TransactionOutPoint(tx.txId, UInt32(idx))
+    val output = tx.outputs(idx)
+    val map = PreviousOutputMap(Map(outPoint -> output))
     ScriptSignatureParams(
       InputInfo(
-        TransactionOutPoint(tx.txId, UInt32(idx)),
-        tx.outputs(idx),
+        outPoint,
+        output,
         redeemScript,
         Some(scriptWitness),
-        ConditionalPath.NoCondition
+        ConditionalPath.NoCondition,
+        map
       ),
       tx,
       inputKeys,

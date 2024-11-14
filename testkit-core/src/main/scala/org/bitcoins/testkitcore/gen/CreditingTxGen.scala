@@ -2,9 +2,10 @@ package org.bitcoins.testkitcore.gen
 
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.script.*
+import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.wallet.utxo.{
   ConditionalPath,
   InputInfo,
@@ -239,15 +240,19 @@ sealed abstract class CreditingTxGen {
                           Vector.empty,
                           updated,
                           tc.lockTime)
-
+        val outPoint = TransactionOutPoint(creditingTx.txId, o.outPoint.vout)
+        val previousOutputMap = PreviousOutputMap(Map(outPoint -> oldOutput))
         ScriptSignatureParams(
           InputInfo(
-            TransactionOutPoint(creditingTx.txId, o.outPoint.vout),
-            updatedOutput,
-            Some(redeemScript),
-            scriptWitnessOpt,
-            computeAllTrueConditionalPath(redeemScript, None, scriptWitnessOpt),
-            o.signers.map(_.publicKey)
+            outPoint = outPoint,
+            output = updatedOutput,
+            redeemScriptOpt = Some(redeemScript),
+            scriptWitnessOpt = scriptWitnessOpt,
+            conditionalPath = computeAllTrueConditionalPath(redeemScript,
+                                                            None,
+                                                            scriptWitnessOpt),
+            previousOutputMap = previousOutputMap,
+            hashPreImages = o.signers.map(_.publicKey)
           ),
           creditingTx,
           o.signers,
@@ -276,14 +281,16 @@ sealed abstract class CreditingTxGen {
                             Vector.empty,
                             updated,
                             tc.lockTime)
-
+          val outPoint = TransactionOutPoint(creditingTx.txId, o.outPoint.vout)
+          val previousOutputMap = PreviousOutputMap(Map(outPoint -> oldOutput))
           ScriptSignatureParams(
             InputInfo(
-              TransactionOutPoint(creditingTx.txId, o.outPoint.vout),
+              outPoint,
               updatedOutput,
               InputInfo.getRedeemScript(o.inputInfo),
               InputInfo.getScriptWitness(o.inputInfo),
               ConditionalPath.NoCondition,
+              previousOutputMap,
               o.signers.map(_.publicKey)
             ),
             creditingTx,
@@ -313,15 +320,17 @@ sealed abstract class CreditingTxGen {
                             Vector.empty,
                             updated,
                             tc.lockTime)
-
+          val outPoint = TransactionOutPoint(creditingTx.txId, o.outPoint.vout)
+          val previousOutputMap = PreviousOutputMap(Map(outPoint -> oldOutput))
           ScriptSignatureParams(
             InputInfo(
-              TransactionOutPoint(creditingTx.txId, o.outPoint.vout),
-              updatedOutput,
-              InputInfo.getRedeemScript(o.inputInfo),
-              InputInfo.getScriptWitness(o.inputInfo),
-              ConditionalPath.NoCondition,
-              o.signers.map(_.publicKey)
+              outPoint = outPoint,
+              output = updatedOutput,
+              redeemScriptOpt = InputInfo.getRedeemScript(o.inputInfo),
+              scriptWitnessOpt = InputInfo.getScriptWitness(o.inputInfo),
+              conditionalPath = ConditionalPath.NoCondition,
+              previousOutputMap = previousOutputMap,
+              hashPreImages = o.signers.map(_.publicKey)
             ),
             creditingTx,
             o.signers,
@@ -385,19 +394,20 @@ sealed abstract class CreditingTxGen {
                                 Vector.empty,
                                 outputs,
                                 tc.lockTime)
+              val outPoint = TransactionOutPoint(
+                creditingTx.txId,
+                UInt32.apply(outputIndex)
+              )
+              val output = creditingTx.outputs(outputIndex)
+              val previousOutputMap = PreviousOutputMap(Map(outPoint -> output))
               ScriptSignatureParams(
                 InputInfo(
-                  TransactionOutPoint(
-                    creditingTx.txId,
-                    UInt32.apply(outputIndex)
-                  ),
-                  TransactionOutput(
-                    creditingTx.outputs(outputIndex).value,
-                    creditingTx.outputs(outputIndex).scriptPubKey
-                  ),
+                  outPoint = outPoint,
+                  output,
                   Some(spk),
                   Some(wit),
                   ConditionalPath.NoCondition,
+                  previousOutputMap,
                   signers.map(_.publicKey)
                 ),
                 creditingTx,
@@ -475,13 +485,17 @@ sealed abstract class CreditingTxGen {
           val tc = TransactionConstants
           val btx =
             BaseTransaction(tc.version, Vector.empty, updated, tc.lockTime)
+          val outPoint = TransactionOutPoint(btx.txId, UInt32.apply(idx))
+          val output = TransactionOutput(old.value, spk)
+          val previousOutputMap = PreviousOutputMap(Map(outPoint -> output))
           ScriptSignatureParams(
             InputInfo(
-              TransactionOutPoint(btx.txId, UInt32.apply(idx)),
-              TransactionOutput(old.value, spk),
+              outPoint,
+              output,
               redeemScript,
               scriptWitness,
               computeAllTrueConditionalPath(spk, redeemScript, scriptWitness),
+              previousOutputMap,
               signers.toVector.map(_.publicKey)
             ),
             btx,

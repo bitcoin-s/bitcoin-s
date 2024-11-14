@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol
 
 import org.bitcoins.core.number.UInt5
-import org.bitcoins.core.protocol.script.{WitnessScriptPubKey, WitnessVersion0}
+import org.bitcoins.core.protocol.script.WitnessScriptPubKey
 import org.bitcoins.core.util.{Bech32, Bech32Encoding}
 import org.bitcoins.core.util.Bech32Encoding.Bech32m
 import org.bitcoins.testkitcore.gen._
@@ -27,9 +27,7 @@ class Bech32mTest extends BitcoinSUnitTest {
 
   it must "serialization symmetry" in {
     forAll(
-      ScriptGenerators.witnessScriptPubKey.suchThat(
-        _._1.witnessVersion != WitnessVersion0
-      ),
+      ScriptGenerators.witnessScriptPubKeyV1,
       ChainParamsGenerator.networkParams
     ) { case ((witSPK, _), network) =>
       val addr = Bech32mAddress(witSPK, network)

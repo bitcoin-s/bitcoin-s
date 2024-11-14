@@ -44,11 +44,14 @@ sealed trait InputSigningInfo[+InputType <: InputInfo] {
   private val keysToSignFor = inputInfo.pubKeys.map {
     case ec: ECPublicKey     => ec.toXOnly
     case s: SchnorrPublicKey => s.publicKey.toXOnly
-    case x: XOnlyPubKey      => x.publicKey.toXOnly
+    case x: XOnlyPubKey      => x
     case p: PublicKey        => sys.error(s"Not supported=$p")
   }
-  require(signers.map(_.publicKey.toXOnly).forall(keysToSignFor.contains),
-          s"Cannot have signers that do not sign for one of $keysToSignFor")
+  require(
+    signers.map(_.publicKey.toXOnly).forall(keysToSignFor.contains),
+    s"Cannot have signers that do not sign for one of keysToSignFor=$keysToSignFor inputInfo.pubKeys=${inputInfo.pubKeys} signers=${signers
+        .map(_.publicKey.toXOnly)} class=${inputInfo.getClass.getSimpleName}"
+  )
 
   def outputReference: OutputReference = inputInfo.outputReference
   def amount: CurrencyUnit = inputInfo.amount

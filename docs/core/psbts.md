@@ -23,6 +23,7 @@ import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.crypto.HashType
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo._
 import scodec.bits._
@@ -118,7 +119,8 @@ val spendingInfoSingle = ECSignatureParams(
               output = output,
               redeemScriptOpt = Some(redeemScript0),
               scriptWitnessOpt = None,
-              conditionalPath = ConditionalPath.NoCondition),
+              conditionalPath = ConditionalPath.NoCondition,
+              previousOutputMap = PreviousOutputMap.empty),
     prevTransaction = utxo0,
     signer = privKey0,
     hashType = HashType.sigHashAll

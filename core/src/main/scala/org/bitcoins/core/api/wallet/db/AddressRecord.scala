@@ -1,9 +1,16 @@
 package org.bitcoins.core.api.wallet.db
 
-import org.bitcoins.core.hd._
-import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptWitness}
+import org.bitcoins.core.hd.*
+import org.bitcoins.core.protocol.script.{
+  ScriptPubKey,
+  ScriptWitness,
+  TaprootScriptPubKey,
+  UnassignedWitnessScriptPubKey,
+  WitnessScriptPubKeyV0
+}
 import org.bitcoins.core.protocol.{
   Bech32Address,
+  Bech32mAddress,
   BitcoinAddress,
   P2PKHAddress,
   P2SHAddress
@@ -63,6 +70,24 @@ case class AddressRecord(
                               address,
                               witnessScript = scriptWitness,
                               scriptPubKey = scriptPubKey)
+      case (HDPurpose.Taproot, address: Bech32mAddress, None) =>
+        address.scriptPubKey match {
+          case x @ (_: WitnessScriptPubKeyV0 |
+              _: UnassignedWitnessScriptPubKey) =>
+            sys.error(
+              s"Cannot convert non-taproot spk to TaprootAddressDb, got=$x")
+          case t: TaprootScriptPubKey =>
+            val path = TaprootHDPath(coin = accountCoin,
+                                     accountIndex = accountIndex,
+                                     chainType = accountChain,
+                                     addressIndex = addressIndex)
+
+            TaprootAddressDb(path = path,
+                             ecPublicKey = pubKey,
+                             address = address,
+                             scriptPubKey = t)
+        }
+
       case (purpose: HDPurpose, address: BitcoinAddress, scriptWitnessOpt) =>
         throw new IllegalArgumentException(
           s"Got invalid combination of HD purpose, address and script witness: $purpose, $address, $scriptWitnessOpt")
@@ -74,6 +99,19 @@ object AddressRecord {
 
   def fromAddressDb(addressDb: AddressDb, scriptPubKeyId: Long): AddressRecord =
     addressDb match {
+      case t @ TaprootAddressDb(path, pubKey, address, scriptPubKey) =>
+        AddressRecord(
+          purpose = path.purpose,
+          accountCoin = path.coin.coinType,
+          accountIndex = path.account.index,
+          accountChain = path.chain.chainType,
+          addressIndex = path.address.index,
+          address = address,
+          pubKey = pubKey,
+          hashedPubKey = t.hashedPubKey,
+          scriptPubKeyId = scriptPubKeyId,
+          scriptWitnessOpt = None
+        )
       case SegWitAddressDb(path,
                            pubKey,
                            hashedPubKey,

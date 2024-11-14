@@ -317,7 +317,7 @@ sealed abstract class CryptoGenerators {
   /** Generates an [[ExtPrivateKey ExtPrivateKey]] */
   def extPrivateKey: Gen[ExtPrivateKey] = {
     for {
-      version <- Gen.oneOf(ExtKeyVersion.allPrivs)
+      version <- Gen.oneOf(ExtKeyPrivVersion.allPrivs)
       ext = core.crypto.ExtPrivateKey(version)
     } yield ext
   }
