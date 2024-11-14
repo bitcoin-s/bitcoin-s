@@ -14,9 +14,10 @@ object HDUtil {
     import org.bitcoins.core.hd.HDPurpose._
 
     (hdPurpose, network) match {
-      case (SegWit, MainNet)                     => SegWitMainNetPriv
-      case (SegWit, TestNet3 | RegTest | SigNet) => SegWitTestNet3Priv
-      case (NestedSegWit, MainNet)               => NestedSegWitMainNetPriv
+      case (SegWit, MainNet) | (Taproot, MainNet) => SegWitMainNetPriv
+      case (SegWit, TestNet3 | RegTest | SigNet)  => SegWitTestNet3Priv
+      case (Taproot, TestNet3 | RegTest | SigNet) => SegWitTestNet3Priv
+      case (NestedSegWit, MainNet)                => NestedSegWitMainNetPriv
       case (NestedSegWit, TestNet3 | RegTest | SigNet) =>
         NestedSegWitTestNet3Priv
       case (Multisig, MainNet) => LegacyMainNetPriv
