@@ -1,13 +1,16 @@
 package org.bitcoins.core.hd
 
 import org.bitcoins.core.config.MainNet
-import org.bitcoins.core.crypto.{ExtKeyVersion, _}
-import org.bitcoins.core.protocol.Bech32Address
-import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
-import org.bitcoins.crypto.{ECPrivateKey, ECPublicKey}
+import org.bitcoins.core.crypto.{ExtKeyVersion, *}
+import org.bitcoins.core.protocol.{Bech32Address, Bech32mAddress}
+import org.bitcoins.core.protocol.script.{
+  P2WPKHWitnessSPKV0,
+  TaprootScriptPubKey
+}
+import org.bitcoins.crypto.{ECPrivateKey, ECPublicKey, XOnlyPubKey}
 import org.bitcoins.testkitcore.gen.{HDGenerators, NumberGenerator}
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
-import scodec.bits._
+import scodec.bits.*
 
 import scala.util.{Failure, Success}
 
@@ -737,6 +740,122 @@ class HDPathTest extends BitcoinSUnitTest {
 
       assert(expectedAccountXpriv == accountXpriv)
       assert(expectedAccountXpub == accountXpub)
+
+    }
+  }
+
+  it must "pass examples from BIP86" in {
+    val words = Vector(
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "abandon",
+      "about"
+    )
+
+    val mnemonic = MnemonicCode.fromWords(words)
+    val seed = BIP39Seed.fromMnemonic(mnemonic)
+    val rootXpriv =
+      ExtPrivateKey.fromBIP39Seed(ExtKeyVersion.LegacyMainNetPriv, seed)
+
+    {
+      val taprootPathString = "m/86'/0'/0'/0/0"
+      val taprootPath = TaprootHDPath.fromString(taprootPathString)
+      val taprootPathAccount = taprootPath.account
+      val accountXpriv = rootXpriv.deriveChildPrivKey(taprootPathAccount)
+      val accountXpub = accountXpriv.extPublicKey
+
+      val expectedAccountXpriv = ExtPrivateKey.fromString(
+        "xprv9xgqHN7yz9MwCkxsBPN5qetuNdQSUttZNKw1dcYTV4mkaAFiBVGQziHs3NRSWMkCzvgjEe3n9xV8oYywvM8at9yRqyaZVz6TYYhX98VjsUk"
+      )
+      val expectedAccountXpub = ExtPublicKey.fromString(
+        "xpub6BgBgsespWvERF3LHQu6CnqdvfEvtMcQjYrcRzx53QJjSxarj2afYWcLteoGVky7D3UKDP9QyrLprQ3VCECoY49yfdDEHGCtMMj92pReUsQ"
+      )
+
+      assert(expectedAccountXpriv == accountXpriv)
+      assert(expectedAccountXpub == accountXpub)
+
+      val first = rootXpriv.deriveChildPrivKey(taprootPath)
+      assert(first == ExtPrivateKey.fromString(
+        "xprvA449goEeU9okwCzzZaxiy475EQGQzBkc65su82nXEvcwzfSskb2hAt2WymrjyRL6kpbVTGL3cKtp9herYXSjjQ1j4stsXXiRF7kXkCacK3T"))
+      val firstXPub = first.extPublicKey
+      assert(firstXPub == ExtPublicKey.fromString(
+        "xpub6H3W6JmYJXN49h5TfcVjLC3onS6uPeUTTJoVvRC8oG9vsTn2J8LwigLzq5tHbrwAzH9DGo6ThGUdWsqce8dGfwHVBxSbixjDADGGdzF7t2B"))
+      val firstInternalKey = first.publicKey
+      assert(
+        firstInternalKey.toXOnly == XOnlyPubKey.fromHex(
+          "cc8a4bc64d897bddc5fbc2f670f7a8ba0b386779106cf1223c6fc5d7cd6fc115"))
+      val firstOutputKey =
+        TaprootScriptPubKey.fromInternalKey(firstInternalKey.toXOnly)
+      assert(
+        firstOutputKey.pubKey == XOnlyPubKey.fromHex(
+          "a60869f0dbcf1dc659c9cecbaf8050135ea9e8cdc487053f1dc6880949dc684c"))
+      val firstSPK = TaprootScriptPubKey(firstOutputKey.pubKey)
+      assert(firstSPK == TaprootScriptPubKey.fromAsmHex(
+        "5120a60869f0dbcf1dc659c9cecbaf8050135ea9e8cdc487053f1dc6880949dc684c"))
+      val firstAddress = Bech32mAddress(firstSPK, MainNet)
+      assert(
+        firstAddress == Bech32mAddress.fromString(
+          "bc1p5cyxnuxmeuwuvkwfem96lqzszd02n6xdcjrs20cac6yqjjwudpxqkedrcr"))
+    }
+    {
+      val secondReceivingPath = TaprootHDPath.fromString("m/86'/0'/0'/0/1")
+      val second = rootXpriv.deriveChildPrivKey(secondReceivingPath)
+      assert(second == ExtPrivateKey.fromString(
+        "xprvA449goEeU9okyiF1LmKiDaTgeXvmh87DVyRd35VPbsSop8n8uALpbtrUhUXByPFKK7C2yuqrB1FrhiDkEMC4RGmA5KTwsE1aB5jRu9zHsuQ"))
+      val secondXPub = second.extPublicKey
+      assert(secondXPub == ExtPublicKey.fromString(
+        "xpub6H3W6JmYJXN4CCKUSnriaiQRCZmG6aq4sCMDqTu1ACyngw7HShf59hAxYjXgKDuuHThVEUzdHrc3aXCr9kfvQvZPit5dnD3K9xVRBzjK3rX"))
+      val secondInternalKey = second.publicKey
+      assert(
+        secondInternalKey.toXOnly == XOnlyPubKey.fromHex(
+          "83dfe85a3151d2517290da461fe2815591ef69f2b18a2ce63f01697a8b313145"))
+      val secondOutputKey =
+        TaprootScriptPubKey.fromInternalKey(secondInternalKey.toXOnly)
+      assert(
+        secondOutputKey.pubKey == XOnlyPubKey.fromHex(
+          "a82f29944d65b86ae6b5e5cc75e294ead6c59391a1edc5e016e3498c67fc7bbb"))
+      val secondSPK = TaprootScriptPubKey(secondOutputKey.pubKey)
+      assert(secondSPK == TaprootScriptPubKey.fromAsmHex(
+        "5120a82f29944d65b86ae6b5e5cc75e294ead6c59391a1edc5e016e3498c67fc7bbb"))
+      val secondAddress = Bech32mAddress(secondSPK, MainNet)
+      assert(
+        secondAddress == Bech32mAddress.fromString(
+          "bc1p4qhjn9zdvkux4e44uhx8tc55attvtyu358kutcqkudyccelu0was9fqzwh"))
+
+    }
+
+    {
+      val changePath = TaprootHDPath.fromString("m/86'/0'/0'/1/0")
+      val changeRootKey = rootXpriv.deriveChildPrivKey(changePath)
+      assert(changeRootKey == ExtPrivateKey.fromString(
+        "xprvA3Ln3Gt3aphvUgzgEDT8vE2cYqb4PjFfpmbiFKphxLg1FjXQpkAk5M1ZKDY15bmCAHA35jTiawbFuwGtbDZogKF1WfjwxML4gK7WfYW5JRP"))
+      val changeXPub = changeRootKey.extPublicKey
+      assert(changeXPub == ExtPublicKey.fromString(
+        "xpub6GL8SnQwRCGDhB59LEz9HMyM6sRYoByXBzXK3iEKWgCz8XrZNHUzd9L3AUBELW5NzA7dEFvMas1F84TuPH3xqdUA5tumaGWFgihJzWytXe3"))
+      val changeInternalKey = changeRootKey.publicKey
+      assert(
+        changeInternalKey.toXOnly == XOnlyPubKey.fromHex(
+          "399f1b2f4393f29a18c937859c5dd8a77350103157eb880f02e8c08214277cef"))
+      val changeOutputKey =
+        TaprootScriptPubKey.fromInternalKey(changeInternalKey.toXOnly)
+      assert(
+        changeOutputKey.pubKey == XOnlyPubKey.fromHex(
+          "882d74e5d0572d5a816cef0041a96b6c1de832f6f9676d9605c44d5e9a97d3dc "))
+      val changeSPK = TaprootScriptPubKey(changeOutputKey.pubKey)
+      assert(changeSPK == TaprootScriptPubKey.fromAsmHex(
+        "5120882d74e5d0572d5a816cef0041a96b6c1de832f6f9676d9605c44d5e9a97d3dc"))
+      val changeAddress = Bech32mAddress(changeSPK, MainNet)
+      assert(
+        changeAddress == Bech32mAddress.fromString(
+          "bc1p3qkhfews2uk44qtvauqyr2ttdsw7svhkl9nkm9s9c3x4ax5h60wqwruhk7"))
 
     }
   }

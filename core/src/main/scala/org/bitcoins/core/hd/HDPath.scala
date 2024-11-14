@@ -74,6 +74,8 @@ object HDPath extends StringFactory[HDPath] {
         SegWitHDPath.fromStringT(string)
       } else if (purpose == NestedSegWitHDPath.PURPOSE) {
         NestedSegWitHDPath.fromStringT(string)
+      } else if (purpose == TaprootHDPath.PURPOSE) {
+        TaprootHDPath.fromStringT(string)
       } else {
         Failure(new IllegalArgumentException(s"Unknown purpose=$purpose"))
       }

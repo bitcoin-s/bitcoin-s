@@ -50,6 +50,7 @@ private[hd] trait HDPathFactory[PathType <: BIP32Path]
         HDPurpose.NestedSegWit
       case BIP32Node(HDPurpose.Multisig.constant, Some(_)) =>
         HDPurpose.Multisig
+      case BIP32Node(HDPurpose.Taproot.constant, Some(_)) => HDPurpose.Taproot
       case BIP32Node(unknown, Some(_)) =>
         throw new IllegalArgumentException(
           s"Purpose constant ($unknown) is not a known purpose constant")
