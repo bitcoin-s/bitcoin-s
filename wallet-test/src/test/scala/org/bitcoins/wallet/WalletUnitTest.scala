@@ -39,7 +39,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
       accounts <- wallet.accountHandling.listAccounts()
       addresses <- wallet.addressHandling.listAddresses()
     } yield {
-      assert(accounts.length == 3) // legacy, segwit and nested segwit
+      assert(accounts.length == 4) // legacy, segwit, nested segwit, taproot
       assert(addresses.isEmpty)
     }
   }
