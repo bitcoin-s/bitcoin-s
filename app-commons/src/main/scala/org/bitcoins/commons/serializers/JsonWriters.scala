@@ -257,9 +257,10 @@ object JsonWriters {
   }
 
   implicit object PartialSignatureWrites
-      extends Writes[InputPSBTRecord.PartialSignature] {
+      extends Writes[InputPSBTRecord.PartialSignature[DigitalSignature]] {
 
-    override def writes(o: InputPSBTRecord.PartialSignature): JsValue =
+    override def writes(
+        o: InputPSBTRecord.PartialSignature[DigitalSignature]): JsValue =
       JsObject(
         Seq(
           ("pubkey", JsString(o.pubKey.hex)),

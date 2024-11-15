@@ -182,10 +182,10 @@ object DLCWalletUtil extends BitcoinSLogger {
 
   lazy val dummyKey2: ECPublicKey = ECPublicKey.freshPublicKey
 
-  lazy val dummyPartialSig: PartialSignature =
+  lazy val dummyPartialSig: PartialSignature[ECDigitalSignature] =
     PartialSignature(dummyKey, ECDigitalSignature.dummy)
 
-  lazy val minimalPartialSig: PartialSignature = {
+  lazy val minimalPartialSig: PartialSignature[ECDigitalSignature] = {
     PartialSignature(dummyKey, ECDigitalSignature.minimalEncodedZeroSig)
   }
 

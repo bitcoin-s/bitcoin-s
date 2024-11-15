@@ -110,7 +110,8 @@ class SignerTest extends BitcoinSUnitTest {
               val keyAndSig =
                 BitcoinSigner.signSingle(
                   singleInfo,
-                  unsignedTx
+                  unsignedTx,
+                  singleInfo.signer.signLowRWithHashType
                 )
 
               keyAndSig.signature
@@ -235,7 +236,7 @@ class SignerTest extends BitcoinSUnitTest {
           changeSPK
         )
 
-      val singleSigs: Vector[Vector[PartialSignature]] = {
+      val singleSigs: Vector[Vector[PartialSignature[ECDigitalSignature]]] = {
         val singleInfosVec: Vector[Vector[ECSignatureParams[InputInfo]]] =
           creditingTxsInfos.toVector.map(_.toSingles)
         singleInfosVec.map { singleInfos =>
@@ -248,7 +249,9 @@ class SignerTest extends BitcoinSUnitTest {
                 unsignedTx.lockTime,
                 EmptyWitness.fromInputs(unsignedTx.inputs)
               )
-            BitcoinSigner.signSingle(singleInfo, wtx)
+            BitcoinSigner.signSingle(singleInfo,
+                                     wtx,
+                                     singleInfo.signer.signLowRWithHashType)
 
           }
         }

@@ -68,7 +68,7 @@ case class ScriptSignatureParams[+InputType <: InputInfo](
   def signer: Sign = {
     require(
       signers.length == 1,
-      "This method is for spending infos with a single signer, if you mean signers.head be explicit")
+      s"This method is for spending infos with a single signer, if you mean signers.head be explicit, signers=$signers")
 
     signers.head
   }

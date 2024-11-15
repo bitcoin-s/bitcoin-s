@@ -126,7 +126,7 @@ sealed abstract class Signer[-InputType <: InputInfo] {
   def signSingle(
       spendingInfo: UTXOSigningInfo[InputInfo],
       unsignedTx: Transaction)(
-      implicit ec: ExecutionContext): Future[PartialSignature] = ???
+      implicit ec: ExecutionContext): Future[PartialSignature[ECDigitalSignature]] = ???
 }
 sealed abstract class RawSingleKeyBitcoinSigner[-InputType <: RawInputInfo]
     extends Signer[InputType] {
@@ -180,7 +180,7 @@ object BitcoinSigner {
     def signSingle(
         spendingInfo: UTXOSigningInfo[InputInfo],
         unsignedTx: Transaction)(
-        implicit ec: ExecutionContext): Future[PartialSignature] = ???
+        implicit ec: ExecutionContext): Future[PartialSignature[ECDigitalSignature]] = ???
 }
 
 def asm: Seq[ScriptToken] = ???

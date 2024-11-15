@@ -1,6 +1,6 @@
 package org.bitcoins.core.psbt
 
-import org.bitcoins.crypto.Factory
+import org.bitcoins.crypto.{DigitalSignature, Factory}
 import scodec.bits.ByteVector
 
 /** A PSBTKeyId refers to the first byte of a key that signifies which kind of
@@ -74,7 +74,7 @@ object PSBTInputKeyId extends PSBTKeyIdFactory[PSBTInputKeyId] {
     byte match {
       case NonWitnessUTXOKeyId.byte            => NonWitnessUTXOKeyId
       case WitnessUTXOKeyId.byte               => WitnessUTXOKeyId
-      case PartialSignatureKeyId.byte          => PartialSignatureKeyId
+      case PartialSignatureKeyId.byte          => PartialSignatureKeyId()
       case SigHashTypeKeyId.byte               => SigHashTypeKeyId
       case RedeemScriptKeyId.byte              => RedeemScriptKeyId
       case WitnessScriptKeyId.byte             => WitnessScriptKeyId
@@ -106,9 +106,14 @@ object PSBTInputKeyId extends PSBTKeyIdFactory[PSBTInputKeyId] {
     type RecordType = InputPSBTRecord.WitnessUTXO
   }
 
-  case object PartialSignatureKeyId extends PSBTInputKeyId {
+  case class PartialSignatureKeyId[Sig <: DigitalSignature]()
+      extends PSBTInputKeyId {
     override val byte: Byte = 0x02.byteValue
-    type RecordType = InputPSBTRecord.PartialSignature
+    type RecordType = InputPSBTRecord.PartialSignature[Sig]
+  }
+
+  object PartialSignatureKeyId {
+    val byte: Byte = PartialSignatureKeyId().byte
   }
 
   case object SigHashTypeKeyId extends PSBTInputKeyId {

@@ -2,12 +2,12 @@ package org.bitcoins.core.psbt
 
 import org.bitcoins.core.byteVectorOrdering
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.script.*
+import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.util.SeqWrapper
 import org.bitcoins.core.wallet.signer.BitcoinSigner
-import org.bitcoins.core.wallet.utxo._
-import org.bitcoins.crypto.{HashType, _}
+import org.bitcoins.core.wallet.utxo.*
+import org.bitcoins.crypto.*
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -234,7 +234,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
       case multi: MultiSignatureScriptPubKey =>
         if (partialSignatures.size < multi.requiredSigs) {
           val keys = multi.publicKeys.filterNot(key =>
-            partialSignatures.exists(_.pubKey == key))
+            partialSignatures[ECDigitalSignature].exists(_.pubKey == key))
           keys.map(key => CryptoUtil.sha256Hash160(key.bytes)).toVector
         } else Vector.empty
       case p2wpkh: P2WPKHWitnessSPKV0 =>
@@ -301,8 +301,9 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
     getRecords(WitnessUTXOKeyId).headOption
   }
 
-  def partialSignatures: Vector[PartialSignature] = {
-    getRecords(PartialSignatureKeyId)
+  def partialSignatures[Sig <: DigitalSignature]
+      : Vector[PartialSignature[Sig]] = {
+    getRecords(PartialSignatureKeyId[Sig]())
   }
 
   def sigHashTypeOpt: Option[SigHashType] = {
@@ -440,17 +441,19 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
       * @return
       *   None if the requirement is not met
       */
-    def collectSigs(
+    def collectSigs[Sig <: DigitalSignature](
         required: Int,
-        constructScriptSig: Seq[PartialSignature] => ScriptSignature)
+        constructScriptSig: Seq[PartialSignature[Sig]] => ScriptSignature)
         : Try[InputPSBTMap] = {
-      val sigs = getRecords(PartialSignatureKeyId)
+      val sigs = getRecords(PartialSignatureKeyId[Sig]())
       if (sigs.length != required) {
         Failure(new IllegalArgumentException(
           s"Could not collect $required signatures when only the following were present: $sigs"))
       } else {
-        val scriptSig = constructScriptSig(
-          sigs.map(sig => PartialSignature(sig.pubKey, sig.signature)))
+        val scriptSig = constructScriptSig(sigs.map {
+          case sig: PartialSignature[Sig] =>
+            PartialSignature(sig.pubKey, sig.signature)
+        })
 
         val newInputMap = wipeAndAdd(scriptSig)
 
@@ -504,15 +507,16 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
         }
       case _: P2WPKHWitnessSPKV0 =>
         val sigOpt =
-          getRecords(PartialSignatureKeyId).headOption
-        toTry(sigOpt, "there is no partial signature record").map { sig =>
-          val witness = P2WPKHWitnessV0(sig.pubKey, sig.signature)
-          val scriptSig = EmptyScriptSignature
-          wipeAndAdd(scriptSig, Some(witness))
+          getRecords(PartialSignatureKeyId[ECDigitalSignature]()).headOption
+        toTry(sigOpt, "there is no partial signature record").map {
+          case sig: PartialSignature[ECDigitalSignature] =>
+            val witness = P2WPKHWitnessV0(sig.pubKey, sig.signature)
+            val scriptSig = EmptyScriptSignature
+            wipeAndAdd(scriptSig, Some(witness))
         }
       case p2pkWithTimeout: P2PKWithTimeoutScriptPubKey =>
         val sigOpt =
-          getRecords(PartialSignatureKeyId).headOption
+          getRecords(PartialSignatureKeyId[ECDigitalSignature]()).headOption
         toTry(sigOpt, "there is no partial signature record").flatMap { sig =>
           if (sig.pubKey == p2pkWithTimeout.pubKey) {
             val scriptSig = P2PKWithTimeoutScriptSignature(beforeTimeout = true,
@@ -591,7 +595,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
 
         // Find the conditional leaf with the pubkeys for which sigs are provided
         // Hashes are used since we only have the pubkey hash in the p2pkh case
-        val sigs = getRecords(PartialSignatureKeyId)
+        val sigs = getRecords(PartialSignatureKeyId[SchnorrDigitalSignature]())
         val hashes = sigs.map(sig => CryptoUtil.sha256Hash160(sig.pubKey.bytes))
         addLeaves(conditional, Vector.empty)
         val leaves = builder.result()
@@ -622,15 +626,16 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
       case locktime: LockTimeScriptPubKey =>
         finalize(locktime.nestedScriptPubKey)
       case _: P2PKHScriptPubKey =>
-        collectSigs(
+        collectSigs[ECDigitalSignature](
           required = 1,
           sigs => P2PKHScriptSignature(sigs.head.signature, sigs.head.pubKey))
       case _: P2PKScriptPubKey =>
-        collectSigs(required = 1,
-                    sigs => P2PKScriptSignature(sigs.head.signature))
+        collectSigs[ECDigitalSignature](
+          required = 1,
+          sigs => P2PKScriptSignature(sigs.head.signature))
       case multiSig: MultiSignatureScriptPubKey =>
-        def generateScriptSig(
-            sigs: Seq[PartialSignature]): MultiSignatureScriptSignature = {
+        def generateScriptSig(sigs: Seq[PartialSignature[ECDigitalSignature]])
+            : MultiSignatureScriptSignature = {
           val sortedSigs = sigs
             .map { partialSig =>
               (partialSig.signature,
@@ -941,7 +946,26 @@ object InputPSBTMap extends PSBTMapFactory[InputPSBTRecord, InputPSBTMap] {
       spendingInfo: ScriptSignatureParams[InputInfo],
       unsignedTx: Transaction): InputPSBTMap = {
     val sigs = spendingInfo.toSingles.map { spendingInfoSingle =>
-      BitcoinSigner.signSingle(spendingInfoSingle, unsignedTx)
+      spendingInfoSingle.inputInfo.scriptPubKey match {
+        case _: NonWitnessScriptPubKey =>
+          BitcoinSigner.signSingle(
+            spendingInfoSingle,
+            unsignedTx,
+            spendingInfoSingle.signer.signLowRWithHashType)
+        case _: WitnessScriptPubKeyV0 =>
+          BitcoinSigner.signSingle(
+            spendingInfoSingle,
+            unsignedTx,
+            spendingInfoSingle.signer.signLowRWithHashType)
+        case _: TaprootScriptPubKey =>
+          BitcoinSigner.signSingle(
+            spendingInfoSingle,
+            unsignedTx,
+            spendingInfoSingle.signer.schnorrSignWithHashType)
+        case u: UnassignedWitnessScriptPubKey =>
+          sys.error(s"Cannot sign unsupported witSPK=$u")
+      }
+
     }
 
     val builder = Vector.newBuilder[InputPSBTRecord]

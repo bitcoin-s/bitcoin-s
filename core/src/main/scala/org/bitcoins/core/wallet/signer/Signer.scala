@@ -15,20 +15,21 @@ import scodec.bits.ByteVector
 
 sealed abstract class SignerUtils {
 
-  def doSign(
+  def doSign[Sig <: DigitalSignature](
       unsignedTx: Transaction,
       signingInfo: InputSigningInfo[InputInfo],
-      sign: (ByteVector, HashType) => ECDigitalSignature,
-      hashType: HashType): ECDigitalSignature = {
-    TransactionSignatureCreator.createSig(unsignedTx,
-                                          signingInfo,
-                                          sign,
-                                          hashType)
+      sign: (ByteVector, HashType) => Sig,
+      hashType: HashType): Sig = {
+      TransactionSignatureCreator.createSig(unsignedTx,
+                                            signingInfo,
+                                            sign,
+                                            hashType)
   }
 
-  def signSingle(
+  def signSingle[Sig <: DigitalSignature](
       spendingInfo: ECSignatureParams[InputInfo],
-      unsignedTx: Transaction): PartialSignature = {
+      unsignedTx: Transaction,
+      signWithHashType: (ByteVector, HashType) => Sig): PartialSignature[Sig] = {
 
     val tx = spendingInfo.inputInfo match {
       case _: SegwitV0NativeInputInfo | _: P2SHNestedSegwitV0InputInfo |
@@ -38,14 +39,15 @@ sealed abstract class SignerUtils {
         unsignedTx
     }
 
-    val signature = doSign(
+    val signature: Sig = doSign(
       unsignedTx = tx,
       signingInfo = spendingInfo,
-      sign = spendingInfo.signer.signLowRWithHashType,
+      sign = signWithHashType,
       hashType = spendingInfo.hashType
     )
 
-    PartialSignature(spendingInfo.signer.publicKey, signature)
+    PartialSignature(spendingInfo.signer.publicKey.toPublicKeyBytes(),
+                     signature)
   }
 
   protected val flags: Seq[ScriptFlag] = Policy.standardFlags
@@ -206,12 +208,11 @@ object BitcoinSigner extends SignerUtils {
       signer: Sign,
       conditionalPath: ConditionalPath = ConditionalPath.NoCondition): PSBT = {
     // if already signed by this signer
-    if (
-      psbt
-        .inputMaps(inputIndex)
-        .partialSignatures
-        .exists(_.pubKey.toPublicKey == signer.publicKey)
-    ) {
+    val partialSigs = psbt
+      .inputMaps(inputIndex)
+      .partialSignatures
+    val isSigned = partialSigs.exists(_.pubKey.toPublicKey == signer.publicKey)
+    if (isSigned) {
       throw new IllegalArgumentException(
         "Input has already been signed with this key")
     }
@@ -222,9 +223,9 @@ object BitcoinSigner extends SignerUtils {
         .inputMaps(inputIndex)
         .toUTXOSigningInfo(tx.inputs(inputIndex), signer, conditionalPath)
 
-    val txToSign = spendingInfo.output.scriptPubKey match {
-      case _: WitnessScriptPubKey =>
-        tx match {
+    val partialSignature = spendingInfo.output.scriptPubKey match {
+      case _: WitnessScriptPubKeyV0 =>
+        val txToSign = tx match {
           case btx: NonWitnessTransaction =>
             val witnesses = psbt.inputMaps.map { map =>
               map.witnessScriptOpt.map(scriptWit =>
@@ -253,11 +254,23 @@ object BitcoinSigner extends SignerUtils {
                 wtx
             }
         }
-      case _: ScriptPubKey => tx
+        signSingle(spendingInfo,
+                   txToSign,
+                   signer.signLowRWithHashType,
+                   isDummySignature)
+      case _: TaprootScriptPubKey =>
+        signSingle(spendingInfo,
+                   tx,
+                   signer.schnorrSignWithHashType,
+                   isDummySignature)
+      case _: NonWitnessScriptPubKey =>
+        signSingle(spendingInfo,
+                   tx,
+                   signer.signLowRWithHashType,
+                   isDummySignature)
+      case u: UnassignedWitnessScriptPubKey =>
+        sys.error(s"Cannot sign unsupported witSPK=$u")
     }
-
-    val partialSignature =
-      signSingle(spendingInfo, txToSign)
 
     psbt.addSignature(partialSignature, inputIndex)
   }
@@ -280,8 +293,11 @@ sealed abstract class RawSingleKeyBitcoinSigner[-InputType <: RawInputInfo]
     val (_, output, inputIndex, _) =
       relevantInfo(spendingInfo, unsignedTx)
 
+    val single = spendingInfo.toSingle(0)
     val partialSignature =
-      signSingle(spendingInfo.toSingle(0), unsignedTx)
+      signSingle(single,
+                 unsignedTx,
+                 single.signer.signLowRWithHashType)
 
     val scriptSig =
       keyAndSigToScriptSig(partialSignature.pubKey.toPublicKey,
@@ -371,7 +387,9 @@ sealed abstract class MultiSigSigner extends Signer[MultiSignatureInputInfo] {
       relevantInfo(spendingInfo, unsignedTx)
 
     val keysAndSigs = spendingInfo.toSingles.map { spendingInfoSingle =>
-      signSingle(spendingInfoSingle, unsignedTx)
+      signSingle(spendingInfoSingle,
+                 unsignedTx,
+                 spendingInfoSingle.signer.signLowRWithHashType)
     }
 
     val signatures = keysAndSigs.map(_.signature)

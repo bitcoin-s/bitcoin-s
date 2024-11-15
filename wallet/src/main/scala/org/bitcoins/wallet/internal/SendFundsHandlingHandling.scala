@@ -47,7 +47,7 @@ import org.bitcoins.core.wallet.fee.{
   SatoshisPerVirtualByte
 }
 import org.bitcoins.core.wallet.utxo.{AddressTag, TxoState}
-import org.bitcoins.crypto.{CryptoUtil, DoubleSha256DigestBE}
+import org.bitcoins.crypto.{CryptoUtil, DigitalSignature, DoubleSha256DigestBE}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models.{
   AccountDAO,
@@ -560,11 +560,12 @@ case class SendFundsHandlingHandling(
             keyPaths.foldLeft(withData) { (accum, hdPath) =>
               val sign = keyManager.toSign(hdPath)
               // Only sign if that key doesn't have a signature yet
-              if (
-                !input.partialSignatures.exists(
+              val sigExists = input
+                .partialSignatures[DigitalSignature]
+                .exists(
                   _.pubKey.toPublicKey == sign.publicKey
                 )
-              ) {
+              if (!sigExists) {
                 logger.debug(
                   s"Signing input $index with key ${sign.publicKey.hex}"
                 )

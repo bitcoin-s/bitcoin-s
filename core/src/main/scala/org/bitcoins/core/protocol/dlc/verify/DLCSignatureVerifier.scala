@@ -17,7 +17,12 @@ import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.{FutureUtil, Indexed}
-import org.bitcoins.crypto.{ECAdaptorSignature, ECPublicKey, HashType}
+import org.bitcoins.crypto.{
+  ECAdaptorSignature,
+  ECDigitalSignature,
+  ECPublicKey,
+  HashType
+}
 import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -76,7 +81,7 @@ case class DLCSignatureVerifier(builder: DLCTxBuilder, isInitiator: Boolean) {
   }
 
   /** Verifies remote's refund signature */
-  def verifyRefundSig(sig: PartialSignature): Boolean = {
+  def verifyRefundSig(sig: PartialSignature[ECDigitalSignature]): Boolean = {
     val refundTx = builder.buildRefundTx
 
     DLCSignatureVerifier.validateRefundSignature(sig,
@@ -114,7 +119,7 @@ object DLCSignatureVerifier {
   }
 
   def validateRefundSignature(
-      refundSig: PartialSignature,
+      refundSig: PartialSignature[ECDigitalSignature],
       fundingTx: Transaction,
       fundOutputIndex: Int,
       refundTx: WitnessTransaction

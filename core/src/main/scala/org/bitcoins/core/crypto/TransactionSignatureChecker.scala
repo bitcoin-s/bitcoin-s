@@ -10,7 +10,6 @@ import org.bitcoins.core.protocol.script.{
   TaprootKeyPath
 }
 import org.bitcoins.core.protocol.transaction.TransactionOutput
-import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagUtil}
 import org.bitcoins.core.script.result.{
@@ -35,32 +34,22 @@ trait TransactionSignatureChecker {
       txSignatureComponent: TxSigComponent,
       pubKeyBytes: ECPublicKeyBytes,
       signature: ECDigitalSignature): TransactionSignatureCheckerResult =
-    checkSignature(txSignatureComponent,
-                   PartialSignature(pubKeyBytes, signature))
+    checkSignature(txSignatureComponent = txSignatureComponent,
+                   script = txSignatureComponent.output.scriptPubKey.asm.toList,
+                   pubKey = pubKeyBytes,
+                   signature = signature)
 
   def checkSignature(
       txSignatureComponent: TxSigComponent,
       pubKey: ECPublicKey,
-      signature: ECDigitalSignature): TransactionSignatureCheckerResult =
-    checkSignature(txSignatureComponent, PartialSignature(pubKey, signature))
-
-  def checkSignature(
-      txSignatureComponent: TxSigComponent,
-      partialSignature: PartialSignature): TransactionSignatureCheckerResult = {
-    checkSignature(txSignatureComponent,
-                   txSignatureComponent.output.scriptPubKey.asm.toList,
-                   partialSignature.pubKey,
-                   partialSignature.signature)
+      signature: ECDigitalSignature): TransactionSignatureCheckerResult = {
+    checkSignature(
+      txSignatureComponent = txSignatureComponent,
+      script = txSignatureComponent.output.scriptPubKey.asm.toList,
+      pubKey = pubKey.toPublicKeyBytes(),
+      signature = signature
+    )
   }
-
-  def checkSignature(
-      txSignatureComponent: TxSigComponent,
-      script: Seq[ScriptToken],
-      partialSignature: PartialSignature): TransactionSignatureCheckerResult =
-    checkSignature(txSignatureComponent,
-                   script,
-                   partialSignature.pubKey,
-                   partialSignature.signature)
 
   /** @param txSigComponent
     * @param schnorrSignature

@@ -423,18 +423,32 @@ class DbCommonsColumnMappers(val profile: JdbcProfile) {
     )
   }
 
-  implicit val partialSigMapper: BaseColumnType[PartialSignature] = {
+  implicit val partialSigMapper
+      : BaseColumnType[PartialSignature[DigitalSignature]] = {
     MappedColumnType
-      .base[PartialSignature, String](_.hex, PartialSignature.fromHex)
+      .base[PartialSignature[DigitalSignature], String](
+        _.hex,
+        PartialSignature.fromHex)
   }
 
-  implicit val partialSigsMapper: BaseColumnType[Vector[PartialSignature]] = {
+  implicit val ecPartialSigMapper
+      : BaseColumnType[PartialSignature[ECDigitalSignature]] = {
     MappedColumnType
-      .base[Vector[PartialSignature], String](
+      .base[PartialSignature[ECDigitalSignature], String](
+        _.hex,
+        PartialSignature
+          .fromHex(_)
+          .asInstanceOf[PartialSignature[ECDigitalSignature]])
+  }
+
+  implicit val partialSigsMapper
+      : BaseColumnType[Vector[PartialSignature[DigitalSignature]]] = {
+    MappedColumnType
+      .base[Vector[PartialSignature[DigitalSignature]], String](
         _.foldLeft("")(_ ++ _.hex),
         hex =>
           if (hex.isEmpty) Vector.empty
-          else InputPSBTMap(hex ++ "00").partialSignatures
+          else InputPSBTMap(hex ++ "00").partialSignatures[DigitalSignature]
       )
   }
 

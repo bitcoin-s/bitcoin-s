@@ -6,13 +6,13 @@ import org.bitcoins.core.api.wallet.db.{AddressDb, TransactionDbHelper}
 import org.bitcoins.core.hd.HDChainType.{Change, External}
 import org.bitcoins.core.hd.{AddressType, HDAccount, HDChainType}
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.script.*
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.crypto.{CryptoUtil, ECPublicKey}
+import org.bitcoins.crypto.{CryptoUtil, ECDigitalSignature, ECPublicKey}
 import org.bitcoins.keymanager.{DecryptedMnemonic, WalletStorage}
 import org.bitcoins.testkit.chain.MockChainQueryApi
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.testkitcore.util.TransactionTestUtil._
+import org.bitcoins.testkitcore.util.TransactionTestUtil.*
 import org.scalatest.FutureOutcome
 import org.scalatest.compatible.Assertion
 
@@ -238,7 +238,8 @@ class WalletUnitTest extends BitcoinSWalletTest {
     } yield {
       assert(signed != psbt)
       assert(
-        signed.inputMaps.head.partialSignatures
+        signed.inputMaps.head
+          .partialSignatures[ECDigitalSignature]
           .exists(_.pubKey.toPublicKey == walletKey)
       )
     }
@@ -264,7 +265,8 @@ class WalletUnitTest extends BitcoinSWalletTest {
       } yield {
         assert(signed != psbt)
         assert(
-          signed.inputMaps.head.partialSignatures
+          signed.inputMaps.head
+            .partialSignatures[ECDigitalSignature]
             .exists(_.pubKey.toPublicKey == walletKey)
         )
       }
@@ -290,7 +292,8 @@ class WalletUnitTest extends BitcoinSWalletTest {
       } yield {
         assert(signed != psbt)
         assert(
-          signed.inputMaps.head.partialSignatures
+          signed.inputMaps.head
+            .partialSignatures[ECDigitalSignature]
             .exists(_.pubKey.toPublicKey == walletKey)
         )
       }
@@ -317,7 +320,8 @@ class WalletUnitTest extends BitcoinSWalletTest {
       } yield {
         assert(signed != psbt)
         assert(
-          signed.inputMaps.head.partialSignatures
+          signed.inputMaps.head
+            .partialSignatures[ECDigitalSignature]
             .exists(_.pubKey.toPublicKey == walletKey)
         )
       }

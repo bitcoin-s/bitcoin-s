@@ -196,7 +196,7 @@ object DLCMessage {
       changeAddress: BitcoinAddress,
       payoutSerialId: UInt64,
       changeSerialId: UInt64,
-      refundSig: PartialSignature,
+      refundSig: PartialSignature[ECDigitalSignature],
       negotiationFields: DLCAccept.NegotiationFields,
       tempContractId: Sha256Digest) {
 
@@ -229,7 +229,8 @@ object DLCMessage {
       negotiationFields: DLCAccept.NegotiationFields,
       tempContractId: Sha256Digest) {
 
-    def withRefundSigs(refundSig: PartialSignature): DLCAcceptWithoutCetSigs = {
+    def withRefundSigs(refundSig: PartialSignature[ECDigitalSignature])
+        : DLCAcceptWithoutCetSigs = {
       DLCAcceptWithoutCetSigs(
         totalCollateral = totalCollateral,
         pubKeys = pubKeys,
@@ -245,7 +246,7 @@ object DLCMessage {
 
     def withSigs(
         cetSigs: CETSignatures,
-        refundSig: PartialSignature): DLCAccept = {
+        refundSig: PartialSignature[ECDigitalSignature]): DLCAccept = {
       DLCAccept(
         collateral = totalCollateral,
         pubKeys = pubKeys,
@@ -269,7 +270,7 @@ object DLCMessage {
       payoutSerialId: UInt64,
       changeSerialId: UInt64,
       cetSigs: CETSignatures,
-      refundSig: PartialSignature,
+      refundSig: PartialSignature[ECDigitalSignature],
       negotiationFields: DLCAccept.NegotiationFields,
       tempContractId: Sha256Digest,
       isExternalAddress: Boolean = false)
@@ -428,7 +429,7 @@ object DLCMessage {
 
   case class DLCSign(
       cetSigs: CETSignatures,
-      refundSig: PartialSignature,
+      refundSig: PartialSignature[ECDigitalSignature],
       fundingSigs: FundingSignatures,
       contractId: ByteVector)
       extends DLCMessage {

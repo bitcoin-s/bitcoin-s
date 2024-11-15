@@ -28,7 +28,7 @@ case class DLCAcceptDb(
       tempContractId: Sha256Digest,
       fundingInputs: Vector[DLCFundingInput],
       outcomeSigs: Vector[(ECPublicKey, ECAdaptorSignature)],
-      refundSig: PartialSignature
+      refundSig: PartialSignature[ECDigitalSignature]
   ): DLCAccept = {
     val pubKeys =
       DLCPublicKeys(fundingKey, payoutAddress)

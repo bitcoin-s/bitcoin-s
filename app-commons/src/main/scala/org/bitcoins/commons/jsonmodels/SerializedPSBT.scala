@@ -1,14 +1,14 @@
 package org.bitcoins.commons.jsonmodels
 
-import org.bitcoins.commons.jsonmodels.SerializedTransaction._
-import org.bitcoins.commons.serializers.JsonSerializers._
+import org.bitcoins.commons.jsonmodels.SerializedTransaction.*
+import org.bitcoins.commons.serializers.JsonSerializers.*
 import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
-import org.bitcoins.core.psbt._
+import org.bitcoins.core.psbt.*
 import org.bitcoins.core.script.constant.ScriptToken
-import org.bitcoins.crypto.HashType
-import play.api.libs.json._
+import org.bitcoins.crypto.{DigitalSignature, HashType}
+import play.api.libs.json.*
 import scodec.bits.ByteVector
 
 case class SerializedPSBT(
@@ -29,7 +29,7 @@ case class SerializedPSBTGlobalMap(
 case class SerializedPSBTInputMap(
     nonWitnessUtxo: Option[SerializedTransaction],
     witnessUtxo: Option[SerializedTransactionOutput],
-    signatures: Option[Vector[PartialSignature]],
+    signatures: Option[Vector[PartialSignature[DigitalSignature]]],
     sigHashType: Option[HashType],
     redeemScript: Option[Vector[ScriptToken]],
     witScript: Option[Vector[ScriptToken]],
@@ -68,7 +68,7 @@ object SerializedPSBT {
     val witnessUtxo = input.witnessUTXOOpt.map(rec =>
       decodeTransactionOutput(rec.witnessUTXO, index))
 
-    val sigs = input.partialSignatures
+    val sigs = input.partialSignatures[DigitalSignature]
     val sigsOpt = if (sigs.nonEmpty) Some(sigs) else None
     val hashType = input.sigHashTypeOpt.map(_.hashType)
     val redeemScript = input.redeemScriptOpt.map(_.redeemScript.asm.toVector)
