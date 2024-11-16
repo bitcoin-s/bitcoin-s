@@ -627,8 +627,7 @@ sealed abstract class ScriptGenerators {
       )
       txSigComponent = P2PKSigner.sign(
         spendingInfo,
-        spendingTx,
-        isDummySignature = false
+        spendingTx
       )
       // add the signature to the scriptSig instead of having an empty scriptSig
       signedScriptSig =
@@ -670,8 +669,7 @@ sealed abstract class ScriptGenerators {
       )
       txSigComponent = P2PKHSigner.sign(
         spendingInfo,
-        unsignedTx,
-        isDummySignature = false
+        unsignedTx
       )
       signedScriptSig =
         txSigComponent.scriptSignature
@@ -705,8 +703,7 @@ sealed abstract class ScriptGenerators {
       )
       val txSigComponent = P2PKWithTimeoutSigner.sign(
         spendingInfo,
-        spendingTx,
-        isDummySignature = false
+        spendingTx
       )
       val signedScriptSig =
         txSigComponent.scriptSignature.asInstanceOf[ConditionalScriptSignature]
@@ -757,7 +754,7 @@ sealed abstract class ScriptGenerators {
         hashType
       )
       txSigComponent =
-        MultiSigSigner.sign(spendingInfo, spendingTx, isDummySignature = false)
+        MultiSigSigner.sign(spendingInfo, spendingTx)
       signedScriptSig =
         txSigComponent.scriptSignature
           .asInstanceOf[MultiSignatureScriptSignature]

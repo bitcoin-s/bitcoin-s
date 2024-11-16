@@ -283,7 +283,9 @@ object Sign {
   }
 
   def dummySign(publicKey: ECPublicKey): Sign = {
-    constant(ECDigitalSignature.empty, publicKey, SchnorrDigitalSignature.dummy)
+    constant(ECDigitalSignature.dummyLowR,
+             publicKey,
+             SchnorrDigitalSignature.dummy)
   }
 }
 

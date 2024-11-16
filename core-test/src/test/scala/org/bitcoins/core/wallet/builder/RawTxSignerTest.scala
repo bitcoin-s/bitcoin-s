@@ -364,8 +364,7 @@ class RawTxSignerTest extends BitcoinSUnitTest {
         val tx = RawTxSigner.sign(
           utx,
           dummySpendingInfos.toVector,
-          RawTxSigner.emptyInvariant,
-          dummySign = true
+          RawTxSigner.emptyInvariant
         )
 
         // Can't use BitcoinScriptUtil.verifyScript because it will pass for things

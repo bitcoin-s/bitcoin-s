@@ -229,8 +229,7 @@ case class PSBT(
   def sign(
       inputIndex: Int,
       signer: Sign,
-      conditionalPath: ConditionalPath = ConditionalPath.NoCondition,
-      isDummySignature: Boolean = false): PSBT = {
+      conditionalPath: ConditionalPath = ConditionalPath.NoCondition): PSBT = {
     require(
       inputMaps.size == 1 || !inputMaps(inputIndex).isBIP143Vulnerable,
       "This input map is susceptible to the BIP 143 vulnerability, add the non-witness utxo to be safe"
@@ -239,8 +238,7 @@ case class PSBT(
     BitcoinSigner.sign(psbt = this,
                        inputIndex = inputIndex,
                        signer = signer,
-                       conditionalPath = conditionalPath,
-                       isDummySignature = isDummySignature)
+                       conditionalPath = conditionalPath)
   }
 
   /** Takes the InputPSBTMap at the given index and returns a

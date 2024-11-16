@@ -53,7 +53,7 @@ class SignerTest extends BitcoinSUnitTest {
       p2wpkh.hashType
     )
     assertThrows[UnsupportedOperationException](
-      BitcoinSigner.sign(spendingInfo, tx, isDummySignature = false)
+      BitcoinSigner.sign(spendingInfo, tx)
     )
   }
 
@@ -61,7 +61,7 @@ class SignerTest extends BitcoinSUnitTest {
     val p2sh = GenUtil.sample(CreditingTxGen.p2shOutput)
     val tx = GenUtil.sample(TransactionGenerators.baseTransaction)
     assertThrows[IllegalArgumentException](
-      BitcoinSigner.sign(p2sh, tx, isDummySignature = false)
+      BitcoinSigner.sign(p2sh, tx)
     )
   }
 
@@ -72,7 +72,7 @@ class SignerTest extends BitcoinSUnitTest {
       .asInstanceOf[ScriptSignatureParams[P2WPKHV0InputInfo]]
     val tx = GenUtil.sample(TransactionGenerators.baseTransaction)
     assertThrows[IllegalArgumentException] {
-      P2WPKHSigner.sign(dumbSpendingInfo, tx, isDummySignature = false, p2wpkh)
+      P2WPKHSigner.sign(dumbSpendingInfo, tx, p2wpkh)
     }
   }
 
@@ -83,13 +83,14 @@ class SignerTest extends BitcoinSUnitTest {
       .asInstanceOf[ScriptSignatureParams[P2WSHV0InputInfo]]
     val tx = GenUtil.sample(TransactionGenerators.baseTransaction)
     assertThrows[IllegalArgumentException] {
-      P2WSHSigner.sign(dumbSpendingInfo, tx, isDummySignature = false, p2wsh)
+      P2WSHSigner.sign(dumbSpendingInfo, tx, p2wsh)
     }
   }
 
   it must "sign a mix of spks in a tx and then verify that single signing agrees" in {
     forAll(CreditingTxGen.inputsAndOutputs(), ScriptGenerators.scriptPubKey) {
       case ((creditingTxsInfos, destinations), (changeSPK, _)) =>
+        println(s"here 1 ")
         val fee = SatoshisPerVirtualByte(Satoshis(1000))
 
         val unsignedTx =
@@ -99,20 +100,21 @@ class SignerTest extends BitcoinSUnitTest {
             fee,
             changeSPK
           )
-
+        println(s"here 2 ")
         val signedTx =
           RawTxSigner.sign(unsignedTx, creditingTxsInfos.toVector, fee)
-
+        println(s"here 3 ")
         val singleSigs: Vector[Vector[ECDigitalSignature]] = {
-          val singleInfosVec: Vector[Vector[ECSignatureParams[InputInfo]]] =
+          val singleInfosVec: Vector[Vector[ECSignatureParams[InputInfo]]] = {
             creditingTxsInfos.toVector.map(_.toSingles)
+          }
           singleInfosVec.map { singleInfos =>
             singleInfos.map { singleInfo =>
+              println(s"here 4 singleInfo=$singleInfo ")
               val keyAndSig =
                 BitcoinSigner.signSingle(
                   singleInfo,
-                  unsignedTx,
-                  isDummySignature = false
+                  unsignedTx
                 )
 
               keyAndSig.signature
@@ -121,6 +123,7 @@ class SignerTest extends BitcoinSUnitTest {
         }
 
         signedTx.inputs.zipWithIndex.foreach { case (input, inputIndex) =>
+          println(s"inputIndex=$inputIndex")
           val infoAndIndexOpt = creditingTxsInfos.zipWithIndex
             .find(_._1.outPoint == input.previousOutput)
           assert(infoAndIndexOpt.isDefined)
@@ -144,7 +147,7 @@ class SignerTest extends BitcoinSUnitTest {
                   )
               }
             }
-
+          println(s"here 7")
           assert(sigs.length == expectedSigs.length)
           assert(sigs.forall(expectedSigs.contains))
         }
@@ -251,7 +254,7 @@ class SignerTest extends BitcoinSUnitTest {
                 unsignedTx.lockTime,
                 EmptyWitness.fromInputs(unsignedTx.inputs)
               )
-            BitcoinSigner.signSingle(singleInfo, wtx, isDummySignature = false)
+            BitcoinSigner.signSingle(singleInfo, wtx)
 
           }
         }

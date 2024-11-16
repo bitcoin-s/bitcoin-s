@@ -152,10 +152,7 @@ object TxUtil {
 
     val utx = withFinalizer.buildTx()
 
-    RawTxSigner.sign(utx,
-                     dummySpendingInfos,
-                     RawTxSigner.emptyInvariant,
-                     dummySign = true)
+    RawTxSigner.sign(utx, dummySpendingInfos, RawTxSigner.emptyInvariant)
   }
 
   /** Inserts script signatures and (potentially) witness data to a given
@@ -183,7 +180,7 @@ object TxUtil {
 
         val tx =
           BitcoinSigner
-            .sign(mockSpendingInfo, utx, isDummySignature = true)
+            .sign(mockSpendingInfo, utx)
             .transaction
 
         val witnessOpt = tx match {
@@ -334,6 +331,8 @@ object TxUtil {
       if (difference <= min) {
         TxBuilderError.HighFee
       } else if (difference >= max) {
+        println(
+          s"difference=$difference max=$max acceptableVariance=$acceptableVariance")
         TxBuilderError.LowFee
       } else {
         Success(())
