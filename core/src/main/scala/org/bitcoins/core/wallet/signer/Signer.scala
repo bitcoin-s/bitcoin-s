@@ -20,16 +20,17 @@ sealed abstract class SignerUtils {
       signingInfo: InputSigningInfo[InputInfo],
       sign: (ByteVector, HashType) => Sig,
       hashType: HashType): Sig = {
-      TransactionSignatureCreator.createSig(unsignedTx,
-                                            signingInfo,
-                                            sign,
-                                            hashType)
+    TransactionSignatureCreator.createSig(unsignedTx,
+                                          signingInfo,
+                                          sign,
+                                          hashType)
   }
 
   def signSingle[Sig <: DigitalSignature](
       spendingInfo: ECSignatureParams[InputInfo],
       unsignedTx: Transaction,
-      signWithHashType: (ByteVector, HashType) => Sig): PartialSignature[Sig] = {
+      signWithHashType: (ByteVector, HashType) => Sig)
+      : PartialSignature[Sig] = {
 
     val tx = spendingInfo.inputInfo match {
       case _: SegwitV0NativeInputInfo | _: P2SHNestedSegwitV0InputInfo |
@@ -254,20 +255,11 @@ object BitcoinSigner extends SignerUtils {
                 wtx
             }
         }
-        signSingle(spendingInfo,
-                   txToSign,
-                   signer.signLowRWithHashType,
-                   isDummySignature)
+        signSingle(spendingInfo, txToSign, signer.signLowRWithHashType)
       case _: TaprootScriptPubKey =>
-        signSingle(spendingInfo,
-                   tx,
-                   signer.schnorrSignWithHashType,
-                   isDummySignature)
+        signSingle(spendingInfo, tx, signer.schnorrSignWithHashType)
       case _: NonWitnessScriptPubKey =>
-        signSingle(spendingInfo,
-                   tx,
-                   signer.signLowRWithHashType,
-                   isDummySignature)
+        signSingle(spendingInfo, tx, signer.signLowRWithHashType)
       case u: UnassignedWitnessScriptPubKey =>
         sys.error(s"Cannot sign unsupported witSPK=$u")
     }
@@ -295,9 +287,7 @@ sealed abstract class RawSingleKeyBitcoinSigner[-InputType <: RawInputInfo]
 
     val single = spendingInfo.toSingle(0)
     val partialSignature =
-      signSingle(single,
-                 unsignedTx,
-                 single.signer.signLowRWithHashType)
+      signSingle(single, unsignedTx, single.signer.signLowRWithHashType)
 
     val scriptSig =
       keyAndSigToScriptSig(partialSignature.pubKey.toPublicKey,
