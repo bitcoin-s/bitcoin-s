@@ -90,7 +90,6 @@ class SignerTest extends BitcoinSUnitTest {
   it must "sign a mix of spks in a tx and then verify that single signing agrees" in {
     forAll(CreditingTxGen.inputsAndOutputs(), ScriptGenerators.scriptPubKey) {
       case ((creditingTxsInfos, destinations), (changeSPK, _)) =>
-        println(s"here 1 ")
         val fee = SatoshisPerVirtualByte(Satoshis(1000))
 
         val unsignedTx =
@@ -100,17 +99,14 @@ class SignerTest extends BitcoinSUnitTest {
             fee,
             changeSPK
           )
-        println(s"here 2 ")
         val signedTx =
           RawTxSigner.sign(unsignedTx, creditingTxsInfos.toVector, fee)
-        println(s"here 3 ")
         val singleSigs: Vector[Vector[ECDigitalSignature]] = {
           val singleInfosVec: Vector[Vector[ECSignatureParams[InputInfo]]] = {
             creditingTxsInfos.toVector.map(_.toSingles)
           }
           singleInfosVec.map { singleInfos =>
             singleInfos.map { singleInfo =>
-              println(s"here 4 singleInfo=$singleInfo ")
               val keyAndSig =
                 BitcoinSigner.signSingle(
                   singleInfo,
@@ -123,7 +119,6 @@ class SignerTest extends BitcoinSUnitTest {
         }
 
         signedTx.inputs.zipWithIndex.foreach { case (input, inputIndex) =>
-          println(s"inputIndex=$inputIndex")
           val infoAndIndexOpt = creditingTxsInfos.zipWithIndex
             .find(_._1.outPoint == input.previousOutput)
           assert(infoAndIndexOpt.isDefined)
@@ -147,7 +142,6 @@ class SignerTest extends BitcoinSUnitTest {
                   )
               }
             }
-          println(s"here 7")
           assert(sigs.length == expectedSigs.length)
           assert(sigs.forall(expectedSigs.contains))
         }

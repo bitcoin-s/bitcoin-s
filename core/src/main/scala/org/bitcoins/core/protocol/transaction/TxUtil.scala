@@ -331,8 +331,6 @@ object TxUtil {
       if (difference <= min) {
         TxBuilderError.HighFee
       } else if (difference >= max) {
-        println(
-          s"difference=$difference max=$max acceptableVariance=$acceptableVariance")
         TxBuilderError.LowFee
       } else {
         Success(())
