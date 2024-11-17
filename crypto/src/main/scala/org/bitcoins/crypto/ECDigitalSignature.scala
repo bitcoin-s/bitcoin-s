@@ -94,7 +94,7 @@ case class ECDigitalSignature(bytes: ByteVector) extends DigitalSignature {
 }
 
 object ECDigitalSignature extends Factory[ECDigitalSignature] {
-
+  val LOW_R_SIZE: Byte = 70
   val empty: ECDigitalSignature = {
     val bytes: ByteVector = ByteVector.empty
     new ECDigitalSignature(bytes) {
@@ -121,7 +121,7 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     * likely when using low r signing
     */
   val dummyLowR: ECDigitalSignature = {
-    val bytes: ByteVector = ByteVector(Array.fill(71)(0.toByte))
+    val bytes: ByteVector = ByteVector(Array.fill(LOW_R_SIZE)(0.toByte))
     new ECDigitalSignature(bytes) {
       override def r: BigInt = empty.r
       override def s: BigInt = r

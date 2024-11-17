@@ -182,7 +182,7 @@ trait Sign extends AsyncSign {
     CryptoUtil.cryptoContext match {
       case CryptoContext.BCrypto => sig
       case CryptoContext.LibSecp256k1 | CryptoContext.BouncyCastle =>
-        if (sig.bytes.length <= 70) {
+        if (sig.bytes.length <= ECDigitalSignature.LOW_R_SIZE) {
           sig
         } else {
           signLowR(bytes, startAt + 1)
