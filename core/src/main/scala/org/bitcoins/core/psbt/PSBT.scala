@@ -221,16 +221,12 @@ case class PSBT(
     *   Function or private key used to sign the PSBT
     * @param conditionalPath
     *   Represents the spending branch being taken in a ScriptPubKey's execution
-    * @param isDummySignature
-    *   Do not sign the tx for real, just use a dummy signature, this is useful
-    *   for fee estimation
     * @return
     */
   def sign(
       inputIndex: Int,
       signer: Sign,
-      conditionalPath: ConditionalPath = ConditionalPath.NoCondition,
-      isDummySignature: Boolean = false): PSBT = {
+      conditionalPath: ConditionalPath = ConditionalPath.NoCondition): PSBT = {
     require(
       inputMaps.size == 1 || !inputMaps(inputIndex).isBIP143Vulnerable,
       "This input map is susceptible to the BIP 143 vulnerability, add the non-witness utxo to be safe"
@@ -239,8 +235,7 @@ case class PSBT(
     BitcoinSigner.sign(psbt = this,
                        inputIndex = inputIndex,
                        signer = signer,
-                       conditionalPath = conditionalPath,
-                       isDummySignature = isDummySignature)
+                       conditionalPath = conditionalPath)
   }
 
   /** Takes the InputPSBTMap at the given index and returns a

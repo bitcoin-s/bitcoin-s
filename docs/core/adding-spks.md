@@ -108,13 +108,11 @@ sealed abstract class Signer[-InputType <: InputInfo] {
 
   def sign(
       spendingInfo: UTXOSatisfyingInfo[InputType],
-      unsignedTx: Transaction,
-      isDummySignature: Boolean)(
+      unsignedTx: Transaction)(
       implicit ec: ExecutionContext): Future[TxSigComponent] = {
     sign(
       spendingInfo,
       unsignedTx,
-      isDummySignature,
       spendingInfoToSatisfy = spendingInfo
     )
   }
@@ -122,14 +120,12 @@ sealed abstract class Signer[-InputType <: InputInfo] {
   def sign(
       spendingInfo: UTXOSatisfyingInfo[InputInfo],
       unsignedTx: Transaction,
-      isDummySignature: Boolean,
       spendingInfoToSatisfy: UTXOSatisfyingInfo[InputType])(
       implicit ec: ExecutionContext): Future[TxSigComponent]
 
   def signSingle(
       spendingInfo: UTXOSigningInfo[InputInfo],
-      unsignedTx: Transaction,
-      isDummySignature: Boolean)(
+      unsignedTx: Transaction)(
       implicit ec: ExecutionContext): Future[PartialSignature] = ???
 }
 sealed abstract class RawSingleKeyBitcoinSigner[-InputType <: RawInputInfo]
@@ -143,7 +139,6 @@ sealed abstract class RawSingleKeyBitcoinSigner[-InputType <: RawInputInfo]
   override def sign(
       spendingInfo: UTXOSatisfyingInfo[InputInfo],
       unsignedTx: Transaction,
-      isDummySignature: Boolean,
       spendingInfoToSatisfy: UTXOSatisfyingInfo[InputType])(
       implicit ec: ExecutionContext): Future[TxSigComponent] = ???
 }
@@ -171,23 +166,20 @@ object RawScriptUTXOSpendingInfoSingle {
 object BitcoinSigner {
   def sign(
         spendingInfo: UTXOSatisfyingInfo[InputInfo],
-        unsignedTx: Transaction,
-        isDummySignature: Boolean)(
+        unsignedTx: Transaction)(
         implicit ec: ExecutionContext): Future[TxSigComponent] = {
-      sign(spendingInfo, unsignedTx, isDummySignature, spendingInfo)
+      sign(spendingInfo, unsignedTx, spendingInfo)
     }
   
     def sign(
         spendingInfo: UTXOSatisfyingInfo[InputInfo],
         unsignedTx: Transaction,
-        isDummySignature: Boolean,
         spendingInfoToSatisfy: UTXOSatisfyingInfo[InputInfo])(
         implicit ec: ExecutionContext): Future[TxSigComponent] = ???
 
     def signSingle(
         spendingInfo: UTXOSigningInfo[InputInfo],
-        unsignedTx: Transaction,
-        isDummySignature: Boolean)(
+        unsignedTx: Transaction)(
         implicit ec: ExecutionContext): Future[PartialSignature] = ???
 }
 
@@ -203,7 +195,6 @@ def hashType: HashType = ???
 def beforeTimeout: Boolean = ???
 def spendingInfo: UTXOSatisfyingInfo[InputInfo] = ???
 def unsignedTx: Transaction = ???
-def isDummySignature: Boolean = ???
 def min: Int = ???
 def max: Int = ???
 implicit def ec: ExecutionContext = ???
@@ -603,14 +594,13 @@ sealed abstract class MultiSigSigner extends Signer[MultiSignatureInputInfo] {
   override def sign(
       spendingInfo: UTXOSatisfyingInfo[InputInfo],
       unsignedTx: Transaction,
-      isDummySignature: Boolean,
       spendingInfoToSatisfy: UTXOSatisfyingInfo[MultiSignatureInputInfo])(
       implicit ec: ExecutionContext): Future[TxSigComponent] = {
     val (_, output, inputIndex, _) =
       relevantInfo(spendingInfo, unsignedTx)
 
     val keysAndSigsF = spendingInfo.toSingles.map { spendingInfoSingle =>
-      signSingle(spendingInfoSingle, unsignedTx, isDummySignature)
+      signSingle(spendingInfoSingle, unsignedTx)
     }
 
     val signaturesF = Future.sequence(keysAndSigsF).map(_.map(_.signature))
@@ -642,7 +632,6 @@ sealed abstract class ConditionalSigner extends Signer[ConditionalInputInfo] {
   override def sign(
       spendingInfo: UTXOSatisfyingInfo[InputInfo],
       unsignedTx: Transaction,
-      isDummySignature: Boolean,
       spendingInfoToSatisfy: UTXOSatisfyingInfo[ConditionalInputInfo])(
       implicit ec: ExecutionContext): Future[TxSigComponent] = {
     val (_, output, inputIndex, _) = relevantInfo(spendingInfo, unsignedTx)
@@ -652,7 +641,6 @@ sealed abstract class ConditionalSigner extends Signer[ConditionalInputInfo] {
 
     val missingOpSigComponentF = BitcoinSigner.sign(spendingInfo,
                                                     unsignedTx,
-                                                    isDummySignature,
                                                     nestedSpendingInfo)
 
     val scriptSigF = missingOpSigComponentF.map { sigComponent =>
@@ -679,7 +667,6 @@ We must now add the new signing functionality from the previous step to the gene
       case p2pKWithTimeout: P2PKWithTimeoutInputInfo =>
               P2PKWithTimeoutSigner.sign(spendingInfo,
                                          unsignedTx,
-                                         isDummySignature,
                                          spendingFrom(p2pKWithTimeout))
       //...
     }
@@ -761,8 +748,7 @@ Lastly, we need to construct a generator that returns both a `ScriptPubKey` and 
         hashType
       )
       val txSigComponentF = P2PKWithTimeoutSigner.sign(spendingInfo,
-                                                       spendingTx,
-                                                       isDummySignature = false)
+                                                       spendingTx)
       val txSigComponent = Await.result(txSigComponentF, timeout)
       val signedScriptSig =
         txSigComponent.scriptSignature.asInstanceOf[ConditionalScriptSignature]

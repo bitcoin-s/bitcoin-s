@@ -50,7 +50,7 @@ object RawTxSigner {
   def sign(
       utx: Transaction,
       utxoInfos: Vector[ScriptSignatureParams[InputInfo]]): Transaction = {
-    sign(utx, utxoInfos, emptyInvariant, dummySign = false)
+    sign(utx, utxoInfos, emptyInvariant)
   }
 
   def sign(
@@ -66,7 +66,7 @@ object RawTxSigner {
 
     val invariants = feeInvariant(expectedFeeRate)
 
-    sign(utx, utxoInfos, invariants, dummySign = false)
+    sign(utx, utxoInfos, invariants)
   }
 
   def sign(
@@ -79,7 +79,7 @@ object RawTxSigner {
 
     val invariants = addFeeRateInvariant(expectedFeeRate, userInvariants)
 
-    sign(utx, utxoInfos, invariants, dummySign = false)
+    sign(utx, utxoInfos, invariants)
   }
 
   def sign(
@@ -91,10 +91,7 @@ object RawTxSigner {
 
     val invariants = addFeeRateInvariant(expectedFeeRate, userInvariants)
 
-    sign(txWithInfo.finalizedTx,
-         txWithInfo.infos,
-         invariants,
-         dummySign = false)
+    sign(txWithInfo.finalizedTx, txWithInfo.infos, invariants)
   }
 
   def sign(
@@ -102,8 +99,7 @@ object RawTxSigner {
       utxoInfos: Vector[ScriptSignatureParams[InputInfo]],
       invariants: (
           Vector[ScriptSignatureParams[InputInfo]],
-          Transaction) => Boolean,
-      dummySign: Boolean): Transaction = {
+          Transaction) => Boolean): Transaction = {
     require(
       utxoInfos.length == utx.inputs.length,
       s"Must provide exactly one UTXOSatisfyingInfo per input, ${utxoInfos.length} != ${utx.inputs.length}")
@@ -126,7 +122,7 @@ object RawTxSigner {
 
         val inputsAndWitnesses = utxoInfos.map { utxo =>
           val txSigComp =
-            BitcoinSigner.sign(utxo, utx, isDummySignature = dummySign)
+            BitcoinSigner.sign(utxo, utx)
           val scriptWitnessOpt = TxSigComponent.getScriptWitness(txSigComp)
 
           (txSigComp.input, scriptWitnessOpt)

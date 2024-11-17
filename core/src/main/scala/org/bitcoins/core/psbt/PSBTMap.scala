@@ -905,7 +905,7 @@ object InputPSBTMap extends PSBTMapFactory[InputPSBTRecord, InputPSBTMap] {
       spendingInfo: ScriptSignatureParams[InputInfo],
       unsignedTx: Transaction): InputPSBTMap = {
     val sigComponent = BitcoinSigner
-      .sign(spendingInfo, unsignedTx, isDummySignature = false)
+      .sign(spendingInfo, unsignedTx)
 
     val utxos = spendingInfo.inputInfo match {
       case _: UnassignedSegwitNativeInputInfo =>
@@ -941,9 +941,7 @@ object InputPSBTMap extends PSBTMapFactory[InputPSBTRecord, InputPSBTMap] {
       spendingInfo: ScriptSignatureParams[InputInfo],
       unsignedTx: Transaction): InputPSBTMap = {
     val sigs = spendingInfo.toSingles.map { spendingInfoSingle =>
-      BitcoinSigner.signSingle(spendingInfoSingle,
-                               unsignedTx,
-                               isDummySignature = false)
+      BitcoinSigner.signSingle(spendingInfoSingle, unsignedTx)
     }
 
     val builder = Vector.newBuilder[InputPSBTRecord]

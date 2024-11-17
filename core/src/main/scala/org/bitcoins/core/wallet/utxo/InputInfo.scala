@@ -197,7 +197,8 @@ object InputInfo {
       info: InputInfo,
       forP2WSH: Boolean): ScriptSigLenAndStackHeight = {
     val boolSize = if (forP2WSH) 2 else 1
-
+    val dummyLowRHashType =
+      ECDigitalSignature.dummyLowR.appendHashType(HashType.sigHashAll)
     info match {
       case _: SegwitV0NativeInputInfo | _: UnassignedSegwitNativeInputInfo =>
         ScriptSigLenAndStackHeight(0, 0)
@@ -218,25 +219,24 @@ object InputInfo {
         ScriptSigLenAndStackHeight(boolSize, 1)
       case _: P2PKInputInfo =>
         ScriptSigLenAndStackHeight(
-          P2PKScriptSignature(
-            ECDigitalSignature.dummyLowR).asmBytes.length.toInt,
+          P2PKScriptSignature(dummyLowRHashType).asmBytes.length.toInt,
           1)
       case _: P2PKHInputInfo =>
         ScriptSigLenAndStackHeight(
-          P2PKHScriptSignature(ECDigitalSignature.dummyLowR,
+          P2PKHScriptSignature(dummyLowRHashType,
                                ECPublicKey.dummy).asmBytes.length.toInt,
           2)
       case info: P2PKWithTimeoutInputInfo =>
-        ScriptSigLenAndStackHeight(
-          P2PKWithTimeoutScriptSignature(
-            info.isBeforeTimeout,
-            ECDigitalSignature.dummyLowR).asmBytes.length.toInt,
-          2)
+        ScriptSigLenAndStackHeight(P2PKWithTimeoutScriptSignature(
+                                     info.isBeforeTimeout,
+                                     dummyLowRHashType
+                                   ).asmBytes.length.toInt,
+                                   2)
       case info: MultiSignatureInputInfo =>
         ScriptSigLenAndStackHeight(
           MultiSignatureScriptSignature(
             Vector.fill(info.requiredSigs)(
-              ECDigitalSignature.dummyLowR)).asmBytes.length.toInt,
+              dummyLowRHashType)).asmBytes.length.toInt,
           1 + info.requiredSigs
         )
       case info: ConditionalInputInfo =>

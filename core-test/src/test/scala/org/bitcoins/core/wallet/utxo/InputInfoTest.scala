@@ -233,13 +233,13 @@ class InputInfoTest extends BitcoinSUnitTest {
       )
 
       val maxWitnessLen = BitcoinSigner
-        .sign(scriptSigParams, unsignedTx = dummyTx, isDummySignature = true)
+        .sign(scriptSigParams, unsignedTx = dummyTx)
         .transaction match {
         case wtx: WitnessTransaction  => wtx.witness.head.byteSize.toInt
         case _: NonWitnessTransaction => 0
       }
 
-      assert(scriptSigParams.maxWitnessLen == maxWitnessLen)
+      assert(scriptSigParams.maxWitnessLen >= maxWitnessLen)
     }
   }
 
@@ -259,7 +259,7 @@ class InputInfoTest extends BitcoinSUnitTest {
       )
 
       val maxScriptSig = BitcoinSigner
-        .sign(scriptSigParams, unsignedTx = dummyTx, isDummySignature = true)
+        .sign(scriptSigParams, unsignedTx = dummyTx)
         .transaction
         .inputs
         .head
@@ -268,7 +268,7 @@ class InputInfoTest extends BitcoinSUnitTest {
       assert(
         InputInfo.maxScriptSigLen(
           scriptSigParams.inputInfo
-        ) == maxScriptSig.byteSize,
+        ) >= maxScriptSig.byteSize,
         maxScriptSig.hex
       )
     }

@@ -460,7 +460,7 @@ object DLCTxSigner {
         case (sigsT, SpendingInfoWithSerialId(utxo, _)) =>
           sigsT.flatMap { sigs =>
             val sigComponent =
-              BitcoinSigner.sign(utxo, fundingTx, isDummySignature = false)
+              BitcoinSigner.sign(utxo, fundingTx)
             val witnessT =
               sigComponent.transaction match {
                 case wtx: WitnessTransaction =>
