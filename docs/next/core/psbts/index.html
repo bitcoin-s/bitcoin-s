@@ -172,8 +172,7 @@ and transaction extraction.</p>
 <span class="hljs-comment">// Then we can sign the transaction</span>
 <span class="hljs-keyword">val</span> signature = <span class="hljs-type">BitcoinSigner</span>.signSingle(
     spendingInfo = spendingInfoSingle,
-    unsignedTx = unsignedTransaction,
-    isDummySignature = <span class="hljs-literal">false</span>)
+    unsignedTx = unsignedTransaction)
 
 <span class="hljs-comment">// We can then add the signature to the PSBT</span>
 <span class="hljs-comment">// Note: this signature could be produced by us or another party</span>

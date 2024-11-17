@@ -387,14 +387,13 @@
   <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">sign</span></span>(
       spendingInfo: <span class="hljs-type">UTXOSatisfyingInfo</span>[<span class="hljs-type">InputInfo</span>],
       unsignedTx: <span class="hljs-type">Transaction</span>,
-      isDummySignature: <span class="hljs-type">Boolean</span>,
       spendingInfoToSatisfy: <span class="hljs-type">UTXOSatisfyingInfo</span>[<span class="hljs-type">MultiSignatureInputInfo</span>])(
       <span class="hljs-keyword">implicit</span> ec: <span class="hljs-type">ExecutionContext</span>): <span class="hljs-type">Future</span>[<span class="hljs-type">TxSigComponent</span>] = {
     <span class="hljs-keyword">val</span> (_, output, inputIndex, _) =
       relevantInfo(spendingInfo, unsignedTx)
 
     <span class="hljs-keyword">val</span> keysAndSigsF = spendingInfo.toSingles.map { spendingInfoSingle =&gt;
-      signSingle(spendingInfoSingle, unsignedTx, isDummySignature)
+      signSingle(spendingInfoSingle, unsignedTx)
     }
 
     <span class="hljs-keyword">val</span> signaturesF = <span class="hljs-type">Future</span>.sequence(keysAndSigsF).map(_.map(_.signature))
@@ -422,7 +421,6 @@
   <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">sign</span></span>(
       spendingInfo: <span class="hljs-type">UTXOSatisfyingInfo</span>[<span class="hljs-type">InputInfo</span>],
       unsignedTx: <span class="hljs-type">Transaction</span>,
-      isDummySignature: <span class="hljs-type">Boolean</span>,
       spendingInfoToSatisfy: <span class="hljs-type">UTXOSatisfyingInfo</span>[<span class="hljs-type">ConditionalInputInfo</span>])(
       <span class="hljs-keyword">implicit</span> ec: <span class="hljs-type">ExecutionContext</span>): <span class="hljs-type">Future</span>[<span class="hljs-type">TxSigComponent</span>] = {
     <span class="hljs-keyword">val</span> (_, output, inputIndex, _) = relevantInfo(spendingInfo, unsignedTx)
@@ -432,7 +430,6 @@
 
     <span class="hljs-keyword">val</span> missingOpSigComponentF = <span class="hljs-type">BitcoinSigner</span>.sign(spendingInfo,
                                                     unsignedTx,
-                                                    isDummySignature,
                                                     nestedSpendingInfo)
 
     <span class="hljs-keyword">val</span> scriptSigF = missingOpSigComponentF.map { sigComponent =&gt;
@@ -455,7 +452,6 @@
       <span class="hljs-keyword">case</span> p2pKWithTimeout: <span class="hljs-type">P2PKWithTimeoutInputInfo</span> =&gt;
               <span class="hljs-type">P2PKWithTimeoutSigner</span>.sign(spendingInfo,
                                          unsignedTx,
-                                         isDummySignature,
                                          spendingFrom(p2pKWithTimeout))
       <span class="hljs-comment">//...</span>
     }
@@ -518,8 +514,7 @@
         hashType
       )
       <span class="hljs-keyword">val</span> txSigComponentF = <span class="hljs-type">P2PKWithTimeoutSigner</span>.sign(spendingInfo,
-                                                       spendingTx,
-                                                       isDummySignature = <span class="hljs-literal">false</span>)
+                                                       spendingTx)
       <span class="hljs-keyword">val</span> txSigComponent = <span class="hljs-type">Await</span>.result(txSigComponentF, timeout)
       <span class="hljs-keyword">val</span> signedScriptSig =
         txSigComponent.scriptSignature.asInstanceOf[<span class="hljs-type">ConditionalScriptSignature</span>]
