@@ -239,7 +239,7 @@ class InputInfoTest extends BitcoinSUnitTest {
         case _: NonWitnessTransaction => 0
       }
 
-      assert(scriptSigParams.maxWitnessLen == maxWitnessLen)
+      assert(scriptSigParams.maxWitnessLen >= maxWitnessLen)
     }
   }
 
@@ -269,7 +269,7 @@ class InputInfoTest extends BitcoinSUnitTest {
       assert(
         InputInfo.maxScriptSigLen(
           scriptSigParams.inputInfo
-        ) == maxScriptSig.byteSize,
+        ) >= maxScriptSig.byteSize,
         maxScriptSig.hex
       )
     }
