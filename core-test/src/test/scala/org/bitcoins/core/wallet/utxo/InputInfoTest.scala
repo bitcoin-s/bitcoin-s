@@ -259,8 +259,7 @@ class InputInfoTest extends BitcoinSUnitTest {
       )
 
       val maxScriptSig = BitcoinSigner
-        .sign(scriptSigParams,
-              unsignedTx = dummyTx /*, isDummySignature = true*/ )
+        .sign(scriptSigParams, unsignedTx = dummyTx)
         .transaction
         .inputs
         .head

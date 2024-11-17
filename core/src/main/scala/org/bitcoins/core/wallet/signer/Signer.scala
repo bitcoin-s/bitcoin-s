@@ -83,9 +83,6 @@ sealed abstract class Signer[-InputType <: InputInfo] extends SignerUtils {
     *   \- The information required for signing
     * @param unsignedTx
     *   the external Transaction that needs an input signed
-    * @param isDummySignature
-    *   \- do not sign the tx for real, just use a dummy signature this is
-    *   useful for fee estimation
     * @return
     */
   def sign(
@@ -199,9 +196,6 @@ object BitcoinSigner extends SignerUtils {
     *   Index of input to sign
     * @param signer
     *   Function or private key used to sign the PSBT
-    * @param isDummySignature
-    *   Do not sign the tx for real, just use a dummy signature, this is useful
-    *   for fee estimation
     * @param conditionalPath
     *   Represents the spending branch being taken in a ScriptPubKey's execution
     * @return

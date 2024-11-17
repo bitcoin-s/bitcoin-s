@@ -221,9 +221,6 @@ case class PSBT(
     *   Function or private key used to sign the PSBT
     * @param conditionalPath
     *   Represents the spending branch being taken in a ScriptPubKey's execution
-    * @param isDummySignature
-    *   Do not sign the tx for real, just use a dummy signature, this is useful
-    *   for fee estimation
     * @return
     */
   def sign(
