@@ -82,7 +82,8 @@ object InputUtil {
               loop(conditional.nestedInputInfo +: newRemaining, accum)
             case _: P2WPKHV0InputInfo | _: UnassignedSegwitNativeInputInfo |
                 _: P2PKInputInfo | _: P2PKHInputInfo |
-                _: MultiSignatureInputInfo | _: EmptyInputInfo =>
+                _: MultiSignatureInputInfo | _: EmptyInputInfo |
+                _: TaprootKeyPathInputInfo =>
               // none of these script types affect the sequence number of a tx so the defaultSequence is used
               val input =
                 TransactionInput(spendingInfo.outPoint,

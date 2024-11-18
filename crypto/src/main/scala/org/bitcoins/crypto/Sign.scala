@@ -215,7 +215,15 @@ trait Sign extends AsyncSign {
   final def schnorrSignWithHashType(
       dataToSign: ByteVector,
       hashType: HashType): SchnorrDigitalSignature = {
-    schnorrSign(dataToSign).appendHashType(hashType)
+    val sigNoHashType = schnorrSign(dataToSign)
+    if (hashType == HashType.sigHashDefault) {
+      // BIP341 states that if we use default sighash don't append hash type byte
+      // to avoid potential malleability
+      // https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#cite_note-21
+      sigNoHashType
+    } else {
+      sigNoHashType.appendHashType(hashType)
+    }
   }
 }
 
@@ -282,9 +290,16 @@ object Sign {
     )
   }
 
-  def dummySign(publicKey: ECPublicKey): Sign = {
+  def dummySign(publicKey: PublicKey): Sign = {
+    val ecPubKey = publicKey match {
+      case ec: ECPublicKey           => ec
+      case schnorr: SchnorrPublicKey => schnorr.publicKey
+      case xonly: XOnlyPubKey        => xonly.publicKey
+      case x: PublicKey =>
+        sys.error(s"Unsupported PublicKey type for dummySign, got=$x")
+    }
     constant(ECDigitalSignature.dummyLowR,
-             publicKey,
+             ecPubKey,
              SchnorrDigitalSignature.dummy)
   }
 }

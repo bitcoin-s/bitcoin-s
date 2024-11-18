@@ -94,6 +94,7 @@ sealed abstract class TransactionSignatureCreator {
     * level, a hardware wallet expects a scodec.bits.ByteVector as input, and
     * returns an [[ECDigitalSignature]] if it is able to sign the
     * scodec.bits.ByteVector's correctly.
+    *
     * @param sign
     *   \- the implementation of the hardware wallet protocol to sign the
     *   scodec.bits.ByteVector w/ the given public key
@@ -121,11 +122,11 @@ sealed abstract class TransactionSignatureCreator {
   /** This is the same as createSig above, except the 'sign' function returns a
     * Future[ECDigitalSignature]
     */
-  def createSig(
+  def createSig[Sig <: DigitalSignature](
       spendingTransaction: Transaction,
       signingInfo: InputSigningInfo[InputInfo],
-      sign: (ByteVector, HashType) => Future[ECDigitalSignature],
-      hashType: HashType): Future[ECDigitalSignature] = {
+      sign: (ByteVector, HashType) => Future[Sig],
+      hashType: HashType): Future[Sig] = {
     val hash =
       TransactionSignatureSerializer.hashForSignature(
         spendingTransaction,

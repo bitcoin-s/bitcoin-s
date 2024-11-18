@@ -58,6 +58,8 @@ object TxSigComponent {
       outputMap: PreviousOutputMap,
       flags: Seq[ScriptFlag] = Policy.standardFlags): TxSigComponent = {
     inputInfo match {
+      case kp: TaprootKeyPathInputInfo =>
+        fromWitnessInput(kp, unsignedTx, flags)
       case segwit: SegwitV0NativeInputInfo =>
         fromWitnessInput(segwit, unsignedTx, flags)
       case unassigned: UnassignedSegwitNativeInputInfo =>
@@ -111,6 +113,18 @@ object TxSigComponent {
     val wtx = setTransactionWitness(inputInfo, unsignedTx)
 
     WitnessTxSigComponent(wtx, UInt32(idx), inputInfo.output, outputMap, flags)
+  }
+
+  def fromWitnessInput(
+      info: TaprootKeyPathInputInfo,
+      unsignedTx: Transaction,
+      flags: Seq[ScriptFlag]): TaprootTxSigComponent = {
+    val inputIndex: UInt32 = UInt32(info.inputIndex)
+    val wtx = setTransactionWitness(info, unsignedTx)
+    TaprootTxSigComponent(transaction = wtx,
+                          inputIndex = inputIndex,
+                          outputMap = info.previousOutputMap,
+                          flags = flags)
   }
 
   def fromWitnessInput(

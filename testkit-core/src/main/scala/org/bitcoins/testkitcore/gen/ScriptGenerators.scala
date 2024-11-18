@@ -420,6 +420,7 @@ sealed abstract class ScriptGenerators {
       ),
       multiSigScriptPubKey,
       p2wpkhSPKV0,
+      witnessScriptPubKeyV1,
       unassignedWitnessScriptPubKey,
       conditionalScriptPubKey(defaultMaxDepth),
       multiSignatureWithTimeoutScriptPubKey
@@ -465,7 +466,8 @@ sealed abstract class ScriptGenerators {
       p2shScriptPubKey.map(truncate),
       witnessCommitment,
       conditionalScriptPubKey(defaultMaxDepth),
-      multiSignatureWithTimeoutScriptPubKey
+      multiSignatureWithTimeoutScriptPubKey,
+      witnessScriptPubKeyV1
     )
   }
 
