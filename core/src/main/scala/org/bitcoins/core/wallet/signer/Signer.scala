@@ -185,9 +185,7 @@ object BitcoinSigner extends SignerUtils {
       case p2wpkh: P2WPKHV0InputInfo =>
         P2WPKHSigner.sign(spendingInfo, unsignedTx, spendingFrom(p2wpkh))
       case pw2sh: P2WSHV0InputInfo =>
-        P2WSHSigner.sign(spendingInfo,
-                         unsignedTx,
-                         spendingFrom(pw2sh))
+        P2WSHSigner.sign(spendingInfo, unsignedTx, spendingFrom(pw2sh))
       case trk: TaprootKeyPathInputInfo =>
         TaprootKeyPathSigner.sign(spendingInfo,
                                   unsignedTx,
@@ -641,7 +639,6 @@ sealed abstract class TaprootKeyPathSigner
   override def sign(
       spendingInfo: ScriptSignatureParams[InputInfo],
       unsignedTx: Transaction,
-      isDummySignature: Boolean,
       spendingInfoToSatisfy: ScriptSignatureParams[TaprootKeyPathInputInfo])
       : TaprootTxSigComponent = {
     if (spendingInfoToSatisfy != spendingInfo) {
@@ -664,8 +661,7 @@ sealed abstract class TaprootKeyPathSigner
             doSign(unsignedTx,
                    spendingInfo,
                    signer.schnorrSignWithHashType,
-                   hashType,
-                   isDummySignature)
+                   hashType)
           val scriptWitness = TaprootKeyPath(signature)
           val signedTxWitness =
             wtx.witness.updated(inputIndex, scriptWitness)
@@ -679,7 +675,7 @@ sealed abstract class TaprootKeyPathSigner
 
         case btx: NonWitnessTransaction =>
           val wtx = WitnessTransaction.toWitnessTx(btx)
-          sign(spendingInfo, wtx, isDummySignature, spendingInfoToSatisfy)
+          sign(spendingInfo, wtx, spendingInfoToSatisfy)
       }
 
     }

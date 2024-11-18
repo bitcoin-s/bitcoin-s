@@ -298,7 +298,9 @@ object Sign {
       case x: PublicKey =>
         sys.error(s"Unsupported PublicKey type for dummySign, got=$x")
     }
-    constant(ECDigitalSignature.dummyLowR, ecPubKey, SchnorrDigitalSignature.dummy)
+    constant(ECDigitalSignature.dummyLowR,
+             ecPubKey,
+             SchnorrDigitalSignature.dummy)
   }
 }
 

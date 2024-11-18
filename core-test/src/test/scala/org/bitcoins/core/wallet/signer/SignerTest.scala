@@ -324,7 +324,6 @@ class SignerTest extends BitcoinSUnitTest {
     val sigComponent = TaprootKeyPathSigner.sign(
       spendingInfo = sigParams.toScriptSignatureParams,
       unsignedTx = unsignedTx,
-      isDummySignature = false,
       spendingInfoToSatisfy = sigParams.toScriptSignatureParams)
 
     val result =
