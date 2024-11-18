@@ -699,22 +699,27 @@ trait DLCTest {
       publishTransaction: Transaction => Future[?]
   )(implicit ec: ExecutionContext): Future[(SetupDLC, SetupDLC)] = {
     val offerSigReceiveP = {
-      Promise[(CETSignatures, PartialSignature)]()
+      Promise[(CETSignatures, PartialSignature[ECDigitalSignature])]()
     }
-    val sendAcceptSigs: (CETSignatures, PartialSignature) => Future[Unit] = {
-      case (cetSigs: CETSignatures, refundSig: PartialSignature) =>
+    val sendAcceptSigs: (
+        CETSignatures,
+        PartialSignature[ECDigitalSignature]) => Future[Unit] = {
+      case (cetSigs: CETSignatures,
+            refundSig: PartialSignature[ECDigitalSignature]) =>
         val _ = offerSigReceiveP.success((cetSigs, refundSig))
         FutureUtil.unit
     }
 
     val acceptSigReceiveP = {
-      Promise[(CETSignatures, PartialSignature, FundingSignatures)]()
+      Promise[(CETSignatures,
+               PartialSignature[ECDigitalSignature],
+               FundingSignatures)]()
     }
 
     val sendOfferSigs = {
       (
           cetSigs: CETSignatures,
-          refundSig: PartialSignature,
+          refundSig: PartialSignature[ECDigitalSignature],
           fundingSigs: FundingSignatures
       ) =>
         val _ = acceptSigReceiveP.success((cetSigs, refundSig, fundingSigs))

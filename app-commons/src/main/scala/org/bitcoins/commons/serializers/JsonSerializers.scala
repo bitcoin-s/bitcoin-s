@@ -848,8 +848,10 @@ object JsonSerializers {
   implicit val serializedPSBTGlobalWrites: Writes[SerializedPSBTGlobalMap] =
     Json.writes[SerializedPSBTGlobalMap]
 
-  implicit val serializedPSBTInputWrites: Writes[SerializedPSBTInputMap] =
+  implicit val serializedPSBTInputWrites: Writes[SerializedPSBTInputMap] = {
+    import JsonWriters.PartialSignatureWrites
     Json.writes[SerializedPSBTInputMap]
+  }
 
   implicit val serializedPSBTOutputWrites: Writes[SerializedPSBTOutputMap] =
     Json.writes[SerializedPSBTOutputMap]

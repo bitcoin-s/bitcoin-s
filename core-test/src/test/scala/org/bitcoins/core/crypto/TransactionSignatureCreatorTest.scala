@@ -129,7 +129,7 @@ class TransactionSignatureCreatorTest extends BitcoinSJvmTest {
       TransactionSignatureCreator.createSig(
         transaction,
         signingInfo,
-        privateKey,
+        privateKey.signLowRWithHashType,
         HashType.sigHashAll
       )
     txSignature.r must be(expectedSig.r)

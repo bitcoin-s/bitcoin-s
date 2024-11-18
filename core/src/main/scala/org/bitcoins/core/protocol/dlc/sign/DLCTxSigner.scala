@@ -200,12 +200,13 @@ case class DLCTxSigner(
   }
 
   /** Creates this party's signature of the refund transaction */
-  lazy val signRefundTx: PartialSignature = {
+  lazy val signRefundTx: PartialSignature[ECDigitalSignature] = {
     DLCTxSigner.signRefundTx(cetSigningInfo, builder.buildRefundTx)
   }
 
   /** Constructs the signed refund transaction given remote's signature */
-  def completeRefundTx(remoteSig: PartialSignature): WitnessTransaction = {
+  def completeRefundTx(
+      remoteSig: PartialSignature[ECDigitalSignature]): WitnessTransaction = {
     val localSig = signRefundTx
 
     DLCTxSigner.completeRefundTx(localSig,
@@ -414,7 +415,7 @@ object DLCTxSigner {
   def signRefundTx(
       refundSigningInfo: ECSignatureParams[P2WSHV0InputInfo],
       refundTx: WitnessTransaction
-  ): PartialSignature = {
+  ): PartialSignature[ECDigitalSignature] = {
     val fundingPubKey = refundSigningInfo.signer.publicKey
 
     val sig = TransactionSignatureCreator.createSig(
@@ -428,8 +429,8 @@ object DLCTxSigner {
 
   // TODO: Without PSBTs
   def completeRefundTx(
-      localSig: PartialSignature,
-      remoteSig: PartialSignature,
+      localSig: PartialSignature[ECDigitalSignature],
+      remoteSig: PartialSignature[ECDigitalSignature],
       fundingMultiSig: MultiSignatureScriptPubKey,
       fundingTx: Transaction,
       uRefundTx: WitnessTransaction): WitnessTransaction = {

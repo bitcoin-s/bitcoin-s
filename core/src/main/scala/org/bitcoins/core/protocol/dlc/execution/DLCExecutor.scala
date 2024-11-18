@@ -3,12 +3,12 @@ package org.bitcoins.core.protocol.dlc.execution
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.dlc.build.DLCTxBuilder
 import org.bitcoins.core.protocol.dlc.compute.{CETCalculator, DLCUtil}
-import org.bitcoins.core.protocol.dlc.models._
+import org.bitcoins.core.protocol.dlc.models.*
 import org.bitcoins.core.protocol.dlc.sign.DLCTxSigner
 import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.util.Indexed
-import org.bitcoins.crypto.{AdaptorSign, ECPublicKey}
+import org.bitcoins.crypto.{AdaptorSign, ECDigitalSignature, ECPublicKey}
 
 import scala.util.{Success, Try}
 
@@ -22,7 +22,7 @@ case class DLCExecutor(signer: DLCTxSigner) {
     */
   def setupDLCOffer(
       cetSigs: CETSignatures,
-      refundSig: PartialSignature): Try[SetupDLC] = {
+      refundSig: PartialSignature[ECDigitalSignature]): Try[SetupDLC] = {
     require(isInitiator, "You should call setupDLCAccept")
 
     setupDLC(cetSigs, refundSig, None, None)
@@ -34,7 +34,7 @@ case class DLCExecutor(signer: DLCTxSigner) {
     */
   def setupDLCAccept(
       cetSigs: CETSignatures,
-      refundSig: PartialSignature,
+      refundSig: PartialSignature[ECDigitalSignature],
       fundingSigs: FundingSignatures,
       cetsOpt: Option[Vector[WitnessTransaction]]): Try[SetupDLC] = {
     require(!isInitiator, "You should call setupDLCOffer")
@@ -47,7 +47,7 @@ case class DLCExecutor(signer: DLCTxSigner) {
     */
   def setupDLC(
       cetSigs: CETSignatures,
-      refundSig: PartialSignature,
+      refundSig: PartialSignature[ECDigitalSignature],
       fundingSigsOpt: Option[FundingSignatures],
       cetsOpt: Option[Vector[WitnessTransaction]]): Try[SetupDLC] = {
     if (!isInitiator) {
@@ -114,7 +114,8 @@ case class DLCExecutor(signer: DLCTxSigner) {
     RefundDLCOutcome(fundingTx, refundTx)
   }
 
-  def executeRefundDLC(refundSig: PartialSignature): RefundDLCOutcome = {
+  def executeRefundDLC(
+      refundSig: PartialSignature[ECDigitalSignature]): RefundDLCOutcome = {
     val refundTx = signer.completeRefundTx(refundSig)
     val fundingTx = signer.builder.buildFundingTx
     RefundDLCOutcome(fundingTx, refundTx)

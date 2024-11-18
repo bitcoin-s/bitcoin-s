@@ -8,7 +8,12 @@ import org.bitcoins.core.protocol.script.{
   ScriptWitnessV0
 }
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
-import org.bitcoins.crypto.{ECAdaptorSignature, ECDigitalSignature}
+import org.bitcoins.crypto.{
+  DigitalSignature,
+  ECAdaptorSignature,
+  ECDigitalSignature,
+  SchnorrDigitalSignature
+}
 import scodec.bits.ByteVector
 
 object BytesUtil {
@@ -23,8 +28,19 @@ object BytesUtil {
     ECDigitalSignature(flipAtIndex(signature.bytes, 60))
   }
 
-  def flipBit(partialSignature: PartialSignature): PartialSignature = {
-    partialSignature.copy(signature = flipBit(partialSignature.signature))
+  def flipBit(signature: SchnorrDigitalSignature): SchnorrDigitalSignature = {
+    SchnorrDigitalSignature(flipAtIndex(signature.bytes, 60))
+  }
+
+  def flipBit[Sig <: DigitalSignature](
+      partialSignature: PartialSignature[Sig]): PartialSignature[Sig] = {
+    val s = partialSignature.signature match {
+      case e: ECDigitalSignature      => flipBit(e).asInstanceOf[Sig]
+      case s: SchnorrDigitalSignature => flipBit(s).asInstanceOf[Sig]
+      case d: DigitalSignature =>
+        sys.error(s"Cannot flip bit on unknown digital signature type=$d")
+    }
+    partialSignature.copy(signature = s)
   }
 
   def flipBit(adaptorSignature: ECAdaptorSignature): ECAdaptorSignature = {
@@ -63,8 +79,8 @@ object BytesUtil {
 
   def flipBit(
       cetSigs: CETSignatures,
-      refundSig: PartialSignature
-  ): (CETSignatures, PartialSignature) = {
+      refundSig: PartialSignature[ECDigitalSignature]
+  ): (CETSignatures, PartialSignature[ECDigitalSignature]) = {
     val badOutcomeSigs = cetSigs.outcomeSigs.map { case (outcome, sig) =>
       outcome -> flipBit(sig)
     }

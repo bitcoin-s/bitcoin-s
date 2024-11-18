@@ -157,47 +157,53 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
     override val value: ByteVector = witnessUTXO.bytes
   }
 
-  case class PartialSignature(
+  case class PartialSignature[Sig <: DigitalSignature](
       pubKey: ECPublicKeyBytes,
-      signature: ECDigitalSignature)
+      signature: Sig)
       extends InputPSBTRecord {
     require(pubKey.byteSize == 33,
             s"pubKey must be 33 bytes, got: ${pubKey.byteSize}")
 
-    override type KeyId = PartialSignatureKeyId.type
+    override type KeyId = PartialSignatureKeyId[DigitalSignature]
 
     override val key: ByteVector =
       ByteVector(PartialSignatureKeyId.byte) ++ pubKey.bytes
     override val value: ByteVector = signature.bytes
   }
 
-  object PartialSignature extends Factory[PartialSignature] {
+  object PartialSignature extends Factory[PartialSignature[DigitalSignature]] {
 
     def apply(
         pubKey: ECPublicKey,
-        signature: ECDigitalSignature): PartialSignature = {
+        signature: ECDigitalSignature): PartialSignature[ECDigitalSignature] = {
       PartialSignature(pubKey.toPublicKeyBytes(), signature)
     }
 
-    def dummyPartialSig(
-        pubKey: ECPublicKey = ECPublicKey.freshPublicKey): PartialSignature = {
+    def apply(pubKey: ECPublicKey, signature: SchnorrDigitalSignature)
+        : PartialSignature[SchnorrDigitalSignature] = {
+      PartialSignature(pubKey.toPublicKeyBytes(), signature)
+    }
+
+    def dummyPartialSig(pubKey: ECPublicKey = ECPublicKey.freshPublicKey)
+        : PartialSignature[ECDigitalSignature] = {
       PartialSignature(pubKey, ECDigitalSignature.dummy)
     }
 
-    override def fromBytes(bytes: ByteVector): PartialSignature =
+    override def fromBytes(
+        bytes: ByteVector): PartialSignature[DigitalSignature] =
       InputPSBTRecord(bytes) match {
-        case partialSignature: PartialSignature =>
+        case partialSignature: PartialSignature[DigitalSignature] @unchecked =>
           partialSignature
         case other: InputPSBTRecord =>
           throw new IllegalArgumentException(
             s"Invalid PartialSignature encoding, got: $other")
       }
 
-    def vecFromBytes(bytes: ByteVector): Vector[PartialSignature] = {
+    def vecFromBytes(bytes: ByteVector): Vector[PartialSignature[?]] = {
       @scala.annotation.tailrec
       def loop(
           remainingBytes: ByteVector,
-          accum: Vector[PartialSignature]): Vector[PartialSignature] = {
+          accum: Vector[PartialSignature[?]]): Vector[PartialSignature[?]] = {
         if (remainingBytes.isEmpty) {
           accum
         } else {
@@ -211,7 +217,7 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
       loop(bytes, Vector.empty)
     }
 
-    def vecFromHex(hex: String): Vector[PartialSignature] = {
+    def vecFromHex(hex: String): Vector[PartialSignature[?]] = {
       vecFromBytes(BytesUtil.decodeHex(hex))
     }
   }
@@ -419,10 +425,15 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
                 s"The key must only contain the 1 byte type, got: ${key.size}")
 
         WitnessUTXO(TransactionOutput.fromBytes(value))
-      case PartialSignatureKeyId =>
+      case PartialSignatureKeyId() =>
         val pubKey = ECPublicKey(key.tail)
-        val sig = ECDigitalSignature(value)
-        PartialSignature(pubKey, sig)
+        if (value.length == 64 || value.length == 65) {
+          val sig = SchnorrDigitalSignature(value)
+          PartialSignature(pubKey.toPublicKeyBytes(), sig)
+        } else {
+          val sig = ECDigitalSignature(value)
+          PartialSignature(pubKey.toPublicKeyBytes(), sig)
+        }
       case SigHashTypeKeyId =>
         require(key.size == 1,
                 s"The key must only contain the 1 byte type, got: ${key.size}")

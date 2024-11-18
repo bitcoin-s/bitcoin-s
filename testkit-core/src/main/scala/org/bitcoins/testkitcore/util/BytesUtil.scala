@@ -23,7 +23,8 @@ object BytesUtil {
     ECDigitalSignature(flipAtIndex(signature.bytes, 60))
   }
 
-  def flipBit(partialSignature: PartialSignature): PartialSignature = {
+  def flipBit(partialSignature: PartialSignature[ECDigitalSignature])
+      : PartialSignature[ECDigitalSignature] = {
     partialSignature.copy(signature = flipBit(partialSignature.signature))
   }
 
@@ -63,8 +64,8 @@ object BytesUtil {
 
   def flipBit(
       cetSigs: CETSignatures,
-      refundSig: PartialSignature
-  ): (CETSignatures, PartialSignature) = {
+      refundSig: PartialSignature[ECDigitalSignature]
+  ): (CETSignatures, PartialSignature[ECDigitalSignature]) = {
     val badOutcomeSigs = cetSigs.outcomeSigs.map { case (outcome, sig) =>
       outcome -> flipBit(sig)
     }

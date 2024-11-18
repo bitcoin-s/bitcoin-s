@@ -2,7 +2,7 @@ package org.bitcoins.dlc.wallet.models
 
 import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
-import org.bitcoins.crypto.Sha256Digest
+import org.bitcoins.crypto.{ECDigitalSignature, Sha256Digest}
 import org.bitcoins.db.{CRUD, SlickUtil}
 import org.bitcoins.dlc.wallet.DLCAppConfig
 import slick.lifted.{ForeignKeyQuery, ProvenShape}
@@ -71,9 +71,11 @@ case class DLCRefundSigsDAO()(implicit
 
     def dlcId: Rep[Sha256Digest] = column("dlc_id", O.PrimaryKey)
 
-    def accepterSig: Rep[PartialSignature] = column("accepter_sig")
+    def accepterSig: Rep[PartialSignature[ECDigitalSignature]] = column(
+      "accepter_sig")
 
-    def initiatorSig: Rep[Option[PartialSignature]] = column("initiator_sig")
+    def initiatorSig: Rep[Option[PartialSignature[ECDigitalSignature]]] =
+      column("initiator_sig")
 
     def * : ProvenShape[DLCRefundSigsDb] =
       (dlcId, accepterSig, initiatorSig).<>(

@@ -212,7 +212,7 @@ object DLCTLVGen {
   def partialSig(
       pubKey: ECPublicKey = ECPublicKey.freshPublicKey,
       sigHashByte: Boolean = true
-  ): PartialSignature = {
+  ): PartialSignature[ECDigitalSignature] = {
     PartialSignature(pubKey, ecdsaSig(sigHashByte))
   }
 
@@ -236,7 +236,7 @@ object DLCTLVGen {
 
   def refundSigs(
       fundingPubKey: ECPublicKey = ECPublicKey.freshPublicKey
-  ): PartialSignature = {
+  ): PartialSignature[ECDigitalSignature] = {
     partialSig(fundingPubKey, sigHashByte = false)
   }
 
@@ -367,7 +367,7 @@ object DLCTLVGen {
       changeAddress: BitcoinAddress = address(),
       changeSerialId: UInt64 = DLCMessage.genSerialId(),
       cetSignatures: CETSignatures = cetSigs(),
-      refundSignatures: PartialSignature = refundSigs(),
+      refundSignatures: PartialSignature[ECDigitalSignature] = refundSigs(),
       tempContractId: Sha256Digest = hash()
   ): DLCAccept = {
     DLCAccept(
@@ -393,7 +393,7 @@ object DLCTLVGen {
       changeAddress: BitcoinAddress = address(),
       changeSerialId: UInt64 = DLCMessage.genSerialId(),
       cetSignatures: CETSignatures = cetSigs(),
-      refundSignatures: PartialSignature = refundSigs(),
+      refundSignatures: PartialSignature[ECDigitalSignature] = refundSigs(),
       tempContractId: Sha256Digest = hash()
   ): DLCAcceptTLV = {
     dlcAccept(
@@ -499,7 +499,7 @@ object DLCTLVGen {
 
   def dlcSign(
       cetSignatures: CETSignatures = cetSigs(),
-      refundSignatures: PartialSignature = refundSigs(),
+      refundSignatures: PartialSignature[ECDigitalSignature] = refundSigs(),
       fundingSignatures: FundingSignatures = fundingSigs(),
       contractId: ByteVector = hash().bytes
   ): DLCSign = {
@@ -508,7 +508,7 @@ object DLCTLVGen {
 
   def dlcSignTLV(
       cetSignatures: CETSignatures = cetSigs(),
-      refundSignatures: PartialSignature = refundSigs(),
+      refundSignatures: PartialSignature[ECDigitalSignature] = refundSigs(),
       fundingSignatures: FundingSignatures = fundingSigs(),
       contractId: ByteVector = hash().bytes
   ): DLCSignTLV = {
@@ -522,7 +522,7 @@ object DLCTLVGen {
 
   def dlcSignParsingTestVector(
       cetSignatures: CETSignatures = cetSigs(),
-      refundSignatures: PartialSignature = refundSigs(),
+      refundSignatures: PartialSignature[ECDigitalSignature] = refundSigs(),
       fundingSignatures: FundingSignatures = fundingSigs(),
       contractId: ByteVector = hash().bytes
   ): DLCParsingTestVector = {

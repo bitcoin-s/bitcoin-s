@@ -2051,7 +2051,7 @@ case class DLCAcceptTLV(
       negotiationFields.bytes
   }
 
-  val refundPartialSignature: PartialSignature = {
+  val refundPartialSignature: PartialSignature[ECDigitalSignature] = {
     PartialSignature(fundingPubKey, refundSignature)
   }
 }
@@ -2108,7 +2108,8 @@ case class DLCSignTLV(
       fundingSignatures.bytes
   }
 
-  def getPartialSignature(fundingPubKey: ECPublicKey): PartialSignature = {
+  def getPartialSignature(
+      fundingPubKey: ECPublicKey): PartialSignature[ECDigitalSignature] = {
     PartialSignature(fundingPubKey, refundSignature)
   }
 }

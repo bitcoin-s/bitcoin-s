@@ -90,25 +90,6 @@ sealed abstract class TransactionSignatureCreator {
     }
   }
 
-  /** Creates a signature from a tx signature component
-    *
-    * @param privateKey
-    *   the private key which we are signing the hash with
-    * @param hashType
-    *   the procedure to use for hashing to transaction
-    * @return
-    */
-  def createSig(
-      spendingTransaction: Transaction,
-      signingInfo: InputSigningInfo[InputInfo],
-      privateKey: ECPrivateKey,
-      hashType: HashType): ECDigitalSignature = {
-    createSig(spendingTransaction,
-              signingInfo,
-              privateKey.signWithHashType,
-              hashType)
-  }
-
   /** This is intended to be a low level hardware wallet API. At a fundamental
     * level, a hardware wallet expects a scodec.bits.ByteVector as input, and
     * returns an [[ECDigitalSignature]] if it is able to sign the
@@ -122,11 +103,11 @@ sealed abstract class TransactionSignatureCreator {
     * @return
     *   the digital signature returned by the hardware wallet
     */
-  def createSig(
+  def createSig[Sig <: DigitalSignature](
       spendingTransaction: Transaction,
       signingInfo: InputSigningInfo[InputInfo],
-      sign: (ByteVector, HashType) => ECDigitalSignature,
-      hashType: HashType): ECDigitalSignature = {
+      sign: (ByteVector, HashType) => Sig,
+      hashType: HashType): Sig = {
     val hash = TransactionSignatureSerializer.hashForSignature(
       spendingTransaction = spendingTransaction,
       signingInfo = signingInfo,

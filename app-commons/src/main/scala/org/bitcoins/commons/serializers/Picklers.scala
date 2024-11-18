@@ -140,7 +140,7 @@ object Picklers {
       : ReadWriter[SchnorrDigitalSignature] =
     readwriter[String].bimap(_.hex, SchnorrDigitalSignature.fromHex)
 
-  implicit val partialSignaturePickler: ReadWriter[PartialSignature] =
+  implicit val partialSignaturePickler: ReadWriter[PartialSignature[?]] =
     readwriter[String].bimap(_.hex, PartialSignature.fromHex)
 
   implicit val lnMessageDLCOfferTLVPickler: ReadWriter[LnMessage[DLCOfferTLV]] =

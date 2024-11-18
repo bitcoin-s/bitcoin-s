@@ -554,7 +554,8 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
           privKey,
           HashType.sigHashAll
         ),
-        transaction
+        transaction,
+        privKey.signLowRWithHashType
       )
 
       signedTx match {

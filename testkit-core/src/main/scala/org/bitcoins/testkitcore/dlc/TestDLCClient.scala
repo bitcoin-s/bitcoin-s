@@ -74,8 +74,12 @@ case class TestDLCClient(
     * from them
     */
   def setupDLCAccept(
-      sendSigs: (CETSignatures, PartialSignature) => Future[Unit],
-      getSigs: Future[(CETSignatures, PartialSignature, FundingSignatures)]
+      sendSigs: (
+          CETSignatures,
+          PartialSignature[ECDigitalSignature]) => Future[Unit],
+      getSigs: Future[(CETSignatures,
+                       PartialSignature[ECDigitalSignature],
+                       FundingSignatures)]
   ): Future[SetupDLC] = {
     require(!isInitiator, "You should call setupDLCOffer")
 
@@ -98,10 +102,10 @@ case class TestDLCClient(
     * signed funding transaction
     */
   def setupDLCOffer(
-      getSigs: Future[(CETSignatures, PartialSignature)],
+      getSigs: Future[(CETSignatures, PartialSignature[ECDigitalSignature])],
       sendSigs: (
           CETSignatures,
-          PartialSignature,
+          PartialSignature[ECDigitalSignature],
           FundingSignatures
       ) => Future[Unit],
       getFundingTx: Future[Transaction]

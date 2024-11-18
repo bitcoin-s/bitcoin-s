@@ -127,7 +127,8 @@ val spendingInfoSingle = ECSignatureParams(
 // Then we can sign the transaction
 val signature = BitcoinSigner.signSingle(
     spendingInfo = spendingInfoSingle,
-    unsignedTx = unsignedTransaction)
+    unsignedTx = unsignedTransaction,
+    privKey0.signLowRWithHashType)
 
 // We can then add the signature to the PSBT
 // Note: this signature could be produced by us or another party

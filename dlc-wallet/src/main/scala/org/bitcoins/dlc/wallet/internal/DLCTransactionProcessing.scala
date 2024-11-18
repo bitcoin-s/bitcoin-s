@@ -31,6 +31,7 @@ import org.bitcoins.core.wallet.utxo.{
 }
 import org.bitcoins.crypto.{
   DoubleSha256DigestBE,
+  ECDigitalSignature,
   SchnorrDigitalSignature,
   Sha256Digest
 }
@@ -396,7 +397,7 @@ case class DLCTransactionProcessing(
   private def buildSignMessage(
       dlcDb: DLCDb,
       sigDbs: Vector[DLCCETSignaturesDb],
-      offerRefundSig: PartialSignature,
+      offerRefundSig: PartialSignature[ECDigitalSignature],
       fundingInputDbs: Vector[DLCFundingInputDb]
   ): DLCSign = {
     {

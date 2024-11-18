@@ -690,18 +690,20 @@ case class PSBT(
     PSBT(globalMap, newInputMaps, outputMaps)
   }
 
-  def addSignature(
+  def addSignature[Sig <: DigitalSignature](
       pubKey: ECPublicKey,
-      sig: ECDigitalSignature,
+      sig: Sig,
       inputIndex: Int): PSBT =
-    addSignature(PartialSignature(pubKey, sig), inputIndex)
+    addSignature(PartialSignature(pubKey.toPublicKeyBytes(), sig), inputIndex)
 
-  def addSignature(partialSignature: PartialSignature, inputIndex: Int): PSBT =
+  def addSignature[Sig <: DigitalSignature](
+      partialSignature: PartialSignature[Sig],
+      inputIndex: Int): PSBT =
     addSignatures(Vector(partialSignature), inputIndex)
 
   /** Adds all the PartialSignatures to the input map at the given index */
-  def addSignatures(
-      partialSignatures: Vector[PartialSignature],
+  def addSignatures[Sig <: DigitalSignature](
+      partialSignatures: Vector[PartialSignature[Sig]],
       inputIndex: Int): PSBT = {
     require(
       inputIndex < inputMaps.size,
