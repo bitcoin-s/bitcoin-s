@@ -1,16 +1,17 @@
 package org.bitcoins.core.api.wallet.db
 
 import org.bitcoins.core.config.NetworkParameters
-import org.bitcoins.core.hd._
-import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.hd.*
+import org.bitcoins.core.protocol.script.*
 import org.bitcoins.core.protocol.{
   Bech32Address,
+  Bech32mAddress,
   BitcoinAddress,
   P2PKHAddress,
   P2SHAddress
 }
 import org.bitcoins.core.script.ScriptType
-import org.bitcoins.crypto.{ECPublicKey, Sha256Hash160Digest}
+import org.bitcoins.crypto.{CryptoUtil, ECPublicKey, Sha256Hash160Digest}
 
 sealed trait AddressDb {
   protected type PathType <: HDPath
@@ -24,6 +25,23 @@ sealed trait AddressDb {
   def scriptPubKey: ScriptPubKey
 
   def isChange: Boolean = path.chain.chainType == HDChainType.Change
+}
+
+case class TaprootAddressDb(
+    path: TaprootHDPath,
+    ecPublicKey: ECPublicKey,
+    address: Bech32mAddress,
+    scriptPubKey: TaprootScriptPubKey
+) extends AddressDb {
+
+  override protected type PathType = TaprootHDPath
+
+  override def hashedPubKey: Sha256Hash160Digest =
+    CryptoUtil.sha256Hash160(ecPublicKey.bytes)
+
+  override def scriptType: ScriptType = ScriptType.WITNESS_V1_TAPROOT
+
+  override def witnessScriptOpt: Option[TaprootWitness] = None
 }
 
 /** Segwit P2PKH */
@@ -130,6 +148,20 @@ object AddressDbHelper {
                           address = addr,
                           witnessScript = scriptWitness,
                           scriptPubKey = spk)
+  }
+
+  def getTaprootAddress(
+      pub: ECPublicKey,
+      path: TaprootHDPath,
+      np: NetworkParameters): AddressDb = {
+
+    val spk = TaprootScriptPubKey(pub.toXOnly)
+    val addr = Bech32mAddress(spk, np)
+
+    TaprootAddressDb(path = path,
+                     ecPublicKey = pub,
+                     address = addr,
+                     scriptPubKey = spk)
   }
 
   /** Gets an address. Derives the correct type by looking at the kind of path

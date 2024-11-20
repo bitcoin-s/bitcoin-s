@@ -2,10 +2,11 @@ package org.bitcoins.core.wallet.utxo
 
 import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.script.*
+import org.bitcoins.core.protocol.transaction.*
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.crypto.{DoubleSha256DigestBE, HashType}
-import org.bitcoins.testkitcore.Implicits._
+import org.bitcoins.testkitcore.Implicits.*
 import org.bitcoins.testkitcore.gen.ScriptGenerators
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
@@ -24,12 +25,14 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
       lockTime = TransactionConstants.lockTime
     )
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
+    val previousOutputMap = PreviousOutputMap(Map(outPoint -> creditingOutput))
     val inputInfo = InputInfo(
       outPoint = outPoint,
       output = creditingOutput,
       redeemScriptOpt = Some(EmptyScriptPubKey),
       scriptWitnessOpt = None,
-      conditionalPath = ConditionalPath.NoCondition
+      conditionalPath = ConditionalPath.NoCondition,
+      previousOutputMap = previousOutputMap
     )
 
     assertThrows[RuntimeException] {
@@ -61,6 +64,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
       TransactionConstants.lockTime
     )
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
+    val previousOutputMap = PreviousOutputMap(Map(outPoint -> creditingOutput))
     assertThrows[IllegalArgumentException] {
       ScriptSignatureParams(
         InputInfo(
@@ -69,6 +73,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
           redeemScriptOpt = None,
           scriptWitnessOpt = Some(P2WSHWitnessV0(EmptyScriptPubKey)),
           conditionalPath = ConditionalPath.NoCondition,
+          previousOutputMap = previousOutputMap,
           hashPreImages = Vector(privKey.publicKey)
         ),
         prevTransaction = creditingTx,
@@ -85,6 +90,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
           redeemScriptOpt = None,
           scriptWitnessOpt = Some(P2WSHWitnessV0(EmptyScriptPubKey)),
           conditionalPath = ConditionalPath.NoCondition,
+          previousOutputMap = previousOutputMap,
           hashPreImages = Vector(privKey.publicKey)
         ),
         prevTransaction = creditingTx,
@@ -106,12 +112,14 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
     )
     val outPoint =
       TransactionOutPoint(txId = creditingTx.txId, vout = UInt32.zero)
+    val previousOutputMap = PreviousOutputMap(Map(outPoint -> creditingOutput))
     val inputInfo = InputInfo(
       outPoint = outPoint,
       output = creditingOutput,
       redeemScriptOpt = None,
       scriptWitnessOpt = Some(P2WSHWitnessV0(EmptyScriptPubKey)),
-      conditionalPath = ConditionalPath.NoCondition
+      conditionalPath = ConditionalPath.NoCondition,
+      previousOutputMap = previousOutputMap
     )
 
     assertThrows[IllegalArgumentException] {
@@ -143,6 +151,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
       TransactionConstants.lockTime
     )
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
+    val previousOutputMap = PreviousOutputMap(Map(outPoint -> creditingOutput))
     assertThrows[IllegalArgumentException] {
       ScriptSignatureParams(
         InputInfo(
@@ -151,6 +160,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
           redeemScriptOpt = None,
           scriptWitnessOpt = Some(P2WSHWitnessV0(EmptyScriptPubKey)),
           conditionalPath = ConditionalPath.NoCondition,
+          previousOutputMap = previousOutputMap,
           hashPreImages = Vector(privKey.publicKey)
         ),
         prevTransaction = creditingTx,
@@ -167,6 +177,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
           redeemScriptOpt = None,
           scriptWitnessOpt = Some(P2WSHWitnessV0(EmptyScriptPubKey)),
           conditionalPath = ConditionalPath.NoCondition,
+          previousOutputMap = previousOutputMap,
           hashPreImages = Vector(privKey.publicKey)
         ),
         prevTransaction = creditingTx,
@@ -186,7 +197,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
       TransactionConstants.lockTime
     )
     val outPoint = TransactionOutPoint(DoubleSha256DigestBE.empty, UInt32.zero)
-
+    val previousOutputMap = PreviousOutputMap(Map(outPoint -> creditingOutput))
     assertThrows[IllegalArgumentException] {
       ScriptSignatureParams(
         InputInfo(
@@ -195,6 +206,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
           redeemScriptOpt = None,
           scriptWitnessOpt = Some(P2WPKHWitnessV0(privKey.publicKey)),
           conditionalPath = ConditionalPath.NoCondition,
+          previousOutputMap = previousOutputMap,
           hashPreImages = Vector(privKey.publicKey)
         ),
         prevTransaction = creditingTx,
@@ -211,6 +223,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
           redeemScriptOpt = None,
           scriptWitnessOpt = Some(P2WPKHWitnessV0(privKey.publicKey)),
           conditionalPath = ConditionalPath.NoCondition,
+          previousOutputMap = previousOutputMap,
           hashPreImages = Vector(privKey.publicKey)
         ),
         prevTransaction = creditingTx,
@@ -231,7 +244,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
         TransactionConstants.lockTime
       )
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
-
+    val previousOutputMap = PreviousOutputMap(Map(outPoint -> creditingOutput))
     assertThrows[IllegalArgumentException] {
       ScriptSignatureParams(
         InputInfo(
@@ -240,6 +253,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
           redeemScriptOpt = None,
           scriptWitnessOpt = Some(P2WPKHWitnessV0(privKey.publicKey)),
           conditionalPath = ConditionalPath.NoCondition,
+          previousOutputMap = previousOutputMap,
           hashPreImages = Vector(privKey.publicKey)
         ),
         prevTransaction = creditingTx,
@@ -256,6 +270,7 @@ class InputSigningInfoTest extends BitcoinSUnitTest {
           redeemScriptOpt = None,
           scriptWitnessOpt = Some(P2WPKHWitnessV0(privKey.publicKey)),
           conditionalPath = ConditionalPath.NoCondition,
+          previousOutputMap = previousOutputMap,
           hashPreImages = Vector(privKey.publicKey)
         ),
         prevTransaction = creditingTx,

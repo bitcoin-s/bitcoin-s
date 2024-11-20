@@ -4,6 +4,7 @@ import org.bitcoins.core.byteVectorOrdering
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.*
 import org.bitcoins.core.protocol.transaction.*
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.util.SeqWrapper
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo.*
@@ -713,17 +714,23 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
 
   def toInputInfo(
       txIn: TransactionInput,
+      previousOutputMap: PreviousOutputMap,
       conditionalPath: ConditionalPath = ConditionalPath.NoCondition,
       preImages: Vector[NetworkElement] = Vector.empty): InputInfo = {
     if (isFinalized)
-      toInputInfoFinalized(txIn, conditionalPath, preImages)
-    else toInputInfoNonFinalized(txIn, conditionalPath, preImages)
+      toInputInfoFinalized(txIn, conditionalPath, preImages, previousOutputMap)
+    else
+      toInputInfoNonFinalized(txIn,
+                              conditionalPath,
+                              preImages,
+                              previousOutputMap)
   }
 
   def toInputInfoFinalized(
       txIn: TransactionInput,
       conditionalPath: ConditionalPath,
-      preImages: Vector[NetworkElement]): InputInfo = {
+      preImages: Vector[NetworkElement],
+      outputMap: PreviousOutputMap): InputInfo = {
     val outPoint = txIn.previousOutput
 
     val witVec = getRecords(WitnessUTXOKeyId)
@@ -761,13 +768,15 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
               redeemScriptOpt,
               scriptWitnessOpt,
               conditionalPath,
-              preImages)
+              previousOutputMap = outputMap,
+              hashPreImages = preImages)
   }
 
   private def toInputInfoNonFinalized(
       txIn: TransactionInput,
       conditionalPath: ConditionalPath,
-      preImages: Vector[NetworkElement]): InputInfo = {
+      preImages: Vector[NetworkElement],
+      previousOutputMap: PreviousOutputMap): InputInfo = {
     val outPoint = txIn.previousOutput
 
     val witVec = getRecords(WitnessUTXOKeyId)
@@ -813,6 +822,7 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
               redeemScriptOpt,
               scriptWitnessOpt,
               conditionalPath,
+              previousOutputMap = previousOutputMap,
               preImages)
   }
 
@@ -822,14 +832,17 @@ case class InputPSBTMap(elements: Vector[InputPSBTRecord])
       conditionalPath: ConditionalPath = ConditionalPath.NoCondition)
       : ECSignatureParams[InputInfo] = {
     require(!isFinalized, s"Cannot update an InputPSBTMap that is finalized")
-    val txVec = getRecords(NonWitnessUTXOKeyId)
-
+    val txVec: Vector[NonWitnessOrUnknownUTXO] = getRecords(NonWitnessUTXOKeyId)
+    val previousOutputMap = PreviousOutputMap.fromNonWitnessUtxos(txIn, txVec)
     val hashTypeVec = getRecords(SigHashTypeKeyId)
     val hashType =
       if (hashTypeVec.size == 1) hashTypeVec.head.hashType
       else HashType.sigHashAll
 
-    val inputInfo = toInputInfo(txIn, conditionalPath, Vector(signer.publicKey))
+    val inputInfo = toInputInfo(txIn,
+                                previousOutputMap,
+                                conditionalPath,
+                                Vector(signer.publicKey))
 
     ECSignatureParams(inputInfo, txVec.head.transactionSpent, signer, hashType)
   }

@@ -3,7 +3,7 @@ package org.bitcoins.wallet.internal
 import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.keymanager.BIP39KeyManagerApi
-import org.bitcoins.core.api.wallet.db.AccountDb
+import org.bitcoins.core.api.wallet.db.{AccountDb, SpendingInfoDb}
 import org.bitcoins.core.api.wallet.{
   AccountHandlingApi,
   AddressHandlingApi,
@@ -111,12 +111,14 @@ case class SendFundsHandlingHandling(
         txDb.blockHashOpt.isEmpty,
         s"Cannot replace a confirmed transaction, ${txDb.blockHashOpt.get.hex}"
       )
-
+      map = SpendingInfoDb.toPreviousOutputMap(utxos)
       spendingInfos <- FutureUtil.sequentially(utxos) { utxo =>
         transactionDAO
           .findByOutPoint(utxo.outPoint)
           .map(txDbOpt =>
-            utxo.toUTXOInfo(keyManager = keyManager, txDbOpt.get.transaction))
+            utxo.toUTXOInfo(keyManager = keyManager,
+                            txDbOpt.get.transaction,
+                            previousOutputMap = map))
       }
 
       _ = {
@@ -179,7 +181,7 @@ case class SendFundsHandlingHandling(
         Future.unit
       )
       tx <-
-        finishSend(rawTxHelper, amount, newFeeRate, Vector.empty)
+        finishSend(rawTxHelper, amount, Vector.empty)
     } yield tx
   }
 
@@ -276,7 +278,6 @@ case class SendFundsHandlingHandling(
       tx <- finishSend(
         fundRawTxHelper,
         CurrencyUnits.zero,
-        feeRate,
         Vector.empty
       )
     } yield tx
@@ -336,7 +337,7 @@ case class SendFundsHandlingHandling(
         fromTagOpt = None,
         markAsReserved = true
       )
-      tx <- finishSend(rawTxHelper, amount, feeRate, newTags)
+      tx <- finishSend(rawTxHelper, amount, newTags)
     } yield tx
   }
 
@@ -373,11 +374,12 @@ case class SendFundsHandlingHandling(
 
       prevTxFs = utxoDbs.map(utxo =>
         transactionDAO.findByOutPoint(utxo.outPoint).map(_.get.transaction))
+      map = SpendingInfoDb.toPreviousOutputMap(utxoDbs)
       prevTxs <- FutureUtil.collect(prevTxFs)
       utxos =
         utxoDbs
           .zip(prevTxs)
-          .map(info => info._1.toUTXOInfo(keyManager, info._2))
+          .map(info => info._1.toUTXOInfo(keyManager, info._2, map))
 
       changeAddr <- accountHandling.getNewChangeAddress(fromAccount.hdAccount)
 
@@ -389,7 +391,7 @@ case class SendFundsHandlingHandling(
         changeAddr.scriptPubKey
       )
       rawTxHelper = FundRawTxHelper(txBuilder, utxos, feeRate, Future.unit)
-      tx <- finishSend(rawTxHelper, amount, feeRate, newTags)
+      tx <- finishSend(rawTxHelper, amount, newTags)
     } yield tx
   }
 
@@ -440,7 +442,7 @@ case class SendFundsHandlingHandling(
         markAsReserved = true
       )
       sentAmount = outputs.foldLeft(CurrencyUnits.zero)(_ + _.value)
-      tx <- finishSend(fundRawTxHelper, sentAmount, feeRate, newTags)
+      tx <- finishSend(fundRawTxHelper, sentAmount, newTags)
     } yield tx
   }
 
@@ -468,11 +470,15 @@ case class SendFundsHandlingHandling(
         s"Some out points given have already been spent, ${spentUtxos.map(_.outPoint)}"
       )
 
+      map = SpendingInfoDb.toPreviousOutputMap(utxoDbs)
       utxos <- Future.sequence {
         utxoDbs.map(utxo =>
           transactionDAO
             .findByOutPoint(utxo.outPoint)
-            .map(txDb => utxo.toUTXOInfo(keyManager, txDb.get.transaction)))
+            .map(txDb =>
+              utxo.toUTXOInfo(keyManager = keyManager,
+                              prevTransaction = txDb.get.transaction,
+                              previousOutputMap = map)))
       }
       inputInfos = utxos.map(_.inputInfo)
 
@@ -501,7 +507,6 @@ case class SendFundsHandlingHandling(
       tx <- finishSend(
         rawTxHelper,
         tmp.outputs.head.value,
-        feeRate,
         Vector.empty
       )
     } yield tx
@@ -590,11 +595,10 @@ case class SendFundsHandlingHandling(
   private def finishSend[F <: RawTxFinalizer](
       rawTxHelper: FundRawTxHelper[F],
       sentAmount: CurrencyUnit,
-      feeRate: FeeUnit,
       newTags: Vector[AddressTag]
   ): Future[Transaction] = {
     val signed = rawTxHelper.signedTx
-
+    val feeRate = rawTxHelper.feeRate
     val processedTxF = for {
       ourOuts <- addressHandling.findOurOutputs(signed)
       creditingAmount = rawTxHelper.scriptSigParams.foldLeft(

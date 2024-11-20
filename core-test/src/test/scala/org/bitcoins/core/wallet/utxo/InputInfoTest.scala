@@ -2,8 +2,9 @@ package org.bitcoins.core.wallet.utxo
 
 import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.script.*
+import org.bitcoins.core.protocol.transaction.*
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.crypto.{ECPrivateKey, ECPublicKey}
 import org.bitcoins.testkitcore.gen.{
@@ -39,14 +40,16 @@ class InputInfoTest extends BitcoinSUnitTest {
     val p2sh = P2SHScriptPubKey(P2PKScriptPubKey(pubKey))
     val (creditingTx, _) = TransactionGenerators.buildCreditingTransaction(p2sh)
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
-
+    val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2sh)
+    val previousOutputMap = PreviousOutputMap(Map(outPoint -> creditingOutput))
     assertThrows[IllegalArgumentException] {
       InputInfo(
         outPoint = outPoint,
-        output = TransactionOutput(CurrencyUnits.zero, p2sh),
+        output = creditingOutput,
         redeemScriptOpt = None,
         scriptWitnessOpt = None,
-        conditionalPath = ConditionalPath.NoCondition
+        conditionalPath = ConditionalPath.NoCondition,
+        previousOutputMap = previousOutputMap
       )
     }
   }
@@ -64,14 +67,15 @@ class InputInfoTest extends BitcoinSUnitTest {
       lockTime = TransactionConstants.lockTime
     )
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
-
+    val previousOutputMap = PreviousOutputMap(Map(outPoint -> creditingOutput))
     assertThrows[IllegalArgumentException] {
       InputInfo(
         outPoint = outPoint,
-        output = TransactionOutput(CurrencyUnits.zero, p2sh),
+        output = creditingOutput,
         redeemScriptOpt = Some(P2WPKHWitnessSPKV0(pubKey)),
         scriptWitnessOpt = None,
-        conditionalPath = ConditionalPath.NoCondition
+        conditionalPath = ConditionalPath.NoCondition,
+        previousOutputMap
       )
     }
   }
@@ -89,14 +93,15 @@ class InputInfoTest extends BitcoinSUnitTest {
       lockTime = TransactionConstants.lockTime
     )
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
-
+    val previousOutputMap = PreviousOutputMap(Map(outPoint -> creditingOutput))
     assertThrows[UnsupportedOperationException] {
       InputInfo(
         outPoint = outPoint,
-        output = TransactionOutput(CurrencyUnits.zero, p2sh),
+        output = creditingOutput,
         redeemScriptOpt = Some(P2WPKHWitnessSPKV0(pubKey)),
         scriptWitnessOpt = Some(EmptyScriptWitness),
-        conditionalPath = ConditionalPath.NoCondition
+        conditionalPath = ConditionalPath.NoCondition,
+        previousOutputMap = previousOutputMap
       )
     }
   }
@@ -111,14 +116,16 @@ class InputInfoTest extends BitcoinSUnitTest {
     val p2sh = P2SHScriptPubKey(P2PKScriptPubKey(pubKey))
     val (creditingTx, _) = TransactionGenerators.buildCreditingTransaction(p2sh)
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
-
+    val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2sh)
+    val previousOutputMap = PreviousOutputMap(Map(outPoint -> creditingOutput))
     assertThrows[RuntimeException] {
       InputInfo(
         outPoint = outPoint,
         output = TransactionOutput(CurrencyUnits.zero, p2sh),
         redeemScriptOpt = Some(unassingedWitnessSPK),
         scriptWitnessOpt = None,
-        conditionalPath = ConditionalPath.NoCondition
+        conditionalPath = ConditionalPath.NoCondition,
+        previousOutputMap = previousOutputMap
       )
     }
   }
@@ -131,14 +138,16 @@ class InputInfoTest extends BitcoinSUnitTest {
     val (creditingTx, _) =
       TransactionGenerators.buildCreditingTransaction(p2wpkh)
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
-
+    val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2wpkh)
+    val previousOutputMap = PreviousOutputMap(Map(outPoint -> creditingOutput))
     assertThrows[UnsupportedOperationException] {
       InputInfo(
         outPoint = outPoint,
-        output = TransactionOutput(CurrencyUnits.zero, p2wpkh),
+        output = creditingOutput,
         redeemScriptOpt = None,
         scriptWitnessOpt = Some(EmptyScriptWitness),
-        conditionalPath = ConditionalPath.NoCondition
+        conditionalPath = ConditionalPath.NoCondition,
+        previousOutputMap
       )
     }
   }
@@ -151,14 +160,16 @@ class InputInfoTest extends BitcoinSUnitTest {
     val (creditingTx, _) =
       TransactionGenerators.buildCreditingTransaction(p2wpkh)
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
-
+    val creditingOutput = TransactionOutput(CurrencyUnits.zero, p2wpkh)
+    val previousOutputMap = PreviousOutputMap(Map(outPoint -> creditingOutput))
     assertThrows[IllegalArgumentException] {
       InputInfo(
         outPoint = outPoint,
-        output = TransactionOutput(CurrencyUnits.zero, p2wpkh),
+        output = creditingOutput,
         redeemScriptOpt = None,
         scriptWitnessOpt = None,
-        conditionalPath = ConditionalPath.NoCondition
+        conditionalPath = ConditionalPath.NoCondition,
+        previousOutputMap
       )
     }
   }
@@ -175,14 +186,17 @@ class InputInfoTest extends BitcoinSUnitTest {
     val (creditingTx, _) =
       TransactionGenerators.buildCreditingTransaction(p2wpkh)
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
-
+    val creditingOutput =
+      TransactionOutput(CurrencyUnits.zero, unassingedWitnessSPK)
+    val previousOutputMap = PreviousOutputMap(Map(outPoint -> creditingOutput))
     val spendingInfo =
       InputInfo(
         outPoint = outPoint,
-        output = TransactionOutput(CurrencyUnits.zero, unassingedWitnessSPK),
+        output = creditingOutput,
         redeemScriptOpt = None,
         scriptWitnessOpt = None,
-        conditionalPath = ConditionalPath.NoCondition
+        conditionalPath = ConditionalPath.NoCondition,
+        previousOutputMap = previousOutputMap
       )
 
     val expectedSpendingInfo =
@@ -205,14 +219,16 @@ class InputInfoTest extends BitcoinSUnitTest {
     val spk = NonStandardScriptPubKey.fromAsm(p2pk.asm)
     val (creditingTx, _) = TransactionGenerators.buildCreditingTransaction(p2pk)
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
-
+    val creditingOutput = TransactionOutput(CurrencyUnits.zero, spk)
+    val previousOutputMap = PreviousOutputMap(Map(outPoint -> creditingOutput))
     assertThrows[UnsupportedOperationException] {
       InputInfo(
         outPoint = outPoint,
-        output = TransactionOutput(CurrencyUnits.zero, spk),
+        output = creditingOutput,
         redeemScriptOpt = None,
         scriptWitnessOpt = None,
-        conditionalPath = ConditionalPath.NoCondition
+        conditionalPath = ConditionalPath.NoCondition,
+        previousOutputMap = previousOutputMap
       )
     }
   }

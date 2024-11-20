@@ -20,6 +20,8 @@ import org.bitcoins.crypto.StringFactory
   *   [[https://github.com/bitcoin/bips/blob/master/bip-0084.mediawiki BIP84]]
   * @see
   *   [[https://github.com/bitcoin/bips/blob/master/bip-0049.mediawiki BIP49]]
+  * @see
+  *   [[https://github.com/bitcoin/bips/blob/master/bip-0086.mediawiki]]
   */
 case class HDPurpose(constant: Int) extends BIP32Path {
 

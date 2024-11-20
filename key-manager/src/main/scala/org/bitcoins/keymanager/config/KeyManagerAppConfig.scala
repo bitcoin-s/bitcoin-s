@@ -68,12 +68,12 @@ case class KeyManagerAppConfig(
     s"$prefix${WalletStorage.ENCRYPTED_SEED_FILE_NAME}"
   }
 
-  private lazy val defaultAccountKind: HDPurpose =
+  lazy val defaultAccountKind: HDPurpose =
     config.getString("bitcoin-s.wallet.defaultAccountType") match {
       case "legacy"        => HDPurpose.Legacy
       case "segwit"        => HDPurpose.SegWit
       case "nested-segwit" => HDPurpose.NestedSegWit
-      // todo: validate this pre-app startup
+      case "taproot"       => HDPurpose.Taproot
       case other: String =>
         throw new RuntimeException(s"$other is not a valid account type!")
     }

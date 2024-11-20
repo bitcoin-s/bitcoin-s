@@ -728,21 +728,18 @@ trait BitcoinScriptUtil {
       index: Int,
       outputMap: PreviousOutputMap,
       flags: Seq[ScriptFlag] = Policy.standardFlags): Try[Transaction] = {
-
     val txIn = tx.inputs(index)
 
     val (preImages, condPath) =
       InputInfo.getHashPreImagesAndConditionalPath(tx, index)
-
-    val inputInfo = inputMap.toInputInfo(txIn,
+    val inputInfo = inputMap.toInputInfo(txIn = txIn,
+                                         previousOutputMap = outputMap,
                                          conditionalPath = condPath,
                                          preImages = preImages)
-
     val txSigComponent = TxSigComponent(inputInfo, tx, outputMap, flags)
 
     val inputResult =
       ScriptInterpreter.run(PreExecutionScriptProgram(txSigComponent))
-
     if (inputResult == ScriptOk) {
       Success(tx)
     } else {

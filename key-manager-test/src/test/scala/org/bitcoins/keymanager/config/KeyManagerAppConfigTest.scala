@@ -2,7 +2,7 @@ package org.bitcoins.keymanager.config
 
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
-import org.bitcoins.core.crypto.{BIP39Seed, ExtKeyVersion, MnemonicCode}
+import org.bitcoins.core.crypto.{BIP39Seed, ExtKeyPrivVersion, MnemonicCode}
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.keymanager.{DecryptedMnemonic, WalletStorage}
@@ -141,7 +141,10 @@ class KeyManagerAppConfigTest extends BitcoinSAsyncTest {
       // manually build the xpub to make sure we are correct
       val mnemonic = MnemonicCode.fromEntropy(entropy)
       val bip39Seed = BIP39Seed.fromMnemonic(mnemonic, None)
-      val xpriv = bip39Seed.toExtPrivateKey(ExtKeyVersion.LegacyTestNet3Priv)
+      val version = ExtKeyPrivVersion
+        .fromPurpose(appConfig1.defaultAccountKind, networkParam)
+        .get
+      val xpriv = bip39Seed.toExtPrivateKey(version)
       val xpub = xpriv.extPublicKey
       assert(xpub == appConfig1.toBip39KeyManager.getRootXPub)
     }

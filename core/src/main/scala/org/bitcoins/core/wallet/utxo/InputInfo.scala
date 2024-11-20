@@ -282,6 +282,7 @@ object InputInfo {
       redeemScriptOpt: Option[ScriptPubKey],
       scriptWitnessOpt: Option[ScriptWitness],
       conditionalPath: ConditionalPath,
+      previousOutputMap: PreviousOutputMap,
       hashPreImages: Vector[NetworkElement] = Vector.empty): InputInfo = {
     output.scriptPubKey match {
       case _: P2SHScriptPubKey =>
@@ -337,7 +338,12 @@ object InputInfo {
                                 witness,
                                 conditionalPath,
                                 hashPreImages)
-      case wspk @ (_: UnassignedWitnessScriptPubKey | _: TaprootScriptPubKey) =>
+      case taprootSPK: TaprootScriptPubKey =>
+        TaprootKeyPathInputInfo(outPoint = outPoint,
+                                amount = output.value,
+                                scriptPubKey = taprootSPK,
+                                previousOutputMap = previousOutputMap)
+      case wspk: UnassignedWitnessScriptPubKey =>
         UnassignedSegwitNativeInputInfo(
           outPoint,
           output.value,

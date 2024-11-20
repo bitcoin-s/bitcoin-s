@@ -299,9 +299,11 @@ case class PSBT(
                 .isInstanceOf[WitnessScriptPubKeyV0]
           )
         }
+        val notTaproot: Boolean =
+          !out.scriptPubKey.isInstanceOf[TaprootScriptPubKey]
 
         if (
-          (outIsWitnessScript || hasWitScript || hasWitRedeemScript) && notBIP143Vulnerable
+          (outIsWitnessScript || hasWitScript || hasWitRedeemScript) && notBIP143Vulnerable && notTaproot
         ) {
           inputMap.filterRecords(WitnessUTXOKeyId) :+ WitnessUTXO(out)
         } else {
@@ -690,20 +692,20 @@ case class PSBT(
     PSBT(globalMap, newInputMaps, outputMaps)
   }
 
-  def addSignature[Sig <: DigitalSignature](
+  def addSignature(
       pubKey: ECPublicKey,
-      sig: Sig,
+      sig: ECDigitalSignature,
       inputIndex: Int): PSBT =
     addSignature(PartialSignature(pubKey.toPublicKeyBytes(), sig), inputIndex)
 
-  def addSignature[Sig <: DigitalSignature](
-      partialSignature: PartialSignature[Sig],
+  def addSignature(
+      partialSignature: PartialSignature[ECDigitalSignature],
       inputIndex: Int): PSBT =
     addSignatures(Vector(partialSignature), inputIndex)
 
   /** Adds all the PartialSignatures to the input map at the given index */
-  def addSignatures[Sig <: DigitalSignature](
-      partialSignatures: Vector[PartialSignature[Sig]],
+  def addSignatures(
+      partialSignatures: Vector[PartialSignature[ECDigitalSignature]],
       inputIndex: Int): PSBT = {
     require(
       inputIndex < inputMaps.size,
@@ -724,6 +726,33 @@ case class PSBT(
     val newInputMaps =
       inputMaps.updated(inputIndex, InputPSBTMap(newElements))
 
+    PSBT(globalMap, newInputMaps, outputMaps)
+  }
+
+  def addKeyPathSignature(
+      partialSignature: PartialSignature[SchnorrDigitalSignature],
+      inputIndex: Int): PSBT = {
+    require(
+      inputIndex < inputMaps.size,
+      s"index must be less than the number of input maps present in the psbt, $inputIndex >= ${inputMaps.size}")
+    require(
+      !inputMaps(inputIndex).isFinalized,
+      s"Cannot update an InputPSBTMap that is finalized, index: $inputIndex")
+    val inputMap = inputMaps(inputIndex)
+    val newInputMap: InputPSBTMap = inputMaps(
+      inputIndex).keySpendSignatureOpt match {
+      case Some(sig) =>
+        if (sig.signature == partialSignature.signature)
+          inputMap
+        else
+          sys.error(
+            s"Cannot have 2 different keypath signatures for same input, got=${sig.signature} and ${partialSignature.value}")
+      case None =>
+        val trSpend = TRKeySpendSignature(partialSignature.signature)
+        InputPSBTMap(inputMap.elements.appended(trSpend))
+    }
+
+    val newInputMaps = inputMaps.updated(inputIndex, newInputMap)
     PSBT(globalMap, newInputMaps, outputMaps)
   }
 
@@ -776,7 +805,10 @@ case class PSBT(
                     }
                   case None | Some(_) => None
                 }
-              case _: WitnessScriptPubKey => Some(WitnessUTXO(output))
+              case _: WitnessScriptPubKeyV0 => Some(WitnessUTXO(output))
+              case _: TaprootScriptPubKey   => None
+              case u: UnassignedWitnessScriptPubKey =>
+                sys.error(s"Cannot verifyFinalizedInput for $u")
             }
           case None => None
         }
@@ -1007,8 +1039,8 @@ object PSBT extends Factory[PSBT] with StringFactory[PSBT] {
     }
     val globalMap = GlobalPSBTMap(
       Vector(GlobalPSBTRecord.UnsignedTransaction(btx)))
-    val inputMaps = unsignedTx.inputs.map(_ => InputPSBTMap.empty).toVector
-    val outputMaps = unsignedTx.outputs.map(_ => OutputPSBTMap.empty).toVector
+    val inputMaps = unsignedTx.inputs.map(_ => InputPSBTMap.empty)
+    val outputMaps = unsignedTx.outputs.map(_ => OutputPSBTMap.empty)
 
     PSBT(globalMap, inputMaps, outputMaps)
   }

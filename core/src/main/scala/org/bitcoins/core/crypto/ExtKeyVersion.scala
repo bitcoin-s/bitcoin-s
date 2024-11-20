@@ -1,6 +1,7 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.hd.HDCoinType
+import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.hd.{HDCoinType, HDPurpose}
 import org.bitcoins.crypto.{Factory, NetworkElement}
 import scodec.bits.*
 
@@ -18,17 +19,8 @@ sealed abstract class ExtKeyPubVersion extends ExtKeyVersion
   */
 object ExtKeyVersion extends Factory[ExtKeyVersion] {
 
-  private[bitcoins] val allPrivs: Vector[ExtKeyPrivVersion] = Vector(
-    LegacyMainNetPriv,
-    LegacyTestNet3Priv,
-    SegWitMainNetPriv,
-    SegWitTestNet3Priv,
-    NestedSegWitMainNetPriv,
-    NestedSegWitTestNet3Priv
-  )
-
   private[bitcoins] val all: Vector[ExtKeyVersion] =
-    allPrivs ++ ExtKeyPubVersion.allPubs
+    ExtKeyPrivVersion.allPrivs ++ ExtKeyPubVersion.allPubs
 
   override def fromBytes(bytes: ByteVector): ExtKeyVersion = {
     fromBytesOpt(bytes) match {
@@ -94,6 +86,41 @@ object ExtKeyVersion extends Factory[ExtKeyVersion] {
   case object NestedSegWitTestNet3Priv extends ExtKeyPrivVersion {
     override val bytes = hex"0x044a4e28"
     override def hdCoinType: HDCoinType = HDCoinType.Testnet
+  }
+
+}
+
+object ExtKeyPrivVersion {
+  val allPrivs: Vector[ExtKeyPrivVersion] = Vector(
+    ExtKeyVersion.LegacyMainNetPriv,
+    ExtKeyVersion.LegacyTestNet3Priv,
+    ExtKeyVersion.SegWitMainNetPriv,
+    ExtKeyVersion.SegWitTestNet3Priv,
+    ExtKeyVersion.NestedSegWitMainNetPriv,
+    ExtKeyVersion.NestedSegWitTestNet3Priv
+  )
+
+  private val purposeMap: Map[HDPurpose, Vector[ExtKeyPrivVersion]] = Map(
+    HDPurpose.Legacy -> Vector(ExtKeyVersion.LegacyMainNetPriv,
+                               ExtKeyVersion.LegacyTestNet3Priv),
+    HDPurpose.NestedSegWit -> Vector(ExtKeyVersion.NestedSegWitMainNetPriv,
+                                     ExtKeyVersion.NestedSegWitTestNet3Priv),
+    HDPurpose.SegWit -> Vector(ExtKeyVersion.SegWitMainNetPriv,
+                               ExtKeyVersion.SegWitTestNet3Priv),
+    HDPurpose.Taproot -> Vector(ExtKeyVersion.SegWitMainNetPriv,
+                                ExtKeyVersion.SegWitTestNet3Priv)
+  )
+
+  def fromPurpose(
+      purpose: HDPurpose,
+      np: NetworkParameters): Option[ExtKeyPrivVersion] = {
+    val coinType = HDCoinType.fromNetwork(np)
+    val filter = allPrivs.filter(_.hdCoinType == coinType)
+    val privKeyVersionOpt: Option[ExtKeyPrivVersion] =
+      filter.find { v =>
+        purposeMap.get(purpose).flatMap(_.find(_ == v)).isDefined
+      }
+    privKeyVersionOpt
   }
 }
 

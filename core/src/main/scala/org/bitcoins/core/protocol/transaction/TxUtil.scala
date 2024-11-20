@@ -170,36 +170,32 @@ object TxUtil {
   def addDummySigs(
       utx: Transaction,
       inputInfos: Vector[InputInfo]): Transaction = {
-    val dummyInputAndWitnesses = inputInfos.zipWithIndex.map {
-      case (inputInfo, index) =>
-        val mockSigners =
-          inputInfo.pubKeys.take(inputInfo.requiredSigs).map { pubKey =>
-            Sign.dummySign(pubKey)
-          }
-
-        val mockSpendingInfo =
-          inputInfo.toSpendingInfo(EmptyTransaction,
-                                   mockSigners,
-                                   HashType.sigHashAll)
-
-        val tx =
-          BitcoinSigner
-            .sign(mockSpendingInfo, utx)
-            .transaction
-
-        val witnessOpt = tx match {
-          case _: NonWitnessTransaction => None
-          case wtx: WitnessTransaction =>
-            wtx.witness.witnesses(index) match {
-              case EmptyScriptWitness   => None
-              case wit: ScriptWitnessV0 => Some(wit)
-              case taprootWitness: TaprootWitness =>
-                throw new UnsupportedOperationException(
-                  s"Taproot not supported, got=$taprootWitness")
-            }
+    val dummyInputAndWitnesses = inputInfos.map { case inputInfo =>
+      val mockSigners =
+        inputInfo.pubKeys.take(inputInfo.requiredSigs).map { pubKey =>
+          Sign.dummySign(pubKey)
         }
 
-        (tx.inputs(index), witnessOpt)
+      val mockSpendingInfo =
+        inputInfo.toSpendingInfo(EmptyTransaction,
+                                 mockSigners,
+                                 HashType.sigHashAll)
+
+      val txSigComponent =
+        BitcoinSigner
+          .sign(mockSpendingInfo, utx)
+      val tx = txSigComponent.transaction
+      val inputIndex = txSigComponent.inputIndex.toInt
+      val witnessOpt = tx match {
+        case _: NonWitnessTransaction => None
+        case wtx: WitnessTransaction =>
+          wtx.witness.witnesses(inputIndex) match {
+            case EmptyScriptWitness             => None
+            case wit: ScriptWitnessV0           => Some(wit)
+            case taprootWitness: TaprootWitness => Some(taprootWitness)
+          }
+      }
+      (tx.inputs(inputIndex), witnessOpt)
     }
 
     val inputs = dummyInputAndWitnesses.map(_._1)

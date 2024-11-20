@@ -2,8 +2,9 @@ package org.bitcoins.core.wallet.builder
 
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.script.*
+import org.bitcoins.core.protocol.transaction.*
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.core.wallet.utxo.{
   ConditionalPath,
@@ -17,7 +18,7 @@ import org.bitcoins.crypto.{
   ECPublicKey,
   HashType
 }
-import org.bitcoins.testkitcore.Implicits._
+import org.bitcoins.testkitcore.Implicits.*
 import org.bitcoins.testkitcore.gen.ScriptGenerators
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
@@ -123,6 +124,7 @@ class StandardNonInteractiveFinalizerTest extends BitcoinSUnitTest {
       lockTime = TransactionConstants.lockTime
     )
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
+    val previousOutputMap = PreviousOutputMap(Map(outPoint -> creditingOutput))
     val utxo = ScriptSignatureParams(
       InputInfo(
         outPoint = outPoint,
@@ -130,6 +132,7 @@ class StandardNonInteractiveFinalizerTest extends BitcoinSUnitTest {
         redeemScriptOpt = None,
         scriptWitnessOpt = None,
         conditionalPath = ConditionalPath.NoCondition,
+        previousOutputMap = previousOutputMap,
         hashPreImages = Vector(privKey.publicKey)
       ),
       prevTransaction = creditingTx,
@@ -160,6 +163,7 @@ class StandardNonInteractiveFinalizerTest extends BitcoinSUnitTest {
       lockTime = TransactionConstants.lockTime
     )
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
+    val previousOutputMap = PreviousOutputMap(Map(outPoint -> creditingOutput))
     val utxo = ScriptSignatureParams(
       InputInfo(
         outPoint = outPoint,
@@ -167,6 +171,7 @@ class StandardNonInteractiveFinalizerTest extends BitcoinSUnitTest {
         redeemScriptOpt = None,
         scriptWitnessOpt = None,
         conditionalPath = ConditionalPath.NoCondition,
+        previousOutputMap = previousOutputMap,
         hashPreImages = Vector(privKey.publicKey)
       ),
       prevTransaction = creditingTx,

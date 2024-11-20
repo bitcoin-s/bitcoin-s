@@ -5,6 +5,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.*
 import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.script.constant.ScriptNumber
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.util.BitcoinScriptUtil
 import org.bitcoins.core.wallet.fee.{SatoshisPerByte, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.utxo.{
@@ -44,6 +45,7 @@ class RawTxSignerTest extends BitcoinSUnitTest {
       TransactionConstants.lockTime
     )
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
+    val previousOutputMap = PreviousOutputMap(Map(outPoint -> creditingOutput))
     val utxo =
       ScriptSignatureParams(
         InputInfo(
@@ -52,6 +54,7 @@ class RawTxSignerTest extends BitcoinSUnitTest {
           redeemScriptOpt = None,
           scriptWitnessOpt = None,
           conditionalPath = ConditionalPath.NoCondition,
+          previousOutputMap = previousOutputMap,
           hashPreImages = Vector(privKey.publicKey)
         ),
         prevTransaction = creditingTx,
@@ -86,6 +89,7 @@ class RawTxSignerTest extends BitcoinSUnitTest {
       TransactionConstants.lockTime
     )
     val outPoint = TransactionOutPoint(creditingTx.txId, UInt32.zero)
+    val previousOutputMap = PreviousOutputMap(Map(outPoint -> creditingOutput))
     val utxo = ScriptSignatureParams(
       InputInfo(
         outPoint = outPoint,
@@ -93,6 +97,7 @@ class RawTxSignerTest extends BitcoinSUnitTest {
         redeemScriptOpt = None,
         scriptWitnessOpt = Some(P2WSHWitnessV0(EmptyScriptPubKey)),
         conditionalPath = ConditionalPath.NoCondition,
+        previousOutputMap = previousOutputMap,
         hashPreImages = Vector(privKey.publicKey)
       ),
       prevTransaction = creditingTx,
@@ -127,6 +132,7 @@ class RawTxSignerTest extends BitcoinSUnitTest {
     )
     val outPoint =
       TransactionOutPoint(txId = creditingTx.txId, vout = UInt32.zero)
+    val previousOutputMap = PreviousOutputMap(Map(outPoint -> creditingOutput))
     val utxo = ScriptSignatureParams(
       InputInfo(
         outPoint = outPoint,
@@ -134,6 +140,7 @@ class RawTxSignerTest extends BitcoinSUnitTest {
         redeemScriptOpt = None,
         scriptWitnessOpt = Some(P2WSHWitnessV0(EmptyScriptPubKey)),
         conditionalPath = ConditionalPath.NoCondition,
+        previousOutputMap = previousOutputMap,
         hashPreImages = Vector(privKey.publicKey)
       ),
       prevTransaction = creditingTx,

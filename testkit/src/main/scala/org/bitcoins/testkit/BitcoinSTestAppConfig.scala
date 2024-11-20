@@ -87,7 +87,7 @@ object BitcoinSTestAppConfig {
            |  fee-provider.name = "random"
            |  proxy.enabled = $torEnabled
            |  tor.enabled = $torEnabled
-           |  tor.use-random-ports = false  
+           |  tor.use-random-ports = false
            |}
       """.stripMargin
       }

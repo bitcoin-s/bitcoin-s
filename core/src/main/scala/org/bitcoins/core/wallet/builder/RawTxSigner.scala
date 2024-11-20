@@ -118,7 +118,8 @@ object RawTxSigner {
       } else {
         val builder = RawTxBuilder()
           .setVersion(utx.version)
-          .setLockTime(utx.lockTime) ++= utx.outputs
+          .setLockTime(utx.lockTime)
+          .++=(utx.outputs)
 
         val inputsAndWitnesses = utxoInfos.map { utxo =>
           val txSigComp =

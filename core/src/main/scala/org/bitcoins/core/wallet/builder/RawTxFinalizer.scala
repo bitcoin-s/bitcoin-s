@@ -492,7 +492,7 @@ object SubtractFeeFromOutputsFinalizer {
     val fee = feeRate.calc(tx)
 
     val (outputs, unchangedOutputs) =
-      tx.outputs.zipWithIndex.toVector.partition { case (output, _) =>
+      tx.outputs.zipWithIndex.partition { case (output, _) =>
         spks.contains(output.scriptPubKey)
       }
 

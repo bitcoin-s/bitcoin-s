@@ -4,7 +4,7 @@ import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.keymanager.BIP39KeyManagerApi
 import org.bitcoins.core.api.wallet.*
-import org.bitcoins.core.api.wallet.db.AccountDb
+import org.bitcoins.core.api.wallet.db.{AccountDb, SpendingInfoDb}
 import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.transaction.*
@@ -194,10 +194,13 @@ case class FundTransactionHandling(
 
     for {
       (selectedUtxos, callbackF) <- selectedUtxosA
+      map = SpendingInfoDb.toPreviousOutputMap(selectedUtxos.map(_._1))
       change <- accountHandling.getNewChangeAddressAction(fromAccount)
       utxoSpendingInfos = {
         selectedUtxos.map { case (utxo, prevTx) =>
-          utxo.toUTXOInfo(keyManager = keyManager, prevTx)
+          utxo.toUTXOInfo(keyManager = keyManager,
+                          prevTransaction = prevTx,
+                          previousOutputMap = map)
         }
       }
     } yield {

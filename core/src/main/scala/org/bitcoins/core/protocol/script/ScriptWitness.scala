@@ -280,7 +280,7 @@ case class TaprootKeyPath(
 }
 
 object TaprootKeyPath extends Factory[TaprootKeyPath] {
-
+  val dummy: TaprootKeyPath = TaprootKeyPath(SchnorrDigitalSignature.dummy)
   override def fromBytes(bytes: ByteVector): TaprootKeyPath = {
     RawScriptWitnessParser.read(bytes) match {
       case keypath: TaprootKeyPath => keypath

@@ -111,7 +111,7 @@ object LnTag {
                 bytes) :+ ScriptConstant(bytes)
 
               val scriptPubKey = WitnessScriptPubKey(asm.toVector)
-              Bech32mAddress(scriptPubKey, np)
+              Address.fromScriptPubKey(scriptPubKey, np)
             case None =>
               throw new IllegalArgumentException(
                 s"Illegal version to create a fallback address from, got $version")

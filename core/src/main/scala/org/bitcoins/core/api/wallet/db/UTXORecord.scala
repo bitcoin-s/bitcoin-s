@@ -6,7 +6,8 @@ import org.bitcoins.core.hd.{
   HDPath,
   LegacyHDPath,
   NestedSegWitHDPath,
-  SegWitHDPath
+  SegWitHDPath,
+  TaprootHDPath
 }
 import org.bitcoins.core.protocol.script.{
   ScriptPubKey,
@@ -68,6 +69,14 @@ case class UTXORecord(
           spendingTxIdOpt = spendingTxIdOpt,
           id = id
         )
+
+      case (path: TaprootHDPath, None, None) =>
+        TaprootSpendingInfo(outPoint = outpoint,
+                            output = TransactionOutput(value, scriptPubKey),
+                            privKeyPath = path,
+                            state = state,
+                            spendingTxIdOpt = spendingTxIdOpt,
+                            id = id)
 
       case _ =>
         throw new IllegalArgumentException(
