@@ -431,7 +431,6 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
       _ = assert(balance1 == valueFromBitcoind * 2)
       bitcoindAddr1 <- bitcoindAddr1F
       sweepTx <- wallet.sendFundsHandling.sweepWallet(bitcoindAddr1, None)
-      _ = println(s"sweepTx=$sweepTx")
       _ <- bitcoind.sendRawTransaction(sweepTx)
       balance2 <- wallet.getBalance()
     } yield {

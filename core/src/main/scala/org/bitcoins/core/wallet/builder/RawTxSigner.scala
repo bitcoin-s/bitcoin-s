@@ -106,7 +106,9 @@ object RawTxSigner {
     require(utxoInfos.distinct.length == utxoInfos.length,
             "All UTXOSatisfyingInfos must be unique. ")
     val utxOutPoints = utx.inputs.map(_.previousOutput)
-    utxoInfos.foreach { u =>
+    val sortedUtxoInfos = utxoInfos.map(u =>
+      u.copy(inputInfo = u.inputInfo.sortPreviousOutputMap(utxOutPoints)))
+    sortedUtxoInfos.foreach { u =>
       val outPoints = u.inputInfo.previousOutputMap.keys.toVector
       require(
         utxOutPoints == outPoints,
@@ -125,7 +127,7 @@ object RawTxSigner {
           .setLockTime(utx.lockTime)
           .++=(utx.outputs)
 
-        val inputsAndWitnesses = utxoInfos.map { utxo =>
+        val inputsAndWitnesses = sortedUtxoInfos.map { utxo =>
           val txSigComp =
             BitcoinSigner.sign(utxo, utx)
           val scriptWitnessOpt = TxSigComponent.getScriptWitness(txSigComp)

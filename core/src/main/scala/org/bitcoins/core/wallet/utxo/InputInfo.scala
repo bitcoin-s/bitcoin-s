@@ -8,6 +8,11 @@ import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.script.constant.{OP_TRUE, ScriptConstant}
 import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.util.{BitcoinScriptUtil, BytesUtil}
+import org.bitcoins.core.wallet.utxo.InputInfo.{
+  getHashPreImages,
+  getRedeemScript,
+  getScriptWitness
+}
 import org.bitcoins.crypto.{
   ECDigitalSignature,
   ECPublicKey,
@@ -83,6 +88,30 @@ sealed trait InputInfo {
   }
 
   def previousOutputMap: PreviousOutputMap
+
+  /** Sorts our [[previousOutputMap]] to be in the same ordering as the given
+    * outPoints This is necessary as the outpoints must be signed in the exact
+    * order they appear in the inputs of our [[Transaction]] according to BIP341
+    * @return
+    *   InputInfo with the [[previousOutputMap]] sorted correctly
+    */
+  def sortPreviousOutputMap(
+      outPoints: Vector[TransactionOutPoint]): InputInfo = {
+    require(
+      outPoints.forall(o => previousOutputMap.get(o).isDefined),
+      s"Could not find all outPoints in map, outPoints=$outPoints previousOutputMap=${previousOutputMap.outputMap.keys}"
+    )
+    val sorted = outPoints.map(o => o -> previousOutputMap(o)).toMap
+    InputInfo(
+      outPoint = outPoint,
+      output = output,
+      redeemScriptOpt = getRedeemScript(this),
+      scriptWitnessOpt = getScriptWitness(this),
+      conditionalPath = conditionalPath,
+      previousOutputMap = PreviousOutputMap(sorted),
+      hashPreImages = getHashPreImages(this)
+    )
+  }
 }
 
 object InputInfo {
