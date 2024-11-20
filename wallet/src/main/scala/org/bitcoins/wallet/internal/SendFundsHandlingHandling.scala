@@ -488,9 +488,9 @@ case class SendFundsHandlingHandling(
 
       txBuilder = RawTxBuilder() ++= inputs += dummyOutput
       finalizer = SubtractFeeFromOutputsFinalizer(
-        inputInfos,
-        feeRate,
-        Vector(address.scriptPubKey)
+        inputInfos = inputInfos,
+        feeRate = feeRate,
+        spks = Vector(address.scriptPubKey)
       )
         .andThen(ShuffleFinalizer)
         .andThen(AddWitnessDataFinalizer(inputInfos))
@@ -503,7 +503,10 @@ case class SendFundsHandlingHandling(
         tmp.outputs.size == 1,
         s"Created tx is not as expected, does not have 1 output, got $tmp"
       )
-      rawTxHelper = FundRawTxHelper(withFinalizer, utxos, feeRate, Future.unit)
+      rawTxHelper = FundRawTxHelper(txBuilderWithFinalizer = withFinalizer,
+                                    scriptSigParams = utxos,
+                                    feeRate = feeRate,
+                                    reservedUTXOsCallbackF = Future.unit)
       tx <- finishSend(
         rawTxHelper,
         tmp.outputs.head.value,

@@ -105,9 +105,13 @@ object RawTxSigner {
       s"Must provide exactly one UTXOSatisfyingInfo per input, ${utxoInfos.length} != ${utx.inputs.length}")
     require(utxoInfos.distinct.length == utxoInfos.length,
             "All UTXOSatisfyingInfos must be unique. ")
-    require(utxoInfos.forall(utxo =>
-              utx.inputs.exists(_.previousOutput == utxo.outPoint)),
-            "All UTXOSatisfyingInfos must correspond to an input.")
+    val utxOutPoints = utx.inputs.map(_.previousOutput)
+    utxoInfos.foreach { u =>
+      val outPoints = u.inputInfo.previousOutputMap.keys.toVector
+      require(
+        utxOutPoints == outPoints,
+        s"OutputMap must have same ordering as unsigned transaction inputs utxOutPoints=$utxOutPoints outPointMap=$outPoints")
+    }
 
     val signedTx =
       if (

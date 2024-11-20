@@ -411,4 +411,31 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
         newBalance <- bitcoind.getBalance
       } yield assert(newBalance == oldBalance + amountToSend + Bitcoins(50))
   }
+
+  it must "sweep the wallet with multiple utxos" in { walletWithBitcoind =>
+    val wallet = walletWithBitcoind.wallet
+    val bitcoind = walletWithBitcoind.bitcoind
+    val addr1F = wallet.getNewAddress()
+    val addr2F = wallet.getNewAddress()
+    val bitcoindAddr1F = bitcoind.getNewAddress
+    for {
+      addr1 <- addr1F
+      addr2 <- addr2F
+      txId1 <- bitcoind.sendToAddress(addr1, valueFromBitcoind)
+      txId2 <- bitcoind.sendToAddress(addr2, valueFromBitcoind)
+      tx1 <- bitcoind.getRawTransactionRaw(txId1)
+      tx2 <- bitcoind.getRawTransactionRaw(txId2)
+      _ <- wallet.transactionProcessing.processTransaction(tx1, None)
+      _ <- wallet.transactionProcessing.processTransaction(tx2, None)
+      balance1 <- wallet.getBalance()
+      _ = assert(balance1 == valueFromBitcoind * 2)
+      bitcoindAddr1 <- bitcoindAddr1F
+      sweepTx <- wallet.sendFundsHandling.sweepWallet(bitcoindAddr1, None)
+      _ = println(s"sweepTx=$sweepTx")
+      _ <- bitcoind.sendRawTransaction(sweepTx)
+      balance2 <- wallet.getBalance()
+    } yield {
+      assert(balance2 == Satoshis.zero)
+    }
+  }
 }
