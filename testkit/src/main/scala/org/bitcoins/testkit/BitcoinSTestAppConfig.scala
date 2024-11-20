@@ -100,7 +100,7 @@ object BitcoinSTestAppConfig {
       (overrideConf +: configWithEmbeddedDb(
         project = None,
         pgUrl
-      ) +: config).toVector
+      ) +: config)
     )
   }
 
