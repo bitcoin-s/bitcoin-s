@@ -25,7 +25,7 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
 
   /** Wallet config with data directory set to user temp directory */
   override protected def getFreshConfig: BitcoinSAppConfig = {
-    val segwitConfig = BaseWalletTest.segwitWalletConf
+    val segwitConfig = BaseWalletTest.randomAccountTypeConfig
     val randomHex = CryptoUtil.randomBytes(3).toHex
     // with postgres, we need unique wallet names as postgres wallets
     // share the same database. They have a unique schema with the database

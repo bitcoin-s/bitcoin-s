@@ -22,7 +22,7 @@ trait DualWalletTestCachedBitcoind
   implicit protected def config2: BitcoinSAppConfig = {
     val config = BitcoinSWalletTest.buildBip39PasswordWithExtraConfig(
       getBIP39PasswordOpt(),
-      Some(BaseWalletTest.segwitWalletConf)
+      Some(BaseWalletTest.randomAccountTypeConfig)
     )
     val randomHex = CryptoUtil.randomBytes(3).toHex
     // with postgres, we need unique wallet names as postgres wallets

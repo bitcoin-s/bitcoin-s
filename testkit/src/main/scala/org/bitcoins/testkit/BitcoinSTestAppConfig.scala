@@ -1,7 +1,7 @@
 package org.bitcoins.testkit
 
 import org.apache.pekko.actor.ActorSystem
-import com.typesafe.config._
+import com.typesafe.config.*
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.dlc.wallet.DLCAppConfig
@@ -11,11 +11,12 @@ import org.bitcoins.testkit.db.TestAppConfig
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
 import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkit.util.TorUtil.torEnabled
+import org.bitcoins.testkit.wallet.BaseWalletTest
 import org.bitcoins.testkitcore.Implicits.GeneratorOps
 import org.bitcoins.testkitcore.gen.NumberGenerator
 import org.bitcoins.wallet.config.WalletAppConfig
 
-import java.nio.file._
+import java.nio.file.*
 import java.util.UUID
 import scala.concurrent.ExecutionContext
 
@@ -92,6 +93,7 @@ object BitcoinSTestAppConfig {
       """.stripMargin
       }
       .withFallback(genWalletNameConf(forceNamedWallet))
+      .withFallback(BaseWalletTest.randomAccountTypeConfig)
 
     BitcoinSAppConfig(
       tmpDir(),
