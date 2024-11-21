@@ -244,12 +244,14 @@ sealed abstract class CryptoGenerators {
     }
   }
 
+  def taprootHashType: Gen[HashType] = Gen.oneOf(HashType.validTaprootHashTypes)
+
   def schnorrDigitalSignatureHashType: Gen[SchnorrDigitalSignature] = {
     for {
       privKey <- privateKey
       hash <- CryptoGenerators.doubleSha256Digest
       sigNoHashType = privKey.schnorrSign(hash.bytes)
-      hashType <- hashType
+      hashType <- taprootHashType
     } yield {
       sigNoHashType.appendHashType(hashType)
     }
