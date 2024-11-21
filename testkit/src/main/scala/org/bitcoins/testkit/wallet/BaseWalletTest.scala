@@ -73,7 +73,10 @@ object BaseWalletTest {
   val taprootWalletConf: Config =
     ConfigFactory.parseString("bitcoin-s.wallet.defaultAccountType = taproot")
   private val accountTypes =
-    Vector(legacyWalletConf, nestedSegwitWalletConf, segwitWalletConf, taprootWalletConf)
+    Vector(legacyWalletConf,
+           nestedSegwitWalletConf,
+           segwitWalletConf,
+           taprootWalletConf)
 
   def randomAccountTypeConfig: Config = {
     accountTypes(Random.nextInt(accountTypes.length))
