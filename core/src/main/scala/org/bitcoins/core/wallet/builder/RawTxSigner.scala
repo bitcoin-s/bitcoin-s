@@ -1,8 +1,14 @@
 package org.bitcoins.core.wallet.builder
 
 import org.bitcoins.core.crypto.TxSigComponent
-import org.bitcoins.core.protocol.script.ScriptWitness
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.script.{
+  NonWitnessScriptPubKey,
+  ScriptWitness,
+  TaprootScriptPubKey,
+  UnassignedWitnessScriptPubKey,
+  WitnessScriptPubKeyV0
+}
+import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo.{
@@ -106,13 +112,16 @@ object RawTxSigner {
     require(utxoInfos.distinct.length == utxoInfos.length,
             "All UTXOSatisfyingInfos must be unique. ")
     val utxOutPoints = utx.inputs.map(_.previousOutput)
-    val sortedUtxoInfos = utxoInfos.map(u =>
-      u.copy(inputInfo = u.inputInfo.sortPreviousOutputMap(utxOutPoints)))
-    sortedUtxoInfos.foreach { u =>
-      val outPoints = u.inputInfo.previousOutputMap.keys.toVector
-      require(
-        utxOutPoints == outPoints,
-        s"OutputMap must have same ordering as unsigned transaction inputs utxOutPoints=$utxOutPoints outPointMap=$outPoints")
+    val sortedUtxoInfos = utxoInfos.map { u =>
+      u.output.scriptPubKey match {
+        case _: NonWitnessScriptPubKey | _: WitnessScriptPubKeyV0 |
+            _: UnassignedWitnessScriptPubKey =>
+          // no sorting needed for these spk types as the sighash algorithm
+          // doesn't include all outputs
+          u
+        case _: TaprootScriptPubKey =>
+          u.copy(inputInfo = u.inputInfo.sortPreviousOutputMap(utxOutPoints))
+      }
     }
 
     val signedTx =
