@@ -200,6 +200,19 @@ object HashType extends Factory[HashType] {
   def isDefinedHashtypeSignature(sig: ECDigitalSignature): Boolean = {
     sig.bytes.nonEmpty && hashTypeBytes.contains(sig.bytes.last)
   }
+
+  //    (hash_type <= 0x03 || (hash_type >= 0x81 && hash_type <= 0x83))
+  private val validTaprootHashTypes: Vector[Byte] = Vector(0x00.toByte,
+                                                           0x01.toByte,
+                                                           0x02.toByte,
+                                                           0x03.toByte,
+                                                           0x81.toByte,
+                                                           0x82.toByte,
+                                                           0x83.toByte)
+
+  def checkTaprootHashType(hashType: HashType): Boolean = {
+    validTaprootHashTypes.contains(hashType.byte)
+  }
 }
 
 case object SIGHASH_DEFAULT extends HashType {

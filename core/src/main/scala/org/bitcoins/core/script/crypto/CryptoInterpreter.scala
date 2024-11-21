@@ -226,7 +226,7 @@ sealed abstract class CryptoInterpreter {
       helperE match {
         case Right(helper) =>
           val validHashType =
-            TransactionSignatureChecker.checkTaprootHashType(helper.hashType)
+            HashType.checkTaprootHashType(helper.hashType)
           if (validHashType) {
             val result = TransactionSignatureChecker.checkSigTapscript(
               txSignatureComponent = program.txSignatureComponent,

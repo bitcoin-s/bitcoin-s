@@ -331,12 +331,25 @@ object TaprootKeyPath extends Factory[TaprootKeyPath] {
   def isValid(stack: Vector[ByteVector]): Boolean = {
     val noAnnex =
       stack.length == 1 && (stack.head.length == 64 || stack.head.length == 65) &&
-        SchnorrPublicKey.fromBytesT(stack.head.take(32)).isSuccess
+        SchnorrPublicKey
+          .fromBytesT(stack.head.take(32))
+          .isSuccess && checkHashType(stack.head)
     val annex =
       stack.length == 2 && TaprootScriptPath.hasAnnex(stack) &&
         (stack(1).length == 64 || stack(1).length == 65) &&
-        SchnorrPublicKey.fromBytesT(stack(1).take(32)).isSuccess
+        SchnorrPublicKey
+          .fromBytesT(stack(1).take(32))
+          .isSuccess && checkHashType(stack(1))
     noAnnex || annex
+  }
+
+  private def checkHashType(bytes: ByteVector): Boolean = {
+    require(bytes.length == 64 || bytes.length == 65)
+    if (bytes.length == 64) true
+    else {
+      val h = HashType.fromByte(bytes(64))
+      HashType.checkTaprootHashType(h)
+    }
   }
 }
 
