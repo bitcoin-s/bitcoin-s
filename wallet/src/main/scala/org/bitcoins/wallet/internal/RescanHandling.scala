@@ -181,7 +181,8 @@ case class RescanHandling(
   ): Future[Unit] = {
     // handle the case where there is a top level rescan failure when _starting_ the rescan
     rescanStateF.recoverWith { case err: Throwable =>
-      logger.error(s"Failed to rescan wallet=${walletConfig.walletName}", err)
+      logger.error(
+        s"Failed to rescan wallet1=${walletConfig.walletName} err=${err.getMessage}")
       stateDescriptorDAO
         .updateRescanning(false)
         .flatMap(_ => Future.failed(err))
@@ -198,7 +199,8 @@ case class RescanHandling(
           Future.unit
         case err: Throwable =>
           logger
-            .error(s"Failed to rescan wallet=${walletConfig.walletName}", err)
+            .error(
+              s"Failed to rescan wallet=${walletConfig.walletName} err=${err.getMessage}")
           stateDescriptorDAO
             .updateRescanning(false)
             .flatMap(_ => Future.failed(err))
