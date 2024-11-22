@@ -12,6 +12,8 @@ import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.scalatest.Suite
 
+import scala.util.Random
+
 /** Base test trait for all the tests in our walletTest module */
 trait BaseWalletTest extends EmbeddedPg {
   _: Suite with BitcoinSPekkoAsyncTest =>
@@ -62,10 +64,22 @@ object BaseWalletTest {
   val legacyWalletConf: Config =
     ConfigFactory.parseString("bitcoin-s.wallet.defaultAccountType = legacy")
 
+  val nestedSegwitWalletConf: Config = ConfigFactory.parseString(
+    "bitcoin-s.wallet.defaultAccountType = nested-segwit")
+
   val segwitWalletConf: Config =
     ConfigFactory.parseString("bitcoin-s.wallet.defaultAccountType = segwit")
 
   val taprootWalletConf: Config =
     ConfigFactory.parseString("bitcoin-s.wallet.defaultAccountType = taproot")
+  private val accountTypes =
+    Vector(legacyWalletConf,
+           nestedSegwitWalletConf,
+           segwitWalletConf,
+           taprootWalletConf)
+
+  def randomAccountTypeConfig: Config = {
+    accountTypes(Random.nextInt(accountTypes.length))
+  }
 
 }

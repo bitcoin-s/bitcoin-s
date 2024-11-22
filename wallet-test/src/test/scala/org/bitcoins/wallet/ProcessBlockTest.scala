@@ -1,11 +1,15 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.core.api.wallet.SyncHeightDescriptor
-import org.bitcoins.core.currency._
+import org.bitcoins.core.crypto.ExtKeyVersion.NestedSegWitTestNet3Priv
+import org.bitcoins.core.currency.*
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.number.{Int32, UInt32}
-import org.bitcoins.core.protocol.script.EmptyScriptSignature
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.script.{
+  EmptyScriptSignature,
+  P2WPKHWitnessSPKV0
+}
+import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.core.wallet.utxo.TxoState
@@ -193,10 +197,19 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoindNewest {
         .read((coin, path.accountIdx))
         .map(_.get)
 
-      psbt = PSBT
-        .fromUnsignedTx(unsignedTx)
-        .addUTXOToInput(recvTx, 0)
-        .addKeyPathToInput(accountDb.xpub, path, addrDb.pubkey, 0)
+      psbt = {
+        val base = PSBT
+          .fromUnsignedTx(unsignedTx)
+          .addUTXOToInput(recvTx, 0)
+          .addKeyPathToInput(accountDb.xpub, path, addrDb.pubkey, 0)
+        if (accountDb.xprivVersion == NestedSegWitTestNet3Priv) {
+          base.addRedeemOrWitnessScriptToInput(
+            P2WPKHWitnessSPKV0(addrDb.pubkey),
+            0)
+        } else {
+          base
+        }
+      }
 
       signed <- wallet.sendFundsHandling.signPSBT(psbt)
       tx <- Future.fromTry(

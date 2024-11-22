@@ -460,7 +460,7 @@ case class DLCWallet(override val walletApi: Wallet)(implicit
       _ <- oracleNonceDAO.createAll(nonceDbs)
       chainType = HDChainType.External
 
-      account <- accountHandling.getDefaultAccountForType(AddressType.SegWit)
+      account <- accountHandling.getDefaultAccount()
       nextIndex <- walletApi.addressHandling.getNextAvailableIndex(account,
                                                                    chainType)
       _ <- writeDLCKeysToAddressDb(account, chainType, nextIndex)
@@ -910,7 +910,7 @@ case class DLCWallet(override val walletApi: Wallet)(implicit
         s"Creating DLC Accept for tempContractId ${offer.tempContractId.hex}"
       )
       val result = for {
-        account <- accountHandling.getDefaultAccountForType(AddressType.SegWit)
+        account <- accountHandling.getDefaultAccount()
         fundRawTxHelper <- fundDLCAcceptMsg(
           offer = offer,
           collateral = collateral,
