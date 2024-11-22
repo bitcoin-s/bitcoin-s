@@ -9,10 +9,13 @@ import org.bitcoins.core.protocol.dlc.models.{
 import org.bitcoins.core.wallet.rescan.RescanState
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.wallet.DLCWalletUtil.*
-import org.bitcoins.testkit.wallet.{DLCWalletUtil, DualWalletTestCachedBitcoind}
+import org.bitcoins.testkit.wallet.{
+  DLCWalletUtil,
+  DualDLCWalletTestCachedBitcoind
+}
 import org.scalatest.FutureOutcome
 
-class RescanDLCTest extends DualWalletTestCachedBitcoind {
+class RescanDLCTest extends DualDLCWalletTestCachedBitcoind {
 
   type FixtureParam =
     (InitializedDLCWallet, InitializedDLCWallet, BitcoindRpcClient)

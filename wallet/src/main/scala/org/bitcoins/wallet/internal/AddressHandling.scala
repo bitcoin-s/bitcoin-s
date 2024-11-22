@@ -153,7 +153,8 @@ case class AddressHandling(
         NestedSegWitHDPath(coinType, accountIndex, chainType, addressIndex)
       case HDPurpose.SegWit =>
         SegWitHDPath(coinType, accountIndex, chainType, addressIndex)
-
+      case HDPurpose.Taproot =>
+        TaprootHDPath(coinType, accountIndex, chainType, addressIndex)
       case invalid: HDPurpose =>
         throw new IllegalArgumentException(
           s"No HD Path type for HDPurpose of $invalid"
@@ -193,7 +194,11 @@ case class AddressHandling(
           LegacyHDPath(coinType, accountIndex, chainType, addressIndex),
           networkParameters
         )
-
+      case HDPurpose.Taproot =>
+        AddressDbHelper.getTaprootAddress(
+          pub = pubkey,
+          path = TaprootHDPath(coinType, accountIndex, chainType, addressIndex),
+          np = networkParameters)
       case invalid: HDPurpose =>
         throw new IllegalArgumentException(
           s"No HD Path type for HDPurpose of $invalid"

@@ -15,14 +15,15 @@ import org.bitcoins.testkit.wallet.FundWalletUtil.FundedDLCWallet
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.scalatest.FutureOutcome
 
-trait DualWalletTestCachedBitcoind
+trait DualDLCWalletTestCachedBitcoind
     extends BitcoinSWalletTestCachedBitcoindNewest {
   import BitcoinSWalletTest._
 
   implicit protected def config2: BitcoinSAppConfig = {
     val config = BitcoinSWalletTest.buildBip39PasswordWithExtraConfig(
       getBIP39PasswordOpt(),
-      None
+      // needed until DLC spec supports non segwit v0 outputs
+      Some(BaseWalletTest.segwitWalletConf)
     )
     val randomHex = CryptoUtil.randomBytes(3).toHex
     // with postgres, we need unique wallet names as postgres wallets
