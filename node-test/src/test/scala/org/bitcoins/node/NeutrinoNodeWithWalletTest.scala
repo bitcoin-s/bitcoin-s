@@ -63,8 +63,6 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
         utxos <- wallet.utxoHandling.listDefaultAccountUtxos()
       } yield {
         // +- fee rate because signatures could vary in size
-        println(
-          s"expectedBalance=$expectedBalance balance=${balance +- FeeRate.currencyUnit}")
         (expectedBalance === balance +- FeeRate.currencyUnit) &&
         (expectedAddresses == addresses.size) &&
         (expectedUtxos == utxos.size)
@@ -89,7 +87,6 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
     // expected we should have received TestAmount back
     // and have 1 more address/utxo
     def condition2(firstTxFee: CurrencyUnit): () => Future[Boolean] = { () =>
-      println(s"condition2")
       condition(
         expectedBalance = (6.bitcoin - TestAmount - firstTxFee) + TestAmount,
         expectedUtxos = 4,
