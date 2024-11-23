@@ -62,16 +62,16 @@ object BaseWalletTest {
   }
 
   val legacyWalletConf: Config =
-    ConfigFactory.parseString("bitcoin-s.wallet.defaultAccountType = legacy")
+    ConfigFactory.parseString("bitcoin-s.wallet.purpose = legacy")
 
-  val nestedSegwitWalletConf: Config = ConfigFactory.parseString(
-    "bitcoin-s.wallet.defaultAccountType = nested-segwit")
+  val nestedSegwitWalletConf: Config =
+    ConfigFactory.parseString("bitcoin-s.wallet.purpose = nested-segwit")
 
   val segwitWalletConf: Config =
-    ConfigFactory.parseString("bitcoin-s.wallet.defaultAccountType = segwit")
+    ConfigFactory.parseString("bitcoin-s.wallet.purpose = segwit")
 
   val taprootWalletConf: Config =
-    ConfigFactory.parseString("bitcoin-s.wallet.defaultAccountType = taproot")
+    ConfigFactory.parseString("bitcoin-s.wallet.purpose = taproot")
   private val accountTypes =
     Vector(legacyWalletConf,
            nestedSegwitWalletConf,

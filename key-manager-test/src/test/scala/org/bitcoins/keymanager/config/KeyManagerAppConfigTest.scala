@@ -142,7 +142,7 @@ class KeyManagerAppConfigTest extends BitcoinSAsyncTest {
       val mnemonic = MnemonicCode.fromEntropy(entropy)
       val bip39Seed = BIP39Seed.fromMnemonic(mnemonic, None)
       val version = ExtKeyPrivVersion
-        .fromPurpose(appConfig1.defaultAccountKind, networkParam)
+        .fromPurpose(appConfig1.defaultPurpose, networkParam)
         .get
       val xpriv = bip39Seed.toExtPrivateKey(version)
       val xpub = xpriv.extPublicKey

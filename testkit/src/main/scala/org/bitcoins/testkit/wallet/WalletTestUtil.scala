@@ -107,7 +107,7 @@ object WalletTestUtil {
     HDAccount(HDCoin(HDPurpose.SegWit, hdCoinType), 0)
 
   def getHdAccount1(walletAppConfig: WalletAppConfig): HDAccount = {
-    val purpose = walletAppConfig.defaultAccountKind
+    val purpose = walletAppConfig.defaultPurpose
     HDAccount(coin = HDCoin(purpose, HDCoinType.Testnet), index = 1)
   }
 
