@@ -74,9 +74,9 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
     // the 3BTC utxo to spend, so we should have
     // confirmed = 2BTC + 1BTC
     // unconfirmed = 3 BTC - TestAmount - TestFees
-    val condition1 = () => {
+    def condition1(fee: CurrencyUnit): () => Future[Boolean] = () => {
       condition(
-        expectedBalance = 6.bitcoin - TestAmount - TestFees,
+        expectedBalance = 6.bitcoin - TestAmount - fee,
         expectedUtxos = 3,
         expectedAddresses = 7
       )
@@ -86,9 +86,9 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
     // so everything should stay the same as above
     // expected we should have received TestAmount back
     // and have 1 more address/utxo
-    val condition2 = { () =>
+    def condition2(firstTxFee: CurrencyUnit): () => Future[Boolean] = { () =>
       condition(
-        expectedBalance = (6.bitcoin - TestAmount - TestFees) + TestAmount,
+        expectedBalance = (6.bitcoin - TestAmount - firstTxFee) + TestAmount,
         expectedUtxos = 4,
         expectedAddresses = 8
       )
@@ -97,9 +97,10 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
     for {
       // send
       addr <- bitcoind.getNewAddress
-      _ <- wallet.sendFundsHandling.sendToAddress(addr,
-                                                  TestAmount,
-                                                  Some(FeeRate))
+      tx <- wallet.sendFundsHandling.sendToAddress(addr,
+                                                   TestAmount,
+                                                   Some(FeeRate))
+      fee = FeeRate.calc(tx)
 
       _ <- wallet.getConfirmedBalance()
       _ <- wallet.getUnconfirmedBalance()
@@ -108,7 +109,9 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
         bitcoind.getNewAddress
           .flatMap(bitcoind.generateToAddress(1, _))
       _ <- NodeTestUtil.awaitSync(node, bitcoind)
-      _ <- AsyncUtil.awaitConditionF(condition1, maxTries = 100) // 10 seconds
+      _ <- AsyncUtil.awaitConditionF(condition1(fee),
+                                     maxTries = 100
+      ) // 10 seconds
       // receive
       address <- wallet.addressHandling.getNewAddress()
       txId <- bitcoind.sendToAddress(address, TestAmount)
@@ -119,7 +122,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
           .flatMap(bitcoind.generateToAddress(1, _))
       _ <- NodeTestUtil.awaitSync(node, bitcoind)
       _ <- TestAsyncUtil.awaitConditionF(
-        condition2,
+        condition2(fee),
         interval = 1.second,
         maxTries = 30
       )
