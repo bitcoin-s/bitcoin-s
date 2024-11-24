@@ -522,7 +522,7 @@ case class AccountHandling(
   /** The default HD coin for this wallet, read from config */
   protected[wallet] lazy val DEFAULT_HD_COIN: HDCoin = {
     val coinType = DEFAULT_HD_COIN_TYPE
-    HDCoin(walletConfig.defaultAccountKind, coinType)
+    HDCoin(walletConfig.defaultPurpose, coinType)
   }
 
   /** The default HD coin type for this wallet, derived from the network we're
@@ -540,5 +540,5 @@ case class AccountHandling(
 
   /** The default HD purpose for this wallet, read from config */
   protected[wallet] lazy val DEFAULT_HD_PURPOSE: HDPurpose =
-    walletConfig.defaultAccountKind
+    walletConfig.defaultPurpose
 }

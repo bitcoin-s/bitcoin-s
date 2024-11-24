@@ -51,18 +51,18 @@ class WalletAppConfigTest extends BitcoinSAsyncTest {
 
   it must "be overridable without screwing up other options" in {
     val otherConf = ConfigFactory.parseString(
-      s"bitcoin-s.wallet.defaultAccountType = segwit"
+      s"bitcoin-s.wallet.purpose = segwit"
     )
     val thirdConf = ConfigFactory.parseString(
-      s"bitcoin-s.wallet.defaultAccountType = nested-segwit"
+      s"bitcoin-s.wallet.purpose = nested-segwit"
     )
 
     val overriden = config.withOverrides(otherConf)
 
     val twiceOverriden = overriden.withOverrides(thirdConf)
 
-    assert(overriden.defaultAccountKind == HDPurpose.SegWit)
-    assert(twiceOverriden.defaultAccountKind == HDPurpose.NestedSegWit)
+    assert(overriden.defaultPurpose == HDPurpose.SegWit)
+    assert(twiceOverriden.defaultPurpose == HDPurpose.NestedSegWit)
 
     assert(config.datadir == overriden.datadir)
     assert(twiceOverriden.datadir == overriden.datadir)

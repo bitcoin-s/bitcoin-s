@@ -256,7 +256,7 @@ bitcoin-s {
         # The wallet name can contain letters, numbers, and underscores '_'.
         # walletName = MyWallet0
 
-        defaultAccountType = segwit # legacy, segwit, nested-segwit
+        purpose = segwit # legacy, segwit, nested-segwit, taproot
 
         bloomFalsePositiveRate = 0.0001 # percentage
 

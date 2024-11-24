@@ -36,9 +36,8 @@ trait BitcoinSServerMainBitcoindFixture
         // needed for fundWalletWithBitcoind
         cliConfig = Config(rpcPortOpt = Some(config.rpcPort),
                            rpcPassword = config.rpcPassword)
-        _ = ConsoleCli.exec(
-          CreateNewAccount(config.walletConf.defaultAccountKind),
-          cliConfig)
+        _ = ConsoleCli.exec(CreateNewAccount(config.walletConf.defaultPurpose),
+                            cliConfig)
         addresses = Vector
           .fill(3)(ConsoleCli.exec(GetNewAddress(None), cliConfig))
           .map(_.get)

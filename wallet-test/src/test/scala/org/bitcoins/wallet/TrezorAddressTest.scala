@@ -136,7 +136,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
       case other                  => fail(s"unexpected purpose: $other")
     }
     val entropy = mnemonic.toEntropy.toHex
-    val confStr = s"""bitcoin-s.wallet.defaultAccountType = $purposeStr
+    val confStr = s"""bitcoin-s.wallet.purpose = $purposeStr
                      |bitcoin-s.network = mainnet
                      |bitcoin-s.keymanager.entropy=${entropy}
                      |""".stripMargin

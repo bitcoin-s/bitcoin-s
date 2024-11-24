@@ -68,8 +68,18 @@ case class KeyManagerAppConfig(
     s"$prefix${WalletStorage.ENCRYPTED_SEED_FILE_NAME}"
   }
 
-  lazy val defaultAccountKind: HDPurpose =
-    config.getString("bitcoin-s.wallet.defaultAccountType") match {
+  lazy val defaultPurpose: HDPurpose = {
+    val purposeOpt = {
+      val newOpt = config.getStringOrNone("bitcoin-s.wallet.purpose")
+      if (newOpt.isDefined)
+        newOpt.get
+      else {
+        // fallback to old config for now, remove in future version
+        config.getString("bitcoin-s.wallet.defaultAccountType")
+      }
+    }
+
+    purposeOpt match {
       case "legacy"        => HDPurpose.Legacy
       case "segwit"        => HDPurpose.SegWit
       case "nested-segwit" => HDPurpose.NestedSegWit
@@ -77,6 +87,7 @@ case class KeyManagerAppConfig(
       case other: String =>
         throw new RuntimeException(s"$other is not a valid account type!")
     }
+  }
 
   /** Entropy provided by the a user in their bitcoin-s.conf configuration file.
     * This should be used to seed the keymanager rather than randomly generating
@@ -88,7 +99,7 @@ case class KeyManagerAppConfig(
   }
 
   private val kmParams: KeyManagerParams = {
-    KeyManagerParams(seedPath, defaultAccountKind, network)
+    KeyManagerParams(seedPath, defaultPurpose, network)
   }
 
   private def getOldSeedPath(): Path = {

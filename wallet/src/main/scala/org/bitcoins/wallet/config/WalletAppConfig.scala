@@ -102,10 +102,10 @@ case class WalletAppConfig(
   lazy val kmConf: KeyManagerAppConfig =
     kmConfOpt.getOrElse(KeyManagerAppConfig(baseDatadir, configOverrides))
 
-  lazy val defaultAccountKind: HDPurpose = kmConf.defaultAccountKind
+  lazy val defaultPurpose: HDPurpose = kmConf.defaultPurpose
 
   lazy val defaultAddressType: AddressType = {
-    defaultAccountKind match {
+    defaultPurpose match {
       case HDPurpose.Legacy       => AddressType.Legacy
       case HDPurpose.NestedSegWit => AddressType.NestedSegWit
       case HDPurpose.SegWit       => AddressType.SegWit
@@ -117,7 +117,7 @@ case class WalletAppConfig(
   }
 
   lazy val defaultAccount: HDAccount = {
-    val purpose = defaultAccountKind
+    val purpose = defaultPurpose
     HDAccount(
       coin = HDCoin(purpose, HDCoinType.fromNetwork(network)),
       index = 0
@@ -272,7 +272,7 @@ case class WalletAppConfig(
   override lazy val seedPath: Path = kmConf.seedPath
 
   def kmParams: KeyManagerParams =
-    KeyManagerParams(kmConf.seedPath, defaultAccountKind, network)
+    KeyManagerParams(kmConf.seedPath, defaultPurpose, network)
 
   /** How much elements we can have in
     * [[org.bitcoins.wallet.internal.AddressHandling.addressRequestQueue]]
