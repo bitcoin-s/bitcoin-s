@@ -68,4 +68,25 @@ class RescanStateTest extends BitcoinSAsyncTest {
 
     recoverToSucceededIf[RuntimeException](resultF)
   }
+
+  it must "handle stopping recursive rescan correctly" in {
+    val completeRescanEarlyP = Promise[Option[Int]]()
+    val recursiveRescanP = Promise[RescanState]()
+    val blocksMatchedF = completeRescanEarlyP.future.map(_ => Vector.empty)
+    val rescanState = RescanState.RescanStarted(completeRescanEarlyP,
+                                                blocksMatchedF,
+                                                recursiveRescanP)
+
+    val recursiveRescanCompleteEarlyP = Promise[Option[Int]]()
+    val recursiveRescanStarted = RescanState.RescanStarted(
+      recursiveRescanCompleteEarlyP,
+      recursiveRescanCompleteEarlyP.future.map(_ => Vector.empty),
+      Promise())
+    recursiveRescanP.success(recursiveRescanStarted)
+    for {
+      _ <- rescanState.stop()
+      _ <- recoverToSucceededIf[RescanTerminatedEarly.type](
+        rescanState.blocksMatchedF)
+    } yield succeed
+  }
 }
