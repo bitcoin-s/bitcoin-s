@@ -263,6 +263,49 @@ sealed trait DLCWalletLoaderApi
       ()
     }
   }
+
+  private def stopNodeCallbacks(nodeCallbacks: NodeCallbacks): Future[Unit] = {
+    nodeCallbacks match {
+      case stream: NodeCallbackStreamManager =>
+        stream.stop()
+      case _: NodeCallbacks =>
+        Future.unit
+    }
+  }
+
+  protected def loadHelper(
+      walletNameOpt: Option[String],
+      aesPasswordOpt: Option[AesPassword],
+      nodeConf: NodeAppConfig,
+      chainQueryApi: ChainQueryApi,
+      nodeApi: NodeApi,
+      createCallbacks: DLCNeutrinoHDWalletApi => Future[
+        NodeCallbackStreamManager])
+      : Future[(WalletHolder, WalletAppConfig, DLCAppConfig)] = {
+    logger.info(s"Beginning to load=$walletNameOpt")
+
+    for {
+      _ <- stopRescan()
+      _ <- stopNodeCallbacks(nodeConf.callBacks)
+      (dlcWallet, walletConfig, dlcConfig) <- loadWallet(
+        chainQueryApi = chainQueryApi,
+        nodeApi = nodeApi,
+        walletNameOpt = walletNameOpt,
+        aesPasswordOpt = aesPasswordOpt
+      )
+      _ <- stopOldWalletAppConfig(walletConfig)
+      _ <- stopOldDLCAppConfig(dlcConfig)
+      _ <- walletHolder.replaceWallet(dlcWallet)
+      nodeCallbacks <- createCallbacks(dlcWallet)
+      _ = nodeConf.replaceCallbacks(nodeCallbacks)
+      _ <- updateWalletName(walletNameOpt)
+      rescanState <- restartRescanIfNeeded(dlcWallet.rescanHandling)
+      _ = setRescanState(rescanState)
+    } yield {
+      logger.info(s"Done loading=$walletNameOpt")
+      (walletHolder, walletConfig, dlcConfig)
+    }
+  }
 }
 
 case class DLCWalletNeutrinoBackendLoader(
@@ -273,7 +316,6 @@ case class DLCWalletNeutrinoBackendLoader(
     override val conf: BitcoinSAppConfig,
     override val system: ActorSystem
 ) extends DLCWalletLoaderApi {
-  import system.dispatcher
 
   implicit private val nodeConf: NodeAppConfig = conf.nodeConf
 
@@ -283,36 +325,14 @@ case class DLCWalletNeutrinoBackendLoader(
       walletNameOpt: Option[String],
       aesPasswordOpt: Option[AesPassword]
   ): Future[(WalletHolder, WalletAppConfig, DLCAppConfig)] = {
-    val stopCallbackF = nodeConf.callBacks match {
-      case stream: NodeCallbackStreamManager =>
-        stream.stop()
-      case _: NodeCallbacks =>
-        Future.unit
-    }
-    val stopRescanF = stopRescan()
-
-    for {
-      _ <- stopCallbackF
-      _ <- stopRescanF
-      (dlcWallet, walletConfig, dlcConfig) <- loadWallet(
-        chainQueryApi = chainQueryApi,
-        nodeApi = nodeApi,
-        walletNameOpt = walletNameOpt,
-        aesPasswordOpt = aesPasswordOpt
-      )
-      _ <- stopOldWalletAppConfig(walletConfig)
-      _ <- stopOldDLCAppConfig(dlcConfig)
-      _ <- walletHolder.replaceWallet(dlcWallet)
-      nodeCallbacks <-
-        CallbackUtil.createNeutrinoNodeCallbacksForWallet(walletHolder)
-      _ = nodeConf.replaceCallbacks(nodeCallbacks)
-      _ <- updateWalletName(walletNameOpt)
-      rescanState <- restartRescanIfNeeded(walletHolder.rescanHandling)
-      _ = setRescanState(rescanState)
-    } yield {
-      logger.info(s"Done loading wallet=$walletNameOpt")
-      (walletHolder, walletConfig, dlcConfig)
-    }
+    loadHelper(
+      walletNameOpt = walletNameOpt,
+      aesPasswordOpt = aesPasswordOpt,
+      nodeConf = nodeConf,
+      chainQueryApi = chainQueryApi,
+      nodeApi = nodeApi,
+      createCallbacks = CallbackUtil.createNeutrinoNodeCallbacksForWallet
+    )
   }
 
 }
@@ -326,43 +346,19 @@ case class DLCWalletBitcoindBackendLoader(
     override val conf: BitcoinSAppConfig,
     override val system: ActorSystem
 ) extends DLCWalletLoaderApi {
-  import system.dispatcher
   implicit private val nodeConf: NodeAppConfig = conf.nodeConf
 
   override def load(
       walletNameOpt: Option[String],
       aesPasswordOpt: Option[AesPassword]
   ): Future[(WalletHolder, WalletAppConfig, DLCAppConfig)] = {
-    val stopCallbackF = nodeConf.callBacks match {
-      case stream: NodeCallbackStreamManager =>
-        stream.stop()
-      case _: NodeCallbacks =>
-        Future.unit
-    }
-    val stopRescanF = stopRescan()
-    for {
-      _ <- stopCallbackF
-      _ <- stopRescanF
-      (dlcWallet, walletConfig, dlcConfig) <- loadWallet(
-        chainQueryApi = bitcoind,
-        nodeApi = nodeApi,
-        walletNameOpt = walletNameOpt,
-        aesPasswordOpt = aesPasswordOpt
-      )
-
-      _ <- stopOldWalletAppConfig(walletConfig)
-      _ <- stopOldDLCAppConfig(dlcConfig)
-      nodeCallbacks <- CallbackUtil.createBitcoindNodeCallbacksForWallet(
-        walletHolder
-      )
-      _ = nodeConf.replaceCallbacks(nodeCallbacks)
-      _ <- walletHolder.replaceWallet(dlcWallet)
-      // do something with possible rescan?
-      rescanState <- restartRescanIfNeeded(walletHolder.rescanHandling)
-      _ = setRescanState(rescanState)
-    } yield {
-      logger.info(s"Done loading wallet=$walletNameOpt")
-      (walletHolder, walletConfig, dlcConfig)
-    }
+    loadHelper(
+      walletNameOpt = walletNameOpt,
+      aesPasswordOpt = aesPasswordOpt,
+      nodeConf = nodeConf,
+      chainQueryApi = bitcoind,
+      nodeApi = nodeApi,
+      createCallbacks = CallbackUtil.createBitcoindNodeCallbacksForWallet
+    )
   }
 }
