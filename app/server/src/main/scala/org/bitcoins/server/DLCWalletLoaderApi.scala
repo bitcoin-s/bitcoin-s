@@ -47,7 +47,7 @@ sealed trait DLCWalletLoaderApi
       aesPasswordOpt: Option[AesPassword]
   ): Future[(WalletHolder, WalletAppConfig, DLCAppConfig)]
 
-  protected def loadWallet(
+  private def loadWallet(
       chainQueryApi: ChainQueryApi,
       nodeApi: NodeApi,
       walletNameOpt: Option[String],
