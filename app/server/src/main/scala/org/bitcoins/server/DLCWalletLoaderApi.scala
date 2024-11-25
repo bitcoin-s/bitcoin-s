@@ -299,7 +299,7 @@ sealed trait DLCWalletLoaderApi
       nodeCallbacks <- createCallbacks(dlcWallet)
       _ = nodeConf.replaceCallbacks(nodeCallbacks)
       _ <- updateWalletName(walletNameOpt)
-      rescanState <- restartRescanIfNeeded(dlcWallet.rescanHandling)
+      rescanState <- restartRescanIfNeeded(walletHolder.rescanHandling)
       _ = setRescanState(rescanState)
     } yield {
       logger.info(s"Done loading=$walletNameOpt")
