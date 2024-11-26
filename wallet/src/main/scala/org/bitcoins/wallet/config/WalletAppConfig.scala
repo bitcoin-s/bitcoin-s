@@ -124,9 +124,6 @@ case class WalletAppConfig(
     )
   }
 
-  lazy val bloomFalsePositiveRate: Double =
-    config.getDouble("bitcoin-s.wallet.bloomFalsePositiveRate")
-
   lazy val addressGapLimit: Int =
     config.getInt("bitcoin-s.wallet.addressGapLimit")
 
@@ -273,32 +270,6 @@ case class WalletAppConfig(
 
   def kmParams: KeyManagerParams =
     KeyManagerParams(kmConf.seedPath, defaultPurpose, network)
-
-  /** How much elements we can have in
-    * [[org.bitcoins.wallet.internal.AddressHandling.addressRequestQueue]]
-    * before we throw an exception
-    */
-  def addressQueueSize: Int = {
-    if (config.hasPath("bitcoin-s.wallet.addressQueueSize")) {
-      config.getInt("bitcoin-s.wallet.addressQueueSize")
-    } else {
-      100
-    }
-  }
-
-  /** How long we wait while generating an address in
-    * [[org.bitcoins.wallet.internal.AddressHandling.addressRequestQueue]]
-    * before we timeout
-    */
-  def addressQueueTimeout: Duration = {
-    if (config.hasPath("bitcoin-s.wallet.addressQueueTimeout")) {
-      val javaDuration =
-        config.getDuration("bitcoin-s.wallet.addressQueueTimeout")
-      new FiniteDuration(javaDuration.toNanos, TimeUnit.NANOSECONDS)
-    } else {
-      5.second
-    }
-  }
 
   /** Checks if the following exist
     *   1. A seed exists 2. wallet exists 3. The account exists
