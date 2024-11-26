@@ -226,7 +226,7 @@ case class TransactionProcessing(
       }
 
     actionsF
-      .flatMap(actions => Future.sequence(actions.map(safeDatabase.run)))
+      .flatMap(actions => safeDatabase.run(DBIOAction.sequence(actions)))
       .map(_ => ())
   }
 
