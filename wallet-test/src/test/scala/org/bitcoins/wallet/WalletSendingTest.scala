@@ -291,6 +291,23 @@ class WalletSendingTest extends BitcoinSWalletTest {
     }
   }
 
+  it must "send a single outpoint" in { fundedWallet =>
+    val wallet = fundedWallet.wallet
+
+    for {
+      utxos <- wallet.utxoHandling.listUtxos()
+      utxo = utxos.head
+      address <- wallet.getNewAddress()
+      feeRate = SatoshisPerVirtualByte.one
+      tx <- wallet.sendFundsHandling.sendFromOutPoints(Vector(utxo.outPoint),
+                                                       address,
+                                                       feeRate)
+    } yield {
+      val fee = feeRate.calc(tx)
+      assert(tx.outputs.head.value == utxo.output.value - fee)
+    }
+  }
+
   it should "correctly sweep the wallet" in { fundedWallet =>
     val wallet = fundedWallet.wallet
     for {

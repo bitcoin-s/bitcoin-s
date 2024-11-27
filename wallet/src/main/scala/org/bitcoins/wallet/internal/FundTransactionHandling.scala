@@ -4,7 +4,11 @@ import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.keymanager.BIP39KeyManagerApi
 import org.bitcoins.core.api.wallet.*
-import org.bitcoins.core.api.wallet.db.{AccountDb, SpendingInfoDb}
+import org.bitcoins.core.api.wallet.db.{
+  AccountDb,
+  SpendingInfoDb,
+  TransactionDb
+}
 import org.bitcoins.core.hd.HDAccount
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.transaction.*
@@ -152,13 +156,7 @@ case class FundTransactionHandling(
                 ))
             }
         }
-        utxoWithTxs <- DBIO.sequence {
-          utxos.map { utxo =>
-            transactionDAO
-              .findByTxIdAction(utxo.outPoint.txIdBE)
-              .map(tx => (utxo, tx.get.transaction))
-          }
-        }
+        utxoWithTxs <- getPreviousTransactionsAction(utxos)
 
         // Need to remove immature coinbase inputs
         immatureCoinbases = utxoWithTxs.filter(
@@ -199,7 +197,7 @@ case class FundTransactionHandling(
       utxoSpendingInfos = {
         selectedUtxos.map { case (utxo, prevTx) =>
           utxo.toUTXOInfo(keyManager = keyManager,
-                          prevTransaction = prevTx,
+                          prevTransaction = prevTx.transaction,
                           previousOutputMap = map)
         }
       }
@@ -230,5 +228,20 @@ case class FundTransactionHandling(
 
       fundTxHelper
     }
+  }
+
+  def getPreviousTransactionsAction(utxos: Vector[SpendingInfoDb])
+      : DBIOAction[Vector[(SpendingInfoDb, TransactionDb)],
+                   NoStream,
+                   Effect.Read] = {
+    val nestedActions = utxos.map(u =>
+      transactionDAO.findByTxIdAction(u.txid).map(t => (u, t.get)))
+    DBIOAction.sequence(nestedActions)
+  }
+
+  def getPreviousTransactions(utxos: Vector[SpendingInfoDb])
+      : Future[Vector[(SpendingInfoDb, TransactionDb)]] = {
+    val action = getPreviousTransactionsAction(utxos)
+    safeDatabase.run(action)
   }
 }
