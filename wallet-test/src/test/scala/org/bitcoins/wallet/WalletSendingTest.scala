@@ -291,6 +291,16 @@ class WalletSendingTest extends BitcoinSWalletTest {
     }
   }
 
+  it must "fail to sendfromoutpoints if the outpoint doesn't exist" in {
+    fundedWallet =>
+      val wallet = fundedWallet.wallet
+      recoverToSucceededIf[IllegalArgumentException] {
+        wallet.sendFundsHandling.sendFromOutPoints(Vector.empty,
+                                                   testAddress,
+                                                   SatoshisPerVirtualByte.one)
+      }
+  }
+
   it should "correctly sweep the wallet" in { fundedWallet =>
     val wallet = fundedWallet.wallet
     for {

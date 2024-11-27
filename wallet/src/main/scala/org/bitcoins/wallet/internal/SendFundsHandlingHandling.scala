@@ -440,8 +440,11 @@ case class SendFundsHandlingHandling(
       address: BitcoinAddress,
       feeRate: FeeUnit
   ): Future[Transaction] = {
+    val invariantF = Future(
+      require(outPoints.nonEmpty, s"Cannot sendFromOutpoints with 0 outpoints"))
     val outputs = Vector(TransactionOutput(Satoshis.zero, address.scriptPubKey))
     for {
+      _ <- invariantF
       utxos <- utxoHandling.listUtxos(outPoints)
       outputMap = SpendingInfoDb.toPreviousOutputMap(utxos)
       utxosWithTxs <- fundTxHandling.getPreviousTransactions(utxos)
