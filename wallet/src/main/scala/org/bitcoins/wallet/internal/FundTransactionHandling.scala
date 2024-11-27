@@ -235,7 +235,10 @@ case class FundTransactionHandling(
                    NoStream,
                    Effect.Read] = {
     val nestedActions = utxos.map(u =>
-      transactionDAO.findByTxIdAction(u.txid).map(t => (u, t.get)))
+      transactionDAO
+        .findByTxIdAction(u.txid)
+        .map(t =>
+          (u, t.getOrElse(sys.error(s"Could find tx=${u.txid} for utxo=$u")))))
     DBIOAction.sequence(nestedActions)
   }
 
