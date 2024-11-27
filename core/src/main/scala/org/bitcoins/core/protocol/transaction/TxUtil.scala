@@ -289,7 +289,9 @@ object TxUtil {
 
       val actualFee = creditingAmount - spentAmount
       val estimatedFee = expectedFeeRate * expectedTx
-      isValidFeeRange(estimatedFee, actualFee, expectedFeeRate)
+      isValidFeeRange(estimatedFee = estimatedFee,
+                      actualFee = actualFee,
+                      feeRate = expectedFeeRate)
     }
   }
 
@@ -324,14 +326,14 @@ object TxUtil {
       // See this link for more info on variance in size on ECDigitalSignatures
       // https://en.bitcoin.it/wiki/Elliptic_Curve_Digital_Signature_Algorithm
 
-      val acceptableVariance = 40 * feeRate.toLong
-      val min = Satoshis(-acceptableVariance)
-      val max = Satoshis(acceptableVariance)
+      val acceptableVariance = feeRate.*(40)
+      val min = Satoshis.negate(acceptableVariance.satoshis)
+      val max = acceptableVariance.satoshis
       val difference = estimatedFee - actualFee
       if (difference <= min) {
-        TxBuilderError.HighFee
+        TxBuilderError.highFee(estimatedFee, actualFee)
       } else if (difference >= max) {
-        TxBuilderError.LowFee
+        TxBuilderError.lowFee(min = estimatedFee, actual = actualFee)
       } else {
         Success(())
       }
