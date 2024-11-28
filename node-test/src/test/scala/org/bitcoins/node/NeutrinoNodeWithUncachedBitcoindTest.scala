@@ -74,8 +74,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
         peer0 = bitcoindPeers(0)
         _ <- node.peerManager.disconnectPeer(peer0)
         _ = logger.debug(
-          s"Disconnected $peer0 from node bitcoind(0).p2pPort=${peer0.socket.getPort} bitcoind(1).p2pPort=${bitcoinds(
-              1).instance.p2pPort}"
+          s"Disconnected $peer0 from node bitcoind(0).p2pPort=${peer0.socket.getPort} bitcoind(1).p2pPort=${bitcoinds(1).instance.p2pPort}"
         )
         // old peer we were syncing with that just disconnected us
         _ <- NodeTestUtil.awaitAllSync(node, bitcoinds(1))

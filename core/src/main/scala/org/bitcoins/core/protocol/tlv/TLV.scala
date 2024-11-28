@@ -1743,8 +1743,7 @@ case class CETSignaturesV0TLV(sigs: Vector[ECAdaptorSignature])
     if (sigs.length <= 5) {
       super.toString
     } else {
-      s"CETSignaturesV0TLV(sigs=${sigs.take(
-          2)}..., omitting remainingSigs of length=${sigs.length - 2})"
+      s"CETSignaturesV0TLV(sigs=${sigs.take(2)}..., omitting remainingSigs of length=${sigs.length - 2})"
     }
   }
 }
