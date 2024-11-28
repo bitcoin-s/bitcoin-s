@@ -673,7 +673,7 @@ case class TransactionProcessing(
     val addressDbWithOutputA = for {
       addressDbs <- addressDAO.findByScriptPubKeysAction(spks)
     } yield {
-      if (addressDbs.isEmpty) {
+      if (addressDbs.isEmpty && outputsWithIndex.nonEmpty) {
         logger.warn(
           s"Found zero addresses in the database to match an output we have a script for, txid=${transaction.txIdBE.hex} outputs=$outputsWithIndex"
         )
