@@ -19,7 +19,6 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.transaction.{
-  InputUtil,
   Transaction,
   TransactionOutPoint,
   TransactionOutput,
@@ -30,14 +29,10 @@ import org.bitcoins.core.script.constant.ScriptConstant
 import org.bitcoins.core.script.control.OP_RETURN
 import org.bitcoins.core.util.{BitcoinScriptUtil, FutureUtil}
 import org.bitcoins.core.wallet.builder.{
-  AddWitnessDataFinalizer,
   FundRawTxHelper,
-  RawTxBuilder,
   RawTxFinalizer,
-  ShuffleFinalizer,
   ShufflingNonInteractiveFinalizer,
-  StandardNonInteractiveFinalizer,
-  SubtractFeeFromOutputsFinalizer
+  StandardNonInteractiveFinalizer
 }
 import org.bitcoins.core.wallet.fee.{
   FeeUnit,
@@ -73,7 +68,6 @@ case class SendFundsHandlingHandling(
     extends SendFundsHandlingApi
     with BitcoinSLogger {
   import walletConfig.ec
-  import org.bitcoins.core.currency.currencyUnitNumeric
   private val networkParameters: NetworkParameters = walletConfig.network
   private val addressDAO: AddressDAO = walletDAOs.addressDAO
   private val spendingInfoDAO: SpendingInfoDAO = walletDAOs.utxoDAO
@@ -372,15 +366,10 @@ case class SendFundsHandlingHandling(
         s"Some out points given have already been spent, ${spentUtxos.map(_.outPoint)}"
       )
 
-      prevTxFs = utxoDbs.map(utxo =>
-        transactionDAO.findByOutPoint(utxo.outPoint).map(_.get.transaction))
       map = SpendingInfoDb.toPreviousOutputMap(utxoDbs)
-      prevTxs <- FutureUtil.collect(prevTxFs)
-      utxos =
-        utxoDbs
-          .zip(prevTxs)
-          .map(info => info._1.toUTXOInfo(keyManager, info._2, map))
-
+      utxosWithPrevTx <- fundTxHandling.getPreviousTransactions(utxoDbs)
+      utxos = utxosWithPrevTx.map(u =>
+        u._1.toUTXOInfo(keyManager, u._2.transaction, map))
       changeAddr <- accountHandling.getNewChangeAddress(fromAccount.hdAccount)
 
       output = TransactionOutput(amount, address.scriptPubKey)
@@ -451,67 +440,29 @@ case class SendFundsHandlingHandling(
       address: BitcoinAddress,
       feeRate: FeeUnit
   ): Future[Transaction] = {
-    require(
-      address.networkParameters.isSameNetworkBytes(networkParameters),
-      s"Cannot send to address on other network, got ${address.networkParameters}"
-    )
-    logger.info(s"Sending to $address at feerate $feeRate")
+    val invariantF = Future(
+      require(outPoints.nonEmpty, s"Cannot sendFromOutpoints with 0 outpoints"))
+    val outputs = Vector(TransactionOutput(Satoshis.zero, address.scriptPubKey))
     for {
-      utxoDbs <- spendingInfoDAO.findByOutPoints(outPoints)
-      diff = utxoDbs.map(_.outPoint).diff(outPoints)
-      _ = require(
-        diff.isEmpty,
-        s"Not all OutPoints belong to this wallet, diff $diff"
-      )
-      spentUtxos =
-        utxoDbs.filterNot(utxo => TxoState.receivedStates.contains(utxo.state))
-      _ = require(
-        spentUtxos.isEmpty,
-        s"Some out points given have already been spent, ${spentUtxos.map(_.outPoint)}"
-      )
-
-      map = SpendingInfoDb.toPreviousOutputMap(utxoDbs)
-      utxos <- Future.sequence {
-        utxoDbs.map(utxo =>
-          transactionDAO
-            .findByOutPoint(utxo.outPoint)
-            .map(txDb =>
-              utxo.toUTXOInfo(keyManager = keyManager,
-                              prevTransaction = txDb.get.transaction,
-                              previousOutputMap = map)))
-      }
-      inputInfos = utxos.map(_.inputInfo)
-
-      utxoAmount = utxoDbs.map(_.output.value).sum
-      dummyOutput = TransactionOutput(utxoAmount, address.scriptPubKey)
-      inputs = InputUtil.calcSequenceForInputs(utxos)
-
-      txBuilder = RawTxBuilder() ++= inputs += dummyOutput
-      finalizer = SubtractFeeFromOutputsFinalizer(
-        inputInfos = inputInfos,
-        feeRate = feeRate,
-        spks = Vector(address.scriptPubKey)
-      )
-        .andThen(ShuffleFinalizer)
-        .andThen(AddWitnessDataFinalizer(inputInfos))
-
-      withFinalizer = txBuilder.setFinalizer(finalizer)
-
-      tmp = withFinalizer.buildTx()
-
-      _ = require(
-        tmp.outputs.size == 1,
-        s"Created tx is not as expected, does not have 1 output, got $tmp"
-      )
-      rawTxHelper = FundRawTxHelper(txBuilderWithFinalizer = withFinalizer,
-                                    scriptSigParams = utxos,
-                                    feeRate = feeRate,
-                                    reservedUTXOsCallbackF = Future.unit)
-      tx <- finishSend(
-        rawTxHelper,
-        tmp.outputs.head.value,
-        Vector.empty
-      )
+      _ <- invariantF
+      utxos <- utxoHandling.listUtxos(outPoints)
+      outputMap = SpendingInfoDb.toPreviousOutputMap(utxos)
+      utxosWithTxs <- fundTxHandling.getPreviousTransactions(utxos)
+      inputInfos = utxosWithTxs
+        .map(u =>
+          u._1.toUTXOInfo(keyManager,
+                          prevTransaction = u._2.transaction,
+                          previousOutputMap = outputMap))
+        .map(_.inputInfo)
+      dummyTx = TxUtil.buildDummyTx(inputInfos, outputs)
+      fee = feeRate.calc(dummyTx)
+      totalBalance = utxos.foldLeft(CurrencyUnits.zero)(_ + _.output.value)
+      amountMinusFee = totalBalance - fee
+      tx <- sendFromOutPoints(outPoints = outPoints,
+                              address = address,
+                              amount = amountMinusFee,
+                              feeRate = feeRate,
+                              newTags = Vector.empty)
     } yield tx
   }
 
