@@ -289,7 +289,9 @@ object TxUtil {
 
       val actualFee = creditingAmount - spentAmount
       val estimatedFee = expectedFeeRate * expectedTx
-      isValidFeeRange(estimatedFee, actualFee, expectedFeeRate)
+      isValidFeeRange(estimatedFee = estimatedFee,
+                      actualFee = actualFee,
+                      feeRate = expectedFeeRate)
     }
   }
 
@@ -328,10 +330,10 @@ object TxUtil {
       val min = Satoshis(-acceptableVariance)
       val max = Satoshis(acceptableVariance)
       val difference = estimatedFee - actualFee
-      if (difference <= min) {
-        TxBuilderError.HighFee
-      } else if (difference >= max) {
-        TxBuilderError.LowFee
+      if (difference < min) {
+        TxBuilderError.highFee(estimatedFee, actualFee)
+      } else if (difference > max) {
+        TxBuilderError.lowFee(min = estimatedFee, actual = actualFee)
       } else {
         Success(())
       }
