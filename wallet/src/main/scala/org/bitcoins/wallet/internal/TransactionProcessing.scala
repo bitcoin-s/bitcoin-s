@@ -1,7 +1,7 @@
 package org.bitcoins.wallet.internal
 
 import org.apache.pekko.actor.{ActorRef, Status}
-import org.apache.pekko.stream.{Materializer, OverflowStrategy}
+import org.apache.pekko.stream.OverflowStrategy
 import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.wallet.{
@@ -335,8 +335,7 @@ case class TransactionProcessing(
   override def subscribeForBlockProcessingCompletionSignal(
       blockHash: DoubleSha256DigestBE
   ): Future[DoubleSha256DigestBE] = {
-
-    implicit val mat: Materializer = Materializer(walletConfig.system)
+    import walletConfig.materializer
 
     val p = Promise[DoubleSha256DigestBE]()
     val actor: ActorRef = Source
