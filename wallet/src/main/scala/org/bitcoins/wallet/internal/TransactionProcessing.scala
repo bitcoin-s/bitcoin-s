@@ -1,5 +1,8 @@
 package org.bitcoins.wallet.internal
 
+import org.apache.pekko.actor.ActorRef
+import org.apache.pekko.stream.{Materializer, OverflowStrategy}
+import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.wallet.{
   ProcessTxResult,
@@ -41,9 +44,8 @@ import org.bitcoins.wallet.models.{
 import org.bitcoins.wallet.util.WalletUtil
 import slick.dbio.{DBIOAction, Effect, NoStream}
 
-import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 /** Provides functionality for processing transactions. This includes importing
   * UTXOs spent to our wallet, updating confirmation counts and marking UTXOs as
@@ -330,41 +332,42 @@ case class TransactionProcessing(
     }
   }
 
-  /////////////////////
-  // Private methods
-
-  private val blockProcessingSignals =
-    mutable.Map.empty[DoubleSha256DigestBE, Promise[DoubleSha256DigestBE]]
-
   override def subscribeForBlockProcessingCompletionSignal(
       blockHash: DoubleSha256DigestBE
-  ): Future[DoubleSha256DigestBE] =
-    synchronized {
-      blockProcessingSignals.get(blockHash) match {
-        case Some(existingSignal) => existingSignal.future
-        case None =>
-          val newSignal = Promise[DoubleSha256DigestBE]()
-          blockProcessingSignals.addOne((blockHash, newSignal))
-          newSignal.future
-      }
-    }
+  ): Future[DoubleSha256DigestBE] = {
+//    synchronized {
+//      blockProcessingSignals.get(blockHash) match {
+//        case Some(existingSignal) => existingSignal.future
+//        case None =>
+//          val newSignal = Promise[DoubleSha256DigestBE]()
+//          blockProcessingSignals.addOne((blockHash, newSignal))
+//          newSignal.future
+//      }
+//    }
+
+    implicit val mat: Materializer = Materializer(walletConfig.system)
+
+    val p = Promise[DoubleSha256DigestBE]()
+    val actor: ActorRef = Source
+      .actorRef[DoubleSha256DigestBE](PartialFunction.empty,
+                                      PartialFunction.empty,
+                                      1,
+                                      OverflowStrategy.dropHead)
+      .to(Sink.foreach(event => p.trySuccess(event)))
+      .run()
+
+    walletConfig.system.eventStream
+      .subscribe(actor, classOf[DoubleSha256DigestBE])
+    p.future
+  }
 
   private def signalBlockProcessingCompletion(
       blockHash: DoubleSha256DigestBE,
       failure: Try[?]
   ): Unit = {
-    synchronized {
-      blockProcessingSignals.remove(blockHash) match {
-        case Some(signal) =>
-          failure match {
-            case Success(_) =>
-              signal.success(blockHash)
-            case Failure(exception) => signal.failure(exception)
-          }
-          ()
-        case None => ()
-      }
-    }
+    failure.failed.foreach(err =>
+      logger.error(s"Failed to fetch block=$blockHash", err))
+    walletConfig.system.eventStream.publish(blockHash)
   }
 
   private def processReceivedUtxosAction(
