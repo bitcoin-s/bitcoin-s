@@ -1,6 +1,6 @@
 package org.bitcoins.wallet.internal
 
-import org.apache.pekko.actor.ActorRef
+import org.apache.pekko.actor.{ActorRef, Status}
 import org.apache.pekko.stream.{Materializer, OverflowStrategy}
 import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import org.bitcoins.core.api.chain.ChainQueryApi
@@ -335,29 +335,32 @@ case class TransactionProcessing(
   override def subscribeForBlockProcessingCompletionSignal(
       blockHash: DoubleSha256DigestBE
   ): Future[DoubleSha256DigestBE] = {
-//    synchronized {
-//      blockProcessingSignals.get(blockHash) match {
-//        case Some(existingSignal) => existingSignal.future
-//        case None =>
-//          val newSignal = Promise[DoubleSha256DigestBE]()
-//          blockProcessingSignals.addOne((blockHash, newSignal))
-//          newSignal.future
-//      }
-//    }
 
     implicit val mat: Materializer = Materializer(walletConfig.system)
 
     val p = Promise[DoubleSha256DigestBE]()
     val actor: ActorRef = Source
-      .actorRef[DoubleSha256DigestBE](PartialFunction.empty,
-                                      PartialFunction.empty,
-                                      1,
-                                      OverflowStrategy.dropHead)
+      .actorRef[DoubleSha256DigestBE](completionMatcher = PartialFunction.empty,
+                                      failureMatcher = PartialFunction.empty,
+                                      bufferSize = 1,
+                                      overflowStrategy =
+                                        OverflowStrategy.dropHead)
       .to(Sink.foreach(event => p.trySuccess(event)))
       .run()
 
-    walletConfig.system.eventStream
+    val _: Boolean = walletConfig.system.eventStream
       .subscribe(actor, classOf[DoubleSha256DigestBE])
+
+    p.future.onComplete {
+      case scala.util.Success(b) =>
+        val msg = Status
+          .Success(s"Successfully received blockHash=$b")
+        actor.tell(msg, ActorRef.noSender)
+      case scala.util.Failure(err) =>
+        val msg = Status.Failure(err)
+        actor.tell(msg, ActorRef.noSender)
+    }
+
     p.future
   }
 
