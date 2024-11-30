@@ -11,10 +11,9 @@ import org.bitcoins.core.currency.*
 import org.bitcoins.dlc.wallet.{DLCAppConfig, DLCWallet}
 import org.bitcoins.node.NodeCallbacks
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.server.BitcoinSAppConfig
+import org.bitcoins.server.{BitcoinSAppConfig, BitcoindRpcBackendUtil}
 import org.bitcoins.server.util.CallbackUtil
 import org.bitcoins.testkit.EmbeddedPg
-import org.bitcoins.testkit.chain.SyncUtil
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
 import org.bitcoins.testkit.node.MockNodeApi
@@ -335,29 +334,23 @@ object BitcoinSWalletTest extends WalletLogger {
       system: ActorSystem
   ): Future[WalletWithBitcoindRpc] = {
     import system.dispatcher
-    // we need to create a promise so we can inject the wallet with the callback
-    // after we have created it into SyncUtil.getNodeApiWalletCallback
-    // so we don't lose the internal state of the wallet
-    val walletCallbackP = Promise[Wallet]()
     val walletWithBitcoindF = for {
       wallet <- BitcoinSWalletTest.createWallet2Accounts(bitcoind, bitcoind)
       // create the wallet with the appropriate callbacks now that
       // we have them
       walletWithCallback = Wallet(
-        nodeApi =
-          SyncUtil.getNodeApiWalletCallback(bitcoind, walletCallbackP.future),
+        nodeApi = BitcoindRpcBackendUtil.buildBitcoindNodeApi(
+          bitcoind,
+          wallet,
+          None
+        ),
         chainQueryApi = bitcoind
       )(wallet.walletConfig)
-      // complete the walletCallbackP so we can handle the callbacks when they are
-      // called without hanging forever.
-      _ = walletCallbackP.success(walletWithCallback)
     } yield WalletWithBitcoindRpc(
       walletWithCallback,
       bitcoind,
-      wallet.walletConfig
+      walletWithCallback.walletConfig
     )
-
-    walletWithBitcoindF.failed.foreach(err => walletCallbackP.failure(err))
 
     walletWithBitcoindF
   }
