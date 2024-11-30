@@ -2,6 +2,7 @@ package org.bitcoins.wallet.config
 
 import org.apache.pekko.actor.ActorSystem
 import com.typesafe.config.Config
+import org.apache.pekko.stream.Materializer
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.config.{AppConfigFactoryBase, ConfigOps}
 import org.bitcoins.core.api.CallbackConfig
@@ -59,6 +60,7 @@ case class WalletAppConfig(
     with CallbackConfig[WalletCallbacks] {
 
   implicit override val ec: ExecutionContext = system.dispatcher
+  implicit val materializer: Materializer = Materializer(system)
 
   private val defaultApi =
     MempoolSpaceProvider(HourFeeTarget, network, torConf.socks5ProxyParams)
