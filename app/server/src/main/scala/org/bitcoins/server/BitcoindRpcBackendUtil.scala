@@ -31,7 +31,7 @@ import org.bitcoins.zmq.ZMQSubscriber
 
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.{ExecutionContext, Future}
 
 /** Useful utilities to use in the wallet project for syncing things against
   * bitcoind
@@ -210,22 +210,15 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
       wallet: Wallet,
       chainCallbacksOpt: Option[ChainCallbacks]
   )(implicit system: ActorSystem): Wallet = {
-    // We need to create a promise so we can inject the wallet with the callback
-    // after we have created it into SyncUtil.getNodeApiWalletCallback
-    // so we don't lose the internal state of the wallet
-    val walletCallbackP = Promise[Wallet]()
-
     val nodeApi = BitcoindRpcBackendUtil.buildBitcoindNodeApi(
       bitcoind,
-      walletCallbackP.future,
+      wallet,
       chainCallbacksOpt
     )
     val pairedWallet = Wallet(
       nodeApi = nodeApi,
       chainQueryApi = bitcoind
     )(wallet.walletConfig)
-
-    walletCallbackP.success(pairedWallet)
 
     pairedWallet
   }
@@ -293,13 +286,9 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
       wallet: DLCWallet,
       chainCallbacksOpt: Option[ChainCallbacks]
   )(implicit system: ActorSystem): DLCWallet = {
-    // We need to create a promise so we can inject the wallet with the callback
-    // after we have created it into SyncUtil.getNodeApiWalletCallback
-    // so we don't lose the internal state of the wallet
-    val walletCallbackP = Promise[DLCWallet]()
     val nodeApi = BitcoindRpcBackendUtil.buildBitcoindNodeApi(
       bitcoind,
-      walletCallbackP.future,
+      wallet,
       chainCallbacksOpt
     )
 
@@ -309,8 +298,6 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
       wallet.walletApi.copy(nodeApi = nodeApi)(walletConfig)
     val pairedWallet =
       DLCWallet(bitcoindCallbackWallet)(dlcConfig, walletConfig)
-
-    walletCallbackP.success(pairedWallet)
 
     pairedWallet
   }
@@ -344,7 +331,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
     */
   def buildBitcoindNodeApi(
       bitcoindRpcClient: BitcoindRpcClient,
-      walletF: Future[WalletApi],
+      wallet: WalletApi,
       chainCallbacksOpt: Option[ChainCallbacks]
   )(implicit system: ActorSystem): NodeApi = {
     import system.dispatcher
@@ -361,38 +348,34 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
           parallelism = numParallelism
         )
 
-        val sinkF: Future[Sink[(Block, GetBlockHeaderResult), Future[Done]]] = {
-          walletF.map { wallet =>
-            Sink.foreachAsync(1) {
-              case (block: Block, blockHeaderResult: GetBlockHeaderResult) =>
-                val blockProcessedF =
-                  wallet.transactionProcessing.processBlock(block)
-                val executeCallbackF: Future[Unit] = {
-                  for {
-                    wallet <- blockProcessedF
-                    _ <- handleChainCallbacks(
-                      chainCallbacksOpt,
-                      blockHeaderResult
-                    )
-                  } yield wallet
-                }
+        val sink: Sink[(Block, GetBlockHeaderResult), Future[Done]] = {
+          Sink.foreachAsync(1) {
+            case (block: Block, blockHeaderResult: GetBlockHeaderResult) =>
+              val blockProcessedF =
+                wallet.transactionProcessing.processBlock(block)
+              val executeCallbackF: Future[Unit] = {
+                for {
+                  wallet <- blockProcessedF
+                  _ <- handleChainCallbacks(
+                    chainCallbacksOpt,
+                    blockHeaderResult
+                  )
+                } yield wallet
+              }
 
-                executeCallbackF
-            }
+              executeCallbackF
           }
         }
 
-        val doneF: Future[Done] = sinkF.flatMap { sink =>
+        val doneF: Future[Done] =
           source
             .via(fetchBlocksFlow)
             .toMat(sink)(Keep.right)
             .run()
-        }
 
         for {
           _ <- doneF
-          w <- walletF
-          _ <- w.utxoHandling.updateUtxoPendingStates()
+          _ <- wallet.utxoHandling.updateUtxoPendingStates()
         } yield ()
       }
 

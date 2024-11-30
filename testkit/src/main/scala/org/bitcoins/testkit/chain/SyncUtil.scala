@@ -1,6 +1,5 @@
 package org.bitcoins.testkit.chain
 
-import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.blockchain.sync.{FilterSync, FilterWithHeaderHash}
 import org.bitcoins.chain.config.ChainAppConfig
@@ -15,9 +14,7 @@ import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BlockchainRpc}
-import org.bitcoins.server.BitcoindRpcBackendUtil
 import org.bitcoins.testkit.chain.fixture.BitcoindBaseVersionChainHandlerViaRpc
-import org.bitcoins.wallet.Wallet
 import org.bitcoins.wallet.sync.WalletSync
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -113,32 +110,11 @@ abstract class SyncUtil extends BitcoinSLogger {
     }
   }
 
-  def getNodeApiWalletCallback(
-      bitcoindRpcClient: BitcoindRpcClient,
-      walletF: Future[Wallet]
-  )(implicit system: ActorSystem): NodeApi = {
-    BitcoindRpcBackendUtil.buildBitcoindNodeApi(
-      bitcoindRpcClient,
-      walletF,
-      None
-    )
-  }
-
   def getNodeChainQueryApi(
       bitcoind: BitcoindRpcClient
   )(implicit ec: ExecutionContext): NodeChainQueryApi = {
     val chainQuery = bitcoind
     val nodeApi = SyncUtil.getNodeApi(bitcoind)
-    node.NodeChainQueryApi(nodeApi, chainQuery)
-  }
-
-  def getNodeChainQueryApiWalletCallback(
-      bitcoind: BitcoindRpcClient,
-      walletF: Future[Wallet]
-  )(implicit system: ActorSystem): NodeChainQueryApi = {
-    val chainQuery = bitcoind
-    val nodeApi =
-      SyncUtil.getNodeApiWalletCallback(bitcoind, walletF)
     node.NodeChainQueryApi(nodeApi, chainQuery)
   }
 
