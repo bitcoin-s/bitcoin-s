@@ -97,7 +97,7 @@ case class Wallet(
   def addressHandling: AddressHandling =
     AddressHandling(accountHandling, walletDAOs)
 
-  override lazy val transactionProcessing: TransactionProcessingApi = {
+  override def transactionProcessing: TransactionProcessingApi = {
     TransactionProcessing(
       walletApi = this,
       chainQueryApi = chainQueryApi,
@@ -105,7 +105,7 @@ case class Wallet(
       walletDAOs = walletDAOs
     )
   }
-  override lazy val rescanHandling: RescanHandlingApi = {
+  override def rescanHandling: RescanHandlingApi = {
     RescanHandling(
       transactionProcessing = transactionProcessing,
       accountHandling = accountHandling,

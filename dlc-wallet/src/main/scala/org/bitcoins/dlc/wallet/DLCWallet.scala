@@ -131,7 +131,7 @@ case class DLCWallet(override val walletApi: Wallet)(implicit
     DLCActionBuilder(dlcWalletDAOs)
   }
 
-  override lazy val transactionProcessing: DLCTransactionProcessing = {
+  override def transactionProcessing: DLCTransactionProcessing = {
     val txProcessing = TransactionProcessing(
       walletApi = this,
       chainQueryApi = chainQueryApi,
@@ -150,7 +150,7 @@ case class DLCWallet(override val walletApi: Wallet)(implicit
     )
   }
 
-  override lazy val rescanHandling: RescanHandlingApi = {
+  override def rescanHandling: RescanHandlingApi = {
     RescanHandling(
       transactionProcessing = transactionProcessing,
       accountHandling = accountHandling,
