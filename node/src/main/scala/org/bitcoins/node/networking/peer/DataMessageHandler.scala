@@ -74,7 +74,7 @@ case class DataMessageHandler(
             // see: https://github.com/bitcoin-s/bitcoin-s/issues/5429
             logger.info(
               s"Query timed out with in state=$state, received payload=${payload.commandName}")
-            copy(state = state.toDoneSyncing)
+            copy(state = syncState.toDoneSyncing)
           } else {
             this
           }
@@ -127,14 +127,21 @@ case class DataMessageHandler(
               s"Cannot continue processing p2p messages from peer we were suppose to remove, peer=${peerData.peer}"
             )
           )
+        } else if (r.isEmpty) {
+          val n = NoPeers(waitingForDisconnection = r.waitingForDisconnection,
+                          peerFinder = r.peerFinder,
+                          cachedOutboundMessages = Vector.empty)
+          copy(state = n).handleDataPayload(payload, peerData)
         } else {
-          val d = r.toDoneSyncing
+          val d = DoneSyncing(r.peerWithServicesDataMap,
+                              r.waitingForDisconnection,
+                              r.peerFinder)
           copy(state = d).handleDataPayload(payload, peerData)
         }
 
-      case _: NodeShuttingDown =>
+      case s @ (_: NodeShuttingDown | _: NoPeers) =>
         logger.warn(
-          s"Ignoring message ${payload.commandName} from peer=${peerData.peer} in state=$state because we are shuttingdown."
+          s"Ignoring message ${payload.commandName} from peer=${peerData.peer} in state=$s."
         )
         Future.successful(this)
 
@@ -198,7 +205,7 @@ case class DataMessageHandler(
                 s"Ignoring filterheaders msg with size=${filterHeader.filterHashes.size} while in state=$x from peer=$peer"
               )
               Future.successful(copy(state = x))
-            case x @ (_: MisbehavingPeer | _: RemovePeers) =>
+            case x @ (_: MisbehavingPeer | _: RemovePeers | _: NoPeers) =>
               sys.error(
                 s"Incorrect state for handling filter header messages, got=$x"
               )
@@ -236,7 +243,8 @@ case class DataMessageHandler(
                 s"Ignoring filter msg with blockHash=${filter.blockHashBE} while in state=$x from peer=$peer"
               )
               Future.successful(copy(state = x))
-            case x @ (_: MisbehavingPeer | _: RemovePeers | _: HeaderSync) =>
+            case x @ (_: MisbehavingPeer | _: RemovePeers | _: HeaderSync |
+                _: NoPeers) =>
               sys.error(s"Incorrect state for handling filter messages, got=$x")
           }
         case notHandling @ (MemPoolMessage | _: GetHeadersMessage |
@@ -448,14 +456,15 @@ case class DataMessageHandler(
               )
               val _ = peerManager.gossipGetHeadersMessage(cachedHeaders)
               // switch to DoneSyncing state until we receive a valid header from our peers
-              val d = state.toDoneSyncing
-              d
+              DoneSyncing(state.peerWithServicesDataMap,
+                          state.waitingForDisconnection,
+                          state.peerFinder)
             }
           } yield newState
         }
       case _: FilterHeaderSync | _: FilterSync | _: NodeShuttingDown =>
         Future.successful(state)
-      case m @ (_: MisbehavingPeer | _: RemovePeers) =>
+      case m @ (_: MisbehavingPeer | _: RemovePeers | _: NoPeers) =>
         val exn = new RuntimeException(
           s"Cannot recover invalid headers, got=$m"
         )
@@ -779,7 +788,7 @@ case class DataMessageHandler(
           s"Ignoring block headers msg with size=${headers.size} while in state=$x from peer=$peer"
         )
         Some(x)
-      case x @ (_: MisbehavingPeer | _: RemovePeers) =>
+      case x @ (_: MisbehavingPeer | _: RemovePeers | _: NoPeers) =>
         sys.error(s"Invalid state to receive headers in, got=$x")
     }
     newStateOpt match {
@@ -798,7 +807,8 @@ case class DataMessageHandler(
       case Some(x @ (_: FilterHeaderSync | _: FilterSync)) =>
         Future.successful(copy(state = x))
       case Some(
-            x @ (_: MisbehavingPeer | _: RemovePeers | _: NodeShuttingDown)
+            x @ (_: MisbehavingPeer | _: RemovePeers | _: NodeShuttingDown |
+            _: NoPeers)
           ) =>
         Future.successful(copy(state = x))
       case None =>

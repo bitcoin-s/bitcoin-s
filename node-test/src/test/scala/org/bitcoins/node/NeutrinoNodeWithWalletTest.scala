@@ -1,7 +1,7 @@
 package org.bitcoins.node
 
 import org.bitcoins.asyncutil.AsyncUtil
-import org.bitcoins.core.currency._
+import org.bitcoins.core.currency.*
 import org.bitcoins.core.protocol.script.MultiSignatureScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
@@ -23,6 +23,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
 class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
+  val DEFAULT_ADDR_BATCH_SIZE = 7
 
   /** Wallet config with data directory set to user temp directory */
   override protected def getFreshConfig: BitcoinSAppConfig =
@@ -220,7 +221,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       rescan <- wallet.isRescanning()
       _ = assert(!rescan)
       rescanState <- wallet.rescanHandling
-        .fullRescanNeutrinoWallet(addressBatchSize = 7)
+        .fullRescanNeutrinoWallet(addressBatchSize = DEFAULT_ADDR_BATCH_SIZE)
 
       _ <- AsyncUtil.awaitConditionF(
         () => condition(),
@@ -303,4 +304,24 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       assert(balanceAfterSpend < initBalance)
     }
   }
+
+  it must "retry fetching a block if for some reason our block data source isn't available the first time" in {
+    param =>
+      val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind) = param
+      for {
+        initBalance <- wallet.getBalance()
+        _ = assert(initBalance != CurrencyUnits.zero)
+        peer1 <- NodeTestUtil.getBitcoindPeer(bitcoind)
+        _ <- node.peerManager.disconnectPeer(peer1)
+        _ <- NodeTestUtil.awaitConnectionCount(node, 0)
+        _ <- wallet.rescanHandling.fullRescanNeutrinoWallet(
+          DEFAULT_ADDR_BATCH_SIZE)
+        _ <- node.peerManager.connectPeer(peer1)
+        _ <- AsyncUtil.retryUntilSatisfiedF(() => {
+          wallet.getInfo().map(!_.rescan)
+        })
+        balanceAfterRescan <- wallet.getBalance()
+      } yield assert(balanceAfterRescan == initBalance)
+  }
+
 }
