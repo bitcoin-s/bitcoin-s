@@ -3,7 +3,6 @@ package org.bitcoins.node
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
-import NodeState.DoneSyncing
 import org.apache.pekko.{Done, NotUsed}
 import org.apache.pekko.actor.{ActorSystem, Cancellable}
 import org.apache.pekko.stream.{
@@ -106,11 +105,9 @@ case class NeutrinoNode(
           queue = queue
         )
       val initState =
-        DoneSyncing(
-          peerWithServicesDataMap = Map.empty,
-          waitingForDisconnection = Set.empty,
-          peerFinder
-        )
+        NodeState.NoPeers(waitingForDisconnection = Set.empty,
+                          peerFinder,
+                          cachedOutboundMessages = Vector.empty)
 
       val graph =
         buildDataMessageStreamGraph(initState = initState, source = source)

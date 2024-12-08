@@ -1,7 +1,11 @@
 package org.bitcoins.node
 
 import org.bitcoins.core.api.node.{Peer, PeerWithServices}
-import org.bitcoins.core.p2p.{CompactFilterMessage, ServiceIdentifier}
+import org.bitcoins.core.p2p.{
+  CompactFilterMessage,
+  NetworkMessage,
+  ServiceIdentifier
+}
 import org.bitcoins.node.NodeState.{
   DoneSyncing,
   FilterHeaderSync,
@@ -13,7 +17,7 @@ import org.bitcoins.node.NodeState.{
 import org.bitcoins.node.networking.peer.{PeerConnection, PeerMessageSender}
 
 import java.time.Instant
-import java.time.temporal.{ChronoUnit}
+import java.time.temporal.ChronoUnit
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Random
 
@@ -63,22 +67,31 @@ sealed trait NodeRunningState extends NodeState {
   def replacePeers(
       peerWithServicesDataMap: Map[PeerWithServices, PersistentPeerData]
   ): NodeRunningState = {
-    this match {
-      case h: NodeState.HeaderSync =>
-        h.copy(peerWithServicesDataMap = peerWithServicesDataMap)
-      case fh: NodeState.FilterHeaderSync =>
-        fh.copy(peerWithServicesDataMap = peerWithServicesDataMap)
-      case fs: NodeState.FilterSync =>
-        fs.copy(peerWithServicesDataMap = peerWithServicesDataMap)
-      case d: NodeState.DoneSyncing =>
-        d.copy(peerWithServicesDataMap = peerWithServicesDataMap)
-      case rm: NodeState.RemovePeers =>
-        rm.copy(peerWithServicesDataMap = peerWithServicesDataMap)
-      case m: NodeState.MisbehavingPeer =>
-        m.copy(peerWithServicesDataMap = peerWithServicesDataMap)
-      case s: NodeState.NodeShuttingDown =>
-        s.copy(peerWithServicesDataMap = peerWithServicesDataMap)
+    if (peerWithServicesDataMap.isEmpty) {
+      NodeState.NoPeers(waitingForDisconnection, peerFinder, Vector.empty)
+    } else {
+      this match {
+        case h: NodeState.HeaderSync =>
+          h.copy(peerWithServicesDataMap = peerWithServicesDataMap)
+        case fh: NodeState.FilterHeaderSync =>
+          fh.copy(peerWithServicesDataMap = peerWithServicesDataMap)
+        case fs: NodeState.FilterSync =>
+          fs.copy(peerWithServicesDataMap = peerWithServicesDataMap)
+        case d: NodeState.DoneSyncing =>
+          d.copy(peerWithServicesDataMap = peerWithServicesDataMap)
+        case rm: NodeState.RemovePeers =>
+          rm.copy(peerWithServicesDataMap = peerWithServicesDataMap)
+        case m: NodeState.MisbehavingPeer =>
+          m.copy(peerWithServicesDataMap = peerWithServicesDataMap)
+        case s: NodeState.NodeShuttingDown =>
+          s.copy(peerWithServicesDataMap = peerWithServicesDataMap)
+        case n: NodeState.NoPeers =>
+          DoneSyncing(peerWithServicesDataMap,
+                      n.waitingForDisconnection,
+                      n.peerFinder)
+      }
     }
+
   }
 
   def addPeer(peer: Peer): NodeRunningState = {
@@ -112,7 +125,7 @@ sealed trait NodeRunningState extends NodeState {
             case Some(newSyncNodeState) =>
               newSyncNodeState.replacePeers(filtered)
             case None =>
-              toDoneSyncing.replacePeers(filtered)
+              sync.toDoneSyncing.replacePeers(filtered)
           }
         } else {
           sync.replacePeers(filtered)
@@ -120,6 +133,8 @@ sealed trait NodeRunningState extends NodeState {
       case x @ (_: DoneSyncing | _: MisbehavingPeer | _: RemovePeers |
           _: NodeShuttingDown) =>
         x.replacePeers(filtered)
+      case n: NodeState.NoPeers =>
+        sys.error(s"Cannot remove peer=$peer when we have no peers! $n")
     }
   }
 
@@ -141,6 +156,8 @@ sealed trait NodeRunningState extends NodeState {
         m.copy(waitingForDisconnection = newWaitingForDisconnection)
       case s: NodeState.NodeShuttingDown =>
         s.copy(waitingForDisconnection = newWaitingForDisconnection)
+      case n: NodeState.NoPeers =>
+        n.copy(waitingForDisconnection = newWaitingForDisconnection)
     }
   }
 
@@ -178,10 +195,6 @@ sealed trait NodeRunningState extends NodeState {
   }
 
   def isDisconnected(peer: Peer): Boolean = !isConnected(peer)
-
-  def toDoneSyncing: DoneSyncing = {
-    DoneSyncing(peerWithServicesDataMap, waitingForDisconnection, peerFinder)
-  }
 
   override def toString: String = {
     s"${getClass.getSimpleName}(peers=${peers},waitingForDisconnection=${waitingForDisconnection})"
@@ -243,6 +256,10 @@ sealed abstract class SyncNodeState extends NodeRunningState {
       peerFinder = peerFinder,
       sentQuery = Instant.now
     )
+  }
+
+  def toDoneSyncing: DoneSyncing = {
+    DoneSyncing(peerWithServicesDataMap, waitingForDisconnection, peerFinder)
   }
 
   /** The time when we sent the last query */
@@ -323,6 +340,11 @@ object NodeState {
       peersToRemove.forall(rm => peers.exists(_ == rm)),
       s"peersToRemove must be subset of peers, peersToRemove=$peersToRemove peers=$peers"
     )
+
+    /** Means we have no good peers are removing these peers */
+    def isDisconnected: Boolean = {
+      peerWithServicesDataMap.keys.toSet == peersToRemove.toSet
+    }
   }
 
   /** State to indicate we are not currently syncing with a peer */
@@ -331,6 +353,9 @@ object NodeState {
       waitingForDisconnection: Set[Peer],
       peerFinder: PeerFinder
   ) extends NodeRunningState {
+    require(
+      peerWithServicesDataMap.nonEmpty,
+      s"Cannot have 0 peers, use NoPeers to represent state where we have 0 peers")
     override val isSyncing: Boolean = false
 
     /** Selects a random peer and returns us a header sync state returns None if
@@ -376,6 +401,29 @@ object NodeState {
       peerFinder: PeerFinder
   ) extends NodeRunningState {
     override val isSyncing: Boolean = false
+  }
+
+  case class NoPeers(
+      waitingForDisconnection: Set[Peer],
+      peerFinder: PeerFinder,
+      cachedOutboundMessages: Vector[NetworkMessage])
+      extends NodeRunningState {
+    override val isSyncing: Boolean = false
+    override val peerWithServicesDataMap: Map[PeerWithServices, Nothing] =
+      Map.empty
+
+    def toDoneSyncing(
+        map: Map[PeerWithServices, PersistentPeerData]): DoneSyncing = {
+      require(
+        map.nonEmpty,
+        s"Cannot convert NoPeers -> DoneSyncing with no peers to connected")
+      require(
+        cachedOutboundMessages.isEmpty,
+        s"Cannot drop messages that are cached, length=${cachedOutboundMessages.length}")
+      DoneSyncing(peerWithServicesDataMap = map,
+                  waitingForDisconnection = waitingForDisconnection,
+                  peerFinder = peerFinder)
+    }
   }
 
 }
