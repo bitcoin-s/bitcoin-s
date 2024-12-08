@@ -624,7 +624,7 @@ case class PeerManager(
                 case n: NoPeers =>
                   val peerData = peerDataMap(c.peer)
                   // send cached messages
-                  logger.info(
+                  logger.debug(
                     s"Sending ${n.cachedOutboundMessages.length} cached messages")
                   val sendMsgsF = Future.traverse(n.cachedOutboundMessages)(m =>
                     peerData.peerMessageSender.sendMsg(m.payload))

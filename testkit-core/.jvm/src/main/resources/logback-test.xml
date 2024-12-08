@@ -20,16 +20,16 @@
         </encoder>
     </appender>
 
-    <root level="INFO">
+    <root level="OFF">
         <appender-ref ref="FILE"/>
         <appender-ref ref="STDOUT"/>
     </root>
 
-    <logger name="org.bitcoins.node" level="INFO"/>
+    <logger name="org.bitcoins.node" level="WARN"/>
 
     <logger name="org.bitcoins.chain" level="WARN"/>
 
-    <logger name="org.bitcoins.wallet" level="INFO"/>
+    <logger name="org.bitcoins.wallet" level="WARN"/>
 
     <logger name="org.bitcoins.dlc.wallet" level="WARN"/>
 

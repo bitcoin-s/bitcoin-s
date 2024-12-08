@@ -342,7 +342,7 @@ object NodeState {
     )
 
     /** Means we have no good peers are removing these peers */
-    def isEmpty: Boolean = {
+    def isDisconnected: Boolean = {
       peerWithServicesDataMap.keys.toSet == peersToRemove.toSet
     }
   }
@@ -414,7 +414,12 @@ object NodeState {
 
     def toDoneSyncing(
         map: Map[PeerWithServices, PersistentPeerData]): DoneSyncing = {
-      // discards cached messages? Probably need to send them before returning?
+      require(
+        map.nonEmpty,
+        s"Cannot convert NoPeers -> DoneSyncing with no peers to connected")
+      require(
+        cachedOutboundMessages.isEmpty,
+        s"Cannot drop messages that are cached, length=${cachedOutboundMessages.length}")
       DoneSyncing(peerWithServicesDataMap = map,
                   waitingForDisconnection = waitingForDisconnection,
                   peerFinder = peerFinder)

@@ -127,7 +127,7 @@ case class DataMessageHandler(
               s"Cannot continue processing p2p messages from peer we were suppose to remove, peer=${peerData.peer}"
             )
           )
-        } else if (r.isEmpty) {
+        } else if (r.isDisconnected) {
           val n = NoPeers(waitingForDisconnection = r.waitingForDisconnection,
                           peerFinder = r.peerFinder,
                           cachedOutboundMessages = Vector.empty)
