@@ -318,8 +318,9 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
           DEFAULT_ADDR_BATCH_SIZE)
         _ <- node.peerManager.connectPeer(peer1)
         _ <- AsyncUtil.retryUntilSatisfiedF(() => {
-          wallet.getInfo().map(!_.rescan)
-        })
+                                              wallet.getInfo().map(!_.rescan)
+                                            },
+                                            maxTries = 100)
         balanceAfterRescan <- wallet.getBalance()
       } yield assert(balanceAfterRescan == initBalance)
   }
