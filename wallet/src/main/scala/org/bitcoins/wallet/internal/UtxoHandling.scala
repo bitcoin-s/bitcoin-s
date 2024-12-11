@@ -106,7 +106,7 @@ case class UtxoHandling(
 
   /** @inheritdoc */
   override def listUtxos(): Future[Vector[SpendingInfoDb]] = {
-    spendingInfoDAO.findAllUnspent()
+    listDefaultAccountUtxos()
   }
 
   def listDefaultAccountUtxos(): Future[Vector[SpendingInfoDb]] =
@@ -128,7 +128,7 @@ case class UtxoHandling(
   }
 
   override def listUtxos(tag: AddressTag): Future[Vector[SpendingInfoDb]] = {
-    spendingInfoDAO.findAllUnspentForTag(tag)
+    listUtxos(walletConfig.defaultAccount, tag)
   }
 
   override def listUtxos(
@@ -143,7 +143,7 @@ case class UtxoHandling(
   }
 
   override def listUtxos(state: TxoState): Future[Vector[SpendingInfoDb]] = {
-    spendingInfoDAO.findByTxoState(state)
+    listUtxos(walletConfig.defaultAccount, state)
   }
 
   override def listUtxos(
