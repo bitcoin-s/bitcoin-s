@@ -58,8 +58,6 @@ trait UtxoHandlingApi {
     } yield u + c
   }
 
-  def listDefaultAccountUtxos(): Future[Vector[SpendingInfoDb]]
-
   /** Lists unspent transaction outputs in the wallet
     * @return
     *   Vector[SpendingInfoDb]

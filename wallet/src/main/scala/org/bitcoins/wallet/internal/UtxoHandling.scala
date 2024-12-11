@@ -106,11 +106,8 @@ case class UtxoHandling(
 
   /** @inheritdoc */
   override def listUtxos(): Future[Vector[SpendingInfoDb]] = {
-    listDefaultAccountUtxos()
-  }
-
-  def listDefaultAccountUtxos(): Future[Vector[SpendingInfoDb]] =
     listUtxos(walletConfig.defaultAccount)
+  }
 
   def listUtxos(
       hdAccount: HDAccount
