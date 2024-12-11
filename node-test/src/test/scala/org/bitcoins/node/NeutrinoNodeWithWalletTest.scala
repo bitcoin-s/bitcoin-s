@@ -61,7 +61,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       for {
         balance <- wallet.getBalance()
         addresses <- wallet.addressHandling.listAddresses()
-        utxos <- wallet.utxoHandling.listDefaultAccountUtxos()
+        utxos <- wallet.utxoHandling.listUtxos()
       } yield {
         // +- fee rate because signatures could vary in size
         (expectedBalance === balance +- FeeRate.currencyUnit) &&
@@ -175,7 +175,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
         rescan <- wallet.isRescanning()
         balance <- wallet.getBalance()
         addresses <- wallet.addressHandling.listAddresses()
-        utxos <- wallet.utxoHandling.listDefaultAccountUtxos()
+        utxos <- wallet.utxoHandling.listUtxos()
         spks = utxos
           .map(_.output.scriptPubKey)
       } yield {
@@ -188,7 +188,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
 
     for {
       addresses <- wallet.addressHandling.listAddresses()
-      utxos <- wallet.utxoHandling.listDefaultAccountUtxos()
+      utxos <- wallet.utxoHandling.listUtxos()
       _ = assert(addresses.size == 6)
       _ = assert(utxos.size == 3)
 
@@ -198,7 +198,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
           .sendToAddress(address, TestAmount)
 
       addresses <- wallet.addressHandling.listAddresses()
-      utxos <- wallet.utxoHandling.listDefaultAccountUtxos()
+      utxos <- wallet.utxoHandling.listUtxos()
       _ = assert(addresses.size == 7)
       _ = assert(utxos.size == 3)
       _ <-
@@ -214,7 +214,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       })
       _ <- wallet.utxoHandling.clearAllUtxos()
       addresses <- wallet.addressHandling.listAddresses()
-      utxos <- wallet.utxoHandling.listDefaultAccountUtxos()
+      utxos <- wallet.utxoHandling.listUtxos()
       _ = assert(addresses.nonEmpty)
       _ = assert(utxos.isEmpty)
 

@@ -246,15 +246,15 @@ case class Wallet(
   override def getBalance()(implicit
       ec: ExecutionContext
   ): Future[CurrencyUnit] = {
-    safeDatabase.run(spendingInfoDAO.getBalanceAction())
+    utxoHandling.getBalance()
   }
 
   override def getConfirmedBalance(): Future[CurrencyUnit] = {
-    safeDatabase.run(spendingInfoDAO.getConfirmedBalanceAction())
+    utxoHandling.getConfirmedBalance()
   }
 
   override def getUnconfirmedBalance(): Future[CurrencyUnit] = {
-    safeDatabase.run(spendingInfoDAO.getUnconfirmedBalanceAction())
+    utxoHandling.getUnconfirmedBalance()
   }
 
   override def getWalletName(): Future[String] = {

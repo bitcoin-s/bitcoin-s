@@ -106,11 +106,8 @@ case class UtxoHandling(
 
   /** @inheritdoc */
   override def listUtxos(): Future[Vector[SpendingInfoDb]] = {
-    spendingInfoDAO.findAllUnspent()
-  }
-
-  def listDefaultAccountUtxos(): Future[Vector[SpendingInfoDb]] =
     listUtxos(walletConfig.defaultAccount)
+  }
 
   def listUtxos(
       hdAccount: HDAccount
@@ -128,7 +125,7 @@ case class UtxoHandling(
   }
 
   override def listUtxos(tag: AddressTag): Future[Vector[SpendingInfoDb]] = {
-    spendingInfoDAO.findAllUnspentForTag(tag)
+    listUtxos(walletConfig.defaultAccount, tag)
   }
 
   override def listUtxos(
@@ -143,7 +140,7 @@ case class UtxoHandling(
   }
 
   override def listUtxos(state: TxoState): Future[Vector[SpendingInfoDb]] = {
-    spendingInfoDAO.findByTxoState(state)
+    listUtxos(walletConfig.defaultAccount, state)
   }
 
   override def listUtxos(
@@ -489,6 +486,39 @@ case class UtxoHandling(
       addressDb = addressDb
     )
     utxoF
+  }
+
+  /** Get total wallet balance for the default HD account */
+  override def getBalance(): Future[CurrencyUnit] = {
+    getBalance(walletConfig.defaultAccount)
+  }
+
+  /** Get total confirmed wallet balance for the default HD account */
+  override def getConfirmedBalance(): Future[CurrencyUnit] = {
+    getConfirmedBalance(walletConfig.defaultAccount)
+  }
+
+  /** Get total unconfirmed wallet balance for the default HD account */
+  override def getUnconfirmedBalance(): Future[CurrencyUnit] = {
+    getUnconfirmedBalance(walletConfig.defaultAccount)
+  }
+
+  override def getBalance(account: HDAccount): Future[CurrencyUnit] = {
+    val action = spendingInfoDAO.getBalanceAction(accountOpt = Some(account))
+    safeDatabase.run(action)
+  }
+
+  override def getConfirmedBalance(account: HDAccount): Future[CurrencyUnit] = {
+    val action =
+      spendingInfoDAO.getConfirmedBalanceAction(accountOpt = Some(account))
+    safeDatabase.run(action)
+  }
+
+  override def getUnconfirmedBalance(
+      account: HDAccount): Future[CurrencyUnit] = {
+    val action =
+      spendingInfoDAO.getUnconfirmedBalanceAction(accountOpt = Some(account))
+    safeDatabase.run(action)
   }
 }
 
