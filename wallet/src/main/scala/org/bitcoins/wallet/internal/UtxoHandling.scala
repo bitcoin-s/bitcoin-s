@@ -490,6 +490,39 @@ case class UtxoHandling(
     )
     utxoF
   }
+
+  /** Get total wallet balance for the default HD account */
+  override def getBalance(): Future[CurrencyUnit] = {
+    getBalance(walletConfig.defaultAccount)
+  }
+
+  /** Get total confirmed wallet balance for the default HD account */
+  override def getConfirmedBalance(): Future[CurrencyUnit] = {
+    getConfirmedBalance(walletConfig.defaultAccount)
+  }
+
+  /** Get total unconfirmed wallet balance for the default HD account */
+  override def getUnconfirmedBalance(): Future[CurrencyUnit] = {
+    getUnconfirmedBalance(walletConfig.defaultAccount)
+  }
+
+  override def getBalance(account: HDAccount): Future[CurrencyUnit] = {
+    val action = spendingInfoDAO.getBalanceAction(accountOpt = Some(account))
+    safeDatabase.run(action)
+  }
+
+  override def getConfirmedBalance(account: HDAccount): Future[CurrencyUnit] = {
+    val action =
+      spendingInfoDAO.getConfirmedBalanceAction(accountOpt = Some(account))
+    safeDatabase.run(action)
+  }
+
+  override def getUnconfirmedBalance(
+      account: HDAccount): Future[CurrencyUnit] = {
+    val action =
+      spendingInfoDAO.getUnconfirmedBalanceAction(accountOpt = Some(account))
+    safeDatabase.run(action)
+  }
 }
 
 object UtxoHandling {

@@ -33,6 +33,19 @@ trait UtxoHandlingApi {
     findByOutPoints(Vector(outPoint)).map(_.headOption)
   }
 
+  /** Get total wallet balance for the default HD account */
+  def getBalance(): Future[CurrencyUnit]
+
+  /** Get total confirmed wallet balance for the default HD account */
+  def getConfirmedBalance(): Future[CurrencyUnit]
+
+  /** Get total unconfirmed wallet balance for the default HD account */
+  def getUnconfirmedBalance(): Future[CurrencyUnit]
+
+  def getBalance(account: HDAccount): Future[CurrencyUnit]
+  def getConfirmedBalance(account: HDAccount): Future[CurrencyUnit]
+  def getUnconfirmedBalance(account: HDAccount): Future[CurrencyUnit]
+
   def getUnconfirmedBalance(tag: AddressTag): Future[CurrencyUnit]
   def getConfirmedBalance(tag: AddressTag): Future[CurrencyUnit]
   final def getBalance(tag: AddressTag)(implicit
