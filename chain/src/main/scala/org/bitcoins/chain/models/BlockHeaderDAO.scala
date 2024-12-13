@@ -451,13 +451,22 @@ case class BlockHeaderDAO()(implicit
       startHeight >= 0,
       s"Can only have positive  startHeight=$startHeight"
     )
-    val blockchainsF =
-      getBlockchainsBetweenHeights(from = startHeight, to = header.height)
+    require(
+      startHeight <= header.height,
+      s"startHeight=$startHeight was not less than header.height=${header.height}")
+    if (startHeight == header.height) {
+      // only 1 block header in this blockchain, so just return it early
+      val b = Blockchain.fromHeaders(Vector(header))
+      Future.successful(Some(b))
+    } else {
+      val blockchainsF =
+        getBlockchainsBetweenHeights(from = startHeight, to = header.height)
 
-    for {
-      blockchains <- blockchainsF
-      blockchainOpt = blockchains.find(_.tip == header)
-    } yield blockchainOpt
+      for {
+        blockchains <- blockchainsF
+        blockchainOpt = blockchains.find(_.tip == header)
+      } yield blockchainOpt
+    }
   }
 
   @tailrec
