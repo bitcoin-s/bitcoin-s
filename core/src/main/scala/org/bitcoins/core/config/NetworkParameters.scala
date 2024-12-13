@@ -75,7 +75,7 @@ sealed abstract class MainNet extends BitcoinNetwork {
       "dnsseed.bitcoin.dashjr-list-of-p2p-nodes.us",
       "seed.bitcoinstats.com",
       // "seed.btc.petertodd.net", very slow, commenting out for now
-      //"seed.bitcoin.jonasschnelli.ch", seems to be down?
+      // "seed.bitcoin.jonasschnelli.ch", seems to be down?
       "seed.bitcoin.sprovoost.nl",
       "dnsseed.emzy.de",
       "seed.bitcoin.wiz.biz",
