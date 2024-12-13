@@ -45,7 +45,7 @@ case class PeerFinder(
   /** Returns peers by querying each dns seed once. These will be IPv4
     * addresses.
     */
-  private def getPeersFromDnsSeeds: Future[Vector[Peer]] = {
+  private lazy val getPeersFromDnsSeeds: Future[Vector[Peer]] = {
     val dnsSeeds = nodeAppConfig.network.dnsSeeds
     val addressesF: Future[Vector[String]] = Future
       .traverse(dnsSeeds) { seed =>
@@ -163,12 +163,12 @@ case class PeerFinder(
       _peersToTry.pushAll(pds, priority = 2)
 
       val peerDiscoveryF = if (nodeAppConfig.enablePeerDiscovery) {
+        val dnsF = getPeersFromDnsSeeds
         val startedF = for {
           (dbNonCfPeerDb, dbCfPeerDb) <- getPeersFromDb
           dbNonCf = dbNonCfPeerDb.map(_.peer(nodeAppConfig.socks5ProxyParams))
           dbCf = dbCfPeerDb.map(_.peer(nodeAppConfig.socks5ProxyParams))
-          peersDbs <- getPeersFromDnsSeeds.map(dns =>
-            dns ++ getPeersFromResources ++ dbNonCf)
+          peersDbs <- dnsF.map(dns => dns ++ getPeersFromResources ++ dbNonCf)
         } yield {
           val pds = peersDbs.map(p => buildPeerData(p, isPersistent = false))
           _peersToTry.pushAll(pds)
