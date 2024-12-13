@@ -72,13 +72,14 @@ sealed abstract class MainNet extends BitcoinNetwork {
     Vector(
       // "seed.bitcoin.sipa.be", very slow, commenting out for now
       "dnsseed.bluematt.me",
-      "dnsseed.bitcoin.dashjr.org",
+      "dnsseed.bitcoin.dashjr-list-of-p2p-nodes.us",
       "seed.bitcoinstats.com",
       // "seed.btc.petertodd.net", very slow, commenting out for now
-      "seed.bitcoin.jonasschnelli.ch",
+      //"seed.bitcoin.jonasschnelli.ch", seems to be down?
       "seed.bitcoin.sprovoost.nl",
       "dnsseed.emzy.de",
-      "seed.bitcoin.wiz.biz"
+      "seed.bitcoin.wiz.biz",
+      "seed.mainnet.achownodes.xyz"
     )
   }
 
@@ -104,10 +105,13 @@ sealed abstract class TestNet3 extends BitcoinNetwork {
   /** @inheritdoc
     */
   override def dnsSeeds: Seq[String] =
-    Seq("testnet-seed.bitcoin.jonasschnelli.ch",
-        "seed.tbtc.petertodd.org",
-        "seed.testnet.bitcoin.sprovoost.nl",
-        "testnet-seed.bluematt.me")
+    Seq(
+      "testnet-seed.bitcoin.jonasschnelli.ch",
+      "seed.tbtc.petertodd.org",
+      "seed.testnet.bitcoin.sprovoost.nl",
+      "testnet-seed.bluematt.me",
+      "seed.testnet.achownodes.xyz"
+    )
   /*
    * @inheritdoc
    */
