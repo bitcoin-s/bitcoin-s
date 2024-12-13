@@ -29,17 +29,13 @@ import scala.annotation.tailrec
   * }}}
   */
 private[blockchain] trait BaseBlockChain extends SeqWrapper[BlockHeaderDb] {
-
-  protected[blockchain] def compObjectFromHeaders(
-      headers: scala.collection.immutable.Seq[BlockHeaderDb]
-  ): Blockchain
-
-  lazy val tip: BlockHeaderDb = headers.head
-
+  require(headers.nonEmpty, s"Cannot have empty Blockchain")
   require(
-    headers.size <= 1 || headers(1).height == tip.height - 1,
+    headers.size == 1 || headers(1).height == tip.height - 1,
     s"Headers must be in descending order, got ${headers.take(5)}"
   )
+
+  lazy val tip: BlockHeaderDb = headers.head
 
   /** The height of the chain */
   lazy val height: Int = tip.height
@@ -60,7 +56,7 @@ private[blockchain] trait BaseBlockChain extends SeqWrapper[BlockHeaderDb] {
   def fromHeader(header: BlockHeaderDb): Option[Blockchain] = {
     val headerIdxOpt = findHeaderIdx(header.hashBE)
     headerIdxOpt.map { idx =>
-      val newChain = this.compObjectFromHeaders(headers.splitAt(idx)._2)
+      val newChain = Blockchain.fromHeaders(headers.splitAt(idx)._2)
       require(newChain.tip == header)
       newChain
     }
