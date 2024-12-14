@@ -49,7 +49,8 @@ case class PeerManager(
 
   override def connectPeer(peer: Peer): Future[Unit] = {
     val c = ConnectPeer(peer)
-    queue.offer(c).map(_ => ())
+    offerHelper(c)
+    Future.unit
   }
 
   override def peers: Set[Peer] = _peerDataMap.keys.toSet
@@ -152,7 +153,9 @@ case class PeerManager(
 
   def disconnectPeer(peer: Peer): Future[Unit] = {
     logger.debug(s"Disconnecting persistent peer=$peer")
-    queue.offer(InitializeDisconnect(peer)).map(_ => ())
+    val id = InitializeDisconnect(peer)
+    offerHelper(id)
+    Future.unit
   }
 
   override def start(): Future[PeerManager] = {
@@ -463,7 +466,9 @@ case class PeerManager(
 
     payload match {
       case _: GetHeadersMessage =>
-        queue.offer(HeaderTimeoutWrapper(peer)).map(_ => ())
+        val htw = HeaderTimeoutWrapper(peer)
+        offerHelper(htw)
+        Future.unit
       case _ =>
         state match {
           case syncState: SyncNodeState =>
@@ -515,9 +520,9 @@ case class PeerManager(
     if (state.getPeerData(peer).isDefined) {
       payload match {
         case e: ExpectsResponse =>
-          queue
-            .offer(QueryTimeout(peer, e))
-            .map(_ => ())
+          val qt = QueryTimeout(peer, e)
+          offerHelper(qt)
+          Future.unit
         case _: NetworkPayload =>
           val exn = new RuntimeException(
             s"Cannot have sendResponseTimeout for msg=${payload.commandName} for non ExpectsResponse payload"
@@ -685,6 +690,7 @@ case class PeerManager(
 
       case (state, DataMessageWrapper(payload, peer)) =>
         logger.debug(s"Got ${payload.commandName} from peer=${peer} in stream")
+
         state match {
           case runningState: NodeRunningState =>
             val peerDataOpt = runningState.peerDataMap.get(peer)
@@ -1020,7 +1026,8 @@ case class PeerManager(
 
   def sync(syncPeerOpt: Option[Peer]): Future[Unit] = {
     val s = StartSync(syncPeerOpt)
-    queue.offer(s).map(_ => ())
+    offerHelper(s)
+    Future.unit
   }
 
   /** Helper method to sync the blockchain over the network
@@ -1196,12 +1203,8 @@ case class PeerManager(
       excludedPeerOpt: Option[Peer]
   ): Unit = {
     val m = NetworkMessage(chainAppConfig.network, msg)
-    queue
-      .offer(GossipMessage(m, excludedPeerOpt))
-      .failed
-      .foreach(err =>
-        logger.error(s"Failed to gossip message=${msg.commandName}", err))
-    ()
+    val g = GossipMessage(m, excludedPeerOpt)
+    offerHelper(g)
   }
 
   override def gossipGetHeadersMessage(
@@ -1214,17 +1217,18 @@ case class PeerManager(
   override def sendToRandomPeer(payload: NetworkPayload): Unit = {
     val msg = NetworkMessage(nodeAppConfig.network, payload)
     val stp = SendToPeer(msg, None)
+    offerHelper(stp)
+  }
+
+  private def offerHelper(streamMessage: NodeStreamMessage): Unit = {
     queue
-      .offer(stp)
+      .offer(streamMessage)
       .failed
       .foreach(err =>
-        logger.error(s"Failed to sendToPeer message=${payload.commandName}",
-                     err))
+        logger.error(s"Failed to offer message=${streamMessage}", err))
     ()
   }
 }
-
-case class ResponseTimeout(payload: NetworkPayload)
 
 object PeerManager extends BitcoinSLogger {
 
