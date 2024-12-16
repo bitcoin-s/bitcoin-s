@@ -2,7 +2,7 @@ package org.bitcoins.wallet.callback
 
 import org.apache.pekko.Done
 import org.apache.pekko.actor.ActorSystem
-import org.apache.pekko.stream.OverflowStrategy
+import org.apache.pekko.stream.{Attributes, OverflowStrategy}
 import org.apache.pekko.stream.scaladsl.{
   Keep,
   Sink,
@@ -33,7 +33,10 @@ case class WalletCallbackStreamManager(
 
   private val txProcessedQueueSource
       : Source[Transaction, SourceQueueWithComplete[Transaction]] = {
-    Source.queue(maxBufferSize, overflowStrategy)
+    Source
+      .queue[Transaction](maxBufferSize, overflowStrategy)
+      .log("wallet-txprocessingsource")
+      .withAttributes(Attributes.name("wallet-txprocessingsource"))
   }
 
   private val txProcessedSink: Sink[Transaction, Future[Done]] = {

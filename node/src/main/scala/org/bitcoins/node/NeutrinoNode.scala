@@ -7,6 +7,7 @@ import org.apache.pekko.{Done, NotUsed}
 import org.apache.pekko.actor.{ActorSystem, Cancellable}
 import org.apache.pekko.stream.{
   ActorAttributes,
+  Attributes,
   OverflowStrategy,
   QueueOfferResult,
   Supervision
@@ -57,6 +58,8 @@ case class NeutrinoNode(
         overflowStrategy = OverflowStrategy.backpressure,
         maxConcurrentOffers = Runtime.getRuntime.availableProcessors()
       )
+      .log("node-source@")
+      .withAttributes(Attributes.name("node-source@"))
   }
 
   override lazy val peerManager: PeerManager = {

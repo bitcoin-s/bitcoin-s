@@ -2,7 +2,7 @@ package org.bitcoins.node.callback
 
 import org.apache.pekko.Done
 import org.apache.pekko.actor.ActorSystem
-import org.apache.pekko.stream.OverflowStrategy
+import org.apache.pekko.stream.{Attributes, OverflowStrategy}
 import org.apache.pekko.stream.scaladsl.{
   Keep,
   Sink,
@@ -53,7 +53,10 @@ case class NodeCallbackStreamManager(
 
   private val txQueueSource
       : Source[Transaction, SourceQueueWithComplete[Transaction]] = {
-    Source.queue(maxBufferSize, overflowStrategy)
+    Source
+      .queue[Transaction](maxBufferSize, overflowStrategy)
+      .log("node-txqueuesource")
+      .withAttributes(Attributes.name("node-txqueuesource"))
   }
 
   private val txSink: Sink[Transaction, Future[Done]] = {

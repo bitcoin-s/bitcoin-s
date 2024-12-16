@@ -1560,7 +1560,7 @@ object NetworkPayload {
   private[core] val memPoolCommandName = "mempool"
   private[core] val merkleBlockCommandName = "merkleblock"
   private[core] val notFoundCommandName = "notfound"
-  private[core] val transactionCommandName = "tx"
+  val transactionCommandName = "tx"
   private[core] val addrCommandName = "addr"
   private[core] val addrV2CommandName = "addrv2"
   private[core] val sendAddrV2CommandName = "sendaddrv2"

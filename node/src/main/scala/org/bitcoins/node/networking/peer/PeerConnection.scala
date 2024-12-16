@@ -143,7 +143,7 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
     mergeHubSource: Source[ByteString, NotUsed]
   ) = {
     MergeHub
-      .source[ByteString](1024)
+      .source[ByteString](perProducerBufferSize = 1024)
       .preMaterialize()
   }
 

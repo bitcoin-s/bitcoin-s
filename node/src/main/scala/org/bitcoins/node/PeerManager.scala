@@ -689,8 +689,10 @@ case class PeerManager(
         }
 
       case (state, DataMessageWrapper(payload, peer)) =>
-        logger.debug(s"Got ${payload.commandName} from peer=${peer} in stream")
-
+        if (payload.commandName != NetworkPayload.transactionCommandName) {
+          logger.debug(
+            s"Got ${payload.commandName} from peer=${peer} in stream")
+        }
         state match {
           case runningState: NodeRunningState =>
             val peerDataOpt = runningState.peerDataMap.get(peer)
@@ -730,9 +732,14 @@ case class PeerManager(
                     }
                   }
                 resultF.map { r =>
-                  logger.debug(
-                    s"Done processing ${payload.commandName} in peer=${peer} state=${r}"
-                  )
+                  if (
+                    payload.commandName != NetworkPayload.transactionCommandName
+                  ) {
+                    logger.debug(
+                      s"Done processing ${payload.commandName} in peer=${peer} state=${r}"
+                    )
+                  }
+
                   r
                 }
             }
