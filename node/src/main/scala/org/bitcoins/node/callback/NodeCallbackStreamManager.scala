@@ -38,7 +38,12 @@ case class NodeCallbackStreamManager(
       (DoubleSha256DigestBE, GolombFilter)
     ],
     SourceQueueWithComplete[Vector[(DoubleSha256DigestBE, GolombFilter)]]] = {
-    Source.queue(maxBufferSize, overflowStrategy)
+    Source
+      .queue[Vector[
+        (DoubleSha256DigestBE, GolombFilter)
+      ]](maxBufferSize, overflowStrategy)
+      .log("node-filterQueueSource")
+      .withAttributes(Attributes.name("node-filterQueueSource"))
   }
 
   private val filterSink
@@ -55,8 +60,9 @@ case class NodeCallbackStreamManager(
       : Source[Transaction, SourceQueueWithComplete[Transaction]] = {
     Source
       .queue[Transaction](maxBufferSize, overflowStrategy)
-      .log("node-txqueuesource")
       .withAttributes(Attributes.name("node-txqueuesource"))
+      .log("node-txqueuesource")
+
   }
 
   private val txSink: Sink[Transaction, Future[Done]] = {
@@ -73,7 +79,11 @@ case class NodeCallbackStreamManager(
                  BlockHeader
                ],
                SourceQueueWithComplete[Vector[BlockHeader]]] = {
-    Source.queue(maxBufferSize, overflowStrategy)
+    Source
+      .queue[Vector[BlockHeader]](maxBufferSize, overflowStrategy)
+      .log("node-headerQueueSource")
+      .withAttributes(Attributes.name("node-headerQueueSource"))
+
   }
 
   private val headerSink: Sink[Vector[BlockHeader], Future[Done]] = {
@@ -87,7 +97,10 @@ case class NodeCallbackStreamManager(
 
   private val blockQueueSource
       : Source[Block, SourceQueueWithComplete[Block]] = {
-    Source.queue(maxBufferSize, overflowStrategy)
+    Source
+      .queue[Block](maxBufferSize, overflowStrategy)
+      .log("node-blockQueueSource")
+      .withAttributes(Attributes.name("node-blockQueueSource"))
   }
 
   private val blockSink: Sink[Block, Future[Done]] = {
@@ -104,7 +117,11 @@ case class NodeCallbackStreamManager(
                SourceQueueWithComplete[
                  (MerkleBlock, Vector[Transaction])
                ]] = {
-    Source.queue(maxBufferSize, overflowStrategy)
+    Source
+      .queue[(MerkleBlock, Vector[Transaction])](maxBufferSize,
+                                                 overflowStrategy)
+      .log("node-merkleBlockQueueSource")
+      .withAttributes(Attributes.name("node-merkleBlockQueueSource"))
   }
 
   private val merkleBlockSink
@@ -190,6 +207,9 @@ case class NodeCallbackStreamManager(
   override def executeOnTxReceivedCallbacks(
       tx: Transaction
   )(implicit ec: ExecutionContext): Future[Unit] = {
+    // dead lock possible here if queue is full ???
+    // but why would our downstream not be consuming tx?
+    // do we somehow offer things back into NeutrinoNode?
     txQueue
       .offer(tx)
       .map(_ => ())

@@ -58,8 +58,8 @@ case class NeutrinoNode(
         overflowStrategy = OverflowStrategy.backpressure,
         maxConcurrentOffers = Runtime.getRuntime.availableProcessors()
       )
-      .log("node-source@")
       .withAttributes(Attributes.name("node-source@"))
+      .log("node-source@")
   }
 
   override lazy val peerManager: PeerManager = {

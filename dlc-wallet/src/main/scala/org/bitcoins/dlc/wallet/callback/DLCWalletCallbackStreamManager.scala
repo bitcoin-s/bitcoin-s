@@ -2,7 +2,7 @@ package org.bitcoins.dlc.wallet.callback
 
 import org.apache.pekko.Done
 import org.apache.pekko.actor.ActorSystem
-import org.apache.pekko.stream.OverflowStrategy
+import org.apache.pekko.stream.{Attributes, OverflowStrategy}
 import org.apache.pekko.stream.scaladsl.{
   Keep,
   Sink,
@@ -32,7 +32,10 @@ case class DLCWalletCallbackStreamManager(
 
   private val stateChangeSource
       : Source[DLCStatus, SourceQueueWithComplete[DLCStatus]] = {
-    Source.queue(maxBufferSize, overflowStrategy)
+    Source
+      .queue[DLCStatus](maxBufferSize, overflowStrategy)
+      .log("dlcwallet-stateChangeSource")
+      .withAttributes(Attributes.name("dlcwallet-stateChangeSource"))
   }
 
   private val stateChangeSink: Sink[DLCStatus, Future[Done]] = {
@@ -49,7 +52,10 @@ case class DLCWalletCallbackStreamManager(
                                      SourceQueueWithComplete[
                                        IncomingDLCOfferDb
                                      ]] = {
-    Source.queue(maxBufferSize, overflowStrategy)
+    Source
+      .queue[IncomingDLCOfferDb](maxBufferSize, overflowStrategy)
+      .log("dlcwallet-offerAddSource")
+      .withAttributes(Attributes.name("dlcwallet-offerAddSource"))
   }
 
   private val offerAddSink: Sink[IncomingDLCOfferDb, Future[Done]] = {
@@ -64,7 +70,10 @@ case class DLCWalletCallbackStreamManager(
 
   private val offerRemoveSource
       : Source[Sha256Digest, SourceQueueWithComplete[Sha256Digest]] = {
-    Source.queue(maxBufferSize, overflowStrategy)
+    Source
+      .queue[Sha256Digest](maxBufferSize, overflowStrategy)
+      .log("dlcwallet-offerRemoveSource")
+      .withAttributes(Attributes.name("dlcwallet-offerRemoveSource"))
   }
 
   private val offerRemoveSink: Sink[Sha256Digest, Future[Done]] = {

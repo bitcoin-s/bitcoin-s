@@ -51,7 +51,10 @@ case class WalletCallbackStreamManager(
 
   private val txBroadcastQueueSource
       : Source[Transaction, SourceQueueWithComplete[Transaction]] = {
-    Source.queue(maxBufferSize, overflowStrategy)
+    Source
+      .queue[Transaction](maxBufferSize, overflowStrategy)
+      .log("wallet-txBroadcastQueueSource")
+      .withAttributes(Attributes.name("wallet-txBroadcastQueueSource"))
   }
 
   private val txBroadcastSink: Sink[Transaction, Future[Done]] = {
@@ -69,7 +72,12 @@ case class WalletCallbackStreamManager(
                  SpendingInfoDb
                ],
                SourceQueueWithComplete[Vector[SpendingInfoDb]]] = {
-    Source.queue(maxBufferSize, overflowStrategy)
+    Source
+      .queue[Vector[
+        SpendingInfoDb
+      ]](maxBufferSize, overflowStrategy)
+      .log("wallet-onReservedUtxosSource")
+      .withAttributes(Attributes.name("wallet-onReservedUtxosSource"))
   }
 
   private val onReservedUtxosSink
@@ -85,7 +93,10 @@ case class WalletCallbackStreamManager(
 
   private val onAddressGeneratedSource
       : Source[BitcoinAddress, SourceQueueWithComplete[BitcoinAddress]] = {
-    Source.queue(maxBufferSize, overflowStrategy)
+    Source
+      .queue[BitcoinAddress](maxBufferSize, overflowStrategy)
+      .log("wallet-onAddressGeneratedSource")
+      .withAttributes(Attributes.name("wallet-onAddressGeneratedSource"))
   }
 
   private val onAddressGeneratedSink: Sink[BitcoinAddress, Future[Done]] = {
@@ -100,7 +111,10 @@ case class WalletCallbackStreamManager(
 
   private val onBlockProcessedSource
       : Source[Block, SourceQueueWithComplete[Block]] = {
-    Source.queue(maxBufferSize, overflowStrategy)
+    Source
+      .queue[Block](maxBufferSize, overflowStrategy)
+      .log("wallet-onBlockProcessedSource")
+      .withAttributes(Attributes.name("wallet-onBlockProcessedSource"))
   }
 
   private val onBockProcessedSink: Sink[Block, Future[Done]] = {
@@ -115,7 +129,10 @@ case class WalletCallbackStreamManager(
 
   private val onRescanCompleteSource
       : Source[String, SourceQueueWithComplete[String]] = {
-    Source.queue(maxBufferSize, overflowStrategy)
+    Source
+      .queue[String](maxBufferSize, overflowStrategy)
+      .log("wallet-onRescanCompleteSource")
+      .withAttributes(Attributes.name("wallet-onRescanCompleteSource"))
   }
 
   private val onRescanCompleteSink: Sink[String, Future[Done]] = {
@@ -130,7 +147,10 @@ case class WalletCallbackStreamManager(
 
   private val onFeeChangeSource
       : Source[FeeUnit, SourceQueueWithComplete[FeeUnit]] = {
-    Source.queue(maxBufferSize, overflowStrategy)
+    Source
+      .queue[FeeUnit](maxBufferSize, overflowStrategy)
+      .log("wallet-onFeeChangeSource")
+      .withAttributes(Attributes.name("wallet-onFeeChangeSource"))
   }
 
   private val onFeeChangeSink: Sink[FeeUnit, Future[Done]] = {
