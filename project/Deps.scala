@@ -131,7 +131,7 @@ object Deps {
       "com.google.code.gson" % "gson" % V.gsonV // https://github.com/google/gson
 
     val guava =
-      "com.google.guava" % "guava" % "33.3.1-jre" // https://github.com/google/guava/
+      "com.google.guava" % "guava" % "33.4.0-jre" // https://github.com/google/guava/
 
     val jUnixSocket =
       "com.kohlschutter.junixsocket" % "junixsocket-core" % V.jUnixSocketV
