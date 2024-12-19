@@ -35,7 +35,7 @@
         <appender-ref ref="ASYNC-FILE"/>
     </root>
 
-    <logger name="org.bitcoins.node" level="INFO"/>
+    <logger name="org.bitcoins.node" level="DEBUG"/>
 
     <logger name="org.bitcoins.chain" level="INFO"/>
 
@@ -44,6 +44,7 @@
     <logger name="slick" level="OFF"/>
     <logger name="com.zaxxer" level="INFO"/>
 
+    <logger name="org.apache.pekko" level="DEBUG"/>
     <!-- Get rid of messages like this:
     Connection attempt failed. Backing off new connection
     attempts for at least 800 milliseconds. -->
