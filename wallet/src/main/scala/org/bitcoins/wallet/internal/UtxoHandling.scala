@@ -235,9 +235,11 @@ case class UtxoHandling(
             txos.map(fn(_, confs, walletConfig.requiredConfirmations))
         }
       case (None, txos) =>
-        logger.debug(
-          s"Currently have ${txos.size} transactions in the mempool"
-        )
+        if (txos.nonEmpty) {
+          logger.debug(
+            s"Currently have ${txos.size} transactions in the mempool"
+          )
+        }
         txos
     }.toVector
     if (toUpdates.nonEmpty)
