@@ -62,7 +62,7 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
   private lazy val connection: Flow[
     ByteString,
     ByteString,
-    (Future[Tcp.OutgoingConnection], UniqueKillSwitch)
+    Future[Tcp.OutgoingConnection]
   ] = {
     val base = Tcp(system)
       .outgoingConnection(
@@ -70,7 +70,6 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
         halfClose = false,
         options = options
       )
-      .viaMat(KillSwitches.single)(Keep.both)
     base
   }
 
@@ -147,18 +146,18 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
       .preMaterialize()
   }
 
-  private val connectionFlow
-      : Flow[ByteString,
-             Vector[
-               NetworkMessage
-             ],
-             (Future[Tcp.OutgoingConnection], UniqueKillSwitch)] =
+  private val connectionFlow: Flow[ByteString,
+                                   Vector[
+                                     NetworkMessage
+                                   ],
+                                   Future[Tcp.OutgoingConnection]] =
     connection
       .idleTimeout(nodeAppConfig.peerTimeout)
       .joinMat(bidiFlow)(Keep.left)
 
   private def connectionGraph(
-      handleNetworkMsgSink: Sink[Vector[NetworkMessage], Future[Done]]
+      handleNetworkMsgSink: Sink[Vector[NetworkMessage],
+                                 (UniqueKillSwitch, Future[Done])]
   ): RunnableGraph[
     ((Future[Tcp.OutgoingConnection], UniqueKillSwitch), Future[Done])
   ] = {
@@ -166,13 +165,14 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
       .viaMat(connectionFlow)(Keep.right)
       .toMat(handleNetworkMsgSink)(Keep.both)
 
-    result
+    result.mapMaterializedValue(r => ((r._1, r._2._1), r._2._2))
   }
 
   private def buildConnectionGraph()
       : Future[((Tcp.OutgoingConnection, UniqueKillSwitch), Future[Done])] = {
 
-    val handleNetworkMsgSink: Sink[Vector[NetworkMessage], Future[Done]] = {
+    val handleNetworkMsgSink
+        : Sink[Vector[NetworkMessage], (UniqueKillSwitch, Future[Done])] = {
       Flow[Vector[NetworkMessage]]
         .mapConcat(identity)
         .mapAsync(1) { case msg =>
@@ -184,7 +184,8 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
           }
           queue.offer(wrapper)
         }
-        .toMat(Sink.ignore)(Keep.right)
+        .viaMat(KillSwitches.single)(Keep.right)
+        .toMat(Sink.ignore)(Keep.both)
     }
 
     val runningStream
@@ -212,7 +213,7 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
 
           val source: Source[
             ByteString,
-            (Future[Tcp.OutgoingConnection], UniqueKillSwitch)
+            Future[Tcp.OutgoingConnection]
           ] =
             mergeHubSource.viaMat(connection)(Keep.right)
           Socks5Connection
@@ -223,6 +224,7 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
               mergeHubSink = mergeHubSink,
               credentialsOpt = s.credentialsOpt
             )
+            .map(r => ((r._1, r._2._1), r._2._2))
 
         case None =>
           val result = connectionGraph(handleNetworkMsgSink).run()

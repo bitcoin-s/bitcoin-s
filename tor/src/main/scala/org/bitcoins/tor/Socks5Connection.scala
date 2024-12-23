@@ -287,17 +287,14 @@ object Socks5Connection extends BitcoinSLogger {
       socket: InetSocketAddress,
       source: Source[
         ByteString,
-        (
-            Future[org.apache.pekko.stream.scaladsl.Tcp.OutgoingConnection],
-            MatSource
-        )
+        Future[org.apache.pekko.stream.scaladsl.Tcp.OutgoingConnection]
       ],
       sink: Sink[Either[ByteString, Socks5ConnectionState], MatSink],
       mergeHubSink: Sink[ByteString, NotUsed],
       credentialsOpt: Option[Credentials]
   )(implicit mat: Materializer): Future[
     (
-        (org.apache.pekko.stream.scaladsl.Tcp.OutgoingConnection, MatSource),
+        org.apache.pekko.stream.scaladsl.Tcp.OutgoingConnection,
         MatSink
     )
   ] = {
@@ -389,7 +386,7 @@ object Socks5Connection extends BitcoinSLogger {
         )
     }
 
-    val ((tcpConnectionF, matSource), matSink) = source
+    val (tcpConnectionF, matSink) = source
       .viaMat(flowState)(Keep.left)
       .toMat(sink)(Keep.both)
       .run()
@@ -403,7 +400,7 @@ object Socks5Connection extends BitcoinSLogger {
 
       greetingSource.to(mergeHubSink).run()
 
-      ((conn, matSource), matSink)
+      (conn, matSink)
     }(mat.executionContext)
   }
 
