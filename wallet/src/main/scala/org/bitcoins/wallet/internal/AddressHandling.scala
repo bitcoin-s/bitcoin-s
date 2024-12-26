@@ -51,23 +51,25 @@ case class AddressHandling(
   private val networkParameters: NetworkParameters = walletConfig.network
 
   override def listAddresses(): Future[Vector[AddressDb]] =
-    addressDAO.findAllAddresses()
+    addressDAO.findAllAddressDbForAccount(walletConfig.defaultAccount)
 
   override def listSpentAddresses(): Future[Vector[AddressDb]] = {
-    addressDAO.getSpentAddresses
+    addressDAO.getSpentAddresses(walletConfig.defaultAccount)
   }
 
   override def listFundedAddresses()
       : Future[Vector[(AddressDb, CurrencyUnit)]] = {
-    addressDAO.getFundedAddresses
+    addressDAO.getFundedAddresses(walletConfig.defaultAccount)
   }
 
   override def listUnusedAddresses(): Future[Vector[AddressDb]] = {
-    addressDAO.getUnusedAddresses
+    addressDAO.getUnusedAddresses(walletConfig.defaultAccount)
   }
 
-  override def listScriptPubKeys(): Future[Vector[ScriptPubKeyDb]] =
+  override def listScriptPubKeys(): Future[Vector[ScriptPubKeyDb]] = {
+    // make account specific?
     scriptPubKeyDAO.findAll()
+  }
 
   override def watchScriptPubKey(
       scriptPubKey: ScriptPubKey
@@ -86,7 +88,7 @@ case class AddressHandling(
       case (out, index)
           if spks.map(_.scriptPubKey).contains(out.scriptPubKey) =>
         (out, TransactionOutPoint(transaction.txId, UInt32(index)))
-    }.toVector
+    }
 
   /** Derives a new address in the wallet for the given account and chain type
     * (change/external). After deriving the address it inserts it into our table
@@ -232,11 +234,10 @@ case class AddressHandling(
   /** @inheritdoc */
   override def getUnusedAddress: Future[BitcoinAddress] = {
     for {
-      account <- accountHandling.getDefaultAccount()
-      addresses <- addressDAO.getUnusedAddresses(account.hdAccount)
+      addresses <- addressDAO.getUnusedAddresses(walletConfig.defaultAccount)
       address <-
         if (addresses.isEmpty) {
-          accountHandling.getNewAddress(account.hdAccount)
+          accountHandling.getNewAddress(walletConfig.defaultAccount)
         } else {
           Future.successful(addresses.head.address)
         }

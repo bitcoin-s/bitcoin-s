@@ -38,32 +38,6 @@ class AddressHandlingTest extends BitcoinSWalletTest {
       }
   }
 
-  it must "generate an address for a non default account and then find it" in {
-    (fundedWallet: FundedWallet) =>
-      val wallet = fundedWallet.wallet
-      val account1 = WalletTestUtil.getHdAccount1(fundedWallet.walletConfig)
-      val addressF = wallet.accountHandling.getNewAddress(account1)
-      for {
-        address <- addressF
-        listAddressesForAcct <- wallet.accountHandling.listAddresses(account1)
-        exists <- wallet.addressHandling.contains(
-          address,
-          Some((wallet.accountHandling, account1)))
-        doesNotExist <- wallet.addressHandling.contains(address, None)
-      } yield {
-        assert(listAddressesForAcct.nonEmpty)
-        assert(listAddressesForAcct.map(_.address).contains(address))
-        assert(
-          exists,
-          s"Wallet must contain address in specific after generating it"
-        )
-        assert(
-          doesNotExist,
-          s"Wallet must NOT contain address in default account when address is specified"
-        )
-      }
-  }
-
   it must "generate the same unused address until it receives funds" in {
     (fundedWallet: FundedWallet) =>
       val wallet = fundedWallet.wallet
