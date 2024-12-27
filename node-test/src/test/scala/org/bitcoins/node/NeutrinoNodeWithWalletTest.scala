@@ -79,7 +79,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       condition(
         expectedBalance = 6.bitcoin - TestAmount - fee,
         expectedUtxos = 3,
-        expectedAddresses = 7
+        expectedAddresses = 4
       )
     }
 
@@ -91,7 +91,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       condition(
         expectedBalance = (6.bitcoin - TestAmount - firstTxFee) + TestAmount,
         expectedUtxos = 4,
-        expectedAddresses = 8
+        expectedAddresses = 5
       )
     }
 
@@ -189,7 +189,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
     for {
       addresses <- wallet.addressHandling.listAddresses()
       utxos <- wallet.utxoHandling.listUtxos()
-      _ = assert(addresses.size == 6)
+      _ = assert(addresses.size == 3)
       _ = assert(utxos.size == 3)
 
       address <- wallet.getNewAddress()
@@ -199,7 +199,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
 
       addresses <- wallet.addressHandling.listAddresses()
       utxos <- wallet.utxoHandling.listUtxos()
-      _ = assert(addresses.size == 7)
+      _ = assert(addresses.size == 4)
       _ = assert(utxos.size == 3)
       _ <-
         bitcoind.getNewAddress
