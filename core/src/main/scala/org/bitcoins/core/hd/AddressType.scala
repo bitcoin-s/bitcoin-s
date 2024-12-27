@@ -47,4 +47,14 @@ object AddressType extends StringFactory[AddressType] {
         sys.error(s"Could not find address type for string=$string")
     }
   }
+
+  def fromPurpose(purpose: HDPurpose): Option[AddressType] = {
+    purpose match {
+      case HDPurpose.Legacy       => Some(Legacy)
+      case HDPurpose.NestedSegWit => Some(NestedSegWit)
+      case HDPurpose.SegWit       => Some(SegWit)
+      case HDPurpose.Taproot      => Some(P2TR)
+      case _: HDPurpose           => None
+    }
+  }
 }

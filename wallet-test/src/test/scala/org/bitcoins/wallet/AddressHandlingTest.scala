@@ -1,6 +1,7 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.hd.{AddressType, HDPurpose}
 import org.bitcoins.core.protocol.script.EmptyScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.utxo.StorageLocationTag.HotStorage
@@ -10,11 +11,12 @@ import org.bitcoins.core.wallet.utxo.{
   StorageLocationTagType
 }
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
-import org.bitcoins.testkit.wallet.BitcoinSWalletTest
+import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
 import org.bitcoins.wallet.models.{ScriptPubKeyDAO, SpendingInfoDAO}
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
+import scala.util.Random
 
 class AddressHandlingTest extends BitcoinSWalletTest {
   type FixtureParam = FundedWallet
@@ -35,6 +37,32 @@ class AddressHandlingTest extends BitcoinSWalletTest {
         exists <- wallet.addressHandling.contains(address, None)
       } yield {
         assert(exists, s"Wallet must contain address after generating it")
+      }
+  }
+
+  it must "generate an address for a non default account and then find it" in {
+    (fundedWallet: FundedWallet) =>
+      val wallet = fundedWallet.wallet
+      val account1 = WalletTestUtil.getHdAccount1(fundedWallet.walletConfig)
+      val addressF = wallet.accountHandling.getNewAddress(account1)
+      for {
+        address <- addressF
+        listAddressesForAcct <- wallet.accountHandling.listAddresses(account1)
+        exists <- wallet.addressHandling.contains(
+          address,
+          Some((wallet.accountHandling, account1)))
+        doesNotExist <- wallet.addressHandling.contains(address, None)
+      } yield {
+        assert(listAddressesForAcct.nonEmpty)
+        assert(listAddressesForAcct.map(_.address).contains(address))
+        assert(
+          exists,
+          s"Wallet must contain address in specific after generating it"
+        )
+        assert(
+          !doesNotExist,
+          s"Wallet must NOT contain address in default account when address is specified"
+        )
       }
   }
 
@@ -256,4 +284,24 @@ class AddressHandlingTest extends BitcoinSWalletTest {
         assert(spkOpt.isDefined)
       }
   }
+
+  it must "listaddresses for current default purpose, not all purposes in the wallet" in {
+    (fundedWallet: FundedWallet) =>
+      val wallet = fundedWallet.wallet
+      val randomPurpose = Random
+        .shuffle(
+          HDPurpose.all
+            .filterNot(_ == fundedWallet.walletConfig.defaultPurpose))
+        .head
+      val addrType = AddressType.fromPurpose(randomPurpose).get
+      val addrF = wallet.addressHandling.getNewAddress(addrType)
+
+      for {
+        addr <- addrF
+        addresses <- wallet.addressHandling.listAddresses()
+      } yield {
+        assert(!addresses.exists(_.address == addr))
+      }
+  }
+
 }
