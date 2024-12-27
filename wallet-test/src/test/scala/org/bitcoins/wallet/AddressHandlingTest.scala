@@ -10,7 +10,7 @@ import org.bitcoins.core.wallet.utxo.{
   StorageLocationTagType
 }
 import org.bitcoins.testkit.wallet.FundWalletUtil.FundedWallet
-import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.wallet.models.{ScriptPubKeyDAO, SpendingInfoDAO}
 import org.scalatest.FutureOutcome
 

@@ -67,7 +67,6 @@ case class AddressHandling(
   }
 
   override def listScriptPubKeys(): Future[Vector[ScriptPubKeyDb]] = {
-    // make account specific?
     scriptPubKeyDAO.findAll()
   }
 
