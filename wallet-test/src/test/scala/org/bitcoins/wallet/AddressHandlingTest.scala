@@ -291,8 +291,12 @@ class AddressHandlingTest extends BitcoinSWalletTest {
       val randomPurpose = Random
         .shuffle(
           HDPurpose.all
+            // maybe should remove HDPurpose.MultiSig as it doesn't make sense
+            // to use a single multisig key for address generation?
+            .filterNot(_ == HDPurpose.Multisig)
             .filterNot(_ == fundedWallet.walletConfig.defaultPurpose))
         .head
+
       val addrType = AddressType.fromPurpose(randomPurpose).get
       val addrF = wallet.addressHandling.getNewAddress(addrType)
 
