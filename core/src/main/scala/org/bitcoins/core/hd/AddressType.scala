@@ -50,11 +50,11 @@ object AddressType extends StringFactory[AddressType] {
 
   def fromPurpose(purpose: HDPurpose): Option[AddressType] = {
     purpose match {
-      case HDPurpose.Legacy                      => Some(Legacy)
-      case HDPurpose.NestedSegWit                => Some(NestedSegWit)
-      case HDPurpose.SegWit | HDPurpose.Multisig => Some(SegWit)
-      case HDPurpose.Taproot                     => Some(P2TR)
-      case _: HDPurpose                          => None
+      case HDPurpose.Legacy                  => Some(Legacy)
+      case HDPurpose.NestedSegWit            => Some(NestedSegWit)
+      case HDPurpose.SegWit                  => Some(SegWit)
+      case HDPurpose.Taproot                 => Some(P2TR)
+      case _: HDPurpose | HDPurpose.Multisig => None
     }
   }
 }
