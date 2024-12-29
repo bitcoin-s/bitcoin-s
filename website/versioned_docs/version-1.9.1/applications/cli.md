@@ -36,7 +36,7 @@ Usage: bitcoin-s-cli [options] [<cmd>]
 ```
 
 
-Now you are are ready to start the server that the cli sends commands to. Take a look at our [server](server.md) documentation on how to build and start the server.
+Now you are ready to start the server that the cli sends commands to. Take a look at our [server](server.md) documentation on how to build and start the server.
 
 ### Native binaries
 

@@ -233,7 +233,7 @@ class ChainHandler(
         }
       }
     } else if (prevStopHash == stopHash) {
-      // means are are in sync
+      // means are in sync
       Future.successful(None)
     } else {
       val candidateStartHeadersF = getImmediateChildren(prevStopHash)
