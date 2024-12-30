@@ -282,7 +282,7 @@ case class AddressDAO()(implicit
     getUnusedAddresses.map(_.filter(_.path.account == hdAccount))
   }
 
-  def getSpentAddresses: Future[Vector[AddressDb]] = {
+  def getSpentAddresses(hdAccount: HDAccount): Future[Vector[AddressDb]] = {
     val query =
       table
         .join(spkTable)
@@ -298,9 +298,11 @@ case class AddressDAO()(implicit
         res.map { case (addrRec, spkRec) =>
           addrRec.toAddressDb(spkRec.scriptPubKey)
         })
+      .map(_.filter(_.path.account == hdAccount))
   }
 
-  def getFundedAddresses: Future[Vector[(AddressDb, CurrencyUnit)]] = {
+  def getFundedAddresses(
+      account: HDAccount): Future[Vector[(AddressDb, CurrencyUnit)]] = {
     val query = table
       .join(spkTable)
       .on(_.scriptPubKeyId === _.id)
@@ -313,6 +315,7 @@ case class AddressDAO()(implicit
       .map(_.map { case ((addrRec, spkRec), utxoDb) =>
         (addrRec.toAddressDb(spkRec.scriptPubKey), utxoDb.value)
       })
+      .map(_.filter(_._1.path.account == account))
   }
 
   def findByScriptPubKey(spk: ScriptPubKey): Future[Option[AddressDb]] = {

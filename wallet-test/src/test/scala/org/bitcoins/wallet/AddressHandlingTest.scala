@@ -1,6 +1,7 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.hd.{AddressType, HDPurpose}
 import org.bitcoins.core.protocol.script.EmptyScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.utxo.StorageLocationTag.HotStorage
@@ -15,6 +16,7 @@ import org.bitcoins.wallet.models.{ScriptPubKeyDAO, SpendingInfoDAO}
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
+import scala.util.Random
 
 class AddressHandlingTest extends BitcoinSWalletTest {
   type FixtureParam = FundedWallet
@@ -58,7 +60,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
           s"Wallet must contain address in specific after generating it"
         )
         assert(
-          doesNotExist,
+          !doesNotExist,
           s"Wallet must NOT contain address in default account when address is specified"
         )
       }
@@ -282,4 +284,28 @@ class AddressHandlingTest extends BitcoinSWalletTest {
         assert(spkOpt.isDefined)
       }
   }
+
+  it must "listaddresses for current default purpose, not all purposes in the wallet" in {
+    (fundedWallet: FundedWallet) =>
+      val wallet = fundedWallet.wallet
+      val randomPurpose = Random
+        .shuffle(
+          HDPurpose.all
+            // maybe should remove HDPurpose.MultiSig as it doesn't make sense
+            // to use a single multisig key for address generation?
+            .filterNot(_ == HDPurpose.Multisig)
+            .filterNot(_ == fundedWallet.walletConfig.defaultPurpose))
+        .head
+
+      val addrType = AddressType.fromPurpose(randomPurpose).get
+      val addrF = wallet.addressHandling.getNewAddress(addrType)
+
+      for {
+        addr <- addrF
+        addresses <- wallet.addressHandling.listAddresses()
+      } yield {
+        assert(!addresses.exists(_.address == addr))
+      }
+  }
+
 }

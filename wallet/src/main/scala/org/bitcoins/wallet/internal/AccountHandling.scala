@@ -359,22 +359,13 @@ case class AccountHandling(
   override def listSpentAddresses(
       account: HDAccount
   ): Future[Vector[AddressDb]] = {
-    val spentAddressesF = addressDAO.getSpentAddresses
-
-    spentAddressesF.map { spentAddresses =>
-      spentAddresses.filter(addr => HDAccount.isSameAccount(addr.path, account))
-    }
+    addressDAO.getSpentAddresses(account)
   }
 
   override def listFundedAddresses(
       account: HDAccount
   ): Future[Vector[(AddressDb, CurrencyUnit)]] = {
-    val spentAddressesF = addressDAO.getFundedAddresses
-
-    spentAddressesF.map { spentAddresses =>
-      spentAddresses.filter(addr =>
-        HDAccount.isSameAccount(addr._1.path, account))
-    }
+    addressDAO.getFundedAddresses(account)
   }
 
   private def getNewAddressHelperAction(
