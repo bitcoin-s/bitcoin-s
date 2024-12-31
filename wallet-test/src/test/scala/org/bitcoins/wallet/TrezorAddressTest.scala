@@ -243,14 +243,14 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
 
     val assertionsF: Future[Seq[Assertion]] = for {
       wallet <- getWallet(conf)
-      existingAccounts <- wallet.accountHandling.listAccounts(purpose)
+      existingAccounts <- wallet.accountHandling.getAccounts(purpose)
       _ <- createNeededAccounts(
         wallet,
         existingAccounts,
         conf.kmParams,
         testVectors
       )
-      accounts <- wallet.accountHandling.listAccounts(purpose)
+      accounts <- wallet.accountHandling.getAccounts(purpose)
       // we want to find all accounts for the given account type,
       // and match it with its corresponding test vector
       accountsWithVectors = {

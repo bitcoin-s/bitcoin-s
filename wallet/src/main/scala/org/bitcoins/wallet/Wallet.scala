@@ -157,8 +157,8 @@ case class Wallet(
   override def processCompactFilters(
       blockFilters: Vector[(DoubleSha256DigestBE, GolombFilter)]
   ): Future[Wallet] = {
-    val utxosF = utxoHandling.listUtxos()
-    val spksF = addressHandling.listScriptPubKeys()
+    val utxosF = utxoHandling.getUtxos()
+    val spksF = addressHandling.getScriptPubKeys()
     val blockHashOpt = blockFilters.lastOption.map(_._1)
     val heightOptF = blockHashOpt match {
       case Some(blockHash) =>

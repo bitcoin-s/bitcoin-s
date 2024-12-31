@@ -63,7 +63,7 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
       tx <- bitcoind.getRawTransactionRaw(txId)
 
       // before processing TX, wallet should be completely empty
-      _ <- wallet.utxoHandling.listUtxos().map(utxos => assert(utxos.isEmpty))
+      _ <- wallet.utxoHandling.getUtxos().map(utxos => assert(utxos.isEmpty))
       _ <- wallet.getBalance().map(confirmed => assert(confirmed == 0.bitcoin))
       _ <-
         wallet
@@ -75,7 +75,7 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
       // we should now have one UTXO in the wallet
       // it should not be confirmed
-      utxosPostAdd <- wallet.utxoHandling.listUtxos()
+      utxosPostAdd <- wallet.utxoHandling.getUtxos()
       _ = assert(utxosPostAdd.length == 1)
       _ <-
         wallet
@@ -100,7 +100,7 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
         blockHashWithConfsOpt)
       _ <-
         wallet.utxoHandling
-          .listUtxos()
+          .getUtxos()
           .map { utxos =>
             // we want to make sure no new utxos were added,
             // i.e. that we only modified an existing one
@@ -131,7 +131,7 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
       _ <- bitcoind.generate(1)
       tx <- bitcoind.getRawTransaction(txid)
 
-      utxos <- wallet.utxoHandling.listUtxos()
+      utxos <- wallet.utxoHandling.getUtxos()
       _ = utxos match {
         case utxo +: Vector() =>
           assert(utxo.privKeyPath.chain.chainType == HDChainType.Change)
@@ -356,9 +356,9 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
         _ <- wallet.transactionProcessing.processBlock(block)
 
         // Verify we funded the wallet
-        allUtxos <- wallet.utxoHandling.listUtxos()
+        allUtxos <- wallet.utxoHandling.getUtxos()
         _ = assert(allUtxos.size == 1)
-        utxos <- wallet.utxoHandling.listUtxos(TxoState.ImmatureCoinbase)
+        utxos <- wallet.utxoHandling.getUtxos(TxoState.ImmatureCoinbase)
         _ = assert(utxos.size == 1)
 
         bitcoindAddr <- bitcoind.getNewAddress
@@ -396,10 +396,10 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
 
         // Process tx, validate correctly moved to
         _ <- wallet.transactionProcessing.processTransaction(signedTx, None)
-        newCoinbaseUtxos <- wallet.utxoHandling.listUtxos(
+        newCoinbaseUtxos <- wallet.utxoHandling.getUtxos(
           TxoState.ImmatureCoinbase)
         _ = assert(newCoinbaseUtxos.isEmpty)
-        spentUtxos <- wallet.utxoHandling.listUtxos(TxoState.BroadcastSpent)
+        spentUtxos <- wallet.utxoHandling.getUtxos(TxoState.BroadcastSpent)
         _ = assert(spentUtxos.size == 1)
 
         // Assert spending tx valid to bitcoind

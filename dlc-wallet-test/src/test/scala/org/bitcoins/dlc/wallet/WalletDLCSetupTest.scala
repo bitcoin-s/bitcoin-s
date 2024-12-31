@@ -557,7 +557,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
       for {
         oldBalance <- dlcWalletA.getBalance()
-        oldReserved <- walletApiA.utxoHandling.listUtxos(TxoState.Reserved)
+        oldReserved <- walletApiA.utxoHandling.getUtxos(TxoState.Reserved)
         _ = assert(oldReserved.isEmpty)
 
         offer <- dlcWalletA.createDLCOffer(
@@ -583,7 +583,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         )
 
         balance <- dlcWalletA.getBalance()
-        reserved <- walletApiA.utxoHandling.listUtxos(TxoState.Reserved)
+        reserved <- walletApiA.utxoHandling.getUtxos(TxoState.Reserved)
         dlcOpt <- dlcWalletA.findDLC(dlcId)
       } yield {
         assert(balance == oldBalance)
@@ -607,7 +607,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
       for {
         oldBalance <- dlcWalletB.getBalance()
-        oldReserved <- walletApiB.utxoHandling.listUtxos(TxoState.Reserved)
+        oldReserved <- walletApiB.utxoHandling.getUtxos(TxoState.Reserved)
         _ = assert(oldReserved.isEmpty)
 
         offer <- dlcWalletA.createDLCOffer(
@@ -627,7 +627,7 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         _ <- dlcWalletB.cancelDLC(dlcId)
 
         balance <- dlcWalletB.getBalance()
-        reserved <- walletApiB.utxoHandling.listUtxos(TxoState.Reserved)
+        reserved <- walletApiB.utxoHandling.getUtxos(TxoState.Reserved)
         dlcOpt <- dlcWalletB.findDLC(dlcId)
       } yield {
         assert(balance == oldBalance)
@@ -648,13 +648,13 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
 
       for {
         oldBalanceA <- dlcWalletA.getBalance()
-        oldReservedA <- walletApiA.utxoHandling.listUtxos(
+        oldReservedA <- walletApiA.utxoHandling.getUtxos(
           TxoState.Reserved
         )
         _ = assert(oldReservedA.isEmpty)
 
         oldBalanceB <- dlcWalletB.getBalance()
-        oldReservedB <- walletApiB.utxoHandling.listUtxos(
+        oldReservedB <- walletApiB.utxoHandling.getUtxos(
           TxoState.Reserved
         )
         _ = assert(oldReservedB.isEmpty)
@@ -679,11 +679,11 @@ class WalletDLCSetupTest extends BitcoinSDualWalletTest {
         _ <- dlcWalletB.cancelDLC(dlcId)
 
         balanceA <- dlcWalletA.getBalance()
-        reservedA <- walletApiA.utxoHandling.listUtxos(TxoState.Reserved)
+        reservedA <- walletApiA.utxoHandling.getUtxos(TxoState.Reserved)
         dlcAOpt <- dlcWalletA.findDLC(dlcId)
 
         balanceB <- dlcWalletB.getBalance()
-        reservedB <- walletApiB.utxoHandling.listUtxos(TxoState.Reserved)
+        reservedB <- walletApiB.utxoHandling.getUtxos(TxoState.Reserved)
         dlcBOpt <- dlcWalletB.findDLC(dlcId)
       } yield {
         assert(balanceA == oldBalanceA)

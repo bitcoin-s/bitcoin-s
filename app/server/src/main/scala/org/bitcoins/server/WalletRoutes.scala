@@ -148,7 +148,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
             for {
               confirmed <- wallet.getConfirmedBalance()
               unconfirmed <- wallet.getUnconfirmedBalance()
-              reservedUtxos <- wallet.utxoHandling.listUtxos(TxoState.Reserved)
+              reservedUtxos <- wallet.utxoHandling.getUtxos(TxoState.Reserved)
             } yield {
 
               val reserved = reservedUtxos.map(_.output.value).sum
@@ -195,7 +195,6 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
               case Some(txDb) =>
                 Server.httpSuccess(txDb.transaction.hex)
             }
-            resultF.failed.foreach(err => logger.error(s"resultF", err))
             resultF
           }
       }
@@ -213,8 +212,8 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
             for {
               utxos <-
                 if (unlock) {
-                  wallet.utxoHandling.listUtxos(TxoState.Reserved)
-                } else wallet.utxoHandling.listUtxos()
+                  wallet.utxoHandling.getUtxos(TxoState.Reserved)
+                } else wallet.utxoHandling.getUtxos()
 
               filtered =
                 if (outputParams.nonEmpty) {
@@ -794,15 +793,15 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
 
     case ServerCommand("getutxos", _) =>
       complete {
-        wallet.utxoHandling.listUtxos().map { utxos =>
+        wallet.utxoHandling.getUtxos().map { utxos =>
           val json = utxos.map(spendingInfoDbToJson)
           Server.httpSuccess(json)
         }
       }
 
-    case ServerCommand("listreservedutxos", _) =>
+    case ServerCommand("getreservedutxos", _) =>
       complete {
-        wallet.utxoHandling.listUtxos(TxoState.Reserved).map { utxos =>
+        wallet.utxoHandling.getUtxos(TxoState.Reserved).map { utxos =>
           val json = utxos.map(spendingInfoDbToJson)
           Server.httpSuccess(json)
         }
@@ -810,7 +809,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
 
     case ServerCommand("getaddresses", _) =>
       complete {
-        wallet.addressHandling.listAddresses().map { addressDbs =>
+        wallet.addressHandling.getAddresses().map { addressDbs =>
           val addresses = addressDbs.map(_.address)
           Server.httpSuccess(addresses)
         }
@@ -818,7 +817,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
 
     case ServerCommand("getspentaddresses", _) =>
       complete {
-        wallet.addressHandling.listSpentAddresses().map { addressDbs =>
+        wallet.addressHandling.getSpentAddresses().map { addressDbs =>
           val addresses = addressDbs.map(_.address)
           Server.httpSuccess(addresses)
         }
@@ -826,7 +825,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
 
     case ServerCommand("getfundedaddresses", _) =>
       complete {
-        wallet.addressHandling.listFundedAddresses().map { addressDbs =>
+        wallet.addressHandling.getFundedAddresses().map { addressDbs =>
           val addressAndValues = addressDbs.map { case (addressDb, value) =>
             Obj(
               "address" -> Str(addressDb.address.value),
@@ -840,7 +839,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
 
     case ServerCommand("getunusedaddresses", _) =>
       complete {
-        wallet.addressHandling.listUnusedAddresses().map { addressDbs =>
+        wallet.addressHandling.getUnusedAddresses().map { addressDbs =>
           val addresses = addressDbs.map(_.address)
           Server.httpSuccess(addresses)
         }
@@ -848,7 +847,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
 
     case ServerCommand("getaccounts", _) =>
       complete {
-        wallet.accountHandling.listAccounts().map { accounts =>
+        wallet.accountHandling.getAccounts().map { accounts =>
           val xpubs = accounts.map(_.xpub)
           Server.httpSuccess(xpubs)
         }
@@ -877,7 +876,7 @@ case class WalletRoutes(loadWalletApi: DLCWalletLoaderApi)(implicit
           complete {
             for {
               _ <- wallet.accountHandling.createNewAccount(purpose)
-              accounts <- wallet.accountHandling.listAccounts()
+              accounts <- wallet.accountHandling.getAccounts()
             } yield {
               val xpubs = accounts.map(_.xpub)
               val json =

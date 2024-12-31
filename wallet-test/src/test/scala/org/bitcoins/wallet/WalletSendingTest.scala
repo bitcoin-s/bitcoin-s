@@ -245,7 +245,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
   it should "correctly send entire outpoints" in { fundedWallet =>
     val wallet = fundedWallet.wallet
     for {
-      allUtxos <- wallet.utxoHandling.listUtxos()
+      allUtxos <- wallet.utxoHandling.getUtxos()
       // use half of them
       utxos = allUtxos.drop(allUtxos.size / 2)
       outPoints = utxos.map(_.outPoint)
@@ -304,7 +304,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
   it should "correctly sweep the wallet" in { fundedWallet =>
     val wallet = fundedWallet.wallet
     for {
-      utxos <- wallet.utxoHandling.listUtxos()
+      utxos <- wallet.utxoHandling.getUtxos()
       tx <- wallet.sendFundsHandling.sweepWallet(testAddress, None)
       balance <- wallet.getBalance()
     } yield {
@@ -408,7 +408,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
 
     for {
       addr <- wallet.getNewAddress()
-      utxo <- wallet.utxoHandling.listUtxos().map(_.head)
+      utxo <- wallet.utxoHandling.getUtxos().map(_.head)
 
       // Create tx not signaling RBF
       input = TransactionInput(
@@ -510,7 +510,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
     fundedWallet =>
       val wallet = fundedWallet.wallet
       for {
-        allUtxos <- wallet.utxoHandling.listUtxos()
+        allUtxos <- wallet.utxoHandling.getUtxos()
         // Make one already spent
         spent = allUtxos.head
           .copyWithSpendingTxId(
@@ -539,7 +539,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
       account <- wallet.accountHandling.getDefaultAccount()
       feeRate <- wallet.getFeeRate()
       allUtxos <- wallet.utxoHandling
-        .listUtxos(account.hdAccount)
+        .getUtxos(account.hdAccount)
         .map(_.map(CoinSelectorUtxo.fromSpendingInfoDb))
 
       output = TransactionOutput(amountToSend, testAddress.scriptPubKey)

@@ -28,16 +28,16 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
       for {
         accountDb <- wallet.accountHandling.getDefaultAccount()
         account = accountDb.hdAccount
-        utxos <- wallet.utxoHandling.listUtxos(account)
+        utxos <- wallet.utxoHandling.getUtxos(account)
         _ = assert(utxos.nonEmpty)
 
-        addresses <- wallet.accountHandling.listAddresses(account)
+        addresses <- wallet.accountHandling.getAddresses(account)
         _ = assert(addresses.nonEmpty)
 
         _ <- wallet.accountHandling.clearUtxos(account)
 
-        clearedUtxos <- wallet.utxoHandling.listUtxos(account)
-        clearedAddresses <- wallet.accountHandling.listAddresses(account)
+        clearedUtxos <- wallet.utxoHandling.getUtxos(account)
+        clearedAddresses <- wallet.accountHandling.getAddresses(account)
       } yield {
         assert(clearedUtxos.isEmpty)
         assert(clearedAddresses.nonEmpty)
@@ -51,16 +51,16 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
       for {
         balance <- wallet.getBalance()
         _ = assert(balance != Satoshis.zero)
-        utxos <- wallet.utxoHandling.listUtxos()
+        utxos <- wallet.utxoHandling.getUtxos()
         _ = assert(utxos.nonEmpty)
 
-        addresses <- wallet.addressHandling.listAddresses()
+        addresses <- wallet.addressHandling.getAddresses()
         _ = assert(addresses.nonEmpty)
 
         _ <- wallet.utxoHandling.clearAllUtxos()
 
-        clearedUtxos <- wallet.utxoHandling.listUtxos()
-        clearedAddresses <- wallet.addressHandling.listAddresses()
+        clearedUtxos <- wallet.utxoHandling.getUtxos()
+        clearedAddresses <- wallet.addressHandling.getAddresses()
       } yield {
         assert(clearedUtxos.isEmpty)
         assert(clearedAddresses.nonEmpty)
@@ -200,7 +200,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         account <- defaultAccountF
         txIds <-
           wallet.utxoHandling
-            .listUtxos(account.hdAccount)
+            .getUtxos(account.hdAccount)
             .map(_.map(_.txid))
         _ <- wallet.transactionProcessing
           .findByTxIds(txIds)
@@ -285,7 +285,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
       val initBalanceF = wallet.getBalance()
 
       // find the first block a utxo was created in
-      val utxosF = wallet.utxoHandling.listUtxos()
+      val utxosF = wallet.utxoHandling.getUtxos()
       val oldestHeightF = for {
         utxos <- utxosF
         blockhashes <- wallet.transactionProcessing
@@ -373,7 +373,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
           force = false
         )
 
-        usedAddresses <- wallet.addressHandling.listFundedAddresses()
+        usedAddresses <- wallet.addressHandling.getFundedAddresses()
 
         _ = assert(
           !usedAddresses.exists(_._1.address == address),
@@ -383,8 +383,8 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         hashes <- bitcoind.generateToAddress(1, address)
         block <- bitcoind.getBlockRaw(hashes.head)
         _ <- wallet.transactionProcessing.processBlock(block)
-        fundedAddresses <- wallet.addressHandling.listFundedAddresses()
-        utxos <- wallet.utxoHandling.listUtxos(TxoState.ImmatureCoinbase)
+        fundedAddresses <- wallet.addressHandling.getFundedAddresses()
+        utxos <- wallet.utxoHandling.getUtxos(TxoState.ImmatureCoinbase)
         _ <- RescanState.awaitRescanDone(state)
       } yield {
         // note 25 bitcoin reward from coinbase tx here
@@ -561,7 +561,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         account <- defaultAccountF
         txIds <-
           wallet.utxoHandling
-            .listUtxos(account.hdAccount)
+            .getUtxos(account.hdAccount)
             .map(_.map(_.txid))
         _ <- wallet.transactionProcessing
           .findByTxIds(txIds)
@@ -597,7 +597,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
           DEFAULT_ADDR_BATCH_SIZE)
         _ = assert(rescanState.isInstanceOf[RescanState.RescanStarted])
         _ <- RescanState.awaitRescanDone(rescanState)
-        addresses <- wallet.addressHandling.listAddresses()
+        addresses <- wallet.addressHandling.getAddresses()
       } yield {
         assert(addresses.exists(_.isChange))
         assert(addresses.exists(!_.isChange))

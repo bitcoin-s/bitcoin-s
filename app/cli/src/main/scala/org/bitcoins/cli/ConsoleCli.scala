@@ -246,8 +246,8 @@ object ConsoleCli extends BitcoinSLogger {
       cmd("getutxos")
         .action((_, conf) => conf.copy(command = GetUtxos))
         .text("Returns list of all wallet utxos"),
-      cmd("listreservedutxos")
-        .action((_, conf) => conf.copy(command = ListReservedUtxos))
+      cmd("getreservedutxos")
+        .action((_, conf) => conf.copy(command = GetReservedUtxos))
         .text("Returns list of all reserved wallet utxos"),
       cmd("getaddresses")
         .action((_, conf) => conf.copy(command = GetAddresses))
@@ -2159,8 +2159,8 @@ object CliCommand {
         RequestParam("getmediantimepast")
       case GetUtxos =>
         RequestParam("getutxos")
-      case ListReservedUtxos =>
-        RequestParam("listreservedutxos")
+      case GetReservedUtxos =>
+        RequestParam("getreservedutxos")
       case GetAddresses =>
         RequestParam("getaddresses")
       case GetSpentAddresses =>
@@ -2673,7 +2673,7 @@ object CliCommand {
 
   case object GetAddressLabels extends AppServerCliCommand
   case object GetUtxos extends AppServerCliCommand
-  case object ListReservedUtxos extends AppServerCliCommand
+  case object GetReservedUtxos extends AppServerCliCommand
   case object GetAddresses extends AppServerCliCommand
   case object GetSpentAddresses extends AppServerCliCommand
   case object GetFundedAddresses extends AppServerCliCommand

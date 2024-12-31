@@ -3,14 +3,14 @@ title: Wallet RPC Examples
 id: wallet-rpc
 ---
 
-### `listreservedutxos`
+### `getreservedutxos`
 
 Lists all reserved utxos in the wallet.
 These utxos will not be unreserved unless you manually
 unreserve them with `lockunspent` or they are spent in the blockchain
 
 ```bash
-bitcoin-s-cli listreservedutxos
+bitcoin-s-cli getreservedutxos
 [
   {
     "outpoint": {

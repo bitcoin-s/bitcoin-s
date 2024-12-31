@@ -60,8 +60,8 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
     ): Future[Boolean] = {
       for {
         balance <- wallet.getBalance()
-        addresses <- wallet.addressHandling.listAddresses()
-        utxos <- wallet.utxoHandling.listUtxos()
+        addresses <- wallet.addressHandling.getAddresses()
+        utxos <- wallet.utxoHandling.getUtxos()
       } yield {
         // +- fee rate because signatures could vary in size
         (expectedBalance === balance +- FeeRate.currencyUnit) &&
@@ -174,8 +174,8 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       for {
         rescan <- wallet.isRescanning()
         balance <- wallet.getBalance()
-        addresses <- wallet.addressHandling.listAddresses()
-        utxos <- wallet.utxoHandling.listUtxos()
+        addresses <- wallet.addressHandling.getAddresses()
+        utxos <- wallet.utxoHandling.getUtxos()
         spks = utxos
           .map(_.output.scriptPubKey)
       } yield {
@@ -187,8 +187,8 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
     }
 
     for {
-      addresses <- wallet.addressHandling.listAddresses()
-      utxos <- wallet.utxoHandling.listUtxos()
+      addresses <- wallet.addressHandling.getAddresses()
+      utxos <- wallet.utxoHandling.getUtxos()
       _ = assert(addresses.size == 3)
       _ = assert(utxos.size == 3)
 
@@ -197,8 +197,8 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
         bitcoind
           .sendToAddress(address, TestAmount)
 
-      addresses <- wallet.addressHandling.listAddresses()
-      utxos <- wallet.utxoHandling.listUtxos()
+      addresses <- wallet.addressHandling.getAddresses()
+      utxos <- wallet.utxoHandling.getUtxos()
       _ = assert(addresses.size == 4)
       _ = assert(utxos.size == 3)
       _ <-
@@ -213,8 +213,8 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
           .map(_.get.height == bitcoindHeight)
       })
       _ <- wallet.utxoHandling.clearAllUtxos()
-      addresses <- wallet.addressHandling.listAddresses()
-      utxos <- wallet.utxoHandling.listUtxos()
+      addresses <- wallet.addressHandling.getAddresses()
+      utxos <- wallet.utxoHandling.getUtxos()
       _ = assert(addresses.nonEmpty)
       _ = assert(utxos.isEmpty)
 

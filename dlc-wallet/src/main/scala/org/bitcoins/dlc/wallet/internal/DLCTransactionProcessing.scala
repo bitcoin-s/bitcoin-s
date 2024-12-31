@@ -502,7 +502,7 @@ case class DLCTransactionProcessing(
   ): Future[Vector[ScriptSignatureParams[InputInfo]]] = {
     val outPoints =
       fundingInputs.filter(_.isInitiator == dlcDb.isInitiator).map(_.outPoint)
-    val utxosF = utxoHandling.listUtxos(outPoints)
+    val utxosF = utxoHandling.getUtxos(outPoints)
     for {
       utxos <- utxosF
       map = SpendingInfoDb.toPreviousOutputMap(utxos)
