@@ -50,7 +50,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
     import system.dispatcher
 
     val streamF: Future[RunnableGraph[Future[NeutrinoHDWalletApi]]] = for {
-      _ <- setSyncingFlag(true, bitcoind, chainCallbacksOpt)
+      _ <- setSyncingFlag(syncing = true, bitcoind, chainCallbacksOpt)
       bitcoindHeight <- bitcoind.getBlockCount()
       walletStateOpt <- wallet.getSyncDescriptorOpt()
 
