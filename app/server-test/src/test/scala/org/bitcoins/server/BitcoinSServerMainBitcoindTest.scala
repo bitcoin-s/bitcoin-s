@@ -23,6 +23,29 @@ class BitcoinSServerMainBitcoindTest
 
   behavior of "BitcoinSServerMain"
 
+  it must "fail to send requests to the app server if the password is bad" in {
+    (config: BitcoinSAppConfig) =>
+      val server = new BitcoinSServerMain(ServerArgParser.empty)(system, config)
+
+      val cliConfig =
+        Config(rpcPortOpt = Some(config.rpcPort), rpcPassword = "bad_password")
+
+      val failF = for {
+        _ <- server.start()
+        infoT = ConsoleCli.exec(CliCommand.WalletInfo, cliConfig)
+        _ <- AsyncUtil.nonBlockingSleep(1.second)
+        _ <- server.stop()
+      } yield {
+        assert(infoT.isFailure)
+        assert(
+          infoT.failed.get.getMessage
+            .contains("The supplied authentication is invalid")
+        )
+      }
+
+      failF
+  }
+
   it must "start our app server with bitcoind as a backend" in {
     (config: BitcoinSAppConfig) =>
       val server = new BitcoinSServerMain(ServerArgParser.empty)(system, config)
@@ -120,28 +143,5 @@ class BitcoinSServerMainBitcoindTest
       _ = assert(bobAddresses.get.contains(bobAddr.get))
       _ <- server.stop()
     } yield succeed
-  }
-
-  it must "fail to send requests to the app server if the password is bad" in {
-    (config: BitcoinSAppConfig) =>
-      val server = new BitcoinSServerMain(ServerArgParser.empty)(system, config)
-
-      val cliConfig =
-        Config(rpcPortOpt = Some(config.rpcPort), rpcPassword = "bad_password")
-
-      val failF = for {
-        _ <- server.start()
-        infoT = ConsoleCli.exec(CliCommand.WalletInfo, cliConfig)
-        _ <- AsyncUtil.nonBlockingSleep(1.second)
-        _ <- server.stop()
-      } yield {
-        assert(infoT.isFailure)
-        assert(
-          infoT.failed.get.getMessage
-            .contains("The supplied authentication is invalid")
-        )
-      }
-
-      failF
   }
 }
