@@ -1,7 +1,7 @@
 package org.bitcoins.wallet
 
 import org.bitcoins.asyncutil.AsyncUtil
-import org.bitcoins.core.currency._
+import org.bitcoins.core.currency.*
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.server.BitcoindRpcBackendUtil
@@ -10,6 +10,7 @@ import org.bitcoins.testkit.wallet.{
   WalletAppConfigWithBitcoindNewestFixtures
 }
 import org.bitcoins.testkitcore.util.TestUtil.bech32Address
+import org.bitcoins.wallet.config.WalletAppConfig
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.duration.DurationInt
@@ -20,7 +21,8 @@ class BitcoindBlockPollingTest
   it must "properly setup and poll blocks from bitcoind" in {
     walletAppConfigWithBitcoind =>
       val bitcoind = walletAppConfigWithBitcoind.bitcoind
-      implicit val walletAppConfig = walletAppConfigWithBitcoind.walletAppConfig
+      implicit val walletAppConfig: WalletAppConfig =
+        walletAppConfigWithBitcoind.walletAppConfig
 
       val amountToSend = Bitcoins.one
 
@@ -56,12 +58,16 @@ class BitcoindBlockPollingTest
 
         // Wait for it to process
         _ <- AsyncUtil.awaitConditionF(
-          () => wallet.getBalance().map(_ > Satoshis.zero),
+          () => {
+            for {
+              balance <- wallet.getBalance()
+              isSyncing <- bitcoind.isSyncing()
+            } yield balance > Satoshis.zero && !isSyncing
+          },
           1.second
         )
-
-        balance <- wallet.getConfirmedBalance()
         _ = cancellable.cancel()
+        balance <- wallet.getConfirmedBalance()
       } yield assert(balance == amountToSend)
   }
 
