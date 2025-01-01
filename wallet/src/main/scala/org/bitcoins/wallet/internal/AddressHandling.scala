@@ -50,23 +50,23 @@ case class AddressHandling(
   private val scriptPubKeyDAO: ScriptPubKeyDAO = walletDAOs.scriptPubKeyDAO
   private val networkParameters: NetworkParameters = walletConfig.network
 
-  override def listAddresses(): Future[Vector[AddressDb]] =
+  override def getAddresses(): Future[Vector[AddressDb]] =
     addressDAO.findAllAddressDbForAccount(walletConfig.defaultAccount)
 
-  override def listSpentAddresses(): Future[Vector[AddressDb]] = {
+  override def getSpentAddresses(): Future[Vector[AddressDb]] = {
     addressDAO.getSpentAddresses(walletConfig.defaultAccount)
   }
 
-  override def listFundedAddresses()
+  override def getFundedAddresses()
       : Future[Vector[(AddressDb, CurrencyUnit)]] = {
     addressDAO.getFundedAddresses(walletConfig.defaultAccount)
   }
 
-  override def listUnusedAddresses(): Future[Vector[AddressDb]] = {
+  override def getUnusedAddresses(): Future[Vector[AddressDb]] = {
     addressDAO.getUnusedAddresses(walletConfig.defaultAccount)
   }
 
-  override def listScriptPubKeys(): Future[Vector[ScriptPubKeyDb]] = {
+  override def getScriptPubKeys(): Future[Vector[ScriptPubKeyDb]] = {
     scriptPubKeyDAO.findAll()
   }
 
@@ -82,7 +82,7 @@ case class AddressHandling(
       transaction: Transaction
   ): Future[Vector[(TransactionOutput, TransactionOutPoint)]] =
     for {
-      spks <- listScriptPubKeys()
+      spks <- getScriptPubKeys()
     } yield transaction.outputs.zipWithIndex.collect {
       case (out, index)
           if spks.map(_.scriptPubKey).contains(out.scriptPubKey) =>

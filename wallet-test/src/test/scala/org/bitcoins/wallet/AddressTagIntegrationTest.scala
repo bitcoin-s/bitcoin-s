@@ -48,7 +48,7 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
       tx <- bitcoind.getRawTransactionRaw(txId)
 
       // before processing TX, wallet should be completely empty
-      _ <- wallet.utxoHandling.listUtxos().map(utxos => assert(utxos.isEmpty))
+      _ <- wallet.utxoHandling.getUtxos().map(utxos => assert(utxos.isEmpty))
       _ <- wallet.getBalance().map(confirmed => assert(confirmed == 0.bitcoin))
       _ <-
         wallet
@@ -60,7 +60,7 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
 
       // we should now have one UTXO in the wallet
       // it should not be confirmed
-      utxosPostAdd <- wallet.utxoHandling.listUtxos()
+      utxosPostAdd <- wallet.utxoHandling.getUtxos()
       _ = assert(utxosPostAdd.length == 2)
       _ <-
         wallet
@@ -74,7 +74,7 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
       _ = assert(incomingTx.isDefined)
       _ = assert(incomingTx.get.incomingAmount == valueFromBitcoind * 2)
 
-      taggedUtxosPostAdd <- wallet.utxoHandling.listUtxos(exampleTag)
+      taggedUtxosPostAdd <- wallet.utxoHandling.getUtxos(exampleTag)
       _ = assert(taggedUtxosPostAdd.length == 1)
       _ <-
         wallet.utxoHandling
@@ -95,7 +95,7 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
       signedTx = rawTxHelper.signedTx
       _ <- wallet.transactionProcessing.processTransaction(signedTx, None)
 
-      utxos <- wallet.utxoHandling.listUtxos()
+      utxos <- wallet.utxoHandling.getUtxos()
       balancePostSend <- wallet.getBalance()
       tagBalancePostSend <- wallet.utxoHandling.getBalance(exampleTag)
     } yield {

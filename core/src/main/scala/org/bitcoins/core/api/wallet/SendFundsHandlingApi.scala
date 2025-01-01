@@ -402,7 +402,7 @@ trait SendFundsHandlingApi {
       ec: ExecutionContext
   ): Future[Transaction] = {
     for {
-      utxos <- utxoHandling.listUtxos()
+      utxos <- utxoHandling.getUtxos()
       outpoints = utxos.map(_.outPoint)
       tx <- sendFromOutPoints(outpoints, address, feeRate)
     } yield tx

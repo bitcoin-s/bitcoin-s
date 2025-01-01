@@ -105,18 +105,18 @@ case class UtxoHandling(
   }
 
   /** @inheritdoc */
-  override def listUtxos(): Future[Vector[SpendingInfoDb]] = {
-    listUtxos(walletConfig.defaultAccount)
+  override def getUtxos(): Future[Vector[SpendingInfoDb]] = {
+    getUtxos(walletConfig.defaultAccount)
   }
 
-  def listUtxos(
+  def getUtxos(
       hdAccount: HDAccount
   ): Future[Vector[SpendingInfoDb]] = {
     spendingInfoDAO.findAllUnspentForAccount(hdAccount)
   }
 
   /** Returns all the utxos originating from the given outpoints */
-  override def listUtxos(
+  override def getUtxos(
       outPoints: Vector[TransactionOutPoint]
   ): Future[Vector[SpendingInfoDb]] = {
     spendingInfoDAO
@@ -124,11 +124,11 @@ case class UtxoHandling(
       .map(_.filter(spendingInfo => outPoints.contains(spendingInfo.outPoint)))
   }
 
-  override def listUtxos(tag: AddressTag): Future[Vector[SpendingInfoDb]] = {
-    listUtxos(walletConfig.defaultAccount, tag)
+  override def getUtxos(tag: AddressTag): Future[Vector[SpendingInfoDb]] = {
+    getUtxos(walletConfig.defaultAccount, tag)
   }
 
-  override def listUtxos(
+  override def getUtxos(
       hdAccount: HDAccount,
       tag: AddressTag
   ): Future[Vector[SpendingInfoDb]] = {
@@ -139,11 +139,11 @@ case class UtxoHandling(
     }
   }
 
-  override def listUtxos(state: TxoState): Future[Vector[SpendingInfoDb]] = {
-    listUtxos(walletConfig.defaultAccount, state)
+  override def getUtxos(state: TxoState): Future[Vector[SpendingInfoDb]] = {
+    getUtxos(walletConfig.defaultAccount, state)
   }
 
-  override def listUtxos(
+  override def getUtxos(
       hdAccount: HDAccount,
       state: TxoState
   ): Future[Vector[SpendingInfoDb]] = {

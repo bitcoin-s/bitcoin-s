@@ -127,7 +127,7 @@ class UTXOLifeCycleTest
       addr2 <- wallet.getNewAddress()
       addr3 <- wallet.getNewAddress()
 
-      oldUtxos <- wallet.utxoHandling.listUtxos()
+      oldUtxos <- wallet.utxoHandling.getUtxos()
 
       txid1 <- bitcoind.sendToAddress(addr1, Satoshis(1000))
       txid2 <- bitcoind.sendToAddress(addr2, Satoshis(2000))
@@ -153,7 +153,7 @@ class UTXOLifeCycleTest
       }
       _ = assert(tx3.nonEmpty)
 
-      utxos <- wallet.utxoHandling.listUtxos()
+      utxos <- wallet.utxoHandling.getUtxos()
       _ = assert(oldUtxos == utxos)
 
       // process the transactions from mempool
@@ -161,7 +161,7 @@ class UTXOLifeCycleTest
       _ <- wallet.transactionProcessing.processTransaction(tx2.get, None)
       _ <- wallet.transactionProcessing.processTransaction(tx3.get, None)
 
-      utxos <- wallet.utxoHandling.listUtxos()
+      utxos <- wallet.utxoHandling.getUtxos()
       _ = assert(oldUtxos.size + 3 == utxos.size)
 
       _ = checkState(utxos, txid1, txid2, txid3, TxoState.BroadcastReceived)
@@ -176,7 +176,7 @@ class UTXOLifeCycleTest
       _ <- wallet.transactionProcessing.processBlock(block)
       _ <- wallet.utxoHandling.updateUtxoPendingStates()
 
-      utxos <- wallet.utxoHandling.listUtxos()
+      utxos <- wallet.utxoHandling.getUtxos()
       _ = assert(oldUtxos.size + 3 == utxos.size)
 
       // mine the second block
@@ -187,7 +187,7 @@ class UTXOLifeCycleTest
       _ <- wallet.transactionProcessing.processBlock(block)
       _ <- wallet.utxoHandling.updateUtxoPendingStates()
 
-      utxos <- wallet.utxoHandling.listUtxos()
+      utxos <- wallet.utxoHandling.getUtxos()
       _ = assert(oldUtxos.size + 3 == utxos.size)
 
       _ = checkState(
@@ -206,7 +206,7 @@ class UTXOLifeCycleTest
       _ <- wallet.transactionProcessing.processBlock(block)
       _ <- wallet.utxoHandling.updateUtxoPendingStates()
 
-      utxos <- wallet.utxoHandling.listUtxos()
+      utxos <- wallet.utxoHandling.getUtxos()
       _ = assert(oldUtxos.size + 3 == utxos.size)
 
       _ = checkState(
@@ -225,7 +225,7 @@ class UTXOLifeCycleTest
       _ <- wallet.transactionProcessing.processBlock(block)
       _ <- wallet.utxoHandling.updateUtxoPendingStates()
 
-      utxos <- wallet.utxoHandling.listUtxos()
+      utxos <- wallet.utxoHandling.getUtxos()
       _ = assert(oldUtxos.size + 3 == utxos.size)
 
       _ = checkState(
@@ -244,7 +244,7 @@ class UTXOLifeCycleTest
       _ <- wallet.transactionProcessing.processBlock(block)
       _ <- wallet.utxoHandling.updateUtxoPendingStates()
 
-      utxos <- wallet.utxoHandling.listUtxos()
+      utxos <- wallet.utxoHandling.getUtxos()
       _ = assert(oldUtxos.size + 3 == utxos.size)
 
       _ = checkState(
@@ -263,7 +263,7 @@ class UTXOLifeCycleTest
       _ <- wallet.transactionProcessing.processBlock(block)
       _ <- wallet.utxoHandling.updateUtxoPendingStates()
 
-      utxos <- wallet.utxoHandling.listUtxos()
+      utxos <- wallet.utxoHandling.getUtxos()
       _ = assert(oldUtxos.size + 3 == utxos.size)
 
       utxo1 = utxos.find(_.txid == txid1).get
@@ -508,7 +508,7 @@ class UTXOLifeCycleTest
 
       tx = rawTxHelper.unsignedTx
       updatedCoins <- wallet.utxoHandling.findOutputsBeingSpent(tx)
-      reserved <- wallet.utxoHandling.listUtxos(TxoState.Reserved)
+      reserved <- wallet.utxoHandling.getUtxos(TxoState.Reserved)
       newTransactions <- wallet.transactionProcessing.listTransactions()
     } yield {
       assert(updatedCoins.forall(_.state == TxoState.Reserved))
@@ -537,13 +537,13 @@ class UTXOLifeCycleTest
 
         tx = rawTxHelper.unsignedTx
         reservedUtxos <- wallet.utxoHandling.findOutputsBeingSpent(tx)
-        allReserved <- wallet.utxoHandling.listUtxos(TxoState.Reserved)
+        allReserved <- wallet.utxoHandling.getUtxos(TxoState.Reserved)
         _ = assert(reservedUtxos.forall(_.state == TxoState.Reserved))
         _ = assert(reservedUtxos.forall(allReserved.contains))
 
         unreservedUtxos <- wallet.utxoHandling.unmarkUTXOsAsReserved(
           reservedUtxos)
-        newReserved <- wallet.utxoHandling.listUtxos(TxoState.Reserved)
+        newReserved <- wallet.utxoHandling.getUtxos(TxoState.Reserved)
         newTransactions <- wallet.transactionProcessing.listTransactions()
       } yield {
         assert(unreservedUtxos.forall(_.state != TxoState.Reserved))
@@ -570,7 +570,7 @@ class UTXOLifeCycleTest
         )
 
         tx = rawTxHelper.unsignedTx
-        allReserved <- wallet.utxoHandling.listUtxos(TxoState.Reserved)
+        allReserved <- wallet.utxoHandling.getUtxos(TxoState.Reserved)
         _ = assert(
           tx.inputs
             .map(_.previousOutput)
@@ -610,7 +610,7 @@ class UTXOLifeCycleTest
           builderResult
         )
         tx = RawTxSigner.sign(unsignedTx, rawTxHelper.scriptSigParams)
-        allReserved <- wallet.utxoHandling.listUtxos(TxoState.Reserved)
+        allReserved <- wallet.utxoHandling.getUtxos(TxoState.Reserved)
         _ = assert(
           tx.inputs
             .map(_.previousOutput)
@@ -626,7 +626,7 @@ class UTXOLifeCycleTest
         block <- bitcoind.getBlockRaw(hash)
         _ <- wallet.transactionProcessing.processBlock(block)
 
-        newReserved <- wallet.utxoHandling.listUtxos(TxoState.Reserved)
+        newReserved <- wallet.utxoHandling.getUtxos(TxoState.Reserved)
         newTransactions <- wallet.transactionProcessing.listTransactions()
       } yield {
         assert(newReserved.isEmpty)
@@ -641,7 +641,7 @@ class UTXOLifeCycleTest
       val bitcoind = param.bitcoind
 
       for {
-        utxo <- wallet.utxoHandling.listUtxos().map(_.head)
+        utxo <- wallet.utxoHandling.getUtxos().map(_.head)
         changeAddr <- wallet.getNewChangeAddress()
         unsignedPSBT = {
           val input =
@@ -690,7 +690,7 @@ class UTXOLifeCycleTest
   it must "fail to mark utxos as reserved if one of the utxos is already reserved" in {
     param =>
       val wallet = param.wallet
-      val utxosF = wallet.utxoHandling.listUtxos()
+      val utxosF = wallet.utxoHandling.getUtxos()
 
       val reservedUtxoF: Future[SpendingInfoDb] = for {
         utxos <- utxosF
@@ -712,7 +712,7 @@ class UTXOLifeCycleTest
       for {
         _ <- assertionF
         reserved <- reservedUtxoF
-        utxos <- wallet.utxoHandling.listUtxos(TxoState.Reserved)
+        utxos <- wallet.utxoHandling.getUtxos(TxoState.Reserved)
       } yield {
         // make sure only 1 utxo is still reserved
         assert(utxos.length == 1)
@@ -737,7 +737,7 @@ class UTXOLifeCycleTest
         _ <- wallet.transactionProcessing.processBlock(block)
 
         // make sure the utxo is pending confirmations received
-        utxos <- wallet.utxoHandling.listUtxos(
+        utxos <- wallet.utxoHandling.getUtxos(
           TxoState.PendingConfirmationsReceived)
         _ = assert(utxos.length == 1)
         utxo = utxos.head
@@ -747,7 +747,7 @@ class UTXOLifeCycleTest
         _ <- wallet.utxoHandling.markUTXOsAsReserved(Vector(utxo))
         // confirm it is reserved
         _ <- wallet.utxoHandling
-          .listUtxos(TxoState.Reserved)
+          .getUtxos(TxoState.Reserved)
           .map(utxos =>
             assert(utxos.contains(utxo.copyWithState(TxoState.Reserved))))
 
@@ -757,7 +757,7 @@ class UTXOLifeCycleTest
         _ <- wallet.transactionProcessing.processBlock(block2)
 
         // the utxo should still be reserved
-        reservedUtxos <- wallet.utxoHandling.listUtxos(TxoState.Reserved)
+        reservedUtxos <- wallet.utxoHandling.getUtxos(TxoState.Reserved)
         reservedUtxo = reservedUtxos.head
       } yield {
         assert(reservedUtxo.txid == txId)
@@ -771,7 +771,7 @@ class UTXOLifeCycleTest
       val bitcoind = param.bitcoind
       val bitcoindAddrF = bitcoind.getNewAddress
       val amt = Satoshis(100000)
-      val utxoCountF = wallet.utxoHandling.listUtxos()
+      val utxoCountF = wallet.utxoHandling.getUtxos()
       for {
         bitcoindAdr <- bitcoindAddrF
         utxoCount <- utxoCountF
@@ -779,34 +779,34 @@ class UTXOLifeCycleTest
         tx <- wallet.sendFundsHandling.sendToAddress(bitcoindAdr,
                                                      amt,
                                                      SatoshisPerVirtualByte.one)
-        c <- wallet.utxoHandling.listUtxos()
+        c <- wallet.utxoHandling.getUtxos()
         _ = assert(c.length == utxoCount.length)
         txIdBE <- bitcoind.sendRawTransaction(tx)
 
         // find all utxos that we can use to fund a transaction
         utxos <- wallet.utxoHandling
-          .listUtxos()
+          .getUtxos()
           .map(_.filter(u => TxoState.receivedStates.contains(u.state)))
-        broadcastReceived <- wallet.utxoHandling.listUtxos(
+        broadcastReceived <- wallet.utxoHandling.getUtxos(
           TxoState.BroadcastReceived)
         _ = assert(broadcastReceived.length == 1) // change output
 
         // mark all utxos as reserved
         _ <- wallet.utxoHandling.markUTXOsAsReserved(utxos)
-        newReservedUtxos <- wallet.utxoHandling.listUtxos(TxoState.Reserved)
+        newReservedUtxos <- wallet.utxoHandling.getUtxos(TxoState.Reserved)
 
         // make sure all utxos are reserved
         _ = assert(newReservedUtxos.length == utxoCount.length)
         blockHash <- bitcoind.generateToAddress(1, bitcoindAdr).map(_.head)
         block <- bitcoind.getBlockRaw(blockHash)
         _ <- wallet.transactionProcessing.processBlock(block)
-        broadcastSpentUtxo <- wallet.utxoHandling.listUtxos(
+        broadcastSpentUtxo <- wallet.utxoHandling.getUtxos(
           TxoState.PendingConfirmationsSpent
         )
-        pendingConfirmationsReceivedUtxos <- wallet.utxoHandling.listUtxos(
+        pendingConfirmationsReceivedUtxos <- wallet.utxoHandling.getUtxos(
           TxoState.PendingConfirmationsReceived
         )
-        finalReservedUtxos <- wallet.utxoHandling.listUtxos(TxoState.Reserved)
+        finalReservedUtxos <- wallet.utxoHandling.getUtxos(TxoState.Reserved)
       } yield {
         assert(newReservedUtxos == finalReservedUtxos)
         assert(pendingConfirmationsReceivedUtxos.isEmpty)

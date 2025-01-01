@@ -62,23 +62,23 @@ trait UtxoHandlingApi {
     * @return
     *   Vector[SpendingInfoDb]
     */
-  def listUtxos(): Future[Vector[SpendingInfoDb]]
+  def getUtxos(): Future[Vector[SpendingInfoDb]]
 
-  def listUtxos(tag: AddressTag): Future[Vector[SpendingInfoDb]]
+  def getUtxos(tag: AddressTag): Future[Vector[SpendingInfoDb]]
 
-  def listUtxos(state: TxoState): Future[Vector[SpendingInfoDb]]
+  def getUtxos(state: TxoState): Future[Vector[SpendingInfoDb]]
 
-  def listUtxos(account: HDAccount): Future[Vector[SpendingInfoDb]]
+  def getUtxos(account: HDAccount): Future[Vector[SpendingInfoDb]]
 
-  def listUtxos(
+  def getUtxos(
       hdAccount: HDAccount,
       tag: AddressTag): Future[Vector[SpendingInfoDb]]
 
-  def listUtxos(
+  def getUtxos(
       hdAccount: HDAccount,
       state: TxoState): Future[Vector[SpendingInfoDb]]
 
-  def listUtxos(
+  def getUtxos(
       outPoints: Vector[TransactionOutPoint]
   ): Future[Vector[SpendingInfoDb]]
 

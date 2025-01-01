@@ -34,12 +34,12 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
   )(action: => Future[_]): Future[Assertion] =
     for {
       oldTransactions <- wallet.transactionProcessing.listTransactions()
-      oldUtxos <- wallet.utxoHandling.listUtxos()
+      oldUtxos <- wallet.utxoHandling.getUtxos()
       oldUnconfirmed <- wallet.getUnconfirmedBalance()
       oldConfirmed <- wallet.getBalance()
       _ <- action // by name
       newTransactions <- wallet.transactionProcessing.listTransactions()
-      newUtxos <- wallet.utxoHandling.listUtxos()
+      newUtxos <- wallet.utxoHandling.getUtxos()
       newUnconfirmed <- wallet.getUnconfirmedBalance()
       newConfirmed <- wallet.getBalance()
 
@@ -79,7 +79,7 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
         )
         newConfirmed <- wallet.getConfirmedBalance()
         newUnconfirmed <- wallet.getUnconfirmedBalance()
-        utxosPostAdd <- wallet.utxoHandling.listUtxos()
+        utxosPostAdd <- wallet.utxoHandling.getUtxos()
 
         // repeating the action should not make a difference
 
@@ -119,7 +119,7 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
         _ <- wallet.transactionProcessing.processTransaction(tx, None)
         newConfirmed <- wallet.getConfirmedBalance()
         newUnconfirmed <- wallet.getUnconfirmedBalance()
-        utxosPostAdd <- wallet.utxoHandling.listUtxos()
+        utxosPostAdd <- wallet.utxoHandling.getUtxos()
 
         // repeating the action should not make a difference
         _ <- checkUtxosAndBalance(wallet) {

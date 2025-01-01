@@ -19,7 +19,7 @@ class SegwitWalletTest extends BitcoinSWalletTest {
       account <- wallet.accountHandling.getDefaultAccount()
       otherAddr <- wallet.getNewAddress()
       thirdAddr <- wallet.addressHandling.getNewAddress(AddressType.SegWit)
-      allAddrs <- wallet.addressHandling.listAddresses()
+      allAddrs <- wallet.addressHandling.getAddresses()
     } yield {
       assert(account.hdAccount.purpose == HDPurpose.SegWit)
       assert(allAddrs.forall(_.address.isInstanceOf[Bech32Address]))

@@ -36,8 +36,8 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
   it should "create a new wallet" in { (wallet: Wallet) =>
     for {
-      accounts <- wallet.accountHandling.listAccounts()
-      addresses <- wallet.addressHandling.listAddresses()
+      accounts <- wallet.accountHandling.getAccounts()
+      addresses <- wallet.addressHandling.getAddresses()
     } yield {
       assert(accounts.length == 4) // legacy, segwit, nested segwit, taproot
       assert(addresses.isEmpty)
@@ -48,7 +48,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
     for {
       addr <- wallet.getNewAddress()
       otherAddr <- wallet.getNewAddress()
-      allAddrs <- wallet.addressHandling.listAddresses()
+      allAddrs <- wallet.addressHandling.getAddresses()
     } yield {
       assert(allAddrs.length == 2)
       assert(allAddrs.exists(_.address == addr))

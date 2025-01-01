@@ -92,7 +92,7 @@ class MultiWalletDLCTest extends BitcoinSWalletTest {
       // now unreserve the utxo
       val reservedUtxoF = for {
         _ <- offerF
-        utxos <- wallet.utxoHandling.listUtxos(TxoState.Reserved)
+        utxos <- wallet.utxoHandling.getUtxos(TxoState.Reserved)
         _ <- wallet.utxoHandling.unmarkUTXOsAsReserved(utxos)
       } yield ()
 

@@ -18,7 +18,7 @@ class LegacyWalletTest extends BitcoinSWalletTest {
       account <- wallet.accountHandling.getDefaultAccount()
       otherAddr <- wallet.getNewAddress()
       thirdAddr <- wallet.addressHandling.getNewAddress(AddressType.Legacy)
-      allAddrs <- wallet.addressHandling.listAddresses()
+      allAddrs <- wallet.addressHandling.getAddresses()
     } yield {
       assert(account.hdAccount.purpose == HDPurpose.Legacy)
       assert(allAddrs.forall(_.address.isInstanceOf[P2PKHAddress]))

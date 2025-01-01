@@ -180,7 +180,7 @@ class WalletRoutesSpec
         .expects(HDPurpose.default)
         .returning(Future.successful(extPubKey))
 
-      (() => mockWalletApi.accountHandling.listAccounts())
+      (() => mockWalletApi.accountHandling.getAccounts())
         .expects()
         .returning(Future.successful(Vector(accountDb)))
 

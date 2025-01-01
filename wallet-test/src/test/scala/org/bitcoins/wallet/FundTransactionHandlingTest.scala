@@ -218,7 +218,7 @@ class FundTransactionHandlingTest
       val bitcoind = fundedWallet.bitcoind
       val fundedTxF = for {
         feeRate <- wallet.getFeeRate()
-        accounts <- wallet.accountHandling.listAccounts()
+        accounts <- wallet.accountHandling.getAccounts()
         account2 = accounts.find(_.hdAccount.index == 2).get
 
         addr <- wallet.accountHandling.getNewAddress(account2)
@@ -227,7 +227,7 @@ class FundTransactionHandlingTest
         block <- bitcoind.getBlockRaw(hash)
         _ <- wallet.transactionProcessing.processBlock(block)
 
-        utxos <- wallet.utxoHandling.listUtxos(account2.hdAccount)
+        utxos <- wallet.utxoHandling.getUtxos(account2.hdAccount)
         _ = assert(utxos.size == 1)
 
         fundedTx <-
@@ -259,7 +259,7 @@ class FundTransactionHandlingTest
         spendingInfos <- wallet.utxoHandling.findOutputsBeingSpent(
           fundRawTxHelper.unsignedTx
         )
-        reserved <- wallet.utxoHandling.listUtxos(TxoState.Reserved)
+        reserved <- wallet.utxoHandling.getUtxos(TxoState.Reserved)
       } yield {
         assert(spendingInfos.exists(_.state == TxoState.Reserved))
         assert(reserved.size == spendingInfos.size)
@@ -280,7 +280,7 @@ class FundTransactionHandlingTest
       taggedBalance <- wallet.utxoHandling.getBalance(tag)
       _ = assert(taggedBalance == destination.value * 2)
 
-      expectedUtxos <- wallet.utxoHandling.listUtxos(tag)
+      expectedUtxos <- wallet.utxoHandling.getUtxos(tag)
       fundRawTxHelper <-
         wallet.fundTxHandling
           .fundRawTransaction(

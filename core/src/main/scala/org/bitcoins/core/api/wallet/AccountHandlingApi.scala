@@ -41,10 +41,10 @@ trait AccountHandlingApi {
   def getUnconfirmedBalance(account: HDAccount): Future[CurrencyUnit]
 
   def getDefaultAccount(): Future[AccountDb]
-  def listAccounts(): Future[Vector[AccountDb]]
-  def listAccounts(purpose: HDPurpose)(implicit
+  def getAccounts(): Future[Vector[AccountDb]]
+  def getAccounts(purpose: HDPurpose)(implicit
       ec: ExecutionContext): Future[Vector[AccountDb]] = {
-    listAccounts().map(_.filter(_.hdAccount.purpose == purpose))
+    getAccounts().map(_.filter(_.hdAccount.purpose == purpose))
   }
   def getDefaultAccountForType(addressType: AddressType): Future[AccountDb]
   def getNewAddress(
@@ -88,14 +88,14 @@ trait AccountHandlingApi {
       addressBatchSize: Int,
       forceGenerateSpks: Boolean
   ): Future[Vector[ScriptPubKey]]
-  def listUnusedAddresses(
+  def getUnusedAddresses(
       account: HDAccount
   ): Future[Vector[AddressDb]]
-  def listSpentAddresses(
+  def getSpentAddresses(
       account: HDAccount
   ): Future[Vector[AddressDb]]
-  def listAddresses(account: HDAccount): Future[Vector[AddressDb]]
-  def listFundedAddresses(
+  def getAddresses(account: HDAccount): Future[Vector[AddressDb]]
+  def getFundedAddresses(
       account: HDAccount
   ): Future[Vector[(AddressDb, CurrencyUnit)]]
 }

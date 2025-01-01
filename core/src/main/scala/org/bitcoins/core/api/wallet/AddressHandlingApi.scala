@@ -25,9 +25,9 @@ trait AddressHandlingApi {
   )(implicit ec: ExecutionContext): Future[Boolean] = {
     val possibleAddressesF = accountOpt match {
       case Some((ah, account)) =>
-        ah.listAddresses(account)
+        ah.getAddresses(account)
       case None =>
-        listAddresses()
+        getAddresses()
     }
 
     possibleAddressesF.map { possibleAddresses =>
@@ -86,11 +86,11 @@ trait AddressHandlingApi {
     * from this wallet
     */
   def isChange(output: TransactionOutput): Future[Boolean]
-  def listAddresses(): Future[Vector[AddressDb]]
-  def listUnusedAddresses(): Future[Vector[AddressDb]]
-  def listScriptPubKeys(): Future[Vector[ScriptPubKeyDb]]
-  def listSpentAddresses(): Future[Vector[AddressDb]]
-  def listFundedAddresses(): Future[Vector[(AddressDb, CurrencyUnit)]]
+  def getAddresses(): Future[Vector[AddressDb]]
+  def getUnusedAddresses(): Future[Vector[AddressDb]]
+  def getScriptPubKeys(): Future[Vector[ScriptPubKeyDb]]
+  def getSpentAddresses(): Future[Vector[AddressDb]]
+  def getFundedAddresses(): Future[Vector[(AddressDb, CurrencyUnit)]]
   def tagAddress(
       address: BitcoinAddress,
       tag: AddressTag

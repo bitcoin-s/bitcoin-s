@@ -445,7 +445,7 @@ case class SendFundsHandlingHandling(
     val outputs = Vector(TransactionOutput(Satoshis.zero, address.scriptPubKey))
     for {
       _ <- invariantF
-      utxos <- utxoHandling.listUtxos(outPoints)
+      utxos <- utxoHandling.getUtxos(outPoints)
       outputMap = SpendingInfoDb.toPreviousOutputMap(utxos)
       utxosWithTxs <- fundTxHandling.getPreviousTransactions(utxos)
       inputInfos = utxosWithTxs

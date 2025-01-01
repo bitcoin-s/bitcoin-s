@@ -105,7 +105,7 @@ case class AccountHandling(
   }
 
   /** @inheritdoc */
-  override def listAccounts(): Future[Vector[AccountDb]] =
+  override def getAccounts(): Future[Vector[AccountDb]] =
     accountDAO.findAll()
 
   private def getOrThrowAccount(account: Option[AccountDb]): AccountDb =
@@ -332,7 +332,7 @@ case class AccountHandling(
     safeDatabase.run(findAccountAction(account))
   }
 
-  override def listUnusedAddresses(
+  override def getUnusedAddresses(
       account: HDAccount): Future[Vector[AddressDb]] = {
     val unusedAddressesF = addressDAO.getUnusedAddresses
     unusedAddressesF.map { unusedAddresses =>
@@ -341,7 +341,7 @@ case class AccountHandling(
     }
   }
 
-  override def listAddresses(account: HDAccount): Future[Vector[AddressDb]] = {
+  override def getAddresses(account: HDAccount): Future[Vector[AddressDb]] = {
     val allAddressesF: Future[Vector[AddressDb]] = addressDAO.findAllAddresses()
 
     val accountAddressesF = {
@@ -356,13 +356,13 @@ case class AccountHandling(
     accountAddressesF
   }
 
-  override def listSpentAddresses(
+  override def getSpentAddresses(
       account: HDAccount
   ): Future[Vector[AddressDb]] = {
     addressDAO.getSpentAddresses(account)
   }
 
-  override def listFundedAddresses(
+  override def getFundedAddresses(
       account: HDAccount
   ): Future[Vector[(AddressDb, CurrencyUnit)]] = {
     addressDAO.getFundedAddresses(account)
