@@ -23,6 +23,29 @@ class BitcoinSServerMainBitcoindTest
 
   behavior of "BitcoinSServerMain"
 
+  it must "fail to send requests to the app server if the password is bad" in {
+    (config: BitcoinSAppConfig) =>
+      val server = new BitcoinSServerMain(ServerArgParser.empty)(system, config)
+
+      val cliConfig =
+        Config(rpcPortOpt = Some(config.rpcPort), rpcPassword = "bad_password")
+
+      val failF = for {
+        _ <- server.start()
+        infoT = ConsoleCli.exec(CliCommand.WalletInfo, cliConfig)
+        _ <- AsyncUtil.nonBlockingSleep(1.second)
+        _ <- server.stop()
+      } yield {
+        assert(infoT.isFailure)
+        assert(
+          infoT.failed.get.getMessage
+            .contains("The supplied authentication is invalid")
+        )
+      }
+
+      failF
+  }
+
   it must "start our app server with bitcoind as a backend" in {
     (config: BitcoinSAppConfig) =>
       val server = new BitcoinSServerMain(ServerArgParser.empty)(system, config)
@@ -64,86 +87,61 @@ class BitcoinSServerMainBitcoindTest
     val mnemonic =
       MnemonicCode.fromEntropy(ECPrivateKey.freshPrivateKey.bytes.toBitVector)
 
-    server.start().map { _ =>
-      val info = ConsoleCli.exec(CliCommand.WalletInfo, cliConfig)
-      assert(info.get.contains("\"walletName\": \"\""))
-      val balance =
+    for {
+      _ <- server.start()
+      info = ConsoleCli.exec(CliCommand.WalletInfo, cliConfig)
+      _ = assert(info.get.contains("\"walletName\": \"\""))
+      balance =
         ConsoleCli.exec(GetBalance(isSats = true), cliConfig)
-      assert(balance.get == "0")
-      val aliceAddr =
+      _ = assert(balance.get == "0")
+      aliceAddr =
         ConsoleCli.exec(GetNewAddress(labelOpt = None), cliConfig)
-      assert(aliceAddr.isSuccess)
-      val aliceBlockHash =
+      _ = assert(aliceAddr.isSuccess)
+      aliceBlockHash =
         ConsoleCli.exec(GetBestBlockHash, cliConfig)
-      assert(aliceBlockHash.isSuccess)
-
-      // switch to bob
-      val imported =
+      _ = assert(aliceBlockHash.isSuccess)
+      imported =
         ConsoleCli.exec(ImportSeed(bob, mnemonic, None), cliConfig)
-      assert(imported.isSuccess)
-      val bobLoaded =
+      _ = assert(imported.isSuccess)
+      bobLoaded =
         ConsoleCli.exec(LoadWallet(bob, None, None), cliConfig)
-      assert(bobLoaded.get == "bob")
-      val bobInfo = ConsoleCli.exec(CliCommand.WalletInfo, cliConfig)
-      assert(bobInfo.get.contains("\"walletName\": \"bob\""))
-      val bobAddr =
-        ConsoleCli.exec(GetNewAddress(labelOpt = None), cliConfig)
-      assert(bobAddr.isSuccess)
-      val bobBlockHash = ConsoleCli.exec(CliCommand.GetBestBlockHash, cliConfig)
-      assert(bobBlockHash.isSuccess)
+      _ = assert(bobLoaded.get == "bob")
+      bobInfo = ConsoleCli.exec(CliCommand.WalletInfo, cliConfig)
+      _ = assert(bobInfo.get.contains("\"walletName\": \"bob\""))
+      bobAddr = ConsoleCli.exec(GetNewAddress(labelOpt = None), cliConfig)
+      _ = assert(bobAddr.isSuccess)
+      bobBlockHash = ConsoleCli.exec(CliCommand.GetBestBlockHash, cliConfig)
+      _ = assert(bobBlockHash.isSuccess)
 
-      assert(aliceAddr != bobAddr)
-      assert(aliceBlockHash == bobBlockHash)
+      _ = assert(aliceAddr != bobAddr)
+      _ = assert(aliceBlockHash == bobBlockHash)
 
       // switch back to alice
-      val aliceLoaded =
+      aliceLoaded =
         ConsoleCli.exec(LoadWallet(alice, None, None), cliConfig)
-      assert(aliceLoaded.get == "")
-      val aliceInfo = ConsoleCli.exec(CliCommand.WalletInfo, cliConfig)
-      assert(aliceInfo.get.contains("\"walletName\": \"\""))
-      val aliceAddresses =
-        ConsoleCli.exec(CliCommand.GetUnusedAddresses, cliConfig)
+      _ = assert(aliceLoaded.get == "")
+      aliceInfo = ConsoleCli.exec(CliCommand.WalletInfo, cliConfig)
+      _ = assert(aliceInfo.get.contains("\"walletName\": \"\""))
+      aliceAddresses = ConsoleCli.exec(CliCommand.GetUnusedAddresses, cliConfig)
 
-      assert(aliceAddresses.get.contains(aliceAddr.get))
-      assert(!aliceAddresses.get.contains(bobAddr.get))
+      _ = assert(aliceAddresses.get.contains(aliceAddr.get))
+      _ = assert(!aliceAddresses.get.contains(bobAddr.get))
 
       // again switch to bob
-      val imported2 =
+      imported2 =
         ConsoleCli.exec(ImportSeed(bob, mnemonic, None), cliConfig)
-      assert(!upickle.default.read[Boolean](imported2.get))
-      val bobLoaded2 =
+      _ = assert(!upickle.default.read[Boolean](imported2.get))
+      bobLoaded2 =
         ConsoleCli.exec(LoadWallet(bob, None, None), cliConfig)
-      assert(bobLoaded2.get == "bob")
-      val bobInfo2 = ConsoleCli.exec(CliCommand.WalletInfo, cliConfig)
-      assert(bobInfo2.get.contains("\"walletName\": \"bob\""))
-      val bobAddresses =
+      _ = assert(bobLoaded2.get == "bob")
+      bobInfo2 = ConsoleCli.exec(CliCommand.WalletInfo, cliConfig)
+      _ = assert(bobInfo2.get.contains("\"walletName\": \"bob\""))
+      bobAddresses =
         ConsoleCli.exec(CliCommand.GetUnusedAddresses, cliConfig)
 
-      assert(!bobAddresses.get.contains(aliceAddr.get))
-      assert(bobAddresses.get.contains(bobAddr.get))
-    }
-  }
-
-  it must "fail to send requests to the app server if the password is bad" in {
-    (config: BitcoinSAppConfig) =>
-      val server = new BitcoinSServerMain(ServerArgParser.empty)(system, config)
-
-      val cliConfig =
-        Config(rpcPortOpt = Some(config.rpcPort), rpcPassword = "bad_password")
-
-      val failF = for {
-        _ <- server.start()
-        infoT = ConsoleCli.exec(CliCommand.WalletInfo, cliConfig)
-        _ <- AsyncUtil.nonBlockingSleep(1.second)
-        _ <- server.stop()
-      } yield {
-        assert(infoT.isFailure)
-        assert(
-          infoT.failed.get.getMessage
-            .contains("The supplied authentication is invalid")
-        )
-      }
-
-      failF
+      _ = assert(!bobAddresses.get.contains(aliceAddr.get))
+      _ = assert(bobAddresses.get.contains(bobAddr.get))
+      _ <- server.stop()
+    } yield succeed
   }
 }
