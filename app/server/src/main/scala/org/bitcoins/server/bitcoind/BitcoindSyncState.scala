@@ -4,21 +4,22 @@ import org.bitcoins.server.util.{BitcoindPollingCancellable}
 
 import scala.concurrent.Future
 
-/** @param syncF
-  *   the future that will be completed when the synchronization with bitcoind
-  *   is complete
+/** @param initSyncF
+  *   the future that will be completed when the initial synchronization with
+  *   bitcoind is complete. This Future isn't related to subsequent polling jobs
+  *   after our initial sync between bitcoind and the wallet on startup
   * @param pollingCancellable
   *   You can cancel bitcoind polling by calling
   *   [[BitcoindPollingCancellabe.cancel()]]
   */
 case class BitcoindSyncState(
-    syncF: Future[Unit],
+    initSyncF: Future[Unit],
     pollingCancellable: BitcoindPollingCancellable
 ) {
 
   /** Stops syncing and polling bitcoind */
   def stop(): Future[Unit] = {
     pollingCancellable.cancel()
-    syncF
+    initSyncF
   }
 }

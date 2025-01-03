@@ -501,7 +501,7 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
     import system.dispatcher
     val atomicPrevCount = new AtomicInteger(prevCount)
     val queueSource: Source[Int, SourceQueueWithComplete[Int]] =
-      Source.queue[Int](100, OverflowStrategy.backpressure)
+      Source.queue[Int](16, OverflowStrategy.backpressure)
     val numParallelism = FutureUtil.getParallelism
 
     val fetchBlocksFlow =

@@ -15,7 +15,7 @@ case class BitcoindPollingCancellable(
   }
 
   override def isCancelled: Boolean =
-    blockPollingCancellable.isCancelled && mempoolPollingCancelable.cancel()
+    blockPollingCancellable.isCancelled && mempoolPollingCancelable.isCancelled
 }
 
 object BitcoindPollingCancellabe {
