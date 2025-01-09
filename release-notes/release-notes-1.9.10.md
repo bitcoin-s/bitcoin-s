@@ -71,24 +71,82 @@ https://oss.sonatype.org/content/repositories/snapshots/org/bitcoin-s/
 
 ## app commons
 
+90203b295b Use default play-json json serialization macros for bitcoind json classes that cause issues with scala3 (#5718)
+4471f74ccf Add `error` field to`ImportDescriptorResult`, move `BitcoindException` to app-commons (#5705)
+6b12bb515d Rework `NativeProcessFactory.cmd` to be `Vector[String]` (#5623)
+
 ## App server
+
+788b99c184 refactor: Improve bitcoind wallet polling logic (#5834)
+1423f2c91e appServer: Add missing `server.stop()` in `BitcoinSServerMainBitcoindTest` (#5831)
+f280f35431 Replace Future[Wallet] -> Wallet parameter in {BitcoinSWalletTest, BitcoindRpcBackendUtil} (#5796)
+ba8dd75312 refactor: DRY for `DLCWalletLoaderApi.loadWallet()` (#5787)
+835c98e5b9 Fix race condition in `WebsocketTest`s (#5748)
+9feabc1c2b Make `WebsocketTests` rescan test more robust (#5661)
+35003ca970 refactor: Change interval param of `BitcoindRpcBackendUtil.startBitcoindBlockPolling` (#5640)
+2021f1f111 2024 08 13 walletholder appserver refactor (#5639)
+41fab3dfd2 2024 08 07 `createnewaccount` rpc (#5638)
+458f3cb7d3 2024 07 29 rm tx bitcoind callbacks (#5632)
+bc09757f8c Remove WalletHolder parameter from DLCWalletLoaderApi.loadWallet() (#5628)
 
 ## bitcoind rpc
 
+f85953e527 2024 10 13 rm bitcoind v25 support (#5707)
+38f0f4d692 2024 10 07 v28 bitcoind (#5696)
+38850d22e3 2024 07 31 bitcoind callbacks (#5631)
+dad7e1cef6 Add support for bitcoind 27.1 (#5609)
+
 ## Build
+
+30663fe622 Remove scala version speicfic build code (#5737)
+29f10d046c Turn on -Xlint (#5728)
+88125a3575 Remove .jvmopts file comments, they do not work on ubuntu (#5730)
+28001af35e Add .jvmopts, conslidate JVM options there (#5729)
+7c07aa0355 Pull over simple syntax changes for {cli,oracleServer,bench,dlcNode,dlcOracle,dlcOracleTest,eclairRpc,lndRpc,lndRpcTest} from #5713 (#5721)
+602725174f Pull over simple syntax changes for scala3 pt2 (#5720)
+ab6d3f5cb7 Pull over simple syntax changes for scala3 libraries (#5719)
+46d6256e39 Switch distrubution to temurin, use full semver (21.0.4) (#5704)
+48462d4ac9 add checkout action to electron build (#5604)
+1b109e7b36 Add previous tag to electron build steps (#5599)
+4885bdb07d Add `-Xsource:3` to `lnd-rpc` (#5595)
 
 ## chain
 
+84aba7e349 Remove test case specific fixture setup in chainTest, revert to just using test suite specific fixtures (#5712)
+
 ## cli
+
+841762b841 cli: Fix log output for bitcoin-s-cli (#5664)
 
 ## clightning rpc
 
-
 ## Core
+
+d1618a2277 Add unit test for RescanState to test recursive rescans correctly (#5786)
+fb318efe5e core: Fix bug where we weren't checking for valid hash types in `TaprootKeyPath.isValid()` (#5780)
+b6cc97a663 2024 11 20 prevoutmap ordering (#5776)
+67bb3ceabd 2024 10 31 taproot signing (#5767)
+80be2f5989 2024 11 15 partialsig typeparam (#5770)
+bb0e40f05b 2024 11 16 rm isdummysig (#5771)
+fc4802d4b0 core: Implement BIP86 (#5768)
+c5d57de618 core: Fix divergence in behavior between TransactionSignatureSerializer.hashForSignature() methods (#5765)
+4e8d5ecc7f Add `Sign.{signWithHashType(),signLowRWithHashType}` (#5757)
+5187eee42a core: Terminate rescan early when RescanStarted.stop() is called rather than wait for the rescan to complete (#5749)
+e419b18d9c 2024 10 23 merkle vector (#5734)
+07f17cfedf Rework Block and Transaction data structures to use Vector rather than Seq (#5733)
+dca2146647 2024 10 19 rm generic btree (#5725)
+5f47fbe9ac Use BinaryTreeDoubleSha256Digest inside of Merkle.scala rather than BinaryTree[DoubleSha256Digest] (#5724)
+1939e9fd2e core: Fix bug in RescanStarted.entireRescanDoneF (#5654)
 
 ## Crypto
 
+cccaa582bd Add `Sign.{schnorrSign(),schnorrSignWithNonce()}` to `Sign` interface (#5754)
+17f965fd45 2024 11 09 schnorrsig hashtype (#5764)
+e69e1e5ad1 2024 10 31 digitalsignature (#5752)
+
 ## db commons
+
+00b1c85e65 Remove TableAutoInc[T] type parameter, its unnecessary and causes issues (#5711)
 
 ## DLC node
 
@@ -97,6 +155,10 @@ https://oss.sonatype.org/content/repositories/snapshots/org/bitcoin-s/
 ## DLC Server
 
 ## DLC wallet
+
+52c0625ba9 2024 09 30 dlcwallet has a wallet (#5692)
+7d8dd2bc0a refactor: Provide DLCWalletUtil.verifyProperlySetTxIds() with the contractId (#5657)
+feeb2618d6 Move DLCDAOs to src (#5652)
 
 ## Eclair rpc
 
@@ -108,21 +170,75 @@ https://oss.sonatype.org/content/repositories/snapshots/org/bitcoin-s/
 
 ## Lnd rpc
 
+bbac2590ff Bump to lnd 18.x (#5695)
+
 ## Lnurl
 
 ## node
 
-## Oracle Explorer Client
+4d9c52c75c node: Move killswitch downstream to avoid queue deadlocks (#5819)
+812f735110 node: Update DNS seeds, optimize `PeerFinder.start()` to start querying… (#5807)
+eb6edab240 Add `NodeState.NoPeers`, cache network messages (#5800)
+dbe1e7b686 tests: Make `NeutrinoNodeWalletTest` more robust against spurious failures (#5784)
+4befe4e70a Fix potential deadlock when offering to queue in managePeerAfterInitialization() (#5667)
+cbccecf95d Add caveat for `ConnectPeer` logic to only attempt to sync from a peer when a query is timed out (#5666)
+490e0217f1 Add payload to query timeout log (#5660)
 
 ## wallet
+
+43efce500d tests: Cleanup `BitcoindBlockPollingTest` producing ERROR logs during test fixture destruction (#5829)
+b9616066f2 wallet: Refactor {UTXOHandlingApi,AccountHandlingApi,AddressHandlingApi} to use 'get' prefix rather than 'list' prefix for method names (#5828)
+25517265fe wallet: Reduce noisy DEBUG log (#5820)
+b1403155fc wallet: Refactor AddressHandling to be account specific (#5825)
+d29dad4472 2024 12 11 issue 5625 (#5803)
+e2a0617d67 wallet: Don't cache TransactionProcessing now that it doesn't have internal state (#5797)
+04757f9039 wallet: Remove `TransactionProcessing.blockProcessingSignals` (#5795)
+e5ff1a5018 wallet: Fix noisy log, only log when we have an output to search for (#5794)
+98e89a6e93 2024 11 27 processtransaction flaky test (#5793)
+6f13f263ee wallet: Remove duplicate implementations of `SendFundsHandlingHandling.sendFromOutpoints()` (#5792)
+dbdad48413 wallet: Remove unused wallet configurations (#5789)
+d5a77a2297 wallet: Batch database actions in processBlockCachedUtxos() (#5788)
+f6f01f333a wallet: Cleanup RescanHandlingTest (#5781)
+d8ad023254 wallet: Implement taproot keypath handling in the wallet (#5772)
+c6917b296b config: Rename config option bitcoin-s.wallet.defaultAccountType -> bitcoin-s.wallet.purpose (#5783)
+471c063532 Remove rescan specific threadpool (#5746)
+3ae69b6ab5 wallet: Get `processBlockCachedUtxos()` using `DBIOAction` (#5740)
+f75a52b521 Refactor `TransactionProcessing.processTransaction()` to use `BlockHashWithConfs` (#5744)
+2521c5da0e Fix noisy log in TransactionProcessing (#5742)
+fe8acbb42f 2024 10 25 Get `TransactionProcessing.processTransactionImpl()` using a single database transaction (#5739)
+8917188220 wallet: Rework where we fetch the number of block confirmations for a tx in the wallet (#5738)
+13a895efe9 2024 09 24 simplify wallet (#5685)
+7caea21b6a refactor: Move more methods out of WalletApi (#5681)
+e087b174c5 Move `RandomFeeProvider` to src (#5684)
+d17934f17f Add `SendFundsHandlingApi`, remove `HDWalletApi` (#5680)
+8cfd5e8d6b 2024 09 19 address handling refactor (#5679)
+8c5d685953 Refactor codebase to have has-a relationship with `RescanHandling` rather than is-a (#5675)
+2d4a0adda4 Add FundTransactionHandlingApi, make FundTransactionHandling a case class (#5651)
+42b13a6a62 wallet: Remove unecessary type parameter to TxCRUDComponent#TxTable (#5650)
+4212d6d616 Create `AccountHandlingApi`, move inheritance from `Wallet` into `HDWalletApi` (#5627)
+0eb1788226 Refactor WalletApi.createNewAccount to not use KeyManagerParams (#5635)
+f5adc331f1 Move WalletDAOs to src (#5626)
+e68ebeadbc refactor: Create `UtxoHandlingApi`, move to has-a relationship within Wallet (#5624)
 
 ## testkit-core
 
 ## testkit
 
+345ab017e5 testkit: Randomize defaultAccountType (purpose) in tests (#5775)
+65e67287f8 2024 10 21 Replace `Future.sequence()` usage with `Future.traverse()` (#5732)
+2d87129978 Reduce BitcoindRpcTestUtil.awaitConnection() interval from 10.second -> 1.second (#5703)
+0843d7ecb5 Remove `-port` and `-rpcport` settings for `bitcoind` on startup for tests (#5702)
+
 ## tor
 
 ## Website
+
+479aee3dc6 docs: Run 'yarn upgrade' (#5830)
+7c3dbf96ca chore: remove redundant words in comment (#5826)
+e45860af90 Docs: README (#5751)
+04b9e6e75f Docs fix spelling issues (#5723)
+613e19c281 Pull over docs/ from #5713 (#5722)
+982090ed21 Fix typos (#5714)
 
 ## ZMQ
 
@@ -224,109 +340,3 @@ c559eca5f7 Update metrics-core, metrics-healthchecks, ... to 4.2.26 (#5607)
 677109c4ea Update sbt-bloop to 1.5.18 (#5602)
 d13abaa8ea Update gson to 2.11.0 (#5600)
 5833f5894d Update client3:core, ... to 3.9.7 (#5601)
-
-
-788b99c184 refactor: Improve bitcoind wallet polling logic (#5834)
-1423f2c91e appServer: Add missing `server.stop()` in `BitcoinSServerMainBitcoindTest` (#5831)
-479aee3dc6 docs: Run 'yarn upgrade' (#5830)
-b9616066f2 wallet: Refactor {UTXOHandlingApi,AccountHandlingApi,AddressHandlingApi} to use 'get' prefix rather than 'list' prefix for method names (#5828)
-43efce500d tests: Cleanup `BitcoindBlockPollingTest` producing ERROR logs during test fixture destruction (#5829)
-7c3dbf96ca chore: remove redundant words in comment (#5826)
-4d9c52c75c node: Move killswitch downstream to avoid queue deadlocks (#5819)
-25517265fe wallet: Reduce noisy DEBUG log (#5820)
-b1403155fc wallet: Refactor AddressHandling to be account specific (#5825)
-812f735110 node: Update DNS seeds, optimize `PeerFinder.start()` to start querying… (#5807)
-d29dad4472 2024 12 11 issue 5625 (#5803)
-eb6edab240 Add `NodeState.NoPeers`, cache network messages (#5800)
-e2a0617d67 wallet: Don't cache TransactionProcessing now that it doesn't have internal state (#5797)
-f280f35431 Replace Future[Wallet] -> Wallet parameter in {BitcoinSWalletTest, BitcoindRpcBackendUtil} (#5796)
-04757f9039 wallet: Remove `TransactionProcessing.blockProcessingSignals` (#5795)
-e5ff1a5018 wallet: Fix noisy log, only log when we have an output to search for (#5794)
-98e89a6e93 2024 11 27 processtransaction flaky test (#5793)
-6f13f263ee wallet: Remove duplicate implementations of `SendFundsHandlingHandling.sendFromOutpoints()` (#5792)
-dbdad48413 wallet: Remove unused wallet configurations (#5789)
-d1618a2277 Add unit test for RescanState to test recursive rescans correctly (#5786)
-d5a77a2297 wallet: Batch database actions in processBlockCachedUtxos() (#5788)
-ba8dd75312 refactor: DRY for `DLCWalletLoaderApi.loadWallet()` (#5787)
-c6917b296b config: Rename config option bitcoin-s.wallet.defaultAccountType -> bitcoin-s.wallet.purpose (#5783)
-dbe1e7b686 tests: Make `NeutrinoNodeWalletTest` more robust against spurious failures (#5784)
-f6f01f333a wallet: Cleanup RescanHandlingTest (#5781)
-345ab017e5 testkit: Randomize defaultAccountType (purpose) in tests (#5775)
-fb318efe5e core: Fix bug where we weren't checking for valid hash types in `TaprootKeyPath.isValid()` (#5780)
-b6cc97a663 2024 11 20 prevoutmap ordering (#5776)
-d8ad023254 wallet: Implement taproot keypath handling in the wallet (#5772)
-67bb3ceabd 2024 10 31 taproot signing (#5767)
-80be2f5989 2024 11 15 partialsig typeparam (#5770)
-bb0e40f05b 2024 11 16 rm isdummysig (#5771)
-fc4802d4b0 core: Implement BIP86 (#5768)
-cccaa582bd Add `Sign.{schnorrSign(),schnorrSignWithNonce()}` to `Sign` interface (#5754)
-c5d57de618 core: Fix divergence in behavior between TransactionSignatureSerializer.hashForSignature() methods (#5765)
-17f965fd45 2024 11 09 schnorrsig hashtype (#5764)
-4e8d5ecc7f Add `Sign.{signWithHashType(),signLowRWithHashType}` (#5757)
-e69e1e5ad1 2024 10 31 digitalsignature (#5752)
-e45860af90 Docs: README (#5751)
-5187eee42a core: Terminate rescan early when RescanStarted.stop() is called rather than wait for the rescan to complete (#5749)
-471c063532 Remove rescan specific threadpool (#5746)
-835c98e5b9 Fix race condition in `WebsocketTest`s (#5748)
-3ae69b6ab5 wallet: Get `processBlockCachedUtxos()` using `DBIOAction` (#5740)
-f75a52b521 Refactor `TransactionProcessing.processTransaction()` to use `BlockHashWithConfs` (#5744)
-2521c5da0e Fix noisy log in TransactionProcessing (#5742)
-fe8acbb42f 2024 10 25 Get `TransactionProcessing.processTransactionImpl()` using a single database transaction (#5739)
-8917188220 wallet: Rework where we fetch the number of block confirmations for a tx in the wallet (#5738)
-30663fe622 Remove scala version speicfic build code (#5737)
-29f10d046c Turn on -Xlint (#5728)
-e419b18d9c 2024 10 23 merkle vector (#5734)
-07f17cfedf Rework Block and Transaction data structures to use Vector rather than Seq (#5733)
-65e67287f8 2024 10 21 Replace `Future.sequence()` usage with `Future.traverse()` (#5732)
-88125a3575 Remove .jvmopts file comments, they do not work on ubuntu (#5730)
-28001af35e Add .jvmopts, conslidate JVM options there (#5729)
-04b9e6e75f Docs fix spelling issues (#5723)
-dca2146647 2024 10 19 rm generic btree (#5725)
-5f47fbe9ac Use BinaryTreeDoubleSha256Digest inside of Merkle.scala rather than BinaryTree[DoubleSha256Digest] (#5724)
-613e19c281 Pull over docs/ from #5713 (#5722)
-7c07aa0355 Pull over simple syntax changes for {cli,oracleServer,bench,dlcNode,dlcOracle,dlcOracleTest,eclairRpc,lndRpc,lndRpcTest} from #5713 (#5721)
-602725174f Pull over simple syntax changes for scala3 pt2 (#5720)
-ab6d3f5cb7 Pull over simple syntax changes for scala3 libraries (#5719)
-90203b295b Use default play-json json serialization macros for bitcoind json classes that cause issues with scala3 (#5718)
-982090ed21 Fix typos (#5714)
-84aba7e349 Remove test case specific fixture setup in chainTest, revert to just using test suite specific fixtures (#5712)
-00b1c85e65 Remove TableAutoInc[T] type parameter, its unnecessary and causes issues (#5711)
-f85953e527 2024 10 13 rm bitcoind v25 support (#5707)
-38f0f4d692 2024 10 07 v28 bitcoind (#5696)
-4471f74ccf Add `error` field to`ImportDescriptorResult`, move `BitcoindException` to app-commons (#5705)
-2d87129978 Reduce BitcoindRpcTestUtil.awaitConnection() interval from 10.second -> 1.second (#5703)
-46d6256e39 Switch distrubution to temurin, use full semver (21.0.4) (#5704)
-0843d7ecb5 Remove `-port` and `-rpcport` settings for `bitcoind` on startup for tests (#5702)
-bbac2590ff Bump to lnd 18.x (#5695)
-52c0625ba9 2024 09 30 dlcwallet has a wallet (#5692)
-13a895efe9 2024 09 24 simplify wallet (#5685)
-7caea21b6a refactor: Move more methods out of WalletApi (#5681)
-e087b174c5 Move `RandomFeeProvider` to src (#5684)
-d17934f17f Add `SendFundsHandlingApi`, remove `HDWalletApi` (#5680)
-8cfd5e8d6b 2024 09 19 address handling refactor (#5679)
-8c5d685953 Refactor codebase to have has-a relationship with `RescanHandling` rather than is-a (#5675)
-4befe4e70a Fix potential deadlock when offering to queue in managePeerAfterInitialization() (#5667)
-cbccecf95d Add caveat for `ConnectPeer` logic to only attempt to sync from a peer when a query is timed out (#5666)
-841762b841 cli: Fix log output for bitcoin-s-cli (#5664)
-490e0217f1 Add payload to query timeout log (#5660)
-9feabc1c2b Make `WebsocketTests` rescan test more robust (#5661)
-7d8dd2bc0a refactor: Provide DLCWalletUtil.verifyProperlySetTxIds() with the contractId (#5657)
-1939e9fd2e core: Fix bug in RescanStarted.entireRescanDoneF (#5654)
-feeb2618d6 Move DLCDAOs to src (#5652)
-2d4a0adda4 Add FundTransactionHandlingApi, make FundTransactionHandling a case class (#5651)
-42b13a6a62 wallet: Remove unecessary type parameter to TxCRUDComponent#TxTable (#5650)
-4212d6d616 Create `AccountHandlingApi`, move inheritance from `Wallet` into `HDWalletApi` (#5627)
-2021f1f111 2024 08 13 walletholder appserver refactor (#5639)
-35003ca970 refactor: Change interval param of `BitcoindRpcBackendUtil.startBitcoindBlockPolling` (#5640)
-41fab3dfd2 2024 08 07 `createnewaccount` rpc (#5638)
-0eb1788226 Refactor WalletApi.createNewAccount to not use KeyManagerParams (#5635)
-458f3cb7d3 2024 07 29 rm tx bitcoind callbacks (#5632)
-38850d22e3 2024 07 31 bitcoind callbacks (#5631)
-bc09757f8c Remove WalletHolder parameter from DLCWalletLoaderApi.loadWallet() (#5628)
-f5adc331f1 Move WalletDAOs to src (#5626)
-e68ebeadbc refactor: Create `UtxoHandlingApi`, move to has-a relationship within Wallet (#5624)
-6b12bb515d Rework `NativeProcessFactory.cmd` to be `Vector[String]` (#5623)
-4885bdb07d Add `-Xsource:3` to `lnd-rpc` (#5595)
-dad7e1cef6 Add support for bitcoind 27.1 (#5609)
-48462d4ac9 add checkout action to electron build (#5604)
-1b109e7b36 Add previous tag to electron build steps (#5599)
