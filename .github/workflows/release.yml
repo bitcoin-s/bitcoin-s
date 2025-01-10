@@ -8,7 +8,7 @@ on:
 
 jobs:
   publish:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v3
@@ -34,7 +34,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-13, ubuntu-latest, windows-latest] #
+        os: [macos-13, ubuntu-22.04, windows-latest] #
         # If os values you don't include the matrix os list above are set here, they will be included
         # If you want multiple variables per os see https://github.community/t/create-matrix-with-multiple-os-and-env-for-each-one/16895
         # Can run conditional steps below with https://github.community/t/what-is-the-correct-if-condition-syntax-for-checking-matrix-os-version/16221
@@ -42,7 +42,7 @@ jobs:
         include:
         - os: macos-13
           TARGET: mac
-        - os: ubuntu-latest
+        - os: ubuntu-22.04
           TARGET: linux
         - os: windows-latest
         # TODO : Do we want to use 'win' or 'windows'?
@@ -134,14 +134,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-13, ubuntu-latest] # windows-latest
+        os: [macos-13, ubuntu-22.04] # windows-latest
         # If os values you don't include the matrix os list above are set here, they will be included
         # This is here to get friendly labels for output filenames
         include:
         - os: macos-13
           TARGET: mac
           FORMAT: zip # dmg
-        - os: ubuntu-latest
+        - os: ubuntu-22.04
           TARGET: linux
           FORMAT: deb
         # - os: windows-latest
