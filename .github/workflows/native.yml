@@ -18,12 +18,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macOS-latest, ubuntu-latest]
+        os: [macOS-latest, ubuntu-22.04]
         include:
           - os: macOS-latest
             uploaded_filename: bitcoin-s-cli-x86_64-apple-darwin
             local_path: app/cli/target/native-image/bitcoin-s-cli
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             uploaded_filename: bitcoin-s-cli-x86_64-pc-linux
             local_path: app/cli/target/native-image/bitcoin-s-cli
     steps:
