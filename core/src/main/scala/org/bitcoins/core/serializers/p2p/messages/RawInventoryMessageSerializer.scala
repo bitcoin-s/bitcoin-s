@@ -21,7 +21,7 @@ trait RawInventoryMessageSerializer
     val inventoryStart = inventoryCount.byteSize.toInt
     val remainingBytes = bytes.slice(inventoryStart, bytes.size)
     val (inventories, _) = parseInventories(remainingBytes, inventoryCount)
-    InventoryMessage(inventoryCount, inventories)
+    InventoryMessage(inventoryCount, inventories.toVector)
   }
 
   /** Tranforms an inventory object into a hexadecimal string

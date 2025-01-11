@@ -19,7 +19,7 @@ trait RawGetHeadersMessageSerializer
     val (hashes, remainingBytes) =
       parseHashes(bytes.drop(hashesStartIndex), hashCount)
     val hashStop = DoubleSha256Digest(remainingBytes.take(32))
-    GetHeadersMessage(version, hashCount, hashes, hashStop)
+    GetHeadersMessage(version, hashCount, hashes.toVector, hashStop)
   }
 
   override def write(getHeadersMessage: GetHeadersMessage): ByteVector = {

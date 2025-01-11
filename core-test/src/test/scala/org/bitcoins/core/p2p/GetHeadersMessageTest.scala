@@ -26,7 +26,7 @@ class GetHeadersMessageTest extends BitcoinSUnitTest {
     def getHash(): DoubleSha256Digest =
       CryptoGenerators.doubleSha256Digest.sampleSome
 
-    val msg = GetHeadersMessage(List.fill(10)(getHash()))
+    val msg = GetHeadersMessage(Vector.fill(10)(getHash()))
     assert(msg.hashStop == DoubleSha256Digest.empty)
 
     val hash = getHash()
