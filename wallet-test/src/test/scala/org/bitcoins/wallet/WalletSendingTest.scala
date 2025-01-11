@@ -591,16 +591,18 @@ class WalletSendingTest extends BitcoinSWalletTest {
         addr1 <- addr1F
         addr2 <- addr2F
         amt = balance - Satoshis(
-          500000
+          5000
         ) // for fee, fee rates are random so we might need a lot
 
         // build these transactions in parallel intentionally
-        tx1F = fundedWallet.wallet.sendFundsHandling.sendToAddress(addr1,
-                                                                   amt,
-                                                                   None)
-        tx2F = fundedWallet.wallet.sendFundsHandling.sendToAddress(addr2,
-                                                                   amt,
-                                                                   None)
+        tx1F = fundedWallet.wallet.sendFundsHandling.sendToAddress(
+          addr1,
+          amt,
+          Some(SatoshisPerVirtualByte.one))
+        tx2F = fundedWallet.wallet.sendFundsHandling.sendToAddress(
+          addr2,
+          amt,
+          Some(SatoshisPerVirtualByte.one))
         // one of these should fail because we don't have enough money
         _ <- tx1F
         _ <- tx2F
@@ -612,7 +614,7 @@ class WalletSendingTest extends BitcoinSWalletTest {
       exnF.map(err =>
         assert(
           err.getMessage.contains(
-            "Not enough value in given outputs to make transaction spending 599500000 sats plus fees"
+            "Not enough value in given outputs to make transaction spending 599995000 sats plus fees"
           )
         ))
 
