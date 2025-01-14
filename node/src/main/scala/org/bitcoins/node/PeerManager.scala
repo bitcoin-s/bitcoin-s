@@ -140,15 +140,15 @@ case class PeerManager(
       .upsertPeer(addrBytes, peer.port, networkByte, serviceIdentifier)
   }
 
-  private def replacePeer(replacePeer: Peer, withPeer: Peer): Future[Unit] = {
-    logger.debug(s"Replacing $replacePeer with $withPeer")
-    for {
-      _ <- disconnectPeer(replacePeer)
-      _ <- connectPeer(withPeer)
-    } yield {
-      ()
-    }
-  }
+//  private def replacePeer(replacePeer: Peer, withPeer: Peer): Future[Unit] = {
+//    logger.debug(s"Replacing $replacePeer with $withPeer")
+//    for {
+//      _ <- disconnectPeer(replacePeer)
+//      _ <- connectPeer(withPeer)
+//    } yield {
+//      ()
+//    }
+//  }
 
   def disconnectPeer(peer: Peer): Future[Unit] = {
     logger.debug(s"Disconnecting persistent peer=$peer")
@@ -244,32 +244,9 @@ case class PeerManager(
       curPeerDataOpt.isDefined,
       s"Could not find peer=$peer in PeerFinder!"
     )
-    val peerData = curPeerDataOpt.get
-    val hasCf = peerData.serviceIdentifier.nodeCompactFilters
-    val notCfPeers = state.peerDataMap
-      .filter(p => !p._2.serviceIdentifier.nodeCompactFilters)
-      .keys
-    val availableFilterSlot = hasCf && notCfPeers.nonEmpty
-    val hasConnectionSlot =
-      state.connectedPeerCount < nodeAppConfig.maxConnectedPeers
-    val stateAndOfferF: (NodeRunningState, Future[Unit]) = {
-      if (hasConnectionSlot) {
-        // we want to promote this peer, so pop from cache
-        val newState = state.addPeer(peer)
-        val persistentPeerData =
-          newState.peerDataMap.filter(_._1 == peer).head._2
-        _peerDataMap.put(peer, persistentPeerData)
-        (newState, connectPeer(peer))
-      } else if (availableFilterSlot) {
-        val newState = state.addPeer(peer)
-        val persistentPeerData =
-          newState.peerDataMap.filter(_._1 == peer).head._2
-        _peerDataMap.put(peer, persistentPeerData)
-        (newState, replacePeer(replacePeer = notCfPeers.head, withPeer = peer))
-      } else {
-        (state, Future.unit)
-      }
-    }
+
+    val stateAndOfferF: (NodeRunningState, Future[Unit]) =
+      (state, connectPeer(peer))
 
     stateAndOfferF._2.failed.foreach(err =>
       logger.error(s"Failed managePeerAfterInitialization() offer to queue",
@@ -356,7 +333,7 @@ case class PeerManager(
     val updateLastSeenF = PeerDAO().updateLastSeenTime(peer)
     val stateF: Future[NodeRunningState] = {
       require(
-        !finder.hasPeer(peer) || !state.getPeerData(peer).isDefined,
+        !finder.hasPeer(peer) || state.getPeerData(peer).isEmpty,
         s"$peer cannot be both a test and a persistent peer"
       )
 
@@ -601,41 +578,7 @@ case class PeerManager(
               val connectF = runningState.peerFinder.connect(c.peer)
               connectF.map(_ => runningState)
             } else {
-              val hasCf = runningState
-                .getPeerServices(peer)
-                .exists(_.nodeCompactFilters)
-              logger.info(
-                s"Connected to peer $peer with compact filter support=$hasCf. Connected peer count ${runningState.peerDataMap.size} state=$state"
-              )
-              state match {
-                case s: SyncNodeState =>
-                  if (s.isQueryTimedOut(nodeAppConfig.queryWaitTime)) {
-                    // we don't want to re-request from our peer
-                    // unless the query is timed out. This can lead to
-                    // duplicate header requests.
-                    // see: https://github.com/bitcoin-s/bitcoin-s/issues/5665
-                    syncHelper(s).map(_.getOrElse(s.toDoneSyncing))
-                  } else {
-                    Future.successful(s)
-                  }
-                case d: DoneSyncing =>
-                  val x = d.toHeaderSync(c.peer)
-                  syncHelper(x).map(_.getOrElse(d))
-                case n: NoPeers =>
-                  val peerData = peerDataMap(c.peer)
-                  // send cached messages
-                  logger.debug(
-                    s"Sending ${n.cachedOutboundMessages.length} cached messages")
-                  val sendMsgsF = Future.traverse(n.cachedOutboundMessages)(m =>
-                    peerData.peerMessageSender.sendMsg(m.payload))
-                  val peerWithSvcs = peerData.peerWithServicesOpt.get
-                  val map = Vector((peerWithSvcs, peerData)).toMap
-                  val d = n.toDoneSyncing(map)
-                  sendMsgsF.map(_ => d)
-                case x @ (_: MisbehavingPeer | _: RemovePeers |
-                    _: NodeShuttingDown) =>
-                  Future.successful(x)
-              }
+              handleConnectPeer(c = c, runningState = runningState)
             }
         }
       case (state, i: InitializeDisconnect) =>
@@ -895,7 +838,7 @@ case class PeerManager(
       case (state, NodeStreamMessage.PeerHealthCheck) =>
         state match {
           case s: NodeShuttingDown =>
-            logger.trace(s"Ignorinng peer health check as we are shutting down")
+            logger.trace(s"Ignoring peer health check as we are shutting down")
             Future.successful(s)
           case r: NodeRunningState =>
             PeerManager.handleHealthCheck(r)
@@ -908,6 +851,7 @@ case class PeerManager(
       state: NodeRunningState,
       stp: SendToPeer
   ): Future[NodeRunningState] = {
+    logger.info(s"sendToPeerHelper() stp=$stp state=$state")
     val nodeStateF: Future[NodeRunningState] = stp.peerOpt match {
       case Some(p) =>
         state
@@ -1221,6 +1165,82 @@ case class PeerManager(
         logger.error(s"Failed to sendToPeer message=${payload.commandName}",
                      err))
     ()
+  }
+
+  private def handleConnectPeer(
+      c: ConnectPeer,
+      runningState: NodeRunningState): Future[NodeRunningState] = {
+    val peer = c.peer
+//    require(
+//      runningState.isDisconnected(peer),
+//      s"Cannot call handleConnectPeer() with a peer arleady connected! peer=$peer")
+    val hasCf = runningState.peerFinder
+      .getPeerData(peer)
+      .exists(_.peerWithServicesOpt.exists(_.services.nodeCompactFilters))
+    val notCfPeers = runningState.peerDataMap
+      .filter(p => !p._2.serviceIdentifier.nodeCompactFilters)
+      .keys
+    val availableFilterSlot = hasCf && notCfPeers.nonEmpty
+    val hasConnectionSlot =
+      runningState.connectedPeerCount < nodeAppConfig.maxConnectedPeers
+    val newStateF: Future[NodeRunningState] = {
+      if (hasConnectionSlot || availableFilterSlot) {
+        val addPeerF: Future[NodeRunningState] = runningState match {
+          case s: SyncNodeState =>
+            val add = s.addPeer(peer)
+            if (add.isQueryTimedOut(nodeAppConfig.queryWaitTime)) {
+              // we don't want to re-request from our peer
+              // unless the query is timed out. This can lead to
+              // duplicate header requests.
+              // see: https://github.com/bitcoin-s/bitcoin-s/issues/5665
+              syncHelper(add).map(_.getOrElse(s.toDoneSyncing))
+            } else {
+              Future.successful(add)
+            }
+          case d: DoneSyncing =>
+            val dAdd = d.addPeer(peer)
+            val h = dAdd.toHeaderSync(peer)
+            syncHelper(h).map(_.getOrElse(dAdd))
+          case n: NoPeers =>
+            // send cached messages
+            val peerData = n.peerFinder.popFromCache(peer).get match {
+              case p: PersistentPeerData       => p
+              case a: AttemptToConnectPeerData => a.toPersistentPeerData
+            }
+            val peerWithSvcs = peerData.peerWithServicesOpt.get
+            val map = Vector((peerWithSvcs, peerData)).toMap
+            val d = DoneSyncing(map, n.waitingForDisconnection, n.peerFinder)
+            val sendMsgsF = Future.traverse(n.cachedOutboundMessages)(m =>
+              peerData.peerMessageSender.sendMsg(m.payload))
+            val h = d.toHeaderSync(peer)
+            sendMsgsF
+              .flatMap(_ => syncHelper(h).map(_.getOrElse(d)))
+          case x @ (_: MisbehavingPeer | _: RemovePeers |
+              _: NodeShuttingDown) =>
+            Future.successful(x)
+        }
+
+        addPeerF.flatMap { addPeer =>
+          if (availableFilterSlot) {
+            disconnectPeer(notCfPeers.head).map(_ => addPeer)
+          } else {
+            Future.successful(addPeer)
+          }
+        }
+      } else {
+        Future.successful(runningState)
+      }
+    }
+
+    newStateF.map { newState =>
+      newState.peerDataMap.get(peer).foreach { persistentPeerData =>
+        _peerDataMap.put(peer, persistentPeerData)
+      }
+      logger.info(
+        s"Connected to peer $peer with compact filter support=$hasCf. Connected peer count ${runningState.peerDataMap.size} state=$newState"
+      )
+      newState
+    }
   }
 }
 
