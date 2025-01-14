@@ -421,7 +421,7 @@ case class PeerFinder(
   }
 }
 
-case class PeerOrdering(peer: PeerData, priority: Int, id: Int)
+case class PeerOrdering(peerData: PeerData, priority: Int, id: Int)
 
 case class PeerStack() {
 
@@ -439,7 +439,7 @@ case class PeerStack() {
     mutable.SortedSet[PeerOrdering]().empty
 
   def push(peer: PeerData, priority: Int = 0): Unit = {
-    if (set.toVector.map(_.peer.peer).contains(peer.peer)) {
+    if (set.toVector.map(_.peerData.peer).contains(peer.peer)) {
       // noop, we already have this peer in our stack
       ()
     } else if (set.size == maxSize) {
@@ -456,7 +456,7 @@ case class PeerStack() {
   }
 
   def pop(): PeerData = {
-    val res = set.last.peer
+    val res = set.last.peerData
     set.remove(set.last)
     res
   }
@@ -465,7 +465,7 @@ case class PeerStack() {
 
   def clear(): Unit = set.clear()
 
-  def pushAll(peers: Vector[PeerData], priority: Int = 0): Unit = {
-    peers.foreach(push(_, priority))
+  def pushAll(peerDatas: Vector[PeerData], priority: Int = 0): Unit = {
+    peerDatas.foreach(push(_, priority))
   }
 }
