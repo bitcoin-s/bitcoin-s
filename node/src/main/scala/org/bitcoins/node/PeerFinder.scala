@@ -439,7 +439,10 @@ case class PeerStack() {
     mutable.SortedSet[PeerOrdering]().empty
 
   def push(peer: PeerData, priority: Int = 0): Unit = {
-    if (set.size == maxSize) {
+    if (set.toVector.map(_.peer.peer).contains(peer.peer)) {
+      // noop, we already have this peer in our stack
+      ()
+    } else if (set.size == maxSize) {
       if (set.head.priority < priority) {
         set.remove(set.head)
         set.add(PeerOrdering(peer, priority, id))
