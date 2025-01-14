@@ -425,7 +425,7 @@ case class PeerOrdering(peer: PeerData, priority: Int, id: Int)
 
 case class PeerStack() {
 
-  implicit def ordering: Ordering[PeerOrdering] =
+  implicit private def ordering: Ordering[PeerOrdering] =
     (x: PeerOrdering, y: PeerOrdering) => {
       if (x.priority != y.priority) x.priority.compare(y.priority)
       else x.id.compare(y.id)
