@@ -378,7 +378,7 @@ case class PeerFinder(
       val peersF = {
         for {
           peers <- peersToTryF
-          _ = logger.debug(s"Trying next set of peers $peers")
+          _ = logger.debug(s"Trying next set of peers ${peers.map(_.peer)}")
           _ <- {
             Future.traverse(peers) { p =>
               // check if we already have an active connection

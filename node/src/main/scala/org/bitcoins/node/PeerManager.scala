@@ -1210,6 +1210,8 @@ case class PeerManager(
             val peerWithSvcs = peerData.peerWithServicesOpt.get
             val map = Vector((peerWithSvcs, peerData)).toMap
             val d = DoneSyncing(map, n.waitingForDisconnection, n.peerFinder)
+            logger.debug(
+              s"Sending ${n.cachedOutboundMessages.length} cached message to peer=$peer")
             val sendMsgsF = Future.traverse(n.cachedOutboundMessages)(m =>
               peerData.peerMessageSender.sendMsg(m.payload))
             val h = d.toHeaderSync(peer)
