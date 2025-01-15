@@ -583,29 +583,27 @@ class WalletSendingTest extends BitcoinSWalletTest {
       // i expected an error saying insufficient balance
 
       val addr1F = fundedWallet.wallet.getNewAddress()
-      val addr2F = fundedWallet.wallet.getNewAddress()
       val balanceF = fundedWallet.wallet.getBalance()
 
       val failedTx: Future[Unit] = for {
         balance <- balanceF
         addr1 <- addr1F
-        addr2 <- addr2F
         amt = balance - Satoshis(
           5000
         ) // for fee, fee rates are random so we might need a lot
 
         // build these transactions in parallel intentionally
-        tx1F = fundedWallet.wallet.sendFundsHandling.sendToAddress(
-          addr1,
-          amt,
-          Some(SatoshisPerVirtualByte.one))
-        tx2F = fundedWallet.wallet.sendFundsHandling.sendToAddress(
-          addr2,
-          amt,
-          Some(SatoshisPerVirtualByte.one))
-        // one of these should fail because we don't have enough money
-        _ <- tx1F
-        _ <- tx2F
+        outputs = Vector(TransactionOutput(amt, addr1.scriptPubKey))
+        _ <- fundedWallet.wallet.fundTxHandling.fundRawTransaction(
+          destinations = outputs,
+          feeRate = SatoshisPerVirtualByte.one,
+          fromTagOpt = None,
+          markAsReserved = true)
+        _ <- fundedWallet.wallet.fundTxHandling.fundRawTransaction(
+          destinations = outputs,
+          feeRate = SatoshisPerVirtualByte.one,
+          fromTagOpt = None,
+          markAsReserved = true)
       } yield ()
 
       val exnF: Future[RuntimeException] =
