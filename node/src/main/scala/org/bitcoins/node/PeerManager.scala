@@ -140,16 +140,6 @@ case class PeerManager(
       .upsertPeer(addrBytes, peer.port, networkByte, serviceIdentifier)
   }
 
-//  private def replacePeer(replacePeer: Peer, withPeer: Peer): Future[Unit] = {
-//    logger.debug(s"Replacing $replacePeer with $withPeer")
-//    for {
-//      _ <- disconnectPeer(replacePeer)
-//      _ <- connectPeer(withPeer)
-//    } yield {
-//      ()
-//    }
-//  }
-
   def disconnectPeer(peer: Peer): Future[Unit] = {
     logger.debug(s"Disconnecting persistent peer=$peer")
     queue.offer(InitializeDisconnect(peer)).map(_ => ())
@@ -851,7 +841,7 @@ case class PeerManager(
       state: NodeRunningState,
       stp: SendToPeer
   ): Future[NodeRunningState] = {
-    logger.info(s"sendToPeerHelper() stp=$stp state=$state")
+    logger.debug(s"sendToPeerHelper() stp=$stp state=$state")
     val nodeStateF: Future[NodeRunningState] = stp.peerOpt match {
       case Some(p) =>
         state
@@ -1223,7 +1213,7 @@ case class PeerManager(
         }
 
         addPeerF.flatMap { addPeer =>
-          if (availableFilterSlot) {
+          if (availableFilterSlot && notCfPeers.nonEmpty) {
             disconnectPeer(notCfPeers.head).map(_ => addPeer)
           } else {
             Future.successful(addPeer)
