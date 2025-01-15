@@ -45,7 +45,7 @@ trait DataMessageGenerator {
           .nonEmptyListOf(CryptoGenerators.doubleSha256Digest)
           .suchThat(_.length <= 500)
       stopHash <- CryptoGenerators.doubleSha256Digest
-    } yield GetBlocksMessage(protocol, hashes, stopHash)
+    } yield GetBlocksMessage(protocol, hashes.toVector, stopHash)
   }
 
   /** Generates a random [[org.bitcoins.core.p2p.GetHeadersMessage]]
@@ -59,7 +59,7 @@ trait DataMessageGenerator {
       numHashes <- Gen.choose(0, 2000)
       hashes <- CryptoGenerators.doubleSha256DigestSeq(numHashes)
       hashStop <- CryptoGenerators.doubleSha256Digest
-    } yield GetHeadersMessage(version, hashes, hashStop)
+    } yield GetHeadersMessage(version, hashes.toVector, hashStop)
 
   /** Generates a `getheaders` message with the default protocol version */
   def getHeaderDefaultProtocolMessage: Gen[GetHeadersMessage] = {
@@ -67,7 +67,7 @@ trait DataMessageGenerator {
       numHashes <- Gen.choose(0, 2000)
       hashes <- CryptoGenerators.doubleSha256DigestSeq(numHashes)
       hashStop <- CryptoGenerators.doubleSha256Digest
-    } yield GetHeadersMessage(hashes, hashStop)
+    } yield GetHeadersMessage(hashes.toVector, hashStop)
   }
 
   def headersMessage: Gen[HeadersMessage] =
@@ -108,12 +108,12 @@ trait DataMessageGenerator {
     for {
       numInventories <- Gen.choose(0, 500)
       inventories <- Gen.listOfN(numInventories, inventory)
-    } yield InventoryMessage(inventories)
+    } yield InventoryMessage(inventories.toVector)
 
   def notFoundMessage: Gen[NotFoundMessage] = {
     for {
       inventories <- Gen.nonEmptyListOf(inventory)
-    } yield NotFoundMessage(inventories)
+    } yield NotFoundMessage(inventories.toVector)
   }
 
   /** Generate a random [[org.bitcoins.core.p2p.GetDataMessage]]

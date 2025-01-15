@@ -566,7 +566,7 @@ case class DataMessageHandler(
       }
 
     for {
-      getData <- invsOptF.map(_.flatten).map(GetDataMessage(_))
+      getData <- invsOptF.map(_.flatten).map(i => GetDataMessage(i.toVector))
       _ <- peerMessageSenderApi.sendMsg(getData)
     } yield this
   }

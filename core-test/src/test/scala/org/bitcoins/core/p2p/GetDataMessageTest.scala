@@ -20,7 +20,7 @@ class GetDataMessageTest extends BitcoinSUnitTest {
 
   it must "be constructable from a single inventory" in {
     val inventory = Inventory(TypeIdentifier.MsgBlock, DoubleSha256Digest.empty)
-    assert(GetDataMessage(inventory) == GetDataMessage(Seq(inventory)))
+    assert(GetDataMessage(inventory) == GetDataMessage(Vector(inventory)))
   }
 
   it must "have a meaningful toString" in {

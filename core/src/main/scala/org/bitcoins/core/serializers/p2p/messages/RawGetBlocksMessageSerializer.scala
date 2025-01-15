@@ -25,7 +25,7 @@ trait RawGetBlocksMessageSerializer
     val (blockHashHeaders, remainingBytes) =
       parseBlockHeaders(blockHeaderBytesStopHash, hashCount)
     val stopHash = DoubleSha256Digest(remainingBytes.slice(0, 32))
-    GetBlocksMessage(version, hashCount, blockHashHeaders, stopHash)
+    GetBlocksMessage(version, hashCount, blockHashHeaders.toVector, stopHash)
   }
 
   def write(getBlocksMessage: GetBlocksMessage): ByteVector = {

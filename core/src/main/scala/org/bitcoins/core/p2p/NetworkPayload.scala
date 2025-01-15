@@ -80,7 +80,7 @@ trait GetBlocksMessage extends DataPayload with ExpectsResponse {
     * highest-height hashes are listed first and lowest-height hashes are listed
     * last.
     */
-  def blockHeaderHashes: Seq[DoubleSha256Digest]
+  def blockHeaderHashes: Vector[DoubleSha256Digest]
 
   /** The header hash of the last header hash being requested; set to all zeroes
     * to request an inv message with all subsequent header hashes (a maximum of
@@ -105,21 +105,21 @@ object GetBlocksMessage extends Factory[GetBlocksMessage] {
   private case class GetBlocksMessageImpl(
       protocolVersion: ProtocolVersion,
       hashCount: CompactSizeUInt,
-      blockHeaderHashes: Seq[DoubleSha256Digest],
+      blockHeaderHashes: Vector[DoubleSha256Digest],
       stopHash: DoubleSha256Digest)
       extends GetBlocksMessage
 
   def apply(
       version: ProtocolVersion,
       hashCount: CompactSizeUInt,
-      blockHeaderHashes: Seq[DoubleSha256Digest],
+      blockHeaderHashes: Vector[DoubleSha256Digest],
       stopHash: DoubleSha256Digest): GetBlocksMessage = {
     GetBlocksMessageImpl(version, hashCount, blockHeaderHashes, stopHash)
   }
 
   def apply(
       version: ProtocolVersion,
-      blockHeaderHashes: Seq[DoubleSha256Digest],
+      blockHeaderHashes: Vector[DoubleSha256Digest],
       stopHash: DoubleSha256Digest): GetBlocksMessage = {
     val hashCount = CompactSizeUInt(UInt64(blockHeaderHashes.length))
     GetBlocksMessage(version, hashCount, blockHeaderHashes, stopHash)
@@ -143,7 +143,7 @@ object GetBlocksMessage extends Factory[GetBlocksMessage] {
   */
 case class GetDataMessage(
     inventoryCount: CompactSizeUInt,
-    inventories: Seq[Inventory])
+    inventories: Vector[Inventory])
     extends DataPayload {
   override def commandName = NetworkPayload.getDataCommandName
 
@@ -166,13 +166,13 @@ object GetDataMessage extends Factory[GetDataMessage] {
     RawGetDataMessageSerializer.read(bytes)
   }
 
-  def apply(inventories: Seq[Inventory]): GetDataMessage = {
+  def apply(inventories: Vector[Inventory]): GetDataMessage = {
     val inventoryCount = CompactSizeUInt(UInt64(inventories.length))
     GetDataMessage(inventoryCount, inventories)
   }
 
   def apply(inventory: Inventory): GetDataMessage =
-    GetDataMessage(Seq(inventory))
+    GetDataMessage(Vector(inventory))
 }
 
 sealed trait ExpectsResponse {
@@ -199,7 +199,7 @@ sealed trait ExpectsResponse {
 trait GetHeadersMessage extends DataPayload with ExpectsResponse {
   def version: ProtocolVersion
   def hashCount: CompactSizeUInt
-  def hashes: Seq[DoubleSha256Digest]
+  def hashes: Vector[DoubleSha256Digest]
   def hashStop: DoubleSha256Digest
 
   override def commandName = NetworkPayload.getHeadersCommandName
@@ -223,7 +223,7 @@ object GetHeadersMessage extends Factory[GetHeadersMessage] {
   private case class GetHeadersMessageImpl(
       version: ProtocolVersion,
       hashCount: CompactSizeUInt,
-      hashes: Seq[DoubleSha256Digest],
+      hashes: Vector[DoubleSha256Digest],
       hashStop: DoubleSha256Digest)
       extends GetHeadersMessage
 
@@ -233,14 +233,14 @@ object GetHeadersMessage extends Factory[GetHeadersMessage] {
   def apply(
       version: ProtocolVersion,
       hashCount: CompactSizeUInt,
-      hashes: Seq[DoubleSha256Digest],
+      hashes: Vector[DoubleSha256Digest],
       hashStop: DoubleSha256Digest): GetHeadersMessage = {
     GetHeadersMessageImpl(version, hashCount, hashes, hashStop)
   }
 
   def apply(
       version: ProtocolVersion,
-      hashes: Seq[DoubleSha256Digest],
+      hashes: Vector[DoubleSha256Digest],
       hashStop: DoubleSha256Digest): GetHeadersMessage = {
     val hashCount = CompactSizeUInt(UInt64(hashes.length))
     GetHeadersMessage(version, hashCount, hashes, hashStop)
@@ -248,7 +248,7 @@ object GetHeadersMessage extends Factory[GetHeadersMessage] {
 
   /** Creates a [[GetHeadersMessage]] with the default protocol version */
   def apply(
-      hashes: Seq[DoubleSha256Digest],
+      hashes: Vector[DoubleSha256Digest],
       hashStop: DoubleSha256Digest): GetHeadersMessage = {
     GetHeadersMessage(ProtocolVersion.default, hashes, hashStop)
   }
@@ -260,7 +260,7 @@ object GetHeadersMessage extends Factory[GetHeadersMessage] {
     * @see
     *   [[https://bitcoin.org/en/developer-reference#getheaders]]
     */
-  def apply(hashes: Seq[DoubleSha256Digest]): GetHeadersMessage = {
+  def apply(hashes: Vector[DoubleSha256Digest]): GetHeadersMessage = {
     // The header hash of the last header hash being requested; set to all zeroes to request an inv message with all
     // subsequent header hashes (a maximum of 2000 will be sent as a reply to this message
     val hashStop = DoubleSha256Digest.empty
@@ -340,7 +340,7 @@ trait InventoryMessage extends DataPayload {
 
   /** One or more inventory entries up to a maximum of 50,000 entries.
     */
-  def inventories: Seq[Inventory]
+  def inventories: Vector[Inventory]
 
   override def commandName = NetworkPayload.invCommandName
 
@@ -379,7 +379,7 @@ object InventoryMessage extends Factory[InventoryMessage] {
 
   private case class InventoryMessageImpl(
       inventoryCount: CompactSizeUInt,
-      inventories: Seq[Inventory])
+      inventories: Vector[Inventory])
       extends InventoryMessage
 
   override def fromBytes(bytes: ByteVector): InventoryMessage =
@@ -387,11 +387,11 @@ object InventoryMessage extends Factory[InventoryMessage] {
 
   def apply(
       inventoryCount: CompactSizeUInt,
-      inventories: Seq[Inventory]): InventoryMessage = {
+      inventories: Vector[Inventory]): InventoryMessage = {
     InventoryMessageImpl(inventoryCount, inventories)
   }
 
-  def apply(inventories: Seq[Inventory]): InventoryMessage = {
+  def apply(inventories: Vector[Inventory]): InventoryMessage = {
     val count = CompactSizeUInt(UInt64(inventories.length))
     InventoryMessage(count, inventories)
   }
@@ -466,20 +466,20 @@ object NotFoundMessage extends Factory[NotFoundMessage] {
 
   private case class NotFoundMessageImpl(
       inventoryCount: CompactSizeUInt,
-      inventories: Seq[Inventory])
+      inventories: Vector[Inventory])
       extends NotFoundMessage
 
   def fromBytes(bytes: ByteVector): NotFoundMessage =
     RawNotFoundMessageSerializer.read(bytes)
 
-  def apply(inventories: Seq[Inventory]): NotFoundMessage = {
+  def apply(inventories: Vector[Inventory]): NotFoundMessage = {
     val count = CompactSizeUInt(UInt64(inventories.length))
     apply(count, inventories)
   }
 
   def apply(
       inventoryCount: CompactSizeUInt,
-      inventories: Seq[Inventory]): NotFoundMessage = {
+      inventories: Vector[Inventory]): NotFoundMessage = {
     NotFoundMessageImpl(inventoryCount, inventories)
   }
 }
