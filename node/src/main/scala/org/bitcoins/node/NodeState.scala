@@ -86,6 +86,8 @@ sealed trait NodeRunningState extends NodeState {
         case s: NodeState.NodeShuttingDown =>
           s.copy(peerWithServicesDataMap = peerWithServicesDataMap)
         case n: NodeState.NoPeers =>
+          require(n.cachedOutboundMessages.isEmpty,
+                  s"Have to send outbound messages")
           DoneSyncing(peerWithServicesDataMap,
                       n.waitingForDisconnection,
                       n.peerFinder)
@@ -270,6 +272,9 @@ sealed abstract class SyncNodeState extends NodeRunningState {
     sentQuery.isBefore(timeout)
   }
 
+  override def addPeer(peer: Peer): SyncNodeState =
+    super.addPeer(peer).asInstanceOf[SyncNodeState]
+
   override def toString: String = {
     s"${getClass.getSimpleName}(syncPeer=$syncPeer,peers=${peers},waitingForDisconnection=${waitingForDisconnection})"
   }
@@ -392,6 +397,9 @@ object NodeState {
         sentQuery = Instant.now()
       )
     }
+
+    override def addPeer(peer: Peer): DoneSyncing =
+      super.addPeer(peer).asInstanceOf[DoneSyncing]
   }
 
   /** means our node is in the process of shutting down */
@@ -423,7 +431,11 @@ object NodeState {
       DoneSyncing(peerWithServicesDataMap = map,
                   waitingForDisconnection = waitingForDisconnection,
                   peerFinder = peerFinder)
+
+    }
+
+    override def toString: String = {
+      s"NoPeers(waitingForDisconnection=$waitingForDisconnection,cachedMessages=${cachedOutboundMessages.length})"
     }
   }
-
 }
