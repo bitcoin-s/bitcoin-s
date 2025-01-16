@@ -1,7 +1,7 @@
 name: Release
 on:
   push:
-    branches: [master, main, 2025-01-16-upload-artifact-v4]
+    branches: [master, main]
     tags: ["*"]
   release:
     types: [ published ]
