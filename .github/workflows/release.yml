@@ -198,7 +198,7 @@ jobs:
           npm run build
       # Build Krystal Bull
       - name: Download bitcoin-s-oracle-server
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: bitcoin-s-oracle-server-${{ matrix.TARGET }}
           path: bitcoin-s-ts/oracle-electron-ts/bitcoin-s-oracle-server
@@ -325,7 +325,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Build Suredbits Wallet
       - name: Download bitcoin-s-server
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: bitcoin-s-server-${{ matrix.TARGET }}
           path: bitcoin-s-ts/wallet-electron-ts/bitcoin-s-server
