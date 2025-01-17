@@ -274,7 +274,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       duration: FiniteDuration = 1.second,
       maxTries: Int = 60,
       failFast: Boolean = true
-  )(implicit system: ActorSystem): Future[Unit] = {
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     awaitUntilOutgoingPaymentStatus[OutgoingPaymentStatus.Succeeded](
       client,
       paymentId,
@@ -290,7 +290,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       duration: FiniteDuration = 1.second,
       maxTries: Int = 60,
       failFast: Boolean = false
-  )(implicit system: ActorSystem): Future[Unit] = {
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     awaitUntilOutgoingPaymentStatus[OutgoingPaymentStatus.Failed](
       client,
       paymentId,
@@ -306,8 +306,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       interval: FiniteDuration,
       maxTries: Int,
       failFast: Boolean
-  )(implicit system: ActorSystem, tag: ClassTag[T]): Future[Unit] = {
-    import system.dispatcher
+  )(implicit ec: ExecutionContext, tag: ClassTag[T]): Future[Unit] = {
     logger.debug(
       s"Awaiting payment ${paymentId} to enter ${tag.runtimeClass.getName} state"
     )
@@ -338,7 +337,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         } else {
           true
         }
-      }(system.dispatcher)
+      }
     }
 
     TestAsyncUtil.retryUntilSatisfiedF(
@@ -483,13 +482,14 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
 
     channelIdF.flatMap { cid =>
       genF.flatMap { _ =>
-        // wait until our peer has put the channel in the
-        // NORMAL state so we can route payments to them
-        val normalF = client2F.flatMap(c2 =>
-          EclairRpcTestUtil.awaitUntilChannelNormal(c2, cid))
-
-        normalF.map(_ => cid)
-
+        // wait until channel is in
+        // NORMAL state on both sides so we can route payments bidirectionally
+        for {
+          c1 <- client1F
+          _ <- EclairRpcTestUtil.awaitUntilChannelNormal(c1, cid)
+          c2 <- client2F
+          _ <- EclairRpcTestUtil.awaitUntilChannelNormal(c2, cid)
+        } yield cid
       }
     }
   }
