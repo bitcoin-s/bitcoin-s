@@ -711,7 +711,6 @@ case class PeerManager(
                 Future.successful(state)
             }
         }
-
       case (state, HeaderTimeoutWrapper(peer)) =>
         logger.debug(s"Processing timeout header for $peer")
         state match {
