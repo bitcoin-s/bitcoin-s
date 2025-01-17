@@ -26,7 +26,8 @@ object Deps {
     val scalapb = "0.11.17"
     val akkav = "1.1.0"
     val playv = "3.0.4" // https://github.com/playframework/play-json/releases
-    val akkaStreamv = "1.1.0-M1"
+    val akkaStreamv = "1.1.3"
+    val pekkoGrpcV = "1.1.1"
     val jUnixSocketV = "2.10.1"
     val scodecV = "1.2.1"
     val junitV = "0.13.3"
@@ -123,7 +124,7 @@ object Deps {
       "org.apache.pekko" %% "pekko-testkit" % V.akkaActorV withSources () withJavadoc ()
 
     val pekkoGrpc =
-      "org.apache.pekko" %% "pekko-grpc-runtime" % V.akkaStreamv withSources () withJavadoc ()
+      "org.apache.pekko" %% "pekko-grpc-runtime" % V.pekkoGrpcV withSources () withJavadoc ()
 
     // https://mvnrepository.com/artifact/org.apache.ant/ant/
     val ant = "org.apache.ant" % "ant" % V.antV
