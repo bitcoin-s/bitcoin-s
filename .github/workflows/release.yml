@@ -75,7 +75,7 @@ jobs:
       #   shell: bash
       #   run: sbt "appServer / Universal / stage; appServer / Universal / packageBin"
       - name: Upload bitcoin-s-server
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
@@ -94,7 +94,7 @@ jobs:
       #   shell: bash
       #   run: sbt "oracleServer / Universal / stage; oracleServer / Universal / packageBin"
       - name: Upload bitcoin-s-oracle-server
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
@@ -113,7 +113,7 @@ jobs:
       #   shell: bash
       #   run: sbt "cli / Universal / stage; cli / Universal / packageBin"
       - name: Upload bitcoin-s-cli
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
@@ -198,7 +198,7 @@ jobs:
           npm run build
       # Build Krystal Bull
       - name: Download bitcoin-s-oracle-server
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: bitcoin-s-oracle-server-${{ matrix.TARGET }}
           path: bitcoin-s-ts/oracle-electron-ts/bitcoin-s-oracle-server
@@ -301,14 +301,14 @@ jobs:
       # Capture signed Mac app
       # - name: (macos) Upload krystalbull-mac-zip
       #   if: startsWith(matrix.os,'macos')
-      #   uses: actions/upload-artifact@v3
+      #   uses: actions/upload-artifact@v4
       #   env:
       #     pkg-version: ${{steps.previoustag.outputs.tag}}
       #   with:
       #     name: krystalbull-${{ matrix.TARGET }}-zip
       #     path: ${{env.KB_MAKE}}/zip/darwin/x64/*.zip
       - name: Upload krystalbull-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
@@ -325,7 +325,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Build Suredbits Wallet
       - name: Download bitcoin-s-server
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: bitcoin-s-server-${{ matrix.TARGET }}
           path: bitcoin-s-ts/wallet-electron-ts/bitcoin-s-server
@@ -393,14 +393,14 @@ jobs:
       # Capture signed Mac app
       # - name: (macos) Upload suredbits-wallet-mac-zip
       #   if: startsWith(matrix.os,'macos')
-      #   uses: actions/upload-artifact@v3
+      #   uses: actions/upload-artifact@v4
       #   env:
       #     pkg-version: ${{steps.previoustag.outputs.tag}}
       #   with:
       #     name: suredbits-wallet-${{ matrix.TARGET }}-zip
       #     path: ${{env.W_MAKE}}/zip/darwin/x64/*.zip
       - name: Upload suredbits-wallet-${{ matrix.TARGET }}-${{ matrix.FORMAT }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         env:
           pkg-version: ${{steps.previoustag.outputs.tag}}
         with:
