@@ -27,7 +27,7 @@ sealed trait PeerData {
 
   def peerMessageSender: PeerMessageSender
 
-  def stop(): Future[Done] = {
+  def disconnect(): Future[Done] = {
     peerConnection.disconnect()
   }
 

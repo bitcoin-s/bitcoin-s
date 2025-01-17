@@ -206,14 +206,14 @@ case class PeerManager(
 
     if (finder.hasPeer(peer)) {
       // one of the peers that we tried, failed to init within time, disconnect
-      finder.getPeerData(peer).get.stop().map(_ => ())
+      finder.getPeerData(peer).get.disconnect().map(_ => ())
     } else if (state.getPeerData(peer).isDefined) {
       // this is one of our persistent peers which must have been initialized earlier, this can happen in case of
       // a reconnection attempt, meaning it got connected but failed to initialize, disconnect
       state
         .getPeerData(peer)
         .get
-        .stop()
+        .disconnect()
         .map(_ => ())
     } else {
       // this should never happen
@@ -604,7 +604,7 @@ case class PeerManager(
                   updated
                     .replaceWaitingForDisconnection(newWaiting)
                 }
-              val stopF: Future[Done] = client.stop().recoverWith {
+              val stopF: Future[Done] = client.disconnect().recoverWith {
                 case scala.util.control.NonFatal(err) =>
                   logger.error(s"Failed to stop peer=${client.peer}", err)
                   Future.successful(Done)
@@ -693,7 +693,7 @@ case class PeerManager(
                       // got to disconnect it since it hasn't been promoted to a persistent peer
                       runningState.peerFinder.getPeerData(peer) match {
                         case Some(pd: AttemptToConnectPeerData) =>
-                          pd.stop().map(_ => runningState)
+                          pd.disconnect().map(_ => runningState)
                         case None | Some(_: PersistentPeerData) =>
                           Future.successful(runningState)
                       }
