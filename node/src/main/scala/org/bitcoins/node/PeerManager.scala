@@ -535,7 +535,7 @@ case class PeerManager(
               case d: DoneSyncing =>
                 d.randomPeer(
                   Set.empty,
-                  ServiceIdentifier.NODE_COMPACT_FILTERS
+                  ServiceIdentifier.NODE_NETWORK
                 ) match {
                   case Some(p) =>
                     val h =
@@ -842,6 +842,7 @@ case class PeerManager(
       stp: SendToPeer
   ): Future[NodeRunningState] = {
     logger.debug(s"sendToPeerHelper() stp=$stp state=$state")
+
     val nodeStateF: Future[NodeRunningState] = stp.peerOpt match {
       case Some(p) =>
         state
@@ -857,10 +858,11 @@ case class PeerManager(
               .map(_ => s)
           case x @ (_: DoneSyncing | _: MisbehavingPeer | _: NodeShuttingDown |
               _: RemovePeers) =>
+            val svcId = ServiceIdentifier.fromNetworkMessage(stp.msg)
             val pms = x
               .randomPeerMessageSender(
                 Set.empty,
-                ServiceIdentifier.NODE_COMPACT_FILTERS
+                svcId
               )
               .get
             pms
@@ -1092,7 +1094,7 @@ case class PeerManager(
     val svcIdentifier = ServiceIdentifier.NODE_COMPACT_FILTERS
     val syncPeerOpt = state match {
       case s: SyncNodeState =>
-        s.randomPeer(excludePeers = Set(s.syncPeer), svcIdentifier)
+        s.randomPeer(excludePeers = Set(s.syncPeer))
       case m: MisbehavingPeer =>
         m.randomPeer(excludePeers = Set(m.badPeer), svcIdentifier)
       case rm: RemovePeers =>

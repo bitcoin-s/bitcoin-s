@@ -10,6 +10,7 @@ import org.bitcoins.node.NodeState.{
   DoneSyncing,
   FilterHeaderSync,
   FilterSync,
+  HeaderSync,
   MisbehavingPeer,
   NodeShuttingDown,
   RemovePeers
@@ -231,12 +232,19 @@ sealed abstract class SyncNodeState extends NodeRunningState {
     * is not a new peer available
     */
   def replaceSyncPeer: Option[SyncNodeState] = {
-    randomPeer(
-      excludePeers = Set(syncPeer),
-      ServiceIdentifier.NODE_COMPACT_FILTERS
-    ).map { p =>
-      replaceSyncPeer(p)
+    val pOpt = this match {
+      case _: NodeState.HeaderSync =>
+        randomPeer(
+          excludePeers = Set(syncPeer),
+          ServiceIdentifier.NODE_NETWORK
+        )
+      case _: NodeState.FilterHeaderSync | _: NodeState.FilterSync =>
+        randomPeer(
+          excludePeers = Set(syncPeer),
+          ServiceIdentifier.NODE_COMPACT_FILTERS
+        )
     }
+    pOpt.map(replaceSyncPeer)
   }
 
   def toFilterHeaderSync: FilterHeaderSync = {
@@ -274,6 +282,15 @@ sealed abstract class SyncNodeState extends NodeRunningState {
 
   override def addPeer(peer: Peer): SyncNodeState =
     super.addPeer(peer).asInstanceOf[SyncNodeState]
+
+  def randomPeer(excludePeers: Set[Peer]): Option[Peer] = {
+    val svcId = this match {
+      case _: HeaderSync => ServiceIdentifier.NODE_NETWORK
+      case _: FilterHeaderSync | _: FilterSync =>
+        ServiceIdentifier.NODE_COMPACT_FILTERS
+    }
+    randomPeer(excludePeers, svcId)
+  }
 
   override def toString: String = {
     s"${getClass.getSimpleName}(syncPeer=$syncPeer,peers=${peers},waitingForDisconnection=${waitingForDisconnection})"
@@ -368,7 +385,7 @@ object NodeState {
       */
     def toHeaderSync: Option[HeaderSync] = {
       val syncPeerOpt =
-        randomPeer(Set.empty, ServiceIdentifier.NODE_COMPACT_FILTERS)
+        randomPeer(Set.empty, ServiceIdentifier.NODE_NETWORK)
       syncPeerOpt.map(toHeaderSync)
     }
 
