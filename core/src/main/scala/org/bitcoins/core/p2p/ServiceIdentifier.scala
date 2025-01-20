@@ -157,7 +157,7 @@ object ServiceIdentifier
     */
   val NODE_XTHIN: ServiceIdentifier = ServiceIdentifier(1 << 4)
 
-  val NODE_COMPACT_FILTERS = ServiceIdentifier(1 << 6)
+  val NODE_COMPACT_FILTERS: ServiceIdentifier = ServiceIdentifier(1 << 6)
 
   /** This means the same as `NODE_NETWORK` with the limitation of only serving
     * the last 288 (2 days) blocks
@@ -196,4 +196,34 @@ object ServiceIdentifier
   def apply(num: BigInt): ServiceIdentifier = ServiceIdentifier(UInt64(num))
 
   def apply(uInt64: UInt64): ServiceIdentifier = ServiceIdentifierImpl(uInt64)
+
+  def fromNetworkMessage(msg: NetworkMessage): ServiceIdentifier = {
+    fromNetworkPayload(msg.payload)
+  }
+
+  def fromNetworkPayload(payload: NetworkPayload): ServiceIdentifier = {
+    payload match {
+      case _: CompactFilterMessage | _: CompactFilterHeadersMessage |
+          _: GetCompactFilterHeadersMessage | _: GetCompactFiltersMessage |
+          _: CompactFilterCheckPointMessage |
+          _: GetCompactFilterCheckPointMessage =>
+        NODE_COMPACT_FILTERS
+      case _: GetHeadersMessage | _: HeadersMessage | SendHeadersMessage =>
+        NODE_NETWORK
+      case _: InventoryMessage => NODE_NETWORK
+      case _: MerkleBlockMessage | _: FilterAddMessage | FilterClearMessage |
+          _: FilterLoadMessage =>
+        NODE_BLOOM
+      case MemPoolMessage        => NODE_NETWORK
+      case _: TransactionMessage => NODE_NETWORK
+      case _: GossipAddrMessage | SendAddrV2Message | GetAddrMessage =>
+        NODE_NETWORK
+      case _: BlockMessage | _: GetBlocksMessage => NODE_NETWORK
+      case _: VersionMessage | VerAckMessage     => NODE_NETWORK
+      case _: PingMessage | _: PongMessage       => NODE_NETWORK
+      case _: RejectMessage                      => NODE_NETWORK
+      case _: FeeFilterMessage                   => NODE_NETWORK
+      case _: GetDataMessage                     => NODE_NETWORK
+    }
+  }
 }
