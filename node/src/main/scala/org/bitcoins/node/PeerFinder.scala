@@ -163,12 +163,19 @@ case class PeerFinder(
       _peersToTry.pushAll(pds, priority = 2)
 
       val peerDiscoveryF = if (nodeAppConfig.enablePeerDiscovery) {
-        val dnsF = getPeersFromDnsSeeds
         val startedF = for {
           (dbNonCfPeerDb, dbCfPeerDb) <- getPeersFromDb
+          dnsF = {
+            if (dbNonCfPeerDb.isEmpty && dbCfPeerDb.isEmpty) {
+              getPeersFromDnsSeeds
+            } else {
+              Future.successful(Vector.empty)
+            }
+          }
           dbNonCf = dbNonCfPeerDb.map(_.peer(nodeAppConfig.socks5ProxyParams))
           dbCf = dbCfPeerDb.map(_.peer(nodeAppConfig.socks5ProxyParams))
-          peersDbs <- dnsF.map(dns => dns ++ getPeersFromResources ++ dbNonCf)
+          dns <- dnsF
+          peersDbs = dns ++ getPeersFromResources ++ dbNonCf
         } yield {
           val pds = peersDbs.map(p => buildPeerData(p, isPersistent = false))
           _peersToTry.pushAll(pds)
