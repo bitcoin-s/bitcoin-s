@@ -28,9 +28,15 @@ object BitcoinSNodeUtil {
   )(implicit nodeAppConfig: NodeAppConfig): Vector[Peer] = {
     val formatStrings = addresses.map { s =>
       // assumes strings are valid, todo: add util functions to check fully for different addresses
-      if (s.count(_ == ':') > 1 && s(0) != '[') // ipv6
-        "[" + s + "]"
-      else s
+      val stripped = if (s.contains('#')) {
+        // for cases like 83.150.2.128:8333 # AS8758
+        s.split('#').head.trim
+      } else {
+        s
+      }
+      if (stripped.count(_ == ':') > 1 && stripped(0) != '[') // ipv6
+        "[" + stripped + "]"
+      else stripped
     }
     val inetSockets = formatStrings.map(
       NetworkUtil.parseInetSocketAddress(_, nodeAppConfig.network.port)
