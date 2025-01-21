@@ -1163,11 +1163,10 @@ case class PeerManager(
       c: ConnectPeer,
       runningState: NodeRunningState): Future[NodeRunningState] = {
     val peer = c.peer
-//    require(
-//      runningState.isDisconnected(peer),
-//      s"Cannot call handleConnectPeer() with a peer arleady connected! peer=$peer")
-    val hasCf = runningState.peerFinder
-      .getPeerData(peer)
+    val peerDataOpt = runningState.peerFinder.getPeerData(peer)
+    require(peerDataOpt.exists(_.peerWithServicesOpt.isDefined),
+            s"Could not find services for peer=$peer!")
+    val hasCf = peerDataOpt
       .exists(_.peerWithServicesOpt.exists(_.services.nodeCompactFilters))
     val notCfPeers = runningState.peerDataMap
       .filter(p => !p._2.serviceIdentifier.nodeCompactFilters)
@@ -1231,7 +1230,7 @@ case class PeerManager(
         _peerDataMap.put(peer, persistentPeerData)
       }
       logger.info(
-        s"Connected to peer $peer with compact filter support=$hasCf. Connected peer count ${runningState.peerDataMap.size} state=$newState"
+        s"Connected to peer $peer with compact filter support=$hasCf. Connected peer count ${newState.peerDataMap.size} state=$newState"
       )
       newState
     }
