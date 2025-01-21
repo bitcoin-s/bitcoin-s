@@ -473,13 +473,18 @@ case class RescanHandling(
       blocks: Vector[DoubleSha256DigestBE]
   ): Future[Unit] = {
     logger.debug(s"Requesting ${blocks.size} block(s)")
-    val subs = blocks.map(
-      transactionProcessing.subscribeForBlockProcessingCompletionSignal)
-    val downloadF = nodeApi.downloadBlocks(blocks)
-    for {
-      _ <- downloadF
-      _ <- Future.sequence(subs)
-    } yield ()
+    blocks.foldLeft(Future.unit) { (prevF, blockHash) =>
+      val completedF =
+        transactionProcessing.subscribeForBlockProcessingCompletionSignal(
+          blockHash)
+      for {
+        _ <- prevF
+        _ <- nodeApi.downloadBlocks(Vector(blockHash))
+        _ <- completedF
+      } yield {
+        ()
+      }
+    }
   }
 
   private def matchBlocks(
