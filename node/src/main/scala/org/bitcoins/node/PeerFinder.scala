@@ -132,6 +132,8 @@ case class PeerFinder(
 
   private val maxPeerSearchCount: Int = 8
 
+  private val maxStackPush: Int = maxPeerSearchCount * maxPeerSearchCount
+
   private val initialDelay: FiniteDuration = nodeAppConfig.tryPeersStartDelay
 
   private val isConnectionSchedulerRunning = new AtomicBoolean(false)
@@ -173,9 +175,12 @@ case class PeerFinder(
             }
           }
           dbNonCf = dbNonCfPeerDb.map(_.peer(nodeAppConfig.socks5ProxyParams))
-          dbCf = dbCfPeerDb.map(_.peer(nodeAppConfig.socks5ProxyParams))
+          dbCf = (dbCfPeerDb
+            .map(_.peer(nodeAppConfig.socks5ProxyParams)))
+            .take(maxStackPush)
           dns <- dnsF
-          peersDbs = dns ++ getPeersFromResources ++ dbNonCf
+          peersDbs = (dbNonCf ++ dns ++ getPeersFromResources).take(
+            maxStackPush)
         } yield {
           val pds = peersDbs.map(p => buildPeerData(p, isPersistent = false))
           _peersToTry.pushAll(pds)
@@ -367,8 +372,8 @@ case class PeerFinder(
         dbPeersDb <- dbPeersDbF
         dbPeers = dbPeersDb.map(_.peer(nodeAppConfig.socks5ProxyParams))
       } yield {
-        val pds = paramPeers.map(buildPeerData(_, true))
-        val dbPds = dbPeers.map(buildPeerData(_, false))
+        val pds = paramPeers.map(buildPeerData(_, isPersistent = true))
+        val dbPds = dbPeers.map(buildPeerData(_, isPersistent = false))
         _peersToTry.pushAll(pds ++ dbPds)
       }
 
