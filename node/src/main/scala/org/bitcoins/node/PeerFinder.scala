@@ -179,8 +179,16 @@ case class PeerFinder(
             .map(_.peer(nodeAppConfig.socks5ProxyParams)))
             .take(maxStackPush)
           dns <- dnsF
-          peersDbs = (dbNonCf ++ dns ++ getPeersFromResources).take(
-            maxStackPush)
+          peersDbs = {
+            if (dbNonCf.isEmpty) {
+              val shuffle = Random.shuffle(
+                (dns ++ getPeersFromResources).take(maxStackPush))
+              shuffle
+            } else {
+              (dbNonCf ++ getPeersFromResources).take(maxStackPush)
+            }
+
+          }
         } yield {
           val pds = peersDbs.map(p => buildPeerData(p, isPersistent = false))
           _peersToTry.pushAll(pds)
@@ -358,8 +366,9 @@ case class PeerFinder(
         getLastSeenBlockFilterPeers(dbSlots)
       val dnsPeersF = if (_peersToTry.size < maxPeerSearchCount) {
         val pdsF = getPeersFromDnsSeeds
-          .map { peers =>
-            val pds = peers.map(p => buildPeerData(p, isPersistent = false))
+          .map { dnsPeers =>
+            val shuffled = getPeersFromResources ++ dnsPeers
+            val pds = shuffled.map(p => buildPeerData(p, isPersistent = false))
             _peersToTry.pushAll(pds)
           }
           .map(_ => ())
