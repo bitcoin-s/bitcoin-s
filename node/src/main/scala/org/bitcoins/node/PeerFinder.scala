@@ -367,7 +367,7 @@ case class PeerFinder(
       val dnsPeersF = if (_peersToTry.size < maxPeerSearchCount) {
         val pdsF = getPeersFromDnsSeeds
           .map { dnsPeers =>
-            val shuffled = getPeersFromResources ++ dnsPeers
+            val shuffled = Random.shuffle(getPeersFromResources ++ dnsPeers)
             val pds = shuffled.map(p => buildPeerData(p, isPersistent = false))
             _peersToTry.pushAll(pds)
           }
