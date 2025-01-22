@@ -19,7 +19,14 @@ import org.apache.pekko.stream.scaladsl.{
   SourceQueueWithComplete
 }
 import org.bitcoins.core.api.node.{NodeType, Peer}
+import org.bitcoins.core.p2p.{
+  GetDataMessage,
+  Inventory,
+  NetworkMessage,
+  TypeIdentifier
+}
 import org.bitcoins.core.protocol.BlockStamp
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
 
 import java.time.Instant
@@ -167,6 +174,25 @@ case class NeutrinoNode(
       Future.successful(this)
     }
 
+  }
+
+  /** Fetches the given blocks from the peers and calls the appropriate
+    * Backpressures if the queue is full
+    */
+  override def downloadBlocks(
+      blockHashes: Vector[DoubleSha256DigestBE]
+  ): Future[Unit] = {
+    if (blockHashes.isEmpty) {
+      Future.unit
+    } else {
+      val typeIdentifier = TypeIdentifier.MsgWitnessBlock
+      val inventories =
+        blockHashes.map(hash => Inventory(typeIdentifier, hash.flip))
+      val message = GetDataMessage(inventories)
+      val networkMessage = NetworkMessage(nodeAppConfig.network, message)
+      offer(NodeStreamMessage.SendToPeer(networkMessage, None))
+        .map(_ => ())
+    }
   }
 
   /** Starts to sync our node with our peer If our local best block hash is the

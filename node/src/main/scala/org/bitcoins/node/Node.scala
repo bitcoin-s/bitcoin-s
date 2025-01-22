@@ -140,24 +140,6 @@ trait Node
     } yield ()
   }
 
-  /** Fetches the given blocks from the peers and calls the appropriate
-    * [[callbacks]] when done.
-    */
-  override def downloadBlocks(
-      blockHashes: Vector[DoubleSha256DigestBE]
-  ): Future[Unit] = {
-    if (blockHashes.isEmpty) {
-      Future.unit
-    } else {
-      val typeIdentifier = TypeIdentifier.MsgWitnessBlock
-      val inventories =
-        blockHashes.map(hash => Inventory(typeIdentifier, hash.flip))
-      val message = GetDataMessage(inventories)
-      peerManager.sendToRandomPeer(message)
-      Future.unit
-    }
-  }
-
   override def getConnectionCount: Future[Int] = {
     Future.successful(peerManager.connectedPeerCount)
   }
