@@ -175,9 +175,9 @@ case class PeerFinder(
             }
           }
           dbNonCf = dbNonCfPeerDb.map(_.peer(nodeAppConfig.socks5ProxyParams))
-          dbCf = (dbCfPeerDb
-            .map(_.peer(nodeAppConfig.socks5ProxyParams)))
+          dbCf = dbCfPeerDb
             .take(maxStackPush)
+            .map(_.peer(nodeAppConfig.socks5ProxyParams))
           dns <- dnsF
           peersDbs = {
             if (dbNonCf.isEmpty) {
