@@ -756,8 +756,9 @@ case class PeerManager(
                 waitingForDisconnection = r.waitingForDisconnection,
                 peerFinder = r.peerFinder
               )
-            Future
-              .traverse(r.peers)(disconnectPeer(_))
+            FutureUtil
+              .sequentially(r.peers)(
+                handleInitializeDisconnect(shutdownState, _))
               .map(_ => shutdownState)
 
         }
