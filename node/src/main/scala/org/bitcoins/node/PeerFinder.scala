@@ -5,8 +5,9 @@ import org.apache.pekko.stream.scaladsl.SourceQueue
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.node.{Peer, PeerManagerApi}
+import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3}
 import org.bitcoins.core.p2p.{ServiceIdentifier, VersionMessage}
-import org.bitcoins.core.util.{StartStopAsync}
+import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{PeerDAO, PeerDb}
 import org.bitcoins.node.networking.peer.{
@@ -71,13 +72,21 @@ case class PeerFinder(
     * https://github.com/bitcoin/bitcoin/blob/master/contrib/seeds/nodes_main.txt
     */
   private def getPeersFromResources: Vector[Peer] = {
-    val source = Source.fromURL(getClass.getResource("/hardcoded-peers.txt"))
-    val addresses = source
-      .getLines()
-      .toVector
-      .filter(nodeAppConfig.torConf.enabled || !_.contains(".onion"))
-    val peers = BitcoinSNodeUtil.stringsToPeers(addresses)
-    Random.shuffle(peers)
+    nodeAppConfig.network match {
+      case MainNet =>
+        val source =
+          Source.fromURL(getClass.getResource("/hardcoded-peers.txt"))
+        val addresses = source
+          .getLines()
+          .toVector
+          .filter(nodeAppConfig.torConf.enabled || !_.contains(".onion"))
+        val peers = BitcoinSNodeUtil.stringsToPeers(addresses)
+        Random.shuffle(peers)
+      case TestNet3 | RegTest | SigNet =>
+        Vector.empty
+
+    }
+
   }
 
   /** Returns tuple (non-filter peer, filter peers) from all peers stored in
