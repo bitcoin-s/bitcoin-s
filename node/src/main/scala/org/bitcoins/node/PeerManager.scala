@@ -13,15 +13,15 @@ import org.bitcoins.core.api.chain.db.{
   CompactFilterDb,
   CompactFilterHeaderDb
 }
-import org.bitcoins.core.api.node._
-import org.bitcoins.core.p2p._
-import org.bitcoins.core.util.StartStopAsync
+import org.bitcoins.core.api.node.*
+import org.bitcoins.core.p2p.*
+import org.bitcoins.core.util.{FutureUtil, StartStopAsync}
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.node.NodeState._
-import org.bitcoins.node.NodeStreamMessage._
+import org.bitcoins.node.NodeState.*
+import org.bitcoins.node.NodeStreamMessage.*
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{PeerDAO, PeerDAOHelper, PeerDb}
-import org.bitcoins.node.networking.peer._
+import org.bitcoins.node.networking.peer.*
 import org.bitcoins.node.util.PeerMessageSenderApi
 
 import java.time.Instant
@@ -549,50 +549,7 @@ case class PeerManager(
             }
         }
       case (state, i: InitializeDisconnect) =>
-        state match {
-          case running: NodeRunningState =>
-            if (running.waitingForDisconnection.exists(_ == i.peer)) {
-              logger.debug(
-                s"Attempting to intialize disconnect of peer=${i.peer} we are already waitingForDisconnection, state=$running"
-              )
-              Future.successful(running)
-            } else {
-              val client: PeerData =
-                running.getPeerData(i.peer) match {
-                  case Some(p) => p
-                  case None =>
-                    sys.error(
-                      s"Cannot find peer=${i.peer} for InitializeDisconnect=$i"
-                    )
-                }
-              // so we need to remove if from the map for connected peers so no more request could be sent to it but we before
-              // the actor is stopped we don't delete it to ensure that no such case where peers is deleted but actor not stopped
-              // leading to a memory leak may happen
-
-              // now send request to stop actor which will be completed some time in future
-              val _ = _peerDataMap.remove(i.peer)
-              val newStateF =
-                onDisconnectNodeStateUpdate(
-                  state = running,
-                  disconnectedPeer = i.peer,
-                  forceReconnect = false
-                ).map { updated =>
-                  val newWaiting = updated.waitingForDisconnection.+(i.peer)
-                  updated
-                    .replaceWaitingForDisconnection(newWaiting)
-                }
-              val stopF: Future[Done] = client.disconnect().recoverWith {
-                case scala.util.control.NonFatal(err) =>
-                  logger.error(s"Failed to stop peer=${client.peer}", err)
-                  Future.successful(Done)
-              }
-
-              stopF.flatMap { _ =>
-                newStateF
-              }
-            }
-        }
-
+        handleInitializeDisconnect(state, i.peer)
       case (state, DataMessageWrapper(payload, peer)) =>
         logger.debug(s"Got ${payload.commandName} from peer=${peer} in stream")
         state match {
@@ -624,8 +581,11 @@ case class PeerManager(
                         }
                       case removePeers: RemovePeers =>
                         for {
-                          _ <- Future.traverse(removePeers.peers)(
-                            disconnectPeer
+                          // don't do this with Future.traverse for now
+                          // due to underlying mututability with _peerDataMap
+                          // and PeerFinder._peerData
+                          _ <- FutureUtil.sequentially(removePeers.peers)(
+                            handleInitializeDisconnect(state, _)
                           )
                         } yield newDmh.state
                       case x @ (_: SyncNodeState | _: DoneSyncing |
@@ -1209,6 +1169,54 @@ case class PeerManager(
         s"Connected to peer $peer with compact filter support=$hasCf. Connected peer count ${newState.peerDataMap.size} state=$newState"
       )
       newState
+    }
+  }
+
+  private def handleInitializeDisconnect(
+      state: NodeState,
+      peer: Peer): Future[NodeRunningState] = {
+    state match {
+      case running: NodeRunningState =>
+        if (running.waitingForDisconnection.exists(_ == peer)) {
+          logger.debug(
+            s"Attempting to intialize disconnect of peer=${peer} we are already waitingForDisconnection, state=$running"
+          )
+          Future.successful(running)
+        } else {
+          val client: PeerData =
+            running.getPeerData(peer) match {
+              case Some(p) => p
+              case None =>
+                sys.error(
+                  s"Cannot find peer=${peer} for InitializeDisconnect=${peer}"
+                )
+            }
+          // so we need to remove if from the map for connected peers so no more request could be sent to it but we before
+          // the actor is stopped we don't delete it to ensure that no such case where peers is deleted but actor not stopped
+          // leading to a memory leak may happen
+
+          // now send request to stop actor which will be completed some time in future
+          val _ = _peerDataMap.remove(peer)
+          val newStateF =
+            onDisconnectNodeStateUpdate(
+              state = running,
+              disconnectedPeer = peer,
+              forceReconnect = false
+            ).map { updated =>
+              val newWaiting = updated.waitingForDisconnection.+(peer)
+              updated
+                .replaceWaitingForDisconnection(newWaiting)
+            }
+          val stopF: Future[Done] = client.disconnect().recoverWith {
+            case scala.util.control.NonFatal(err) =>
+              logger.error(s"Failed to stop peer=${client.peer}", err)
+              Future.successful(Done)
+          }
+
+          stopF.flatMap { _ =>
+            newStateF
+          }
+        }
     }
   }
 }
