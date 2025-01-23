@@ -222,29 +222,6 @@ case class PeerManager(
     }
   }
 
-  /** Helper method to determine what action to take after a peer is
-    * initialized, such as beginning sync with that peer
-    */
-  private def managePeerAfterInitialization(
-      state: NodeRunningState,
-      peer: Peer
-  ): Future[NodeRunningState] = {
-    val curPeerDataOpt = state.peerFinder.getPeerData(peer)
-    require(
-      curPeerDataOpt.isDefined,
-      s"Could not find peer=$peer in PeerFinder!"
-    )
-
-    val stateAndOfferF: (NodeRunningState, Future[Unit]) =
-      (state, connectPeer(peer))
-
-    stateAndOfferF._2.failed.foreach(err =>
-      logger.error(s"Failed managePeerAfterInitialization() offer to queue",
-                   err))
-
-    Future.successful(stateAndOfferF._1)
-  }
-
   private def onInitialization(
       peer: Peer,
       state: NodeRunningState
@@ -268,7 +245,7 @@ case class PeerManager(
         for {
           _ <- peerData.peerMessageSender.sendGetAddrMessage()
           _ <- createInDb(peer, peerData.serviceIdentifier)
-          newState <- managePeerAfterInitialization(state, peer)
+          newState <- handleConnectPeer(peer, state)
         } yield {
           require(
             !finder.hasPeer(peer) || !state.getPeerData(peer).isDefined,
@@ -568,7 +545,7 @@ case class PeerManager(
               val connectF = runningState.peerFinder.connect(c.peer)
               connectF.map(_ => runningState)
             } else {
-              handleConnectPeer(c = c, runningState = runningState)
+              handleConnectPeer(peer, runningState = runningState)
             }
         }
       case (state, i: InitializeDisconnect) =>
@@ -1160,9 +1137,8 @@ case class PeerManager(
   }
 
   private def handleConnectPeer(
-      c: ConnectPeer,
+      peer: Peer,
       runningState: NodeRunningState): Future[NodeRunningState] = {
-    val peer = c.peer
     val peerDataOpt = runningState.peerFinder.getPeerData(peer)
     require(peerDataOpt.exists(_.peerWithServicesOpt.isDefined),
             s"Could not find services for peer=$peer!")
