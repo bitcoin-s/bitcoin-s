@@ -549,7 +549,7 @@ case class PeerManager(
             }
         }
       case (state, i: InitializeDisconnect) =>
-        handleInitializeDisconnect(state, i.peer)
+        handleInitializeDisconnect(i.peer, state)
       case (state, DataMessageWrapper(payload, peer)) =>
         logger.debug(s"Got ${payload.commandName} from peer=${peer} in stream")
         state match {
@@ -582,10 +582,10 @@ case class PeerManager(
                       case removePeers: RemovePeers =>
                         for {
                           // don't do this with Future.traverse for now
-                          // due to underlying mututability with _peerDataMap
+                          // due to underlying mutability with _peerDataMap
                           // and PeerFinder._peerData
                           _ <- FutureUtil.sequentially(removePeers.peers)(
-                            handleInitializeDisconnect(state, _)
+                            handleInitializeDisconnect(_, state)
                           )
                         } yield newDmh.state
                       case x @ (_: SyncNodeState | _: DoneSyncing |
@@ -756,9 +756,12 @@ case class PeerManager(
                 waitingForDisconnection = r.waitingForDisconnection,
                 peerFinder = r.peerFinder
               )
+            // don't do this with Future.traverse for now
+            // due to underlying mutability with _peerDataMap
+            // and PeerFinder._peerData
             FutureUtil
               .sequentially(r.peers)(
-                handleInitializeDisconnect(shutdownState, _))
+                handleInitializeDisconnect(_, shutdownState))
               .map(_ => shutdownState)
 
         }
@@ -1174,11 +1177,11 @@ case class PeerManager(
   }
 
   private def handleInitializeDisconnect(
-      state: NodeState,
-      peer: Peer): Future[NodeRunningState] = {
+      peer: Peer,
+      state: NodeState): Future[NodeRunningState] = {
     state match {
       case running: NodeRunningState =>
-        if (running.waitingForDisconnection.exists(_ == peer)) {
+        if (running.waitingForDisconnection.contains(peer)) {
           logger.debug(
             s"Attempting to intialize disconnect of peer=${peer} we are already waitingForDisconnection, state=$running"
           )
@@ -1192,11 +1195,7 @@ case class PeerManager(
                   s"Cannot find peer=${peer} for InitializeDisconnect=${peer}"
                 )
             }
-          // so we need to remove if from the map for connected peers so no more request could be sent to it but we before
-          // the actor is stopped we don't delete it to ensure that no such case where peers is deleted but actor not stopped
-          // leading to a memory leak may happen
 
-          // now send request to stop actor which will be completed some time in future
           val _ = _peerDataMap.remove(peer)
           val newStateF =
             onDisconnectNodeStateUpdate(
