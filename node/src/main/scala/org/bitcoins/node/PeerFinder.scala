@@ -5,8 +5,9 @@ import org.apache.pekko.stream.scaladsl.SourceQueue
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.node.{Peer, PeerManagerApi}
+import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3}
 import org.bitcoins.core.p2p.{ServiceIdentifier, VersionMessage}
-import org.bitcoins.core.util.{StartStopAsync}
+import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.{PeerDAO, PeerDb}
 import org.bitcoins.node.networking.peer.{
@@ -71,13 +72,21 @@ case class PeerFinder(
     * https://github.com/bitcoin/bitcoin/blob/master/contrib/seeds/nodes_main.txt
     */
   private def getPeersFromResources: Vector[Peer] = {
-    val source = Source.fromURL(getClass.getResource("/hardcoded-peers.txt"))
-    val addresses = source
-      .getLines()
-      .toVector
-      .filter(nodeAppConfig.torConf.enabled || !_.contains(".onion"))
-    val peers = BitcoinSNodeUtil.stringsToPeers(addresses)
-    Random.shuffle(peers)
+    nodeAppConfig.network match {
+      case MainNet =>
+        val source =
+          Source.fromURL(getClass.getResource("/hardcoded-peers.txt"))
+        val addresses = source
+          .getLines()
+          .toVector
+          .filter(nodeAppConfig.torConf.enabled || !_.contains(".onion"))
+        val peers = BitcoinSNodeUtil.stringsToPeers(addresses)
+        Random.shuffle(peers)
+      case TestNet3 | RegTest | SigNet =>
+        Vector.empty
+
+    }
+
   }
 
   /** Returns tuple (non-filter peer, filter peers) from all peers stored in
@@ -132,6 +141,8 @@ case class PeerFinder(
 
   private val maxPeerSearchCount: Int = 8
 
+  private val maxStackPush: Int = maxPeerSearchCount * maxPeerSearchCount
+
   private val initialDelay: FiniteDuration = nodeAppConfig.tryPeersStartDelay
 
   private val isConnectionSchedulerRunning = new AtomicBoolean(false)
@@ -173,9 +184,20 @@ case class PeerFinder(
             }
           }
           dbNonCf = dbNonCfPeerDb.map(_.peer(nodeAppConfig.socks5ProxyParams))
-          dbCf = dbCfPeerDb.map(_.peer(nodeAppConfig.socks5ProxyParams))
+          dbCf = dbCfPeerDb
+            .take(maxStackPush)
+            .map(_.peer(nodeAppConfig.socks5ProxyParams))
           dns <- dnsF
-          peersDbs = dns ++ getPeersFromResources ++ dbNonCf
+          peersDbs = {
+            if (dbNonCf.isEmpty) {
+              val shuffle = Random.shuffle(
+                (dns ++ getPeersFromResources).take(maxStackPush))
+              shuffle
+            } else {
+              (dbNonCf ++ getPeersFromResources).take(maxStackPush)
+            }
+
+          }
         } yield {
           val pds = peersDbs.map(p => buildPeerData(p, isPersistent = false))
           _peersToTry.pushAll(pds)
@@ -353,8 +375,9 @@ case class PeerFinder(
         getLastSeenBlockFilterPeers(dbSlots)
       val dnsPeersF = if (_peersToTry.size < maxPeerSearchCount) {
         val pdsF = getPeersFromDnsSeeds
-          .map { peers =>
-            val pds = peers.map(p => buildPeerData(p, isPersistent = false))
+          .map { dnsPeers =>
+            val shuffled = Random.shuffle(getPeersFromResources ++ dnsPeers)
+            val pds = shuffled.map(p => buildPeerData(p, isPersistent = false))
             _peersToTry.pushAll(pds)
           }
           .map(_ => ())
@@ -367,8 +390,8 @@ case class PeerFinder(
         dbPeersDb <- dbPeersDbF
         dbPeers = dbPeersDb.map(_.peer(nodeAppConfig.socks5ProxyParams))
       } yield {
-        val pds = paramPeers.map(buildPeerData(_, true))
-        val dbPds = dbPeers.map(buildPeerData(_, false))
+        val pds = paramPeers.map(buildPeerData(_, isPersistent = true))
+        val dbPds = dbPeers.map(buildPeerData(_, isPersistent = false))
         _peersToTry.pushAll(pds ++ dbPds)
       }
 
