@@ -10,8 +10,8 @@ If you are a typescript developer, [you can access the backend via our typescrip
 
 # Executive Summary
 
-This release updates our RPC support, adds descriptors to `core` and updated our build to work towards support of scala3.
-
+This release adds taproot keypath signing support. You can enable this with `bitcoin-s.wallet.purpose=taproot` in your `bitcoin-s.conf`.
+This release improves wallet performance and reliability and fixes various deadlocking issuese in the `node/` module.
 ## Running bitcoin-s
 
 If you want to run the standalone server binary, after verifying gpg signatures, you
@@ -77,6 +77,8 @@ https://oss.sonatype.org/content/repositories/snapshots/org/bitcoin-s/
 
 ## App server
 
+The app server no longer runs on tor by default.
+
 2315f50075 appServer: Disable tor by default (#5876)
 6ef926b481 appServer: Revert logback.xml (#5857)
 788b99c184 refactor: Improve bitcoind wallet polling logic (#5834)
@@ -93,12 +95,16 @@ bc09757f8c Remove WalletHolder parameter from DLCWalletLoaderApi.loadWallet() (#
 
 ## bitcoind rpc
 
+Add support for v28 of bitcoind.
+
 f85953e527 2024 10 13 rm bitcoind v25 support (#5707)
 38f0f4d692 2024 10 07 v28 bitcoind (#5696)
 38850d22e3 2024 07 31 bitcoind callbacks (#5631)
 dad7e1cef6 Add support for bitcoind 27.1 (#5609)
 
 ## Build
+
+We are now source compatible with scala3.
 
 e55e832932 2025 01 16 Upgrade download/upload artifact to v4 (#5864)
 ba4d21c495 Try pinning CI image to ubuntu 22.04 for now as a workaround until `setup-java` supports `sbt` installation (#5843)
@@ -125,6 +131,10 @@ ab6d3f5cb7 Pull over simple syntax changes for scala3 libraries (#5719)
 ## clightning rpc
 
 ## Core
+
+Add support for taproot keypath signing.
+Add the ability to generate digital signatures with a specific hash type.
+Modify collection types used in core from `Seq` -> `Vector`.
 
 07270ba8ca core: Rework NetworkPayload traits to use Vector instead of Seq for methods (#5845)
 d1618a2277 Add unit test for RescanState to test recursive rescans correctly (#5786)
@@ -183,6 +193,9 @@ bbac2590ff Bump to lnd 18.x (#5695)
 
 ## node
 
+Fix various deadlock scenarios in `node`.
+This release also significantly improves startup performance of the node.
+
 52040da386 node: Fix bug where we we could have more connections than allowed by `bitcoin-s.node.maxConnectedPeers` (#5885)
 6a51b7c103 node: Limit initial stack push in `PeerFinder.start()` to `maxSearchCount^2` (#5882)
 baa4ddf166 2025 01 23 issue 5878 (#5883)
@@ -202,6 +215,12 @@ cbccecf95d Add caveat for `ConnectPeer` logic to only attempt to sync from a pee
 490e0217f1 Add payload to query timeout log (#5660)
 
 ## wallet
+
+Add taproot keypath utxo handling to wallet. This can enabled with `bitcoin-s.wallet.purpose=taproot`.
+This release renames the configuration option `bitcoin-s.wallet.defaultAccountType` -> `bitcoin-s.wallet.purpose`.
+This release improves performance of the wallet by making processing of blocks and transactions transctional at the database level.
+This release makes the wallet have a collection of `has-a` relationships rather than `is-a` relationships
+making the wallet much more modular.
 
 57860d74d0 wallet: Batch requests for blocks during rescan (#5866)
 425fb234e2 wallet: Try to avoid spurious failures on WalletSendingTest double spending test (#5846)
