@@ -43,7 +43,7 @@ This link is intended for setting up development of bitcoin-s. If you want to ju
 
 ### Adding bitcoin-s to your library
 
-The latest release of bitcoin-s is `1.9.9`, here is how you can use the dependencies in your projects:
+The latest release of bitcoin-s is `1.9.10`, here is how you can use the dependencies in your projects:
 
 ```
 libraryDependencies += "org.bitcoin-s" % "bitcoin-s-secp256k1jni" % "1.9.10"
