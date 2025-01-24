@@ -77,6 +77,8 @@ https://oss.sonatype.org/content/repositories/snapshots/org/bitcoin-s/
 
 ## App server
 
+2315f50075 appServer: Disable tor by default (#5876)
+6ef926b481 appServer: Revert logback.xml (#5857)
 788b99c184 refactor: Improve bitcoind wallet polling logic (#5834)
 1423f2c91e appServer: Add missing `server.stop()` in `BitcoinSServerMainBitcoindTest` (#5831)
 f280f35431 Replace Future[Wallet] -> Wallet parameter in {BitcoinSWalletTest, BitcoindRpcBackendUtil} (#5796)
@@ -98,6 +100,8 @@ dad7e1cef6 Add support for bitcoind 27.1 (#5609)
 
 ## Build
 
+e55e832932 2025 01 16 Upgrade download/upload artifact to v4 (#5864)
+ba4d21c495 Try pinning CI image to ubuntu 22.04 for now as a workaround until `setup-java` supports `sbt` installation (#5843)
 30663fe622 Remove scala version speicfic build code (#5737)
 29f10d046c Turn on -Xlint (#5728)
 88125a3575 Remove .jvmopts file comments, they do not work on ubuntu (#5730)
@@ -122,6 +126,7 @@ ab6d3f5cb7 Pull over simple syntax changes for scala3 libraries (#5719)
 
 ## Core
 
+07270ba8ca core: Rework NetworkPayload traits to use Vector instead of Seq for methods (#5845)
 d1618a2277 Add unit test for RescanState to test recursive rescans correctly (#5786)
 fb318efe5e core: Fix bug where we weren't checking for valid hash types in `TaprootKeyPath.isValid()` (#5780)
 b6cc97a663 2024 11 20 prevoutmap ordering (#5776)
@@ -166,6 +171,8 @@ feeb2618d6 Move DLCDAOs to src (#5652)
 
 ## fee rate
 
+3925098872 feeProvider: Ignore bitcoiner.live as site seems to be down (#5854)
+
 ## keymanager
 
 ## Lnd rpc
@@ -176,6 +183,16 @@ bbac2590ff Bump to lnd 18.x (#5695)
 
 ## node
 
+52040da386 node: Fix bug where we we could have more connections than allowed by `bitcoin-s.node.maxConnectedPeers` (#5885)
+6a51b7c103 node: Limit initial stack push in `PeerFinder.start()` to `maxSearchCount^2` (#5882)
+baa4ddf166 2025 01 23 issue 5878 (#5883)
+40fef6e508 node: Add invariant we have peerServices when we cann PeerManager.handleConnect() (#5880)
+fa4c2868ee node: Update `hardcoded-peers.txt` with whats in `bitcoin/contrib/seeds/nodes_main.txt` (#5877)
+9adbd88f69 node: Only query p2p seeds if we have no peers in our database (#5875)
+3bf7e6a39e node: Use approprate ServiceIdentifer throughout node/ module (#5874)
+85cc536cd5 node: Rename PeerData.stop() -> PeerData.disconnect() (#5867)
+4f0c3da303 node: Fix bug where we were dropping cached outbound messages on the floor (#5853)
+a94fc3a92d node: Add `PeerStackTest`, fix bug where we could have the same ip address multiple times in `PeerStack` (#5848)
 4d9c52c75c node: Move killswitch downstream to avoid queue deadlocks (#5819)
 812f735110 node: Update DNS seeds, optimize `PeerFinder.start()` to start querying… (#5807)
 eb6edab240 Add `NodeState.NoPeers`, cache network messages (#5800)
@@ -186,6 +203,8 @@ cbccecf95d Add caveat for `ConnectPeer` logic to only attempt to sync from a pee
 
 ## wallet
 
+57860d74d0 wallet: Batch requests for blocks during rescan (#5866)
+425fb234e2 wallet: Try to avoid spurious failures on WalletSendingTest double spending test (#5846)
 43efce500d tests: Cleanup `BitcoindBlockPollingTest` producing ERROR logs during test fixture destruction (#5829)
 b9616066f2 wallet: Refactor {UTXOHandlingApi,AccountHandlingApi,AddressHandlingApi} to use 'get' prefix rather than 'list' prefix for method names (#5828)
 25517265fe wallet: Reduce noisy DEBUG log (#5820)
@@ -224,6 +243,7 @@ e68ebeadbc refactor: Create `UtxoHandlingApi`, move to has-a relationship within
 
 ## testkit
 
+7ee8895853 testkit: Make sure channel is in NORMAL state for both peers in `openAndConfirmChannel()` (#5868)
 345ab017e5 testkit: Randomize defaultAccountType (purpose) in tests (#5775)
 65e67287f8 2024 10 21 Replace `Future.sequence()` usage with `Future.traverse()` (#5732)
 2d87129978 Reduce BitcoindRpcTestUtil.awaitConnection() interval from 10.second -> 1.second (#5703)
@@ -244,6 +264,22 @@ e45860af90 Docs: README (#5751)
 
 ## Dependencies
 
+ce868801ce Update sbt-scalajs, scalajs-compiler, ... to 1.18.2 (#5886)
+84dcc8f916 Update sbt-bloop to 2.0.8 (#5881)
+4b01abe064 Update flyway-core, ... to 11.2.0 (#5870)
+093598ab7f Update sbt-assembly to 2.3.1 (#5873)
+a911d53eae Update sbt-mdoc to 2.6.2 (#5809)
+9aca249eb6 Update pekko-grpc-runtime, ... to 1.1.1 (#5766)
+09d7f7a7aa Update scala-library to 2.13.16 (#5862)
+2ef1eec88b Update sqlite-jdbc to 3.48.0.0 (#5863)
+0a376afc99 Update bcprov-jdk18on to 1.80 (#5860)
+b9510776bc Update postgresql to 42.7.5 (#5861)
+d5083feda6 Update metrics-core, metrics-healthchecks, ... to 4.2.30 (#5859)
+326c851dec Update sbt-bloop to 2.0.7 (#5858)
+b2addd539c Update sbt-scalajs, scalajs-compiler, ... to 1.18.1 (#5841)
+1c96d89d42 Update logback-classic to 1.5.16 (#5837)
+4a8e48da37 Update flyway-core, ... to 11.1.1 (#5839)
+2110132d7b Update sbt-native-packager to 1.11.0 (#5838)
 6af79f9ed5 Update sqlite-jdbc to 3.47.2.0 (#5836)
 dee3a1cdee Update waffle-jna to 3.5.1 (#5832)
 bab9fe0b2e Update scalamock to 6.1.1 (#5833)
