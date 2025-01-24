@@ -1193,6 +1193,7 @@ case class PeerManager(
           )
           Future.successful(running)
         } else {
+          logger.info(s"Initializing disconnect for peer=$peer state=$state")
           val client: PeerData =
             running.getPeerData(peer) match {
               case Some(p) => p
