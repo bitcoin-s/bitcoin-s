@@ -575,7 +575,7 @@ case class PeerManager(
                       case m: MisbehavingPeer =>
                         // disconnect the misbehaving peer
                         for {
-                          _ <- disconnectPeer(m.badPeer)
+                          _ <- handleInitializeDisconnect(m.badPeer, m)
                         } yield {
                           runningState
                         }
@@ -1111,9 +1111,10 @@ case class PeerManager(
     val notCfPeers = runningState.peerDataMap
       .filter(p => !p._2.serviceIdentifier.nodeCompactFilters)
       .keys
-    val availableFilterSlot = hasCf && notCfPeers.nonEmpty
     val hasConnectionSlot =
       runningState.connectedPeerCount < nodeAppConfig.maxConnectedPeers
+    val availableFilterSlot = hasCf && notCfPeers.nonEmpty
+
     val newStateF: Future[NodeRunningState] = {
       if (hasConnectionSlot || availableFilterSlot) {
         val addPeerF: Future[NodeRunningState] = runningState match {
@@ -1155,13 +1156,18 @@ case class PeerManager(
 
         addPeerF.flatMap { addPeer =>
           if (availableFilterSlot && notCfPeers.nonEmpty) {
-            disconnectPeer(notCfPeers.head).map(_ => addPeer)
+            handleInitializeDisconnect(peer = notCfPeers.head, state = addPeer)
           } else {
             Future.successful(addPeer)
           }
         }
       } else {
-        Future.successful(runningState)
+        // we don't have a connection slot or a filter slot
+        // for this peer so disconnect it
+        peerDataOpt
+          .map(_.disconnect())
+          .map(f => f.map(_ => runningState))
+          .getOrElse(Future.successful(runningState))
       }
     }
 
