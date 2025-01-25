@@ -76,7 +76,7 @@ https://oss.sonatype.org/content/repositories/snapshots/org/bitcoin-s/
 6b12bb515d Rework `NativeProcessFactory.cmd` to be `Vector[String]` (#5623)
 
 ## App server
-
+Also renames `listreservedutxos` RPC endpoint to `getreservedutxos` (43b75ccfd8f039ea4bcb25d7d1fa56c76c5b2883)
 The app server no longer runs on tor by default.
 
 2315f50075 appServer: Disable tor by default (#5876)
