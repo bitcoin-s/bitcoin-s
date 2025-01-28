@@ -23,7 +23,7 @@ TaskKeys.downloadBitcoind := {
   }
 
   val versions =
-    List("28.0", "27.1", "26.1")
+    List("28.1", "27.2", "26.1")
 
   logger.debug(
     s"(Maybe) downloading Bitcoin Core binaries for versions: ${versions.mkString(",")}")
@@ -95,8 +95,8 @@ TaskKeys.downloadBitcoind := {
           if (Properties.isLinux)
             Map(
               "26.1" -> "a5b7d206384a8100058d3f2e2f02123a8e49e83f523499e70e86e121a4897d5b",
-              "27.1" -> "c9840607d230d65f6938b81deaec0b98fe9cb14c3a41a5b13b2c05d044a48422",
-              "28.0" -> "7fe294b02b25b51acb8e8e0a0eb5af6bbafa7cd0c5b0e5fcbb61263104a82fbc"
+              "27.2" -> "acc223af46c178064c132b235392476f66d486453ddbd6bca6f1f8411547da78",
+              "28.1" -> "07f77afd326639145b9ba9562912b2ad2ccec47b8a305bd075b4f4cb127b7ed7"
             )
           else if (Properties.isMac)
             Map(
@@ -104,20 +104,20 @@ TaskKeys.downloadBitcoind := {
                 "8a8e415763b7ffd5988153cf03967d812eca629016dd3b0ddf6da3ab6f4a3621"
               else
                 "acb50edd20692a9d023de12da573b64ca0fd9b4e9a2b88d1251020a3022b0f27"),
-              "27.1" -> (if (System.getProperty("os.arch") == "aarch64")
-                "ad4a3fd484077224a82dd56d194efb6e614467f413ab1dfb8776da4d08a4c227"
+              "27.2" -> (if (System.getProperty("os.arch") == "aarch64")
+                "8f2247f4786f3559d37189b58452c91623efc5fa6886c975fa9386f9ff3f1001"
               else
                 "e1efd8c4605b2aabc876da93b6eee2bedd868ce7d1f02b0220c1001f903b3e2c"),
-            "28.0" -> (if (System.getProperty("os.arch") == "aarch64")
-              "c8108f30dfcc7ddffab33f5647d745414ef9d3298bfe67d243fe9b9cb4df4c12"
+            "28.1" -> (if (System.getProperty("os.arch") == "aarch64")
+              "abf4d2f7ebda6284e2246bce3591bcf161c114e370c0443ccc049b2728dc7e20"
             else
               "e1efd8c4605b2aabc876da93b6eee2bedd868ce7d1f02b0220c1001f903b3e2c")
             )
           else if (Properties.isWin)
             Map(
               "26.1" -> "7bd0849e47472aeff99a0ea2c0cefd98f5be829e5a2d3b0168b5a54456cc638a",
-              "27.1" -> "9719871a2c9a45c741e33d670d2319dcd3f8f52a6059e9c435a9a2841188b932",
-              "28.0" -> "85282f4ec1bcb0cfe8db0f195e8e0f6fb77cfbe89242a81fff2bc2e9292f7acf"
+              "27.2" -> "82e18f768aa5962b3c002d7f5d6ec9338896804f48406af4b5054c927575dbdf",
+              "28.1" -> "2d636ad562b347c96d36870d6ed810f4a364f446ca208258299f41048b35eab0"
             )
           else sys.error(s"Unsupported OS: ${Properties.osName}")
 
