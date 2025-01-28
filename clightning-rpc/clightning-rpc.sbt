@@ -28,11 +28,11 @@ TaskKeys.downloadCLightning := {
       val inputStream = new java.io.InputStreamReader(processBuilder.start().getInputStream())
       val version = new java.io.BufferedReader(inputStream).readLine()
       if (version == "22.04")  {
-        ("Ubuntu-22.04", "tar.xz")
+        ("Ubuntu-22.04-amd64", "tar.xz")
       } else if (version == "24.04") {
-        ("Ubuntu-24.04", "tar.xz")
+        ("Ubuntu-24.04-amd64", "tar.xz")
       } else if (version == "20.04") {
-        ("Ubuntu-20.04", "tar.xz")
+        ("Ubuntu-20.04-amd64", "tar.xz")
       } else {
         sys.error(s"Unsupported OS version=$version")
       }
