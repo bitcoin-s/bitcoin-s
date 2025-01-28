@@ -75,7 +75,7 @@ TaskKeys.downloadLnd := {
 
     val expectedHash =
       if (Properties.isLinux)
-        "b7ef62befece22bbc60227d63280dee4dfa7ec46ec780f33988cece5a70b4b05"
+        "cd0c0c14c62334a00e8107be436a32e63dac7d3c63e3dd3c89c427da316ef873"
       else if (Properties.isMac && System.getProperty("os.arch") == "aarch64")
         "69b43b6c84884305f856ca0fd2ac55263a54c1dedf43a7c8fb620bebc8453147"
       else if (Properties.isMac)
