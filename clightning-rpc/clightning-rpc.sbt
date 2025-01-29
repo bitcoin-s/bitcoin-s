@@ -36,9 +36,9 @@ TaskKeys.downloadCLightning := {
       } else {
         sys.error(s"Unsupported OS version=$version")
       }
+    } else {
+      sys.error(s"Unsupported OS: ${Properties.osName}")
     }
-//    else if (Properties.isMac) ("darwin-amd64", "tar.gz") // todo c-lightning adding in a future release
-    else sys.error(s"Unsupported OS: ${Properties.osName}")
 
   logger.debug(s"(Maybe) downloading clightning binaries for version: $version")
 
@@ -66,17 +66,12 @@ TaskKeys.downloadCLightning := {
       .mkString
 
     val expectedHash =
-      if (platform == "Ubuntu-20.04") {
+      if (platform == "Ubuntu-20.04-amd64") {
         "0068852306bca9df3d213c6a29bb90451eb538be83e413d6838e9e2d2729ff7f"
-      } else if (platform == "Ubuntu-22.04") {
+      } else if (platform == "Ubuntu-22.04-amd64") {
         "7d78e49615ace6ff8ee9ebfdf30e108ecf41ce98834493260ee31486389b781f"
-<<<<<<< HEAD
-      } else if (platform == "Ubuntu-24.04") {
+      } else if (platform == "Ubuntu-24.04-amd64") {
         "49c1bfb49806a878d9bb17557a0a265af93099bbac3271bb083e39a1c8eb1c14"
-=======
-      } else if (platform == "Ubuntu-22.04") {
-        ""
->>>>>>> 99c8f0a9834 (clighntingRpc: Update clightning to 24.11.1)
       }
       else sys.error(s"Unsupported OS: ${Properties.osName}")
 
