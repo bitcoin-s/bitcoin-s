@@ -457,25 +457,24 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
   }
 
   def openAndConfirmChannel(
-      client1F: Future[EclairRpcClient],
-      client2F: Future[EclairRpcClient],
+      client1: EclairRpcClient,
+      client2: EclairRpcClient,
       amount: CurrencyUnit = Satoshis(10000000)
   )(implicit system: ActorSystem): Future[ChannelId] = {
     import system.dispatcher
-    val bitcoindRpcF = client1F.map(EclairRpcTestUtil.getBitcoindRpc(_))
+    val bitcoind = EclairRpcTestUtil.getBitcoindRpc(client1)
 
-    val nodeId2F: Future[NodeId] = client2F.flatMap(_.getInfo.map(_.nodeId))
+    val nodeId2F: Future[NodeId] = client2.getInfo.map(_.nodeId)
 
     val channelIdF: Future[ChannelId] = {
       nodeId2F.flatMap { nid2 =>
-        client1F.flatMap(_.open(nid2, amount))
+        client1.open(nid2, amount)
       }
     }
 
     // confirm the funding tx
     val genF = for {
       _ <- channelIdF
-      bitcoind <- bitcoindRpcF
       address <- bitcoind.getNewAddress
       headers <- bitcoind.generateToAddress(6, address)
     } yield headers
@@ -485,10 +484,8 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         // wait until channel is in
         // NORMAL state on both sides so we can route payments bidirectionally
         for {
-          c1 <- client1F
-          _ <- EclairRpcTestUtil.awaitUntilChannelNormal(c1, cid)
-          c2 <- client2F
-          _ <- EclairRpcTestUtil.awaitUntilChannelNormal(c2, cid)
+          _ <- EclairRpcTestUtil.awaitUntilChannelNormal(client1, cid)
+          _ <- EclairRpcTestUtil.awaitUntilChannelNormal(client2, cid)
         } yield cid
       }
     }

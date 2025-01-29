@@ -135,7 +135,7 @@ val otherClientF = for {
 for {
   client <- clientF
   otherClient <- otherClientF
-  _ <- EclairRpcTestUtil.openAndConfirmChannel(clientF, otherClientF)
+  _ <- EclairRpcTestUtil.openAndConfirmChannel(client, otherClient)
   invoice <- otherClient.createInvoice("abc", 50.msats)
   info <- otherClient.getInfo
   _ = assert(info.nodeId == invoice.nodeId)
