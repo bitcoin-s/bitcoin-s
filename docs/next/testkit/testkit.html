@@ -158,7 +158,7 @@ These will only spin up on bitcoind per test suite, rather than one bitcoind per
 <span class="hljs-keyword">for</span> {
   client &lt;- clientF
   otherClient &lt;- otherClientF
-  _ &lt;- <span class="hljs-type">EclairRpcTestUtil</span>.openAndConfirmChannel(clientF, otherClientF)
+  _ &lt;- <span class="hljs-type">EclairRpcTestUtil</span>.openAndConfirmChannel(client, otherClient)
   invoice &lt;- otherClient.createInvoice(<span class="hljs-string">"abc"</span>, <span class="hljs-number">50.</span>msats)
   info &lt;- otherClient.getInfo
   _ = assert(info.nodeId == invoice.nodeId)
