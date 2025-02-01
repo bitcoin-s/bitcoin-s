@@ -230,7 +230,9 @@ sealed abstract class ScriptParser
         // means that we need to push x amount of bytes on to the stack
         val (constant, newTail) = sliceConstant(bytesToPushOntoStack, tail)
         val scriptConstant = ScriptConstant(constant)
-        ParsingHelper(newTail, scriptConstant +: bytesToPushOntoStack +: accum)
+        ParsingHelper(
+          newTail,
+          accum.prependedAll(Vector(scriptConstant, bytesToPushOntoStack)))
       case OP_PUSHDATA1 => parseOpPushData(op, accum, tail)
       case OP_PUSHDATA2 => parseOpPushData(op, accum, tail)
       case OP_PUSHDATA4 => parseOpPushData(op, accum, tail)
