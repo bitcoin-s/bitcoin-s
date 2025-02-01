@@ -12,16 +12,16 @@
     </appender>
 
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>bitcoin-s-scan-bitcoind.log</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <!-- hourly rollover -->
-            <fileNamePattern>${bitcoins.log.location}/logs/bitcoin-s-%d{yyyy-MM-dd_HH}.%i.log</fileNamePattern>
-
-            <!-- each file should be at most 100MB, keep 2 days of history, and at most 2GB in the archive -->
-            <maxFileSize>100MB</maxFileSize>
-            <maxHistory>48</maxHistory>
-            <totalSizeCap>2GB</totalSizeCap>
+        <file>logs/bitcoin-s-scan-bitcoind.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <fileNamePattern>logs/bitcoin-s-scan-bitcoind-%i.log</fileNamePattern>
+            <minIndex>1</minIndex>
+            <maxIndex>10</maxIndex>
         </rollingPolicy>
+
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>100MB</maxFileSize>
+        </triggeringPolicy>
         <encoder>
             <pattern>%date{ISO8601,UTC}UTC %level [%logger{0}] %msg%n</pattern>
         </encoder>
