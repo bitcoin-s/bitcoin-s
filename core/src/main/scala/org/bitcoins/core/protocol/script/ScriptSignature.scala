@@ -266,7 +266,7 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature] {
   /** Detects if the given script token is a redeem script */
   def isRedeemScript(token: ScriptToken): Boolean = {
     token match {
-      case _: ScriptNumberOperation | _: ScriptOperation =>
+      case _: ScriptNumberOperation | _: ScriptOperation | _: ScriptNumber =>
         // more cheap checks, we can't have a redeemScript
         // if the token is OP_0/OP_1/OP_CHECKSIG etc
         false
