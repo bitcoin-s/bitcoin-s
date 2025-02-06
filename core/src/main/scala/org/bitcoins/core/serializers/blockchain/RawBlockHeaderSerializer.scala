@@ -46,7 +46,7 @@ sealed abstract class RawBlockHeaderSerializer
     val nBits = blockHeader.nBits.bytes.reverse
     val nonce = blockHeader.nonce.bytes.reverse
 
-    version ++ prevHash ++ merkleRoot ++ time ++ nBits ++ nonce
+    ByteVector.concat(Vector(version, prevHash, merkleRoot, time, nBits, nonce))
   }
 
 }
