@@ -61,10 +61,25 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
     CompactSizeUInt(num, size)
   }
 
-  private def calcSizeForNum(num: UInt64): Int = {
-    if (num.toBigInt <= 252) 1
+  def apply(num: Long): CompactSizeUInt = {
+    require(num >= 0, s"Cannot have CompactSizeUInt < 0, got=$num")
+    val size = calcSizeForNum(num)
+    apply(UInt64(num), size)
+  }
+
+  private def calcSizeForNum(num: Long): Int = {
+    if (num <= 252) 1
     // can be represented with two bytes
-    else if (num.toBigInt <= 65535) 3
+    else if (num <= 65535) 3
+    // can be represented with 4 bytes
+    else if (num <= UInt32.max.toLong) 5
+    else 9
+  }
+
+  private def calcSizeForNum(num: UInt64): Int = {
+    if (num <= UInt64(252)) 1
+    // can be represented with two bytes
+    else if (num <= UInt64(65535)) 3
     // can be represented with 4 bytes
     else if (num.toBigInt <= UInt32.max.toBigInt) 5
     else 9
@@ -106,10 +121,10 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
     */
   def parseCompactSizeUInt(bytes: ByteVector): CompactSizeUInt = {
     require(bytes.nonEmpty, "Cannot parse a VarInt if the byte array is size 0")
-    val firstByte = UInt64(ByteVector(bytes.head))
+    val firstByte = bytes.take(1).toInt(signed = false)
     // 8 bit number
-    if (firstByte.toInt < 253)
-      CompactSizeUInt(firstByte, 1)
+    if (firstByte < 253)
+      CompactSizeUInt(UInt64(firstByte), 1)
     // 16 bit number
     else if (firstByte.toInt == 253)
       CompactSizeUInt(UInt64(bytes.slice(1, 3).reverse), 3)
@@ -127,11 +142,12 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
     */
   def parseCompactSizeUIntSize(byte: Byte): Long = {
     // 8 bit number
-    if (parseLong(byte) < 253) 1
+    val l = parseLong(byte)
+    if (l < 253) 1
     // 16 bit number
-    else if (parseLong(byte) == 253) 3
+    else if (l == 253) 3
     // 32 bit number
-    else if (parseLong(byte) == 254) 5
+    else if (l == 254) 5
     // 64 bit number
     else 9
   }
