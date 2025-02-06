@@ -62,6 +62,7 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
   }
 
   def apply(num: Long): CompactSizeUInt = {
+    require(num >= 0, s"Cannot have CompactSizeUInt < 0, got=$num")
     val size = calcSizeForNum(num)
     apply(UInt64(num), size)
   }
