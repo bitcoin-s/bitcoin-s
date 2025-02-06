@@ -10,7 +10,11 @@ import scala.annotation.tailrec
 trait BytesUtil extends CryptoBytesUtil {
 
   def writeCmpctSizeUInt[T <: NetworkElement](ts: Seq[T]): ByteVector = {
-    val cmpct = CompactSizeUInt(UInt64(ts.size))
+    val cmpct = if (ts.size < Long.MaxValue) {
+      CompactSizeUInt(ts.size)
+    } else {
+      CompactSizeUInt(UInt64(ts.size))
+    }
     ByteVector.concat(cmpct.bytes +: ts.map(_.bytes))
   }
 
