@@ -147,8 +147,8 @@ sealed abstract class NonWitnessTransaction extends Transaction {
     val inputBytes = BytesUtil.writeCmpctSizeUInt(inputs)
     val outputBytes = BytesUtil.writeCmpctSizeUInt(outputs)
     val lockTimeBytes = lockTime.bytes.reverse
-
-    versionBytes ++ inputBytes ++ outputBytes ++ lockTimeBytes
+    ByteVector.concat(
+      Vector(versionBytes, inputBytes, outputBytes, lockTimeBytes))
   }
 
   override val txId: DoubleSha256Digest = super.txId
@@ -242,8 +242,14 @@ case class WitnessTransaction(
     // notice we use the old serialization format if all witnesses are empty
     // https://github.com/bitcoin/bitcoin/blob/e8cfe1ee2d01c493b758a67ad14707dca15792ea/src/primitives/transaction.h#L276-L281
     if (witness.exists(_ != EmptyScriptWitness)) {
-      val witConstant = ByteVector(0.toByte, 1.toByte)
-      versionBytes ++ witConstant ++ inputBytes ++ outputBytes ++ witnessBytes ++ lockTimeBytes
+      ByteVector.concat(
+        Vector(versionBytes,
+               ByteVector(0.toByte, 1.toByte),
+               inputBytes,
+               outputBytes,
+               witnessBytes,
+               lockTimeBytes))
+
     } else toBaseTx.bytes
   }
 
