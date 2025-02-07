@@ -60,7 +60,7 @@ case class SchnorrPublicKey(bytes: ByteVector) extends PublicKey {
     CryptoUtil.schnorrComputeSigPoint(data, nonce, this, compressed)
   }
 
-  def publicKey: ECPublicKey = {
+  lazy val publicKey: ECPublicKey = {
     val pubKeyBytes = EvenParity.bytes ++ bytes
 
     ECPublicKey(pubKeyBytes)
