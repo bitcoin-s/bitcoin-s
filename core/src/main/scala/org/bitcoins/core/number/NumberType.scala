@@ -568,7 +568,7 @@ object Int64
 
   override def fromBytes(bytes: ByteVector): Int64 = {
     require(bytes.size <= 8, "We cannot have an Int64 be larger than 8 bytes")
-    Int64(BigInt(bytes.toArray).toLong)
+    Int64(bytes.toLong(signed = true))
   }
 
   def apply(long: Long): Int64 = {

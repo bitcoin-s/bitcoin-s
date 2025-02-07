@@ -293,6 +293,9 @@ object WitnessTransaction extends Factory[WitnessTransaction] {
       BytesUtil.parseCmpctSizeUIntSeq(outputBytes, TransactionOutput)
     val witness = TransactionWitness(witnessBytes, inputs.size)
     val lockTimeBytes = witnessBytes.drop(witness.byteSize)
+    require(
+      lockTimeBytes.length >= 4,
+      s"Must have at least 4 bytes for locktime, got=${lockTimeBytes.length}")
     val lockTime = UInt32(lockTimeBytes.take(4).reverse)
 
     WitnessTransaction(version, inputs, outputs, lockTime, witness)
