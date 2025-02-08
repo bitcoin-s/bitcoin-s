@@ -151,20 +151,6 @@ lazy val clightningRpc = project
   .settings(CommonSettings.prodSettings: _*)
   .dependsOn(asyncUtilsJVM, bitcoindRpc)
 
-lazy val lnurl = project
-  .in(file("lnurl"))
-  .settings(scalacOptions += "-Xsource:3")
-  .settings(name := "bitcoin-s-lnurl")
-  .settings(CommonSettings.prodSettings: _*)
-  .dependsOn(appCommons, asyncUtilsJVM, tor)
-
-lazy val lnurlTest = project
-  .in(file("lnurl-test"))
-  .settings(scalacOptions += "-Xsource:3")
-  .settings(name := "bitcoin-s-lnurl-test")
-  .settings(CommonSettings.testSettings: _*)
-  .dependsOn(lnurl, testkit)
-
 lazy val tor = project
   .in(file("tor"))
   .settings(scalacOptions += "-Xsource:3")
@@ -241,8 +227,6 @@ lazy val `bitcoin-s` = project
     serverRoutes,
     lndRpc,
     lndRpcTest,
-    lnurl,
-    lnurlTest,
     tor,
     torTest,
     scripts,
@@ -297,8 +281,6 @@ lazy val `bitcoin-s` = project
     serverRoutes,
     lndRpc,
     lndRpcTest,
-    lnurl,
-    lnurlTest,
     tor,
     torTest,
     scripts,
