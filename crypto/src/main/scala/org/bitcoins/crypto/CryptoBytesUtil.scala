@@ -97,7 +97,9 @@ trait CryptoBytesUtil {
 
   @inline
   final def toByteVector[T <: NetworkElement](h: Seq[T]): ByteVector = {
-    val outputStream = new ByteArrayOutputStream()
+    var bufSize = 0L
+    h.foreach { a => bufSize += a.byteSize }
+    val outputStream = new ByteArrayOutputStream(bufSize.toInt)
     h.foreach { ne =>
       outputStream.write(ne.bytes.toArray)
     }
