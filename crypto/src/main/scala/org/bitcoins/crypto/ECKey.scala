@@ -3,7 +3,7 @@ package org.bitcoins.crypto
 import scodec.bits.ByteVector
 
 import java.math.BigInteger
-import scala.util.Try
+import scala.util.{Success, Try}
 
 /** Represents the raw bytes which are meant to represent an ECKey without
   * deserializing.
@@ -83,7 +83,7 @@ sealed trait ECPublicKeyApi extends PublicKey {
   /** Returns true if the underlying bytes being wrapped are valid according to
     * secp256k1
     */
-  def isFullyValid: Boolean = {
+  lazy val isFullyValid: Boolean = {
     CryptoUtil.isValidPubKey(this)
   }
 
@@ -360,7 +360,8 @@ case class ECPublicKey(bytes: ByteVector)
   override def isDecompressed: Boolean = bytes.size == 65
 
   override private[crypto] lazy val decompressedBytesT: Try[ByteVector] = {
-    Try(CryptoUtil.decompressed(bytes))
+    if (isDecompressed) Success(bytes)
+    else Try(CryptoUtil.decompressed(bytes))
   }
 
   private def compressedBytes: ByteVector = {
