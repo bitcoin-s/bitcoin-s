@@ -6,8 +6,16 @@ import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, *}
 import org.bitcoins.core.script.control.*
-import org.bitcoins.core.script.crypto.{OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY, OP_CHECKSIG, OP_HASH160}
-import org.bitcoins.core.script.locktime.{OP_CHECKLOCKTIMEVERIFY, OP_CHECKSEQUENCEVERIFY}
+import org.bitcoins.core.script.crypto.{
+  OP_CHECKMULTISIG,
+  OP_CHECKMULTISIGVERIFY,
+  OP_CHECKSIG,
+  OP_HASH160
+}
+import org.bitcoins.core.script.locktime.{
+  OP_CHECKLOCKTIMEVERIFY,
+  OP_CHECKSEQUENCEVERIFY
+}
 import org.bitcoins.core.script.reserved.UndefinedOP_NOP
 import org.bitcoins.core.script.stack.{OP_DROP, OP_DUP}
 import org.bitcoins.core.util.*
@@ -1588,7 +1596,8 @@ object WitnessCommitment extends ScriptFactory[WitnessCommitment] {
     * for details
     */
   private val commitmentHeader: String = "aa21a9ed"
-  private val commitmentHeaderBytes: ByteVector = ByteVector.fromValidHex(commitmentHeader)
+  private val commitmentHeaderBytes: ByteVector =
+    ByteVector.fromValidHex(commitmentHeader)
 
   def apply(asm: Seq[ScriptToken]): WitnessCommitment = fromAsm(asm)
 
@@ -1615,7 +1624,9 @@ object WitnessCommitment extends ScriptFactory[WitnessCommitment] {
       val minCommitmentSize = 38
       val (opReturn, pushOp, constant) = (asm.head, asm(1), asm(2))
       opReturn == OP_RETURN && pushOp == BytesToPushOntoStack(36) &&
-      constant.bytes.take(4) == commitmentHeaderBytes && BytesUtil.toByteVector(asm).size >= minCommitmentSize
+      constant.bytes.take(4) == commitmentHeaderBytes && BytesUtil
+        .toByteVector(asm)
+        .size >= minCommitmentSize
     }
   }
 }
