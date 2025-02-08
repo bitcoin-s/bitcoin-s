@@ -4,8 +4,8 @@ import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.protocol.script.descriptor.DescriptorType
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
-import org.bitcoins.core.script.constant.{BytesToPushOntoStack, _}
-import org.bitcoins.core.script.control._
+import org.bitcoins.core.script.constant.{BytesToPushOntoStack, *}
+import org.bitcoins.core.script.control.*
 import org.bitcoins.core.script.crypto.{
   OP_CHECKMULTISIG,
   OP_CHECKMULTISIGVERIFY,
@@ -18,8 +18,9 @@ import org.bitcoins.core.script.locktime.{
 }
 import org.bitcoins.core.script.reserved.UndefinedOP_NOP
 import org.bitcoins.core.script.stack.{OP_DROP, OP_DUP}
-import org.bitcoins.core.util._
-import org.bitcoins.crypto._
+import org.bitcoins.core.util.*
+import org.bitcoins.crypto.*
+import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
@@ -1594,7 +1595,9 @@ object WitnessCommitment extends ScriptFactory[WitnessCommitment] {
     * [[https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki BIP141]]
     * for details
     */
-  private val commitmentHeader = "aa21a9ed"
+  private val commitmentHeader: String = "aa21a9ed"
+  private val commitmentHeaderBytes: ByteVector =
+    ByteVector.fromValidHex(commitmentHeader)
 
   def apply(asm: Seq[ScriptToken]): WitnessCommitment = fromAsm(asm)
 
@@ -1619,11 +1622,11 @@ object WitnessCommitment extends ScriptFactory[WitnessCommitment] {
     if (asm.size < 3) false
     else {
       val minCommitmentSize = 38
-      val asmBytes = BytesUtil.toByteVector(asm)
       val (opReturn, pushOp, constant) = (asm.head, asm(1), asm(2))
       opReturn == OP_RETURN && pushOp == BytesToPushOntoStack(36) &&
-      constant.hex.take(
-        8) == commitmentHeader && asmBytes.size >= minCommitmentSize
+      constant.bytes.take(4) == commitmentHeaderBytes && BytesUtil
+        .toByteVector(asm)
+        .size >= minCommitmentSize
     }
   }
 }
