@@ -746,6 +746,11 @@ trait BitcoinScriptUtil {
       Failure(new RuntimeException(s"Input $index was invalid: $inputResult"))
     }
   }
+
+  /** Check if asm complies with max push size limits enforced by Script */
+  def isValidPushSizes(asm: Seq[ScriptToken]): Boolean = {
+    asm.forall(_.byteSize <= ScriptInterpreter.MAX_PUSH_SIZE)
+  }
 }
 
 object BitcoinScriptUtil extends BitcoinScriptUtil

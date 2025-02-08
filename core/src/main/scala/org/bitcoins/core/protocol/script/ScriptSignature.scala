@@ -261,7 +261,8 @@ object P2SHScriptSignature extends ScriptFactory[P2SHScriptSignature] {
     // this will return false if the redeemScript is not a
     // supported scriptpubkey type in our library
     asm.size > 1 && BitcoinScriptUtil.isPushOnly(
-      asm.dropRight(1)) && isRedeemScript(asm.last)
+      asm.dropRight(1)) && BitcoinScriptUtil.isValidPushSizes(
+      asm) && isRedeemScript(asm.last)
   }
 
   /** Detects if the given script token is a redeem script */
