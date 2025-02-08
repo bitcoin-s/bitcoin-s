@@ -126,7 +126,10 @@ sealed abstract class ScriptGenerators {
     */
   def p2shScriptSignature: Gen[P2SHScriptSignature] =
     for {
-      (scriptPubKey, _) <- randomNonP2SHScriptPubKey
+      // p2sh redeemScripts have a 520 byte script length
+      // see: https://github.com/bitcoin/bips/blob/master/bip-0016.mediawiki#520-byte-limitation-on-serialized-script-size
+      (scriptPubKey, _) <- randomNonP2SHScriptPubKey.suchThat(
+        _._1.asmBytes.size <= ScriptInterpreter.MAX_PUSH_SIZE)
       scriptSig <- pickCorrespondingScriptSignature(scriptPubKey)
       p2shScriptSig = P2SHScriptSignature(scriptSig, scriptPubKey)
     } yield p2shScriptSig
