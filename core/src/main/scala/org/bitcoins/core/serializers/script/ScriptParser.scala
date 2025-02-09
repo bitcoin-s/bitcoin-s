@@ -260,12 +260,12 @@ sealed abstract class ScriptParser
 
     def parseOpPushDataHelper(numBytes: Int): ParsingHelper = {
       // next numBytes is the size of the script constant
-      val scriptConstantHex = tail.slice(0, numBytes)
-      val uInt32Push = UInt32(BytesUtil.flipEndianness(scriptConstantHex))
+      val pushBytes = tail.slice(0, numBytes)
+      val uInt32Push = UInt32(pushBytes.reverse)
       // need this for the case where we have an OP_PUSHDATA4 with a number larger than a int32 can hold
       // TODO: Review this more, see this transaction's scriptSig as an example: b30d3148927f620f5b1228ba941c211fdabdae75d0ba0b688a58accbf018f3cc
       val bytesForPushOp: Long = Try(uInt32Push.toLong).getOrElse(tail.length)
-      val bytesToPushOntoStack = ScriptConstant(scriptConstantHex)
+      val bytesToPushOntoStack = ScriptConstant(pushBytes)
       val endIndex = {
         val idx = bytesForPushOp + numBytes
         if (idx >= numBytes) idx else tail.size
