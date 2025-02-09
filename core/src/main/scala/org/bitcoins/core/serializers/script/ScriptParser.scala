@@ -167,7 +167,7 @@ sealed abstract class ScriptParser
         accum
       }
     }
-    loop(bytes, new ArrayBuffer[ScriptToken]()).reverse.toVector
+    loop(bytes, new ArrayBuffer[ScriptToken]()).toVector
 
   }
 
@@ -233,13 +233,13 @@ sealed abstract class ScriptParser
         val scriptConstant = ScriptConstant(constant)
         ParsingHelper(
           newTail,
-          accum.prependedAll(Vector(scriptConstant, bytesToPushOntoStack)))
+          accum.appendedAll(Vector(bytesToPushOntoStack, scriptConstant)))
       case OP_PUSHDATA1 => parseOpPushData(op, accum, tail)
       case OP_PUSHDATA2 => parseOpPushData(op, accum, tail)
       case OP_PUSHDATA4 => parseOpPushData(op, accum, tail)
       case _            =>
         // means that we need to push the operation onto the stack
-        ParsingHelper(tail, op +: accum)
+        ParsingHelper(tail, accum.appended(op))
     }
   }
 
@@ -318,10 +318,12 @@ sealed abstract class ScriptParser
       accum: ArrayBuffer[ScriptToken]): ParsingHelper = {
     if (bytesToPushOntoStack.hex == "00") {
       // if we need to push 0 bytes onto the stack we do not add the script constant
-      ParsingHelper(restOfBytes, bytesToPushOntoStack +: op +: accum)
-    } else
       ParsingHelper(restOfBytes,
-                    scriptConstant +: bytesToPushOntoStack +: op +: accum)
+                    accum.appendedAll(Vector(op, bytesToPushOntoStack)))
+    } else
+      ParsingHelper(
+        restOfBytes,
+        accum.appendedAll(Vector(op, bytesToPushOntoStack, scriptConstant)))
   }
 
   /** Checks if a string can be cast to an int */
