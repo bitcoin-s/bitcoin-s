@@ -1,13 +1,14 @@
 package org.bitcoins.core.serializers.script
 
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.script._
-import org.bitcoins.core.script.constant._
+import org.bitcoins.core.script.*
+import org.bitcoins.core.script.constant.*
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.{Factory, StringFactory}
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
+import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
 
 /** Created by chris on 1/7/16.
@@ -155,7 +156,7 @@ sealed abstract class ScriptParser
     @tailrec
     def loop(
         bytes: ByteVector,
-        accum: Vector[ScriptToken]): Vector[ScriptToken] = {
+        accum: ArrayBuffer[ScriptToken]): ArrayBuffer[ScriptToken] = {
       // logger.debug("Byte to be parsed: " + bytes.headOption)
       if (bytes.nonEmpty) {
         val op = ScriptOperation.fromByte(bytes.head)
@@ -166,7 +167,7 @@ sealed abstract class ScriptParser
         accum
       }
     }
-    loop(bytes, Vector.empty).reverse
+    loop(bytes, new ArrayBuffer[ScriptToken]()).toVector
 
   }
 
@@ -212,7 +213,7 @@ sealed abstract class ScriptParser
 
   sealed private case class ParsingHelper(
       tail: ByteVector,
-      accum: Vector[ScriptToken])
+      accum: ArrayBuffer[ScriptToken])
 
   /** Parses an operation if the tail is a scodec.bits.ByteVector If the
     * operation is a bytesToPushOntoStack, it pushes the number of bytes onto
@@ -222,7 +223,7 @@ sealed abstract class ScriptParser
     */
   private def parseOperationByte(
       op: ScriptOperation,
-      accum: Vector[ScriptToken],
+      accum: ArrayBuffer[ScriptToken],
       tail: ByteVector): ParsingHelper = {
     op match {
       case bytesToPushOntoStack: BytesToPushOntoStack =>
@@ -232,13 +233,13 @@ sealed abstract class ScriptParser
         val scriptConstant = ScriptConstant(constant)
         ParsingHelper(
           newTail,
-          accum.prependedAll(Vector(scriptConstant, bytesToPushOntoStack)))
+          accum.++=(ArrayBuffer(bytesToPushOntoStack, scriptConstant)))
       case OP_PUSHDATA1 => parseOpPushData(op, accum, tail)
       case OP_PUSHDATA2 => parseOpPushData(op, accum, tail)
       case OP_PUSHDATA4 => parseOpPushData(op, accum, tail)
       case _            =>
         // means that we need to push the operation onto the stack
-        ParsingHelper(tail, op +: accum)
+        ParsingHelper(tail, accum.+=(op))
     }
   }
 
@@ -255,7 +256,7 @@ sealed abstract class ScriptParser
     */
   private def parseOpPushData(
       op: ScriptOperation,
-      accum: Vector[ScriptToken],
+      accum: ArrayBuffer[ScriptToken],
       tail: ByteVector): ParsingHelper = {
 
     def parseOpPushDataHelper(numBytes: Int): ParsingHelper = {
@@ -314,13 +315,15 @@ sealed abstract class ScriptParser
       bytesToPushOntoStack: ScriptConstant,
       scriptConstant: ScriptConstant,
       restOfBytes: ByteVector,
-      accum: Vector[ScriptToken]): ParsingHelper = {
+      accum: ArrayBuffer[ScriptToken]): ParsingHelper = {
     if (bytesToPushOntoStack.hex == "00") {
       // if we need to push 0 bytes onto the stack we do not add the script constant
-      ParsingHelper(restOfBytes, bytesToPushOntoStack +: op +: accum)
-    } else
       ParsingHelper(restOfBytes,
-                    scriptConstant +: bytesToPushOntoStack +: op +: accum)
+                    accum.++=(ArrayBuffer(op, bytesToPushOntoStack)))
+    } else
+      ParsingHelper(
+        restOfBytes,
+        accum.++=(ArrayBuffer(op, bytesToPushOntoStack, scriptConstant)))
   }
 
   /** Checks if a string can be cast to an int */
