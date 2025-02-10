@@ -231,8 +231,9 @@ sealed abstract class ScriptParser
         // means that we need to push x amount of bytes on to the stack
         val (constant, newTail) = sliceConstant(bytesToPushOntoStack, tail)
         val scriptConstant = ScriptConstant(constant)
-        ParsingHelper(newTail,
-                      accum.++=(Vector(bytesToPushOntoStack, scriptConstant)))
+        ParsingHelper(
+          newTail,
+          accum.++=(ArrayBuffer(bytesToPushOntoStack, scriptConstant)))
       case OP_PUSHDATA1 => parseOpPushData(op, accum, tail)
       case OP_PUSHDATA2 => parseOpPushData(op, accum, tail)
       case OP_PUSHDATA4 => parseOpPushData(op, accum, tail)
@@ -317,10 +318,12 @@ sealed abstract class ScriptParser
       accum: ArrayBuffer[ScriptToken]): ParsingHelper = {
     if (bytesToPushOntoStack.hex == "00") {
       // if we need to push 0 bytes onto the stack we do not add the script constant
-      ParsingHelper(restOfBytes, accum.++=(Vector(op, bytesToPushOntoStack)))
-    } else
       ParsingHelper(restOfBytes,
-                    accum.++=(Vector(op, bytesToPushOntoStack, scriptConstant)))
+                    accum.++=(ArrayBuffer(op, bytesToPushOntoStack)))
+    } else
+      ParsingHelper(
+        restOfBytes,
+        accum.++=(ArrayBuffer(op, bytesToPushOntoStack, scriptConstant)))
   }
 
   /** Checks if a string can be cast to an int */
