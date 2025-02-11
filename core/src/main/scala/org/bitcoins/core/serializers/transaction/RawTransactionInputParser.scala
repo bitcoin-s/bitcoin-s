@@ -30,7 +30,8 @@ sealed abstract class RawTransactionInputParser
 
   /** Writes a single transaction input */
   def write(input: TransactionInput): ByteVector = {
-    input.previousOutput.bytes ++ input.scriptSignature.bytes ++ input.sequence.bytes.reverse
+    ByteVector.concat(Vector(
+      input.previousOutput.bytes ++ input.scriptSignature.bytes ++ input.sequence.bytes.reverse))
   }
 }
 
