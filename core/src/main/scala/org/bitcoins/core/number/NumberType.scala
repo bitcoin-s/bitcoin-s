@@ -1,9 +1,12 @@
 package org.bitcoins.core.number
 
-import org.bitcoins.core._
+import org.bitcoins.core.*
 import org.bitcoins.core.util.{BytesUtil, NumberUtil}
 import org.bitcoins.crypto.{CryptoBytesUtil, Factory, NetworkElement}
 import scodec.bits.{ByteOrdering, ByteVector}
+
+import java.math.BigInteger
+import scala.math.BigInt.javaBigInteger2bigInt
 
 /** Created by chris on 6/4/16.
   */
@@ -15,7 +18,7 @@ sealed abstract class Number[T <: Number[T]]
     extends NetworkElement
     with Ordered[T]
     with BasicArithmetic[T] {
-  type A = BigInt
+  type A = BigInteger
 
   /** The underlying scala number used to to hold the number */
   protected def underlying: A
@@ -23,49 +26,50 @@ sealed abstract class Number[T <: Number[T]]
   def toByte: Byte = toBigInt.bigInteger.byteValueExact()
   def toInt: Int = toBigInt.bigInteger.intExact
   def toLong: Long = toBigInt.bigInteger.longExact
-  def toBigInt: BigInt = underlying
+  def toBigInt: BigInt = BigInt(underlying)
 
   /** This is used to determine the valid amount of bytes in a number for
     * instance a UInt8 has an andMask of 0xff a UInt32 has an andMask of
     * 0xffffffff
     */
-  def andMask: BigInt
+  def andMask: BigInteger
 
   /** Factory function to create the underlying T, for instance a UInt32. This
     * method must check if the parameter is in the required range.
     */
   def apply: A => T
 
-  override def +(num: T): T = apply(underlying + num.underlying)
-  override def -(num: T): T = apply(underlying - num.underlying)
-  override def *(factor: BigInt): T = apply(underlying * factor)
-  override def *(num: T): T = apply(underlying * num.underlying)
+  override def +(num: T): T = apply(underlying.add(num.underlying))
+  override def -(num: T): T = apply(underlying.subtract(num.underlying))
+  override def *(factor: BigInt): T = apply(
+    underlying.multiply(factor.bigInteger))
+  override def *(num: T): T = apply(underlying.multiply(num.underlying))
 
-  def /(num: T): T = apply(underlying / num.underlying)
+  def /(num: T): T = apply(underlying.divide(num.underlying))
 
-  override def compare(num: T): Int = underlying compare num.underlying
+  override def compare(num: T): Int = underlying.compare(num.underlying)
 
-  def <<(num: Int): T = this.<<(apply(num))
-  def >>(num: Int): T = this.>>(apply(num))
+  def <<(num: Int): T = this.<<(apply(BigInteger.valueOf(num)))
+  def >>(num: Int): T = this.>>(apply(BigInteger.valueOf(num)))
 
   def <<(num: T): T = {
     val toInt = num.toInt
-    apply((underlying << toInt) & andMask)
+    apply(((underlying << toInt) & andMask).bigInteger)
   }
 
   def >>(num: T): T = {
     // this check is for weird behavior with the jvm and shift rights
     // https://stackoverflow.com/questions/47519140/bitwise-shift-right-with-long-not-equaling-zero/47519728#47519728
-    if (num.toLong > 63) apply(0)
+    if (num.toLong > 63) apply(BigInteger.valueOf(0))
     else {
       val toInt = num.toInt
-      apply(underlying >> toInt)
+      apply((underlying >> toInt).bigInteger)
     }
   }
 
-  def |(num: T): T = apply(underlying | num.underlying)
-  def &(num: T): T = apply(underlying & num.underlying)
-  def unary_- : T = apply(-underlying)
+  def |(num: T): T = apply((underlying | num.underlying).bigInteger)
+  def &(num: T): T = apply((underlying & num.underlying).bigInteger)
+  def unary_- : T = apply((-underlying).bigInteger)
 
   def isSigned: Boolean
 
@@ -73,10 +77,10 @@ sealed abstract class Number[T <: Number[T]]
     val xor = bytes.xor(num.bytes)
     if (isSigned) {
       val r = xor.toLong(signed = isSigned)
-      apply(r)
+      apply(BigInteger.valueOf(r))
     } else {
       val r = BigInt(1, xor.toArray)
-      apply(r)
+      apply(r.bigInteger)
     }
   }
 
@@ -84,9 +88,9 @@ sealed abstract class Number[T <: Number[T]]
     ^(num)
   }
 
-  def xor(num: Long): T = xor(apply(num))
+  def xor(num: Long): T = xor(apply(BigInteger.valueOf(num)))
 
-  def ^(num: Long): T = ^(apply(num))
+  def ^(num: Long): T = ^(apply(BigInteger.valueOf(num)))
 
   def truncatedBytes: ByteVector = bytes.dropWhile(_ == 0x00)
 }
@@ -113,7 +117,7 @@ sealed abstract class UnsignedNumber[T <: Number[T]] extends Number[T] {
 sealed abstract class UInt5 extends UnsignedNumber[UInt5] {
   override def apply: A => UInt5 = UInt5(_)
 
-  override val andMask: BigInt = 0x1f
+  override val andMask: BigInteger = BigInteger.valueOf(0x1f)
 
   def byte: Byte = toInt.toByte
 
@@ -127,7 +131,7 @@ sealed abstract class UInt8 extends UnsignedNumber[UInt8] {
 
   override val bytes: ByteVector = ByteVector.fromInt(toInt, size = 1)
 
-  override val andMask = 0xff
+  override val andMask: BigInteger = BigInteger.valueOf(0xff)
 
   def toUInt5: UInt5 = {
     // this will throw if not in range of a UInt5, come back and look later
@@ -141,7 +145,7 @@ sealed abstract class UInt16 extends UnsignedNumber[UInt16] {
   override def apply: A => UInt16 = UInt16(_)
   override val bytes: ByteVector = ByteVector.fromInt(toInt, size = 2)
 
-  override val andMask = 0xffffL
+  override val andMask: BigInteger = BigInteger.valueOf(0xffffL)
 }
 
 /** Represents a uint32_t in C
@@ -149,7 +153,7 @@ sealed abstract class UInt16 extends UnsignedNumber[UInt16] {
 sealed abstract class UInt32 extends UnsignedNumber[UInt32] {
   override def apply: A => UInt32 = UInt32(_)
   override val bytes: ByteVector = ByteVector.fromLong(toLong, 4)
-  override val andMask = 0xffffffffL
+  override val andMask: BigInteger = BigInteger.valueOf(0xffffffffL)
 }
 
 /** Represents a uint64_t in C
@@ -167,7 +171,8 @@ sealed abstract class UInt64 extends UnsignedNumber[UInt64] {
     }
   }
   override def apply: A => UInt64 = UInt64(_)
-  override val andMask = 0xffffffffffffffffL
+
+  override val andMask: BigInteger = BigInteger.valueOf(0xffffffffffffffffL)
 
   /** Converts a [[BigInt]] to a 8 byte hex representation. [[BigInt]] will only
     * allocate 1 byte for numbers like 1 which require 1 byte, giving us the hex
@@ -194,7 +199,8 @@ sealed abstract class UInt64 extends UnsignedNumber[UInt64] {
   */
 sealed abstract class Int32 extends SignedNumber[Int32] {
   override def apply: A => Int32 = Int32(_)
-  override val andMask = 0xffffffff
+
+  override val andMask: BigInteger = BigInteger.valueOf(0xffffffff)
   override val bytes: ByteVector = ByteVector.fromInt(i = toInt, size = 4)
   def toUInt32: UInt32 = UInt32.fromBytes(bytes)
 }
@@ -203,7 +209,8 @@ sealed abstract class Int32 extends SignedNumber[Int32] {
   */
 sealed abstract class Int64 extends SignedNumber[Int64] {
   override def apply: A => Int64 = Int64(_)
-  override val andMask = 0xffffffffffffffffL
+
+  override val andMask: BigInteger = BigInteger.valueOf(0xffffffffffffffffL)
   override val bytes: ByteVector = ByteVector.fromLong(l = toLong, size = 8)
 }
 
@@ -236,7 +243,7 @@ object UInt5
     with Bounded[UInt5]
     with NumberCache[UInt5] {
 
-  private case class UInt5Impl(underlying: BigInt) extends UInt5 {
+  private case class UInt5Impl(underlying: BigInteger) extends UInt5 {
     require(isInBound(underlying),
             s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
@@ -254,7 +261,7 @@ object UInt5
   final override val maxCached: Long = 31
 
   final override def fromNativeNumber(long: Long): UInt5 = {
-    UInt5Impl(long)
+    UInt5Impl(BigInteger.valueOf(long))
   }
 
   override def isInBound(num: A): Boolean =
@@ -296,7 +303,7 @@ object UInt8
     with Bounded[UInt8]
     with NumberCache[UInt8] {
 
-  private case class UInt8Impl(underlying: BigInt) extends UInt8 {
+  private case class UInt8Impl(underlying: BigInteger) extends UInt8 {
     require(isInBound(underlying),
             s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
@@ -310,7 +317,7 @@ object UInt8
   lazy val max = UInt8(maxUnderlying)
 
   final override def fromNativeNumber(long: Long): UInt8 = {
-    UInt8Impl(long)
+    UInt8Impl(BigInteger.valueOf(long))
   }
 
   override def isInBound(num: A): Boolean =
@@ -320,7 +327,7 @@ object UInt8
 
   def apply(byte: Byte): UInt8 = toUInt8(byte)
 
-  def apply(bigint: BigInt): UInt8 = UInt8Impl(bigint)
+  def apply(bigint: BigInt): UInt8 = UInt8Impl(bigint.bigInteger)
 
   override def fromBytes(bytes: ByteVector): UInt8 = {
     require(
@@ -351,7 +358,7 @@ object UInt16
     with Bounded[UInt16]
     with NumberCache[UInt16] {
 
-  private case class UInt16Impl(underlying: BigInt) extends UInt16 {
+  private case class UInt16Impl(underlying: BigInteger) extends UInt16 {
     require(isInBound(underlying),
             s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
@@ -367,7 +374,7 @@ object UInt16
   lazy val max = UInt16(maxUnderlying)
 
   final override def fromNativeNumber(long: Long): UInt16 = {
-    UInt16Impl(long)
+    UInt16Impl(BigInteger.valueOf(long))
   }
 
   override def isInBound(num: A): Boolean =
@@ -389,7 +396,7 @@ object UInt16
   }
 
   def apply(bigInt: BigInt): UInt16 = {
-    UInt16Impl(bigInt)
+    UInt16Impl(bigInt.bigInteger)
   }
 }
 
@@ -399,7 +406,7 @@ object UInt32
     with Bounded[UInt32]
     with NumberCache[UInt32] {
 
-  private case class UInt32Impl(underlying: BigInt) extends UInt32 {
+  private case class UInt32Impl(underlying: BigInteger) extends UInt32 {
     require(isInBound(underlying),
             s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
@@ -415,7 +422,7 @@ object UInt32
   lazy val max = UInt32(maxUnderlying)
 
   final override def fromNativeNumber(long: Long): UInt32 = {
-    UInt32Impl(long)
+    UInt32Impl(BigInteger.valueOf(long))
   }
 
   override def isInBound(num: A): Boolean =
@@ -441,7 +448,7 @@ object UInt32
   }
 
   def apply(bigInt: BigInt): UInt32 = {
-    UInt32Impl(bigInt)
+    UInt32Impl(bigInt.bigInteger)
   }
 }
 
@@ -451,7 +458,7 @@ object UInt64
     with Bounded[UInt64]
     with NumberCacheBigInt[UInt64] {
 
-  private case class UInt64Impl(underlying: BigInt) extends UInt64 {
+  private case class UInt64Impl(underlying: BigInteger) extends UInt64 {
     require(isInBound(underlying),
             s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
@@ -490,11 +497,11 @@ object UInt64
   def apply(num: BigInt): UInt64 = checkCachedBigInt(num)
 
   final override def fromBigInt(bigInt: BigInt): UInt64 = {
-    UInt64Impl(bigInt)
+    UInt64Impl(bigInt.bigInteger)
   }
 
   final override def fromNativeNumber(long: Long): UInt64 = {
-    UInt64Impl(long)
+    UInt64Impl(BigInteger.valueOf(long))
   }
 }
 
@@ -504,7 +511,7 @@ object Int32
     with Bounded[Int32]
     with NumberCache[Int32] {
 
-  private case class Int32Impl(underlying: BigInt) extends Int32 {
+  private case class Int32Impl(underlying: BigInteger) extends Int32 {
     require(isInBound(underlying),
             s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
@@ -521,7 +528,7 @@ object Int32
   lazy val max = Int32(maxUnderlying)
 
   final override def fromNativeNumber(long: Long): Int32 = {
-    Int32Impl(long)
+    Int32Impl(BigInteger.valueOf(long))
   }
 
   override def isInBound(num: A): Boolean =
@@ -536,7 +543,7 @@ object Int32
     checkCached(int)
   }
 
-  def apply(bigInt: BigInt): Int32 = Int32Impl(bigInt)
+  def apply(bigInt: BigInt): Int32 = Int32Impl(bigInt.bigInteger)
 }
 
 object Int64
@@ -545,7 +552,7 @@ object Int64
     with Bounded[Int64]
     with NumberCache[Int64] {
 
-  private case class Int64Impl(underlying: BigInt) extends Int64 {
+  private case class Int64Impl(underlying: BigInteger) extends Int64 {
     require(isInBound(underlying),
             s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
@@ -560,7 +567,7 @@ object Int64
   lazy val max = Int64(maxUnderlying)
 
   final override def fromNativeNumber(long: Long): Int64 = {
-    Int64Impl(long)
+    Int64Impl(BigInteger.valueOf(long))
   }
 
   override def isInBound(num: A): Boolean =
@@ -575,5 +582,5 @@ object Int64
     checkCached(long)
   }
 
-  def apply(bigInt: BigInt): Int64 = Int64Impl(bigInt)
+  def apply(bigInt: BigInt): Int64 = Int64Impl(bigInt.bigInteger)
 }
