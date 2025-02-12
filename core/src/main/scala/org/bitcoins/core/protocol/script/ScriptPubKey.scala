@@ -255,7 +255,7 @@ object MultiSignatureScriptPubKey
   /** Determines if the given script tokens are a multisignature `scriptPubKey`
     */
   override def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
-    if (asm.nonEmpty && opCmsOPs.exists(_ == asm.last)) {
+    if (asm.length > 2 && opCmsOPs.exists(_ == asm.last)) {
       val cmsIdx = asm.size - 1
       // we need either the first or second asm operation to indicate how many signatures are required
       val hasRequiredSignaturesOpt: Option[Int] = {
