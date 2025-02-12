@@ -183,9 +183,7 @@ sealed abstract class ScriptParser
   private def sliceConstant(
       bytesToPushOntoStack: BytesToPushOntoStack,
       data: ByteVector): (ByteVector, ByteVector) = {
-    val finalIndex = bytesToPushOntoStack.opCode
-    val dataConstant = data.slice(0, finalIndex)
-    (dataConstant, data.slice(finalIndex, data.size))
+    data.splitAt(bytesToPushOntoStack.opCode)
   }
 
   /** Parses the bytes in string format, an example input would look like this
