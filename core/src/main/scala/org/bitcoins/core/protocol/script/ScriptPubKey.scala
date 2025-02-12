@@ -556,7 +556,7 @@ object CLTVScriptPubKey extends ScriptFactory[CLTVScriptPubKey] {
   }
 
   override def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
-    if (asm.isEmpty) {
+    if (asm.length < 4) {
       false
     } else if (asm.head.isInstanceOf[BytesToPushOntoStack]) {
       val tailTokens = asm.slice(4, asm.length)
@@ -659,7 +659,9 @@ object CSVScriptPubKey extends ScriptFactory[CSVScriptPubKey] {
   }
 
   override def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
-    if (asm.head.isInstanceOf[BytesToPushOntoStack]) {
+    if (asm.length < 4) {
+      false
+    } else if (asm.head.isInstanceOf[BytesToPushOntoStack]) {
       val tailTokens = asm.slice(4, asm.length)
       if (
         P2SHScriptPubKey.isValidAsm(tailTokens) || tailTokens
@@ -1060,7 +1062,7 @@ object P2PKWithTimeoutScriptPubKey
   }
 
   override def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
-    if (asm.length < 5) {
+    if (asm.length < 9 || asm.length > 13) {
       false
     } else {
       val (smallCSVOpt, requiredSize) = asm(4) match {
