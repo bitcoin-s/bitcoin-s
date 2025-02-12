@@ -556,7 +556,7 @@ object CLTVScriptPubKey extends ScriptFactory[CLTVScriptPubKey] {
   }
 
   override def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
-    if (asm.length < 4) {
+    if (asm.length < 3 || !asm.contains(OP_CHECKLOCKTIMEVERIFY)) {
       false
     } else if (asm.head.isInstanceOf[BytesToPushOntoStack]) {
       val tailTokens = asm.slice(4, asm.length)
@@ -659,7 +659,7 @@ object CSVScriptPubKey extends ScriptFactory[CSVScriptPubKey] {
   }
 
   override def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
-    if (asm.length < 4) {
+    if (asm.length < 3 || !asm.contains(OP_CHECKSEQUENCEVERIFY)) {
       false
     } else if (asm.head.isInstanceOf[BytesToPushOntoStack]) {
       val tailTokens = asm.slice(4, asm.length)
