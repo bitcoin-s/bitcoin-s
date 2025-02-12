@@ -245,7 +245,7 @@ object MultiSignatureScriptPubKey
   def fromAsm(asm: Seq[ScriptToken]): MultiSignatureScriptPubKey = {
     buildScript(asm.toVector,
                 MultiSignatureScriptPubKeyImpl.apply,
-                "Given asm was not a MultSignatureScriptPubKey, got: " + asm)
+                s"Given asm was not a MultSignatureScriptPubKey, got: $asm")
   }
 
   def apply(asm: Seq[ScriptToken]): MultiSignatureScriptPubKey = fromAsm(asm)
