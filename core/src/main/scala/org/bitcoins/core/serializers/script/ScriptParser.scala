@@ -153,21 +153,20 @@ sealed abstract class ScriptParser
     * exception if it fails to parse a op code
     */
   private def parse(bytes: ByteVector): Vector[ScriptToken] = {
+    val accum = new ArrayBuffer[ScriptToken]()
     @tailrec
-    def loop(
-        bytes: ByteVector,
-        accum: ArrayBuffer[ScriptToken]): ArrayBuffer[ScriptToken] = {
+    def loop(bytes: ByteVector): ArrayBuffer[ScriptToken] = {
       // logger.debug("Byte to be parsed: " + bytes.headOption)
       if (bytes.nonEmpty) {
         val op = ScriptOperation.fromByte(bytes.head)
-        val parsingHelper: ParsingHelper =
+        val remaining =
           parseOperationByte(op, accum, bytes.tail)
-        loop(parsingHelper.tail, parsingHelper.accum)
+        loop(remaining)
       } else {
         accum
       }
     }
-    loop(bytes, new ArrayBuffer[ScriptToken]()).toVector
+    loop(bytes).toVector
 
   }
 
@@ -211,10 +210,6 @@ sealed abstract class ScriptParser
     scriptConstants.toVector
   }
 
-  sealed private case class ParsingHelper(
-      tail: ByteVector,
-      accum: ArrayBuffer[ScriptToken])
-
   /** Parses an operation if the tail is a scodec.bits.ByteVector If the
     * operation is a bytesToPushOntoStack, it pushes the number of bytes onto
     * the stack specified by the bytesToPushOntoStack i.e. If the operation was
@@ -224,22 +219,22 @@ sealed abstract class ScriptParser
   private def parseOperationByte(
       op: ScriptOperation,
       accum: ArrayBuffer[ScriptToken],
-      tail: ByteVector): ParsingHelper = {
+      tail: ByteVector): ByteVector = {
     op match {
       case bytesToPushOntoStack: BytesToPushOntoStack =>
         // logger.debug("Parsing operation byte: " +bytesToPushOntoStack )
         // means that we need to push x amount of bytes on to the stack
         val (constant, newTail) = sliceConstant(bytesToPushOntoStack, tail)
         val scriptConstant = ScriptConstant(constant)
-        ParsingHelper(
-          newTail,
-          accum.++=(ArrayBuffer(bytesToPushOntoStack, scriptConstant)))
+        accum.++=(ArrayBuffer(bytesToPushOntoStack, scriptConstant))
+        newTail
       case OP_PUSHDATA1 => parseOpPushData(op, accum, tail)
       case OP_PUSHDATA2 => parseOpPushData(op, accum, tail)
       case OP_PUSHDATA4 => parseOpPushData(op, accum, tail)
       case _            =>
         // means that we need to push the operation onto the stack
-        ParsingHelper(tail, accum.+=(op))
+        accum.+=(op)
+        tail
     }
   }
 
@@ -257,9 +252,9 @@ sealed abstract class ScriptParser
   private def parseOpPushData(
       op: ScriptOperation,
       accum: ArrayBuffer[ScriptToken],
-      tail: ByteVector): ParsingHelper = {
+      tail: ByteVector): ByteVector = {
 
-    def parseOpPushDataHelper(numBytes: Int): ParsingHelper = {
+    def parseOpPushDataHelper(numBytes: Int): ByteVector = {
       // next numBytes is the size of the script constant
       val pushBytes = tail.slice(0, numBytes)
       val uInt32Push = UInt32(pushBytes.reverse)
@@ -315,15 +310,16 @@ sealed abstract class ScriptParser
       bytesToPushOntoStack: ScriptConstant,
       scriptConstant: ScriptConstant,
       restOfBytes: ByteVector,
-      accum: ArrayBuffer[ScriptToken]): ParsingHelper = {
-    if (bytesToPushOntoStack.hex == "00") {
+      accum: ArrayBuffer[ScriptToken]): ByteVector = {
+    if (bytesToPushOntoStack.bytes == ByteVector.fromByte(0)) {
       // if we need to push 0 bytes onto the stack we do not add the script constant
-      ParsingHelper(restOfBytes,
-                    accum.++=(ArrayBuffer(op, bytesToPushOntoStack)))
-    } else
-      ParsingHelper(
-        restOfBytes,
-        accum.++=(ArrayBuffer(op, bytesToPushOntoStack, scriptConstant)))
+      accum.++=(ArrayBuffer(op, bytesToPushOntoStack))
+      restOfBytes
+    } else {
+      accum.++=(ArrayBuffer(op, bytesToPushOntoStack, scriptConstant))
+      restOfBytes
+    }
+
   }
 
   /** Checks if a string can be cast to an int */
