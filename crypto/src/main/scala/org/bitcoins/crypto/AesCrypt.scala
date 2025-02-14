@@ -306,7 +306,7 @@ object AesCrypt {
     cipher
   }
 
-  /** Encrypts the given plaintext, by explicitly passing in a intialization
+  /** Encrypts the given plaintext, by explicitly passing in a initialization
     * vector. This is unsafe if the user passes in a bad IV, so this method is
     * kept private within Bitcoin-S. It is useful for testing purposes, so
     * that's why we expose it in the first place.
