@@ -363,6 +363,12 @@ object JsonSerializers {
   implicit val getTxOutResultV22Reads: Reads[GetTxOutResultV22] =
     Json.reads[GetTxOutResultV22]
 
+  implicit val getTxOutResultV22OptReads: Reads[Option[GetTxOutResultV22]] = {
+    case JsNull => JsSuccess(None) // Handle null case
+    case json: JsValue =>
+      getTxOutResultV22Reads.reads(json).map(Some(_)) // Handle valid object
+  }
+
   implicit val getTxOutSetInfoResultReads: Reads[GetTxOutSetInfoResult] =
     Json.reads[GetTxOutSetInfoResult]
 
