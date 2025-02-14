@@ -98,24 +98,11 @@ trait TransactionRpc { self: Client =>
       txid: DoubleSha256DigestBE,
       vout: Long,
       includeMemPool: Boolean = true
-  ): Future[GetTxOutResult] = {
-    bitcoindCall[GetTxOutResultV22](
-      "gettxout",
-      List(JsString(txid.hex), JsNumber(vout), JsBoolean(includeMemPool))
-    )
-  }
-
-  def getTxOutOpt(
-      txid: DoubleSha256DigestBE,
-      vout: Long,
-      includeMemPool: Boolean = true
   ): Future[Option[GetTxOutResult]] = {
-    bitcoindCall[GetTxOutResultV22](
+    bitcoindCall[Option[GetTxOutResultV22]](
       "gettxout",
       List(JsString(txid.hex), JsNumber(vout), JsBoolean(includeMemPool))
     )
-      .map(Some(_))
-      .recover(_ => None)
   }
 
   private def getTxOutProof(

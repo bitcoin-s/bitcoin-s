@@ -56,16 +56,16 @@ class UTXORpcTest extends BitcoindFixturesFundedCachedNewest {
     for {
       block <- BitcoindRpcTestUtil.getFirstBlock(client)
       info1 <- client.getTxOut(block.tx.head.txid, 0)
-    } yield assert(info1.coinbase)
+    } yield {
+      assert(info1.isDefined)
+      assert(info1.get.coinbase)
+    }
   }
 
   it should "be able to fail to get utxo info" in { case client =>
     for {
-      block <- BitcoindRpcTestUtil.getFirstBlock(client)
-      info1 <- client.getTxOutOpt(block.tx.head.txid, 0)
-      info2 <- client.getTxOutOpt(DoubleSha256DigestBE.empty, 0)
+      info2 <- client.getTxOut(DoubleSha256DigestBE.empty, 0)
     } yield {
-      assert(info1.exists(_.coinbase))
       assert(info2.isEmpty)
     }
   }
