@@ -550,14 +550,14 @@ object Int64
             s"Cannot create ${super.getClass.getSimpleName} from $underlying")
   }
 
-  lazy val zero = checkCached(0)
-  lazy val one = checkCached(1)
+  lazy val zero: Int64 = checkCached(0)
+  lazy val one: Int64 = checkCached(1)
 
   private lazy val minUnderlying: A = -9223372036854775808L
   private lazy val maxUnderlying: A = 9223372036854775807L
 
-  lazy val min = Int64(minUnderlying)
-  lazy val max = Int64(maxUnderlying)
+  lazy val min: Int64 = Int64(minUnderlying)
+  lazy val max: Int64 = Int64(maxUnderlying)
 
   final override def fromNativeNumber(long: Long): Int64 = {
     Int64Impl(long)

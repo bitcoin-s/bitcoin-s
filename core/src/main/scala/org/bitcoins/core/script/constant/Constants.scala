@@ -427,6 +427,8 @@ object ScriptConstant extends Factory[ScriptConstant] {
 
   /** Represent a public key or hash of a public key on our stack. */
   private case class ScriptConstantImpl(bytes: ByteVector)
-      extends ScriptConstant
+      extends ScriptConstant {
+    override def toString: String = bytes.toHex
+  }
 
 }
