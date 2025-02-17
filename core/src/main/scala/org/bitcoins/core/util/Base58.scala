@@ -25,7 +25,7 @@ sealed abstract class Base58 {
     ByteVector.fromBase58(input) match {
       case Some(decoded) =>
         if (decoded.length < 4) {
-          Failure(new IllegalArgumentException("Invalid input"))
+          Failure(new IllegalArgumentException(s"Invalid input, got=$input"))
         } else {
           val splitSeqs = decoded.splitAt(decoded.length - 4)
           val data: ByteVector = splitSeqs._1
@@ -68,7 +68,9 @@ sealed abstract class Base58 {
     * [[https://github.com/ACINQ/bitcoin-lib/blob/master/src/main/scala/fr/acinq/bitcoin/Base58.scala]]
     */
   def decode(input: String): ByteVector = {
-    ByteVector.fromBase58(input).get
+    ByteVector.fromBase58(input).getOrElse {
+      throw new IllegalArgumentException(s"Invalid input, got=$input")
+    }
   }
 
   /** Determines if a string is a valid
