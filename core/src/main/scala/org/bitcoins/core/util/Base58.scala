@@ -63,13 +63,11 @@ sealed abstract class Base58 {
     */
   def encode(byte: Byte): String = encode(ByteVector.fromByte(byte))
 
-  /** Takes in [[org.bitcoins.core.protocol.blockchain.Base58Type Base58Type]]
-    * string and returns sequence of [[scala.Byte Byte]]s.
-    * [[https://github.com/ACINQ/bitcoin-lib/blob/master/src/main/scala/fr/acinq/bitcoin/Base58.scala]]
+  /** Decodes a base58 string to a [[ByteVector]]
     */
   def decode(input: String): ByteVector = {
     ByteVector.fromBase58(input).getOrElse {
-      throw new IllegalArgumentException(s"Invalid input, got=$input")
+      throw new IllegalArgumentException(s"Invalid base58 input, got=$input")
     }
   }
 
