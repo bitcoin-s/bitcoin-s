@@ -22,19 +22,11 @@ sealed abstract class Base58 {
     * against its checksum (last 4 decoded bytes).
     */
   def decodeCheck(input: String): Try[ByteVector] = {
-    val decodedTry: Try[ByteVector] = Try(decode(input))
-    decodedTry.flatMap { decoded =>
-      if (decoded.length < 4)
-        Failure(new IllegalArgumentException("Invalid input"))
-      else {
-        val splitSeqs = decoded.splitAt(decoded.length - 4)
-        val data: ByteVector = splitSeqs._1
-        val checksum: ByteVector = splitSeqs._2
-        val actualChecksum: ByteVector =
-          CryptoUtil.doubleSHA256(data).bytes.take(4)
-        if (checksum == actualChecksum) Success(data)
-        else Failure(new IllegalArgumentException("checksums don't validate"))
-      }
+    ByteVector.fromBase58(input) match {
+      case Some(b) => Success(b)
+      case None =>
+        val exn = new IllegalArgumentException(s"Invalid base58, got=$input")
+        Failure(exn)
     }
   }
 
