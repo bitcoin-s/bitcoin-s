@@ -66,7 +66,12 @@ object ScriptType extends StringFactory[ScriptType] {
   )
 
   override def fromStringOpt(string: String): Option[ScriptType] =
-    all.find(_.toString == string)
+    all.find(_.toString.toLowerCase == string.toLowerCase) match {
+      case Some(x) => Some(x)
+      case None =>
+        if (string.toLowerCase == "nonstandard") Some(NONSTANDARD)
+        else None
+    }
 
   /** Throws if given string is invalid */
   override def fromString(string: String): ScriptType =

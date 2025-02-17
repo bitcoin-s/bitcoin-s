@@ -1486,8 +1486,8 @@ object TaprootScriptPubKey extends ScriptFactory[TaprootScriptPubKey] {
     val asmBytes = BytesUtil.toByteVector(asm)
     asm.length == 3 &&
     asm.headOption.contains(OP_1) &&
-    WitnessScriptPubKey.isValidAsm(asm) &&
     asmBytes.size == 34 &&
+    WitnessScriptPubKey.isValidAsm(asm) &&
     // have to make sure we have a valid xonly pubkey, not just 32 bytes
     XOnlyPubKey.fromBytesT(asm(2).bytes).isSuccess
   }

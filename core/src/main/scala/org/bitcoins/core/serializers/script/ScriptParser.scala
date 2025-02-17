@@ -167,7 +167,6 @@ sealed abstract class ScriptParser
       }
     }
     loop(bytes).toVector
-
   }
 
   /** Parses a redeem script from the given script token */
@@ -238,6 +237,7 @@ sealed abstract class ScriptParser
 
   /** Parses OP_PUSHDATA operations correctly. Slices the appropriate amount of
     * bytes off of the tail and pushes them onto the accumulator.
+    *
     * @param op
     *   the script operation that is being parsed, this should be OP_PUSHDATA1,
     *   OP_PUSHDATA2, OP_PUSHDATA4 or else it throws an exception
@@ -317,7 +317,6 @@ sealed abstract class ScriptParser
       accum.++=(ArrayBuffer(op, bytesToPushOntoStack, scriptConstant))
       restOfBytes
     }
-
   }
 
   /** Checks if a string can be cast to an int */

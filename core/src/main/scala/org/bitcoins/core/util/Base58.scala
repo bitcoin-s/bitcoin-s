@@ -5,7 +5,6 @@ import org.bitcoins.core.protocol.blockchain._
 import org.bitcoins.crypto.CryptoUtil
 import scodec.bits.ByteVector
 
-import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 
 /** Created by chris on 5/16/16. source of values:
@@ -43,24 +42,7 @@ sealed abstract class Base58 {
     * [[org.bitcoins.core.protocol.blockchain.Base58Type Base58Type]] string.
     */
   def encode(bytes: ByteVector): String = {
-    val ones: String = bytes.toSeq.takeWhile(_ == 0).map(_ => '1').mkString
-    @tailrec
-    def loop(current: BigInt, str: String): String =
-      current match {
-        case _ if current == BigInt(0) =>
-          ones + str.reverse
-        case _: BigInt =>
-          val quotient: BigInt = current / BigInt(58L)
-          val remainder: BigInt = current.mod(58L)
-          val char = base58Characters.charAt(remainder.toInt).toString
-          val accum = str + char
-          loop(quotient, accum)
-      }
-    if (bytes.isEmpty) ""
-    else {
-      val big: BigInt = BigInt(1, bytes.toArray)
-      loop(big, "")
-    }
+    bytes.toBase58
   }
 
   /** Encodes a hex string to its

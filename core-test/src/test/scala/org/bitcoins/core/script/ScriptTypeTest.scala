@@ -11,6 +11,8 @@ class ScriptTypeTest extends BitcoinSUnitTest {
 
       assert(newScriptType.contains(scriptType))
     }
+
+    assert(ScriptType.fromString("nonstandard") == ScriptType.NONSTANDARD)
   }
 
   it must "fail when nonsense ScriptType is used" in {
