@@ -1,8 +1,10 @@
 package org.bitcoins.core.util
 
 import org.bitcoins.core.crypto.ECPrivateKeyUtil
-import org.bitcoins.core.protocol.blockchain._
+import org.bitcoins.core.protocol.blockchain.*
+import org.bitcoins.crypto.CryptoUtil
 import scodec.bits.ByteVector
+
 import scala.util.{Failure, Success, Try}
 
 /** Created by chris on 5/16/16. source of values:
@@ -21,7 +23,18 @@ sealed abstract class Base58 {
     */
   def decodeCheck(input: String): Try[ByteVector] = {
     ByteVector.fromBase58(input) match {
-      case Some(b) => Success(b)
+      case Some(decoded) =>
+        if (decoded.length < 4) {
+          Failure(new IllegalArgumentException("Invalid input"))
+        } else {
+          val splitSeqs = decoded.splitAt(decoded.length - 4)
+          val data: ByteVector = splitSeqs._1
+          val checksum: ByteVector = splitSeqs._2
+          val actualChecksum: ByteVector =
+            CryptoUtil.doubleSHA256(data).bytes.take(4)
+          if (checksum == actualChecksum) Success(data)
+          else Failure(new IllegalArgumentException("checksums don't validate"))
+        }
       case None =>
         val exn = new IllegalArgumentException(s"Invalid base58, got=$input")
         Failure(exn)
@@ -55,12 +68,7 @@ sealed abstract class Base58 {
     * [[https://github.com/ACINQ/bitcoin-lib/blob/master/src/main/scala/fr/acinq/bitcoin/Base58.scala]]
     */
   def decode(input: String): ByteVector = {
-    val zeroes = ByteVector(input.takeWhile(_ == '1').map(_ => 0: Byte))
-    val trim = input.dropWhile(_ == '1').toList
-    val decoded = trim.foldLeft(BigInt(0))((a, b) =>
-      a.*(BigInt(58L)).+(BigInt(base58Pairs(b))))
-    if (trim.isEmpty) zeroes
-    else zeroes ++ ByteVector(decoded.toByteArray.dropWhile(_ == 0))
+    ByteVector.fromBase58(input).get
   }
 
   /** Determines if a string is a valid
