@@ -2,9 +2,7 @@ package org.bitcoins.core.util
 
 import org.bitcoins.core.crypto.ECPrivateKeyUtil
 import org.bitcoins.core.protocol.blockchain._
-import org.bitcoins.crypto.CryptoUtil
 import scodec.bits.ByteVector
-
 import scala.util.{Failure, Success, Try}
 
 /** Created by chris on 5/16/16. source of values:
