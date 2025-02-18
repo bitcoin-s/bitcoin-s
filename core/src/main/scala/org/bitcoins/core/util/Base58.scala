@@ -1,7 +1,7 @@
 package org.bitcoins.core.util
 
 import org.bitcoins.core.crypto.ECPrivateKeyUtil
-import org.bitcoins.core.protocol.blockchain._
+import org.bitcoins.core.protocol.blockchain.*
 import org.bitcoins.crypto.CryptoUtil
 import scodec.bits.ByteVector
 
@@ -22,19 +22,22 @@ sealed abstract class Base58 {
     * against its checksum (last 4 decoded bytes).
     */
   def decodeCheck(input: String): Try[ByteVector] = {
-    val decodedTry: Try[ByteVector] = Try(decode(input))
-    decodedTry.flatMap { decoded =>
-      if (decoded.length < 4)
-        Failure(new IllegalArgumentException("Invalid input"))
-      else {
-        val splitSeqs = decoded.splitAt(decoded.length - 4)
-        val data: ByteVector = splitSeqs._1
-        val checksum: ByteVector = splitSeqs._2
-        val actualChecksum: ByteVector =
-          CryptoUtil.doubleSHA256(data).bytes.take(4)
-        if (checksum == actualChecksum) Success(data)
-        else Failure(new IllegalArgumentException("checksums don't validate"))
-      }
+    ByteVector.fromBase58(input) match {
+      case Some(decoded) =>
+        if (decoded.length < 4) {
+          Failure(new IllegalArgumentException(s"Invalid input, got=$input"))
+        } else {
+          val splitSeqs = decoded.splitAt(decoded.length - 4)
+          val data: ByteVector = splitSeqs._1
+          val checksum: ByteVector = splitSeqs._2
+          val actualChecksum: ByteVector =
+            CryptoUtil.doubleSHA256(data).bytes.take(4)
+          if (checksum == actualChecksum) Success(data)
+          else Failure(new IllegalArgumentException("checksums don't validate"))
+        }
+      case None =>
+        val exn = new IllegalArgumentException(s"Invalid base58, got=$input")
+        Failure(exn)
     }
   }
 
@@ -60,17 +63,12 @@ sealed abstract class Base58 {
     */
   def encode(byte: Byte): String = encode(ByteVector.fromByte(byte))
 
-  /** Takes in [[org.bitcoins.core.protocol.blockchain.Base58Type Base58Type]]
-    * string and returns sequence of [[scala.Byte Byte]]s.
-    * [[https://github.com/ACINQ/bitcoin-lib/blob/master/src/main/scala/fr/acinq/bitcoin/Base58.scala]]
+  /** Decodes a base58 string to a [[ByteVector]]
     */
   def decode(input: String): ByteVector = {
-    val zeroes = ByteVector(input.takeWhile(_ == '1').map(_ => 0: Byte))
-    val trim = input.dropWhile(_ == '1').toList
-    val decoded = trim.foldLeft(BigInt(0))((a, b) =>
-      a.*(BigInt(58L)).+(BigInt(base58Pairs(b))))
-    if (trim.isEmpty) zeroes
-    else zeroes ++ ByteVector(decoded.toByteArray.dropWhile(_ == 0))
+    ByteVector.fromBase58(input).getOrElse {
+      throw new IllegalArgumentException(s"Invalid base58 input, got=$input")
+    }
   }
 
   /** Determines if a string is a valid
