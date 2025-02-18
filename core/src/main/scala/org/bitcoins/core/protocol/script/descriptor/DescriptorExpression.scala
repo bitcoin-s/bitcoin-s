@@ -8,9 +8,10 @@ import org.bitcoins.core.crypto.{
   ExtPublicKey
 }
 import org.bitcoins.core.hd.{BIP32Node, BIP32Path, HardenedType}
-import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.script.*
 import org.bitcoins.core.script.ScriptType
-import org.bitcoins.crypto._
+import org.bitcoins.crypto.*
 
 import scala.util.{Failure, Success}
 
@@ -490,7 +491,7 @@ sealed abstract class MultisigScriptExpression
 
   override def source: MultisigKeyExpression
 
-  def isSorted: Boolean = descriptorType == DescriptorType.SortedMulti
+  def isSorted: Boolean = descriptorType == ScriptDescriptorType.SortedMulti
 
 }
 
@@ -531,7 +532,8 @@ sealed trait TapscriptTreeExpressionSource extends ExpressionSource {
   */
 case class RawScriptExpression(scriptPubKey: RawScriptPubKey)
     extends RawSPKScriptExpression {
-  override val descriptorType: DescriptorType.Raw.type = DescriptorType.Raw
+  override val descriptorType: ScriptDescriptorType.Raw.type =
+    ScriptDescriptorType.Raw
 
   override def toString: String = {
     s"${descriptorType.toString}(${scriptPubKey.asmHex})"
@@ -541,7 +543,8 @@ case class RawScriptExpression(scriptPubKey: RawScriptPubKey)
 case class P2PKHScriptExpression(source: SingleECPublicKeyExpression)
     extends RawSPKScriptExpression
     with KeyExpressionScriptExpression[ECPublicKey] {
-  override val descriptorType: DescriptorType.PKH.type = DescriptorType.PKH
+  override val descriptorType: ScriptDescriptorType.PKH.type =
+    ScriptDescriptorType.PKH
 
   override val scriptPubKey: P2PKHScriptPubKey = {
     val pub = source.key match {
@@ -555,7 +558,8 @@ case class P2PKHScriptExpression(source: SingleECPublicKeyExpression)
 case class P2PKScriptExpression[T <: PublicKey](source: SingleKeyExpression[T])
     extends RawSPKScriptExpression
     with KeyExpressionScriptExpression[T] {
-  override val descriptorType: DescriptorType.PK.type = DescriptorType.PK
+  override val descriptorType: ScriptDescriptorType.PK.type =
+    ScriptDescriptorType.PK
 
   override val scriptPubKey: P2PKScriptPubKey = {
     val pub = source match {
@@ -575,7 +579,8 @@ case class P2PKScriptExpression[T <: PublicKey](source: SingleKeyExpression[T])
 case class P2WPKHExpression(source: SingleECPublicKeyExpression)
     extends ScriptExpression
     with KeyExpressionScriptExpression[ECPublicKey] {
-  override val descriptorType: DescriptorType.WPKH.type = DescriptorType.WPKH
+  override val descriptorType: ScriptDescriptorType.WPKH.type =
+    ScriptDescriptorType.WPKH
 
   override val scriptPubKey: P2WPKHWitnessSPKV0 = {
     val pubKey = source.key match {
@@ -589,7 +594,8 @@ case class P2WPKHExpression(source: SingleECPublicKeyExpression)
 case class P2WSHExpression(source: RawSPKScriptExpression)
     extends ScriptExpression
     with NestedScriptExpression {
-  override val descriptorType: DescriptorType.WSH.type = DescriptorType.WSH
+  override val descriptorType: ScriptDescriptorType.WSH.type =
+    ScriptDescriptorType.WSH
 
   override val scriptPubKey: P2WSHWitnessSPKV0 = {
     P2WSHWitnessSPKV0(source.scriptPubKey)
@@ -599,7 +605,8 @@ case class P2WSHExpression(source: RawSPKScriptExpression)
 case class P2SHExpression(source: ScriptExpression)
     extends ScriptExpression
     with NestedScriptExpression {
-  override val descriptorType: DescriptorType.SH.type = DescriptorType.SH
+  override val descriptorType: ScriptDescriptorType.SH.type =
+    ScriptDescriptorType.SH
 
   override val scriptPubKey: P2SHScriptPubKey = {
     source.scriptPubKey match {
@@ -620,7 +627,8 @@ case class P2SHExpression(source: ScriptExpression)
 case class MultisigExpression(source: MultisigKeyExpression)
     extends MultisigScriptExpression
     with KeyExpressionScriptExpression[ECPublicKey] {
-  override val descriptorType: DescriptorType.Multi.type = DescriptorType.Multi
+  override val descriptorType: ScriptDescriptorType.Multi.type =
+    ScriptDescriptorType.Multi
 
   override val scriptPubKey: MultiSignatureScriptPubKey = {
     MultiSignatureScriptPubKey(source.numSigsRequired, source.pubKeys)
@@ -643,8 +651,8 @@ case class SortedMultisigExpression(source: MultisigKeyExpression)
     extends MultisigScriptExpression
     with KeyExpressionScriptExpression[ECPublicKey] {
 
-  override val descriptorType: DescriptorType.SortedMulti.type =
-    DescriptorType.SortedMulti
+  override val descriptorType: ScriptDescriptorType.SortedMulti.type =
+    ScriptDescriptorType.SortedMulti
 
   override val scriptPubKey: MultiSignatureScriptPubKey = {
     MultiSignatureScriptPubKey(source.numSigsRequired, source.sortedPubKeys)
@@ -669,7 +677,7 @@ case class ComboExpression(
     scriptType: ScriptType = ScriptType.PUBKEYHASH)
     extends ScriptExpression
     with KeyExpressionScriptExpression[ECPublicKey] {
-  override val descriptorType: DescriptorType = DescriptorType.Combo
+  override val descriptorType: DescriptorType = ScriptDescriptorType.Combo
 
   override val scriptPubKey: ScriptPubKey = {
     scriptType match {
@@ -694,25 +702,27 @@ object ScriptExpressionECKey extends StringFactory[ScriptExpression] {
 
   override def fromString(string: String): ScriptExpression = {
     val iter = DescriptorIterator(string)
-    val descriptorType = iter.takeDescriptorType()
+    val descriptorType = iter.takeScriptDescriptorType()
     val expression: ScriptExpression = descriptorType match {
-      case DescriptorType.PKH =>
+      case ScriptDescriptorType.PKH =>
         P2PKHScriptExpression(iter.takeSingleECKeyExpression())
-      case DescriptorType.WPKH =>
+      case ScriptDescriptorType.WPKH =>
         P2WPKHExpression(iter.takeSingleECKeyExpression())
-      case DescriptorType.WSH =>
+      case ScriptDescriptorType.WSH =>
         P2WSHExpression(iter.takeRawSPKScriptExpression())
-      case DescriptorType.SH => P2SHExpression(iter.takeScriptExpressionECKey())
-      case DescriptorType.Raw => RawScriptExpression(iter.takeRawScriptPubKey())
-      case DescriptorType.PK =>
+      case ScriptDescriptorType.SH =>
+        P2SHExpression(iter.takeScriptExpressionECKey())
+      case ScriptDescriptorType.Raw =>
+        RawScriptExpression(iter.takeRawScriptPubKey())
+      case ScriptDescriptorType.PK =>
         P2PKScriptExpression(iter.takeSingleECKeyExpression())
-      case DescriptorType.Multi =>
+      case ScriptDescriptorType.Multi =>
         MultisigExpression(iter.takeMultisigKeyExpression())
-      case DescriptorType.SortedMulti =>
+      case ScriptDescriptorType.SortedMulti =>
         SortedMultisigExpression(iter.takeMultisigKeyExpression())
-      case DescriptorType.Combo =>
+      case ScriptDescriptorType.Combo =>
         ComboExpression(iter.takeSingleECKeyExpression())
-      case DescriptorType.TR =>
+      case ScriptDescriptorType.TR =>
         sys.error(
           s"Cannot create tapscript expression's with ECPublicKey, got=$string")
     }
@@ -724,17 +734,19 @@ object ScriptExpressionXOnlyKey extends StringFactory[ScriptExpression] {
 
   override def fromString(string: String): ScriptExpression = {
     val iter = DescriptorIterator(string)
-    val descriptorType = iter.takeDescriptorType()
+    val descriptorType = iter.takeScriptDescriptorType()
     val expression: ScriptExpression = descriptorType match {
-      case DescriptorType.Raw => RawScriptExpression(iter.takeRawScriptPubKey())
-      case DescriptorType.PK =>
+      case ScriptDescriptorType.Raw =>
+        RawScriptExpression(iter.takeRawScriptPubKey())
+      case ScriptDescriptorType.PK =>
         P2PKScriptExpression(iter.takeSingleXOnlyPubKeyExpression())
-      case DescriptorType.Multi =>
+      case ScriptDescriptorType.Multi =>
         MultisigExpression(iter.takeMultisigKeyExpression())
-      case DescriptorType.SortedMulti =>
+      case ScriptDescriptorType.SortedMulti =>
         SortedMultisigExpression(iter.takeMultisigKeyExpression())
-      case x @ (DescriptorType.Combo | DescriptorType.TR | DescriptorType.SH |
-          DescriptorType.WSH | DescriptorType.WPKH | DescriptorType.PKH) =>
+      case x @ (ScriptDescriptorType.Combo | ScriptDescriptorType.TR |
+          ScriptDescriptorType.SH | ScriptDescriptorType.WSH |
+          ScriptDescriptorType.WPKH | ScriptDescriptorType.PKH) =>
         sys.error(
           s"Cannot create tapscript descriptor for descriptorType=$x, got=$string")
     }
@@ -746,7 +758,8 @@ object ScriptExpressionXOnlyKey extends StringFactory[ScriptExpression] {
   * https://github.com/bitcoin/bips/blob/master/bip-0386.mediawiki
   */
 sealed abstract class TreeExpression extends ScriptExpression {
-  override def descriptorType: DescriptorType.TR.type = DescriptorType.TR
+  override def descriptorType: ScriptDescriptorType.TR.type =
+    ScriptDescriptorType.TR
   override def scriptPubKey: TaprootScriptPubKey
 }
 
@@ -780,5 +793,12 @@ case class ScriptPathTreeExpression(
 
   override def toString(): String = {
     s"${descriptorType.toString}(${keyPath.source.toString},${source.toString()})"
+  }
+}
+
+case class AddressExpression(address: BitcoinAddress)
+    extends DescriptorExpression {
+  override def toString: String = {
+    s"${DescriptorType.Addr.toString}(${address.toString})"
   }
 }

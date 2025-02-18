@@ -2,11 +2,12 @@ package org.bitcoins.core.protocol.script.descriptor
 
 import org.bitcoins.core.crypto.{ECPrivateKeyUtil, ExtKey, ExtPublicKey}
 import org.bitcoins.core.hd.{BIP32Path, HardenedType}
+import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.{
   MultiSignatureScriptPubKey,
   RawScriptPubKey
 }
-import org.bitcoins.crypto._
+import org.bitcoins.crypto.*
 
 case class DescriptorIterator(descriptor: String) {
   private var index: Int = 0
@@ -20,6 +21,12 @@ case class DescriptorIterator(descriptor: String) {
     ()
   }
 
+  def takeScriptDescriptorType(): ScriptDescriptorType = {
+    val t = ScriptDescriptorType.fromString(current)
+    skip(t.toString.length)
+    skip(1)
+    t
+  }
   def takeDescriptorType(): DescriptorType = {
     val t = DescriptorType.fromString(current)
     skip(t.toString.length)
@@ -246,5 +253,11 @@ case class DescriptorIterator(descriptor: String) {
       TapscriptLeafExpression(expression)
     }
     expression
+  }
+
+  def takeAddressExpression(): AddressExpression = {
+    val addr = BitcoinAddress.fromString(current)
+    skip(addr.toString.length)
+    AddressExpression(addr)
   }
 }

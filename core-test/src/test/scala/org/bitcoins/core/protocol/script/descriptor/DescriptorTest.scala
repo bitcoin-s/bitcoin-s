@@ -386,6 +386,10 @@ class DescriptorTest extends BitcoinSUnitTest {
     val str2 = "raw(a9149a4d9901d6af519b2a23d4a2f51650fcba87ce7b87)"
     val expected2 = "a9149a4d9901d6af519b2a23d4a2f51650fcba87ce7b87"
     runTest(str2, expected2)
+
+    val str3 = "addr(3PUNyaW7M55oKWJ3kDukwk9bsKvryra15j)"
+    val expected3 = "a914eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee87"
+    runTest(str3, expected3)
   }
 
   it must "fail to parse invalid test vectors from BIP385" in {
@@ -467,7 +471,7 @@ class DescriptorTest extends BitcoinSUnitTest {
   }
 
   def runTest(descriptor: String, expectedSPK: String): Assertion = {
-    val desc = ScriptDescriptor.fromString(descriptor)
+    val desc = Descriptor.fromString(descriptor)
     assert(desc.toString == descriptor)
     assert(desc.scriptPubKey.asmHex == expectedSPK)
   }
@@ -521,9 +525,9 @@ class DescriptorTest extends BitcoinSUnitTest {
 
       val p2wpkh = P2WPKHWitnessSPKV0(derivedKey)
       val spk = desc.expression.descriptorType match {
-        case DescriptorType.WPKH => p2wpkh
-        case DescriptorType.SH   => P2SHScriptPubKey(p2wpkh)
-        case DescriptorType.TR =>
+        case ScriptDescriptorType.WPKH => p2wpkh
+        case ScriptDescriptorType.SH   => P2SHScriptPubKey(p2wpkh)
+        case ScriptDescriptorType.TR =>
           val scriptPathTreeExpr =
             desc.expression.asInstanceOf[ScriptPathTreeExpression]
           val internalExtKey = parseExtKeyExpression(scriptPathTreeExpr.keyPath)
@@ -576,11 +580,11 @@ class DescriptorTest extends BitcoinSUnitTest {
         MultiSignatureScriptPubKey(spk.requiredSigs, sortedKeys)
       val (actual, expected) = {
         desc.expression.descriptorType match {
-          case DescriptorType.Multi | DescriptorType.SortedMulti =>
+          case ScriptDescriptorType.Multi | ScriptDescriptorType.SortedMulti =>
             (multisig, MultiSignatureScriptPubKey.fromAsmHex(s))
-          case DescriptorType.SH =>
+          case ScriptDescriptorType.SH =>
             (P2SHScriptPubKey(multisig), P2SHScriptPubKey.fromAsmHex(s))
-          case DescriptorType.WSH =>
+          case ScriptDescriptorType.WSH =>
             (P2WSHWitnessSPKV0(multisig), P2WSHWitnessSPKV0.fromAsmHex(s))
           case x =>
             sys.error(

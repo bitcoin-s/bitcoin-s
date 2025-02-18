@@ -2,7 +2,7 @@ package org.bitcoins.core.protocol.script.descriptor
 
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.number.{UInt64, UInt8}
-import org.bitcoins.core.protocol.Bech32Address
+import org.bitcoins.core.protocol.{Bech32Address, BitcoinAddress}
 import org.bitcoins.core.protocol.script.*
 import org.bitcoins.core.util.Bech32
 import org.bitcoins.crypto.{ECPrivateKey, PublicKey, StringFactory}
@@ -16,7 +16,7 @@ sealed abstract class Descriptor {
 
   def expression: DescriptorExpression
   def checksum: Option[String]
-
+  def scriptPubKey: ScriptPubKey
   override def toString: String = {
     val checksumStr = checksum match {
       case Some(c) => "#" + c
@@ -128,6 +128,14 @@ case class ComboDescriptorCompressed(
   val p2shp2wpkh: P2SHScriptPubKey = P2SHScriptPubKey(p2wpkh)
 }
 
+case class AddressDescriptor(
+    expression: AddressExpression,
+    checksum: Option[String])
+    extends Descriptor {
+  val address: BitcoinAddress = expression.address
+  override val scriptPubKey: ScriptPubKey = address.scriptPubKey
+}
+
 sealed abstract class DescriptorFactory[
     T <: Descriptor,
     E <: DescriptorExpression,
@@ -167,9 +175,10 @@ sealed abstract class DescriptorFactory[
 object RawDescriptor
     extends DescriptorFactory[RawDescriptor,
                               RawScriptExpression,
-                              DescriptorType.Raw.type] {
+                              ScriptDescriptorType.Raw.type] {
 
-  override val descriptorType: DescriptorType.Raw.type = DescriptorType.Raw
+  override val descriptorType: ScriptDescriptorType.Raw.type =
+    ScriptDescriptorType.Raw
 
   override protected def parseValidExpression(
       iter: DescriptorIterator): RawScriptExpression = {
@@ -187,8 +196,9 @@ object RawDescriptor
 object P2WPKHDescriptor
     extends DescriptorFactory[P2WPKHDescriptor,
                               P2WPKHExpression,
-                              DescriptorType.WPKH.type] {
-  override val descriptorType: DescriptorType.WPKH.type = DescriptorType.WPKH
+                              ScriptDescriptorType.WPKH.type] {
+  override val descriptorType: ScriptDescriptorType.WPKH.type =
+    ScriptDescriptorType.WPKH
 
   override def parseValidExpression(
       iter: DescriptorIterator): P2WPKHExpression = {
@@ -226,8 +236,9 @@ object P2WPKHDescriptor
 object P2WSHDescriptor
     extends DescriptorFactory[P2WSHDescriptor,
                               P2WSHExpression,
-                              DescriptorType.WSH.type] {
-  override val descriptorType: DescriptorType.WSH.type = DescriptorType.WSH
+                              ScriptDescriptorType.WSH.type] {
+  override val descriptorType: ScriptDescriptorType.WSH.type =
+    ScriptDescriptorType.WSH
 
   override protected def parseValidExpression(
       iter: DescriptorIterator): P2WSHExpression = {
@@ -245,8 +256,9 @@ object P2WSHDescriptor
 object P2PKDescriptor
     extends DescriptorFactory[P2PKDescriptor[PublicKey],
                               P2PKScriptExpression[PublicKey],
-                              DescriptorType.PK.type] {
-  override val descriptorType: DescriptorType.PK.type = DescriptorType.PK
+                              ScriptDescriptorType.PK.type] {
+  override val descriptorType: ScriptDescriptorType.PK.type =
+    ScriptDescriptorType.PK
 
   override protected def parseValidExpression(
       iter: DescriptorIterator): P2PKScriptExpression[PublicKey] = {
@@ -264,8 +276,9 @@ object P2PKDescriptor
 object P2PKHDescriptor
     extends DescriptorFactory[P2PKHDescriptor,
                               P2PKHScriptExpression,
-                              DescriptorType.PKH.type] {
-  override val descriptorType: DescriptorType.PKH.type = DescriptorType.PKH
+                              ScriptDescriptorType.PKH.type] {
+  override val descriptorType: ScriptDescriptorType.PKH.type =
+    ScriptDescriptorType.PKH
 
   override protected def parseValidExpression(
       iter: DescriptorIterator): P2PKHScriptExpression = {
@@ -283,8 +296,9 @@ object P2PKHDescriptor
 object MultisigDescriptor
     extends DescriptorFactory[MultisigDescriptor,
                               MultisigExpression,
-                              DescriptorType.Multi.type] {
-  override val descriptorType: DescriptorType.Multi.type = DescriptorType.Multi
+                              ScriptDescriptorType.Multi.type] {
+  override val descriptorType: ScriptDescriptorType.Multi.type =
+    ScriptDescriptorType.Multi
 
   override protected def parseValidExpression(
       iter: DescriptorIterator): MultisigExpression = {
@@ -302,10 +316,10 @@ object MultisigDescriptor
 object SortedMultisigDescriptor
     extends DescriptorFactory[SortedMultisigDescriptor,
                               SortedMultisigExpression,
-                              DescriptorType.SortedMulti.type] {
+                              ScriptDescriptorType.SortedMulti.type] {
 
-  override val descriptorType: DescriptorType.SortedMulti.type =
-    DescriptorType.SortedMulti
+  override val descriptorType: ScriptDescriptorType.SortedMulti.type =
+    ScriptDescriptorType.SortedMulti
 
   override protected def parseValidExpression(
       iter: DescriptorIterator): SortedMultisigExpression = {
@@ -323,8 +337,9 @@ object SortedMultisigDescriptor
 object P2SHDescriptor
     extends DescriptorFactory[P2SHDescriptor,
                               P2SHExpression,
-                              DescriptorType.SH.type] {
-  override val descriptorType: DescriptorType.SH.type = DescriptorType.SH
+                              ScriptDescriptorType.SH.type] {
+  override val descriptorType: ScriptDescriptorType.SH.type =
+    ScriptDescriptorType.SH
 
   override protected def parseValidExpression(
       iter: DescriptorIterator): P2SHExpression = {
@@ -352,8 +367,9 @@ object P2SHDescriptor
 object ComboDescriptor
     extends DescriptorFactory[ComboDescriptor,
                               ComboExpression,
-                              DescriptorType.Combo.type] {
-  override val descriptorType: DescriptorType.Combo.type = DescriptorType.Combo
+                              ScriptDescriptorType.Combo.type] {
+  override val descriptorType: ScriptDescriptorType.Combo.type =
+    ScriptDescriptorType.Combo
 
   override protected def parseValidExpression(
       iter: DescriptorIterator): ComboExpression = {
@@ -372,8 +388,9 @@ object ComboDescriptor
 object TaprootDescriptor
     extends DescriptorFactory[TaprootDescriptor,
                               TreeExpression,
-                              DescriptorType.TR.type] {
-  override val descriptorType: DescriptorType.TR.type = DescriptorType.TR
+                              ScriptDescriptorType.TR.type] {
+  override val descriptorType: ScriptDescriptorType.TR.type =
+    ScriptDescriptorType.TR
 
   override protected def parseValidExpression(
       iter: DescriptorIterator): TreeExpression = {
@@ -395,22 +412,22 @@ object ScriptDescriptor extends StringFactory[ScriptDescriptor] {
                                          ? <: ScriptExpression,
                                          ? <: DescriptorType]] = {
     Map(
-      DescriptorType.Raw -> RawDescriptor,
-      DescriptorType.WPKH -> P2WPKHDescriptor,
-      DescriptorType.WSH -> P2WSHDescriptor,
-      DescriptorType.PK -> P2PKDescriptor,
-      DescriptorType.SH -> P2SHDescriptor,
-      DescriptorType.PKH -> P2PKHDescriptor,
-      DescriptorType.Multi -> MultisigDescriptor,
-      DescriptorType.SortedMulti -> SortedMultisigDescriptor,
-      DescriptorType.Combo -> ComboDescriptor,
-      DescriptorType.TR -> TaprootDescriptor
+      ScriptDescriptorType.Raw -> RawDescriptor,
+      ScriptDescriptorType.WPKH -> P2WPKHDescriptor,
+      ScriptDescriptorType.WSH -> P2WSHDescriptor,
+      ScriptDescriptorType.PK -> P2PKDescriptor,
+      ScriptDescriptorType.SH -> P2SHDescriptor,
+      ScriptDescriptorType.PKH -> P2PKHDescriptor,
+      ScriptDescriptorType.Multi -> MultisigDescriptor,
+      ScriptDescriptorType.SortedMulti -> SortedMultisigDescriptor,
+      ScriptDescriptorType.Combo -> ComboDescriptor,
+      ScriptDescriptorType.TR -> TaprootDescriptor
     )
   }
 
   override def fromString(string: String): ScriptDescriptor = {
     val iter = DescriptorIterator(string)
-    val t = iter.takeDescriptorType()
+    val t = iter.takeScriptDescriptorType()
     t match {
       case s: ScriptDescriptorType =>
         map
@@ -419,6 +436,25 @@ object ScriptDescriptor extends StringFactory[ScriptDescriptor] {
           .getOrElse(
             sys.error(s"Cannot find parse t=$t to ScriptDescriptor s=$s"))
     }
+  }
+}
+
+object AddressDescriptor
+    extends DescriptorFactory[AddressDescriptor,
+                              AddressExpression,
+                              DescriptorType.Addr.type] {
+
+  override def descriptorType: DescriptorType.Addr.type = DescriptorType.Addr
+
+  override protected def parseValidExpression(
+      iter: DescriptorIterator): AddressExpression = {
+    iter.takeAddressExpression()
+  }
+
+  override protected def createDescriptor(
+      e: AddressExpression,
+      checksum: Option[String]): AddressDescriptor = {
+    AddressDescriptor(e, checksum)
   }
 }
 
@@ -440,6 +476,8 @@ object Descriptor extends StringFactory[Descriptor] {
     t match {
       case _: ScriptDescriptorType =>
         ScriptDescriptor.fromString(string)
+      case DescriptorType.Addr =>
+        AddressDescriptor.fromString(string)
     }
   }
 
