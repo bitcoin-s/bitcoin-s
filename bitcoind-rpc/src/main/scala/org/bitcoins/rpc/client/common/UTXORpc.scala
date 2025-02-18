@@ -4,13 +4,15 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
   DumpTxOutSetResult,
   LoadTxOutSetResult,
   RpcOpts,
+  ScanTxoutSetRequest,
+  ScanTxoutSetResult,
   UnspentOutput
 }
 import org.bitcoins.commons.serializers.JsonSerializers
-import org.bitcoins.commons.serializers.JsonSerializers._
+import org.bitcoins.commons.serializers.JsonSerializers.*
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
-import play.api.libs.json._
+import play.api.libs.json.*
 
 import java.nio.file.Path
 import scala.concurrent.Future
@@ -89,6 +91,11 @@ trait UTXORpc { self: Client =>
       "loadtxoutset",
       List(Json.toJson(path.toString))
     )(JsonSerializers.loadTxOutSetResultReads)
+  }
+
+  def scanTxoutSet(request: ScanTxoutSetRequest): Future[ScanTxoutSetResult] = {
+    bitcoindCall[ScanTxoutSetResult]("scantxoutset", request.params)(
+      JsonSerializers.scanTxoutSetResultReads)
   }
 
 }

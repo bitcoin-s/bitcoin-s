@@ -1,6 +1,10 @@
 package org.bitcoins.commons.jsonmodels.bitcoind
 
-import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.ScanBlocksAction
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
+  ScanBlocksAction,
+  ScanBlocksOpt
+}
+import org.bitcoins.commons.serializers.JsonWriters.DescriptorWrites
 import org.bitcoins.core.api.chain.db.{
   BlockHeaderDb,
   BlockHeaderDbHelper,
@@ -12,11 +16,12 @@ import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.gcs.{FilterType, GolombFilter}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.protocol.script.ScriptPubKey
 import org.bitcoins.core.protocol.script.descriptor.Descriptor
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import play.api.libs.json.{JsArray, JsNull, JsNumber, JsString, JsValue}
+import play.api.libs.json.{JsArray, JsNull, JsNumber, JsString, JsValue, Json}
 import scodec.bits.ByteVector
 
 import java.nio.file.Path
@@ -38,6 +43,43 @@ case class LoadTxOutSetResult(
     base_height: Long,
     path: Path)
     extends BlockchainResult
+
+case class ScanTxoutSetRequest(
+    action: ScanBlocksAction,
+    descs: Vector[Descriptor]) {
+  def params: List[JsValue] = {
+    action match {
+      case ScanBlocksOpt.Start =>
+        List(
+          JsString(action.toString),
+          Json.toJson(descs)
+        )
+      case ScanBlocksOpt.Status | ScanBlocksOpt.Abort =>
+        List(JsString(action.toString))
+    }
+
+  }
+}
+
+case class ScanTxoutSetUTXO(
+    txid: DoubleSha256DigestBE,
+    vout: Int,
+    scriptPubKey: ScriptPubKey,
+    desc: Descriptor,
+    amount: Bitcoins,
+    coinbase: Boolean,
+    height: Int,
+    blockhash: DoubleSha256DigestBE,
+    confirmations: Int)
+
+case class ScanTxoutSetResult(
+    success: Boolean,
+    txouts: Int,
+    height: Int,
+    bestblock: DoubleSha256DigestBE,
+    unspents: Vector[ScanTxoutSetUTXO],
+    total_amount: Bitcoins
+) extends BlockchainResult
 
 case class GetBlockResult(
     hash: DoubleSha256DigestBE,
