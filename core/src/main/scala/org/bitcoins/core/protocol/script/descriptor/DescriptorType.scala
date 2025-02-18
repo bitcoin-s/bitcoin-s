@@ -12,8 +12,19 @@ sealed abstract class ScriptDescriptorType extends DescriptorType {
   def scriptType: ScriptType
 }
 
-object DescriptorType extends StringFactory[DescriptorType] {
-
+object ScriptDescriptorType extends StringFactory[ScriptDescriptorType] {
+  private[descriptor] val all: Vector[ScriptDescriptorType] = Vector(
+    PK,
+    PKH,
+    WPKH,
+    WSH,
+    TR,
+    Multi,
+    SortedMulti,
+    Raw,
+    SH,
+    Combo
+  )
   case object PK extends ScriptDescriptorType {
     override val scriptType: org.bitcoins.core.script.ScriptType.PUBKEY.type =
       ScriptType.PUBKEY
@@ -78,17 +89,28 @@ object DescriptorType extends StringFactory[DescriptorType] {
     override val toString: String = "combo"
   }
 
-  private val all: Vector[DescriptorType] = Vector(
-    PK,
-    PKH,
-    WPKH,
-    WSH,
-    TR,
-    Multi,
-    SortedMulti,
-    Raw,
-    SH,
-    Combo
+  override def fromStringOpt(string: String): Option[ScriptDescriptorType] = {
+    val (dType, _) = string.span(_ != '(')
+    all.find(d => dType == d.toString)
+  }
+
+  override def fromString(string: String): ScriptDescriptorType = {
+    fromStringOpt(string) match {
+      case Some(d) => d
+      case None =>
+        sys.error(s"Could not find descriptor type for string=$string")
+    }
+  }
+}
+
+object DescriptorType extends StringFactory[DescriptorType] {
+
+  case object Addr extends DescriptorType {
+    override val toString: String = "addr"
+  }
+
+  private val all: Vector[DescriptorType] = ScriptDescriptorType.all ++ Vector(
+    Addr
   )
 
   override def fromStringOpt(string: String): Option[DescriptorType] = {

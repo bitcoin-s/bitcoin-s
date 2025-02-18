@@ -1,7 +1,7 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.consensus.Consensus
-import org.bitcoins.core.protocol.script.descriptor.DescriptorType
+import org.bitcoins.core.protocol.script.descriptor.ScriptDescriptorType
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.script.bitwise.{OP_EQUAL, OP_EQUALVERIFY}
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, *}
@@ -51,7 +51,8 @@ sealed trait P2PKHScriptPubKey extends RawScriptPubKey {
   def pubKeyHash: Sha256Hash160Digest =
     Sha256Hash160Digest(asm(asm.length - 3).bytes)
 
-  override def toString = s"${DescriptorType.PK.toString}(${pubKeyHash.hex})"
+  override def toString =
+    s"${ScriptDescriptorType.PK.toString}(${pubKeyHash.hex})"
 }
 
 object P2PKHScriptPubKey extends ScriptFactory[P2PKHScriptPubKey] {
@@ -61,7 +62,8 @@ object P2PKHScriptPubKey extends ScriptFactory[P2PKHScriptPubKey] {
       extends P2PKHScriptPubKey {
     override val scriptType: ScriptType = ScriptType.PUBKEYHASH
 
-    override def toString = s"${DescriptorType.PKH.toString}(${pubKeyHash.hex})"
+    override def toString =
+      s"${ScriptDescriptorType.PKH.toString}(${pubKeyHash.hex})"
   }
 
   def apply(pubKey: ECPublicKey): P2PKHScriptPubKey = {
@@ -189,7 +191,7 @@ sealed trait MultiSignatureScriptPubKey extends RawScriptPubKey {
   }
 
   override def toString =
-    s"${DescriptorType.Multi.toString}($requiredSigs,${publicKeys.mkString(",")})"
+    s"${ScriptDescriptorType.Multi.toString}($requiredSigs,${publicKeys.mkString(",")})"
 }
 
 object MultiSignatureScriptPubKey
@@ -358,7 +360,8 @@ sealed trait P2SHScriptPubKey extends NonWitnessScriptPubKey {
   def scriptHash: Sha256Hash160Digest =
     Sha256Hash160Digest(asm(asm.length - 2).bytes)
 
-  override def toString = s"${DescriptorType.SH.toString}(${scriptHash.hex})"
+  override def toString =
+    s"${ScriptDescriptorType.SH.toString}(${scriptHash.hex})"
 }
 
 object P2SHScriptPubKey extends ScriptFactory[P2SHScriptPubKey] {
@@ -413,7 +416,8 @@ sealed trait P2PKScriptPubKey extends RawScriptPubKey {
   def publicKey: ECPublicKeyBytes =
     ECPublicKeyBytes(BitcoinScriptUtil.filterPushOps(asm).head.bytes)
 
-  override def toString = s"${DescriptorType.PK.toString}(${publicKey.hex})"
+  override def toString =
+    s"${ScriptDescriptorType.PK.toString}(${publicKey.hex})"
 
 }
 
@@ -1343,7 +1347,8 @@ object WitnessScriptPubKeyV0 extends ScriptFactory[WitnessScriptPubKeyV0] {
   */
 sealed abstract class P2WPKHWitnessSPKV0 extends WitnessScriptPubKeyV0 {
   def pubKeyHash: Sha256Hash160Digest = Sha256Hash160Digest(asm(2).bytes)
-  override def toString = s"${DescriptorType.WPKH.toString}(${pubKeyHash.hex})"
+  override def toString =
+    s"${ScriptDescriptorType.WPKH.toString}(${pubKeyHash.hex})"
 }
 
 object P2WPKHWitnessSPKV0 extends ScriptFactory[P2WPKHWitnessSPKV0] {
@@ -1395,7 +1400,8 @@ object P2WPKHWitnessSPKV0 extends ScriptFactory[P2WPKHWitnessSPKV0] {
   */
 sealed abstract class P2WSHWitnessSPKV0 extends WitnessScriptPubKeyV0 {
   def scriptHash: Sha256Digest = Sha256Digest(asm(2).bytes)
-  override def toString = s"${DescriptorType.WSH.toString}(${scriptHash.hex})"
+  override def toString =
+    s"${ScriptDescriptorType.WSH.toString}(${scriptHash.hex})"
 }
 
 object P2WSHWitnessSPKV0 extends ScriptFactory[P2WSHWitnessSPKV0] {
@@ -1449,7 +1455,7 @@ case class TaprootScriptPubKey(override val asm: Vector[ScriptToken])
     XOnlyPubKey.fromBytes(asm(2).bytes)
   }
 
-  override def toString = s"${DescriptorType.TR.toString}(${pubKey.hex})"
+  override def toString = s"${ScriptDescriptorType.TR.toString}(${pubKey.hex})"
 }
 
 object TaprootScriptPubKey extends ScriptFactory[TaprootScriptPubKey] {
