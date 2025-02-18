@@ -9,7 +9,12 @@ import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.gcs.{BlockFilter, FilterType}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.descriptor.P2WPKHDescriptor
+import org.bitcoins.core.protocol.BitcoinAddress
+import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
+import org.bitcoins.core.protocol.script.descriptor.{
+  AddressDescriptor,
+  P2WPKHDescriptor
+}
 import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.testkit.rpc.{
   BitcoindFixturesCachedPairNewest,
@@ -290,6 +295,32 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
       assert(start.relevant_blocks.isEmpty)
       assert(!response2.asInstanceOf[ScanBlocksAbortResult].aborted)
     }
+  }
+
+  it should "find an address a payment was made" in { case nodePair =>
+    val client = nodePair.node1
+    val privKey = ECPrivateKey.freshPrivateKey
+    val p2pwkh = P2WPKHWitnessSPKV0(privKey.publicKey)
+    val address = BitcoinAddress.fromScriptPubKey(p2pwkh, RegTest)
+    val request0 =
+      ScanBlocksRequest(action = ScanBlocksOpt.Start,
+                        scanObjects =
+                          Vector(AddressDescriptor(address)).map(ScanObject),
+                        startHeightOpt = None,
+                        stopHeightOpt = None,
+                        filterTypeOpt = None)
+    for {
+      _ <- client.sendToAddress(address, Bitcoins.one)
+      _ <- client.generate(6)
+      response0 <- client.scanBlocks(request0)
+      blockCount <- client.getBlockCount()
+    } yield {
+      val start = response0.asInstanceOf[ScanBlocksStartResult]
+      assert(start.from_height == 0)
+      assert(start.to_height == blockCount)
+      assert(start.relevant_blocks.nonEmpty)
+    }
+
   }
 
   it must "be able to getchainstates" in { case nodePair =>

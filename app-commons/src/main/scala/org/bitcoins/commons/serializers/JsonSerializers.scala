@@ -944,6 +944,12 @@ object JsonSerializers {
     }
   }
 
+  implicit val scanTxoutSetUTXO: Reads[ScanTxoutSetUTXO] =
+    Json.reads[ScanTxoutSetUTXO]
+
+  implicit val scanTxoutSetResultReads: Reads[ScanTxoutSetResult] =
+    Json.reads[ScanTxoutSetResult]
+
   implicit val chainStateReads: Reads[ChainState] = Json.reads[ChainState]
 
   implicit val chainStateResultReads: Reads[ChainStateResult] =

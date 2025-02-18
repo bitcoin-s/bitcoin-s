@@ -456,6 +456,13 @@ object AddressDescriptor
       checksum: Option[String]): AddressDescriptor = {
     AddressDescriptor(e, checksum)
   }
+
+  def apply(address: BitcoinAddress): AddressDescriptor = {
+    val expr = AddressExpression(address)
+    val nochecksum = AddressDescriptor(expr, None)
+    val checksum = Descriptor.createChecksum(nochecksum)
+    AddressDescriptor(expr, Some(checksum))
+  }
 }
 
 object Descriptor extends StringFactory[Descriptor] {

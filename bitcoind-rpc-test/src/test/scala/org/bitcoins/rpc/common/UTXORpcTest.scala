@@ -1,6 +1,9 @@
 package org.bitcoins.rpc.common
 
-import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts
+import org.bitcoins.commons.jsonmodels.bitcoind.{RpcOpts, ScanTxoutSetRequest}
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.ScanBlocksOpt
+import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits}
+import org.bitcoins.core.protocol.script.descriptor.AddressDescriptor
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.testkit.rpc.{
   BitcoindFixturesFundedCachedNewest,
@@ -98,5 +101,41 @@ class UTXORpcTest extends BitcoindFixturesFundedCachedNewest {
       Files.delete(result.path)
       succeed
     }
+  }
+
+  it should "scantxoutset to find a utxo" in { client =>
+    val numBlocks = 6
+    val amt = Bitcoins.one
+    for {
+      address <- client.getNewAddress
+      txid <- client.sendToAddress(address, amt)
+      descs = Vector(AddressDescriptor(address))
+      request0 =
+        ScanTxoutSetRequest(action = ScanBlocksOpt.Start, descs)
+      _ <- client.generate(numBlocks)
+      response0 <- client.scanTxoutSet(request0)
+      balance <- client.getBalance
+      sweepAddr <- client.getNewAddress
+      _ <- client.sendToAddress(sweepAddr, balance, subractFeeFromAmount = true)
+      blockCount <- client.getBlockCount()
+      _ <- client.generate(numBlocks)
+      response1 <- client.scanTxoutSet(request0)
+    } yield {
+      assert(response0.success)
+      assert(response0.height == blockCount)
+      assert(response0.unspents.size == 1)
+      response0.unspents.foreach { u =>
+        assert(u.txid == txid)
+        assert(u.height == blockCount - numBlocks + 1)
+        assert(u.confirmations == numBlocks)
+        assert(u.amount == amt)
+        assert(u.scriptPubKey == address.scriptPubKey)
+      }
+      assert(response0.total_amount == amt)
+
+      assert(response1.unspents.isEmpty)
+      assert(response1.total_amount == CurrencyUnits.zero)
+    }
+
   }
 }
