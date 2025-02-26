@@ -277,7 +277,7 @@ class LnCurrencyUnitTest extends BitcoinSUnitTest {
     }
   }
 
-  it must "fail to create a PicoBitcion outside of the maximum range" in {
+  it must "fail to create a PicoBitcoin outside of the maximum range" in {
     intercept[IllegalArgumentException] {
       PicoBitcoins(LnPolicy.maxPicoBitcoins + 1)
     }
@@ -301,7 +301,7 @@ class LnCurrencyUnitTest extends BitcoinSUnitTest {
     }
   }
 
-  it must "fail to create a PicoBitcion outside of the minimum range" in {
+  it must "fail to create a PicoBitcoin outside of the minimum range" in {
     intercept[IllegalArgumentException] {
       PicoBitcoins(LnPolicy.minPicoBitcoins - 1)
     }
