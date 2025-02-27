@@ -15,6 +15,7 @@ object DatadirUtil {
       case "testnet3" => TestNet3
       case "testnet"  => TestNet3
       case "test"     => TestNet3
+      case "testnet4" => TestNet4
       case "regtest"  => RegTest
       case "signet"   => SigNet
       case "sig"      => SigNet
@@ -25,6 +26,7 @@ object DatadirUtil {
     network match {
       case MainNet  => "mainnet"
       case TestNet3 => "testnet3"
+      case TestNet4 => "testnet4"
       case RegTest  => "regtest"
       case SigNet   => "signet"
     }
