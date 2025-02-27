@@ -1,6 +1,6 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3}
+import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3, TestNet4}
 import org.bitcoins.crypto.{ECPrivateKey, ECPrivateKeyBytes}
 import org.bitcoins.testkitcore.gen.{
   ChainParamsGenerator,
@@ -72,7 +72,7 @@ class WIFEncodingTest extends BitcoinSUnitTest {
       network match {
         case MainNet =>
           assert(ECPrivateKeyUtil.parseNetworkFromWIF(wif).get == MainNet)
-        case TestNet3 | RegTest | SigNet =>
+        case TestNet3 | TestNet4 | RegTest | SigNet =>
           assert(ECPrivateKeyUtil.parseNetworkFromWIF(wif).get == TestNet3)
       }
       assert(

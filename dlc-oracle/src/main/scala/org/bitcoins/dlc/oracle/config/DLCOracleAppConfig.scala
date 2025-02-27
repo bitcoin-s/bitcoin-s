@@ -77,6 +77,7 @@ case class DLCOracleAppConfig(
         val lastDirname = network match {
           case MainNet  => "mainnet"
           case TestNet3 => "testnet3"
+          case TestNet4 => "testnet4"
           case RegTest  => "regtest"
           case SigNet   => "signet"
         }

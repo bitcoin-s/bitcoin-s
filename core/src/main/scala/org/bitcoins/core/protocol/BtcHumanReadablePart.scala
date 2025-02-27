@@ -49,10 +49,10 @@ object BtcHumanReadablePart extends StringFactory[BtcHumanReadablePart] {
 
   def apply(network: NetworkParameters): BtcHumanReadablePart =
     network match {
-      case _: MainNet  => bc
-      case _: TestNet3 => tb
-      case _: RegTest  => bcrt
-      case _: SigNet   => tb
+      case _: MainNet                => bc
+      case _: TestNet3 | _: TestNet4 => tb
+      case _: RegTest                => bcrt
+      case _: SigNet                 => tb
     }
 
   def apply(hrp: Bech32HumanReadablePart): BtcHumanReadablePart =

@@ -73,6 +73,7 @@ object LndInstanceLocal
     network match {
       case _: MainNet  => "mainnet"
       case _: TestNet3 => "testnet"
+      case _: TestNet4 => "testnet4"
       case _: RegTest  => "regtest"
       case _: SigNet   => "signet"
     }

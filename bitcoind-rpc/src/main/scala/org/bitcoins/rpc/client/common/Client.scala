@@ -70,6 +70,7 @@ trait Client
         val prefix = instance.network match {
           case MainNet  => ""
           case TestNet3 => "testnet"
+          case TestNet4 => "testnet4"
           case RegTest  => "regtest"
           case SigNet   => "signet"
         }

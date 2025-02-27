@@ -63,10 +63,10 @@ object LnParams {
 
   def fromNetworkParameters(np: NetworkParameters): LnParams =
     np match {
-      case MainNet  => LnBitcoinMainNet
-      case TestNet3 => LnBitcoinTestNet
-      case RegTest  => LnBitcoinRegTest
-      case SigNet   => LnBitcoinSigNet
+      case MainNet             => LnBitcoinMainNet
+      case TestNet3 | TestNet4 => LnBitcoinTestNet
+      case RegTest             => LnBitcoinRegTest
+      case SigNet              => LnBitcoinSigNet
     }
 
   val allNetworks: Vector[LnParams] =

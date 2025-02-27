@@ -5,7 +5,8 @@ import org.bitcoins.core.config.{
   MainNet,
   RegTest,
   SigNet,
-  TestNet3
+  TestNet3,
+  TestNet4
 }
 import org.bitcoins.crypto.StringFactory
 
@@ -57,8 +58,8 @@ object ExplorerEnv extends StringFactory[ExplorerEnv] {
 
   def fromBitcoinNetwork(network: BitcoinNetwork): ExplorerEnv = {
     network match {
-      case MainNet                     => Production
-      case TestNet3 | RegTest | SigNet => Test
+      case MainNet                                => Production
+      case TestNet3 | TestNet4 | RegTest | SigNet => Test
     }
   }
 }

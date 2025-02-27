@@ -27,6 +27,8 @@ case class MempoolSpaceProvider(
       Uri("https://mempool.space/api/v1/fees/recommended")
     case TestNet3 =>
       Uri("https://mempool.space/testnet/api/v1/fees/recommended")
+    case TestNet4 =>
+      Uri("https://mempool.space/testnet4/api/v1/fees/recommended")
     case SigNet =>
       Uri("https://mempool.space/signet/api/v1/fees/recommended")
     case RegTest =>
