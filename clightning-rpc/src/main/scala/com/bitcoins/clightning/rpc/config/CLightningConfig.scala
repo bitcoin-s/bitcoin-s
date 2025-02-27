@@ -257,6 +257,7 @@ object CLightningConfig
     network match {
       case MainNet  => "bitcoin"
       case TestNet3 => "testnet"
+      case TestNet4 => "testnet4"
       case RegTest  => "regtest"
       case SigNet   => "signet"
     }

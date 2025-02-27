@@ -2,22 +2,26 @@ package org.bitcoins.core.protocol.blockchain
 
 import java.math.BigInteger
 import java.nio.charset.StandardCharsets
-
-import org.bitcoins.core.config._
+import org.bitcoins.core.config.*
 import org.bitcoins.core.consensus.Merkle
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.script.{
   EmptyScriptPubKey,
+  P2PKScriptPubKey,
   ScriptPubKey,
   ScriptSignature
 }
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptConstant}
 import org.bitcoins.core.script.crypto.OP_CHECKSIG
 import org.bitcoins.core.util.{BitcoinScriptUtil, NumberUtil}
-import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import scodec.bits.{ByteVector, _}
+import org.bitcoins.crypto.{
+  DoubleSha256Digest,
+  DoubleSha256DigestBE,
+  ECPublicKey
+}
+import scodec.bits.{ByteVector, *}
 
 import scala.concurrent.duration.{Duration, DurationInt}
 
@@ -345,7 +349,7 @@ object TestNetChainParams extends BitcoinChainParams {
                        Int32.one,
                        Satoshis(5000000000L))
 
-  override lazy val base58Prefixes: Map[Base58Type, ByteVector] =
+  override lazy val base58Prefixes: Map[Base58Type, ByteVector] = {
     Map(
       Base58Type.PubKeyAddress -> hex"6f",
       Base58Type.ScriptAddress -> hex"c4",
@@ -353,6 +357,7 @@ object TestNetChainParams extends BitcoinChainParams {
       Base58Type.ExtPublicKey -> hex"043587cf",
       Base58Type.ExtSecretKey -> hex"04358394"
     )
+  }
 
   /** Testnet pow limit
     * [[https://github.com/bitcoin/bitcoin/blob/a083f75ba79d465f15fddba7b00ca02e31bb3d40/src/chainparams.cpp#L189 testnet pow limit]]
@@ -503,6 +508,92 @@ case class SigNetChainParams(
 
   /** @inheritdoc */
   override def signetBlocks: Boolean = true
+}
+
+object TestNet4ChainParams extends BitcoinChainParams {
+
+  /** The best chain should have this amount of work */
+  override val minimumChainWork: BigInteger = {
+    val bytes = ByteVector.fromValidHex(
+      "00000000000000000000000000000000000000000000005faa15d02e6202f3ba")
+    new BigInteger(1, bytes.toArray)
+  }
+
+  /** @inheritdoc
+    */
+  override def network: BitcoinNetwork = TestNet4
+
+  /** Return the BIP70 network string (
+    * [[org.bitcoins.core.protocol.blockchain.MainNetChainParams MainNetChainParams]],
+    * [[org.bitcoins.core.protocol.blockchain.MainNetChainParams TestNetChainParams]]
+    * or
+    * [[org.bitcoins.core.protocol.blockchain.MainNetChainParams RegTestNetChainParams]].)
+    *
+    * @see
+    *   [[https://github.com/bitcoin/bips/blob/master/bip-0070.mediawiki BIP70]]
+    */
+  override def networkId: String = "testnet4"
+
+  /** The Genesis [[org.bitcoins.core.protocol.blockchain.Block Block]] in the
+    * blockchain.
+    */
+  override val genesisBlock: Block = {
+    createGenesisBlock(
+      timestamp =
+        "03/May/2024 000000000000000000001ebd58c244970b3aa9d783bb001011fbe8ea8e98e00e",
+      scriptPubKey = P2PKScriptPubKey(ECPublicKey.fromHex(
+        "000000000000000000000000000000000000000000000000000000000000000000")),
+      time = UInt32(1714777860),
+      nonce = UInt32(393743547),
+      nBits = UInt32.fromHex("1d00ffff"),
+      version = Int32.one,
+      amount = Bitcoins(50)
+    )
+  }
+
+  /** The mapping from a
+    * [[org.bitcoins.core.protocol.blockchain.Base58Type Base58Type]]to a
+    * String. Base58 prefixes for various keys/hashes on the network.
+    *
+    * @see
+    *   Bitcoin wiki
+    *   [[https://en.bitcoin.it/wiki/List_of_address_prefixes article]] on
+    *   address prefixes
+    */
+  override def base58Prefixes: Map[Base58Type, ByteVector] = {
+    TestNetChainParams.base58Prefixes
+  }
+
+  /** The minimum amount of proof of work required for a block
+    * [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/consensus/params.h#L70 bitcoin core pow limit]]
+    *
+    * @return
+    */
+  override def powLimit: BigInteger = MainNetChainParams.powLimit
+
+  /** Whether we should allow minimum difficulty blocks or not As an example you
+    * can trivially mine blocks on [[RegTestNetChainParams]] and
+    * [[TestNetChainParams]] but not the [[MainNetChainParams]]
+    *
+    * @return
+    */
+  override def allowMinDifficultyBlocks: Boolean = true
+
+  /** Whether this chain supports proof of work retargeting or not
+    *
+    * @see
+    *   [[https://github.com/bitcoin/bitcoin/blob/eb7daf4d600eeb631427c018a984a77a34aca66e/src/consensus/params.h#L72 link]]
+    * @return
+    */
+  override def noRetargeting: Boolean = false
+
+  /** Uses signet blocks that require checking the signet challenge */
+  override def signetBlocks: Boolean = false
+
+  /** Blocks must satisfy the given script to be considered valid (only for
+    * signet networks)
+    */
+  override def signetChallenge: ScriptPubKey = EmptyScriptPubKey
 }
 
 sealed abstract class Base58Type
