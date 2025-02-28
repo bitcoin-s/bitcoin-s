@@ -8,7 +8,6 @@ import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.script.{
   EmptyScriptPubKey,
-  P2PKScriptPubKey,
   ScriptPubKey,
   ScriptSignature
 }
@@ -16,11 +15,7 @@ import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.script.constant.{BytesToPushOntoStack, ScriptConstant}
 import org.bitcoins.core.script.crypto.OP_CHECKSIG
 import org.bitcoins.core.util.{BitcoinScriptUtil, NumberUtil}
-import org.bitcoins.crypto.{
-  DoubleSha256Digest,
-  DoubleSha256DigestBE,
-  ECPublicKey
-}
+import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import scodec.bits.{ByteVector, *}
 
 import scala.concurrent.duration.{Duration, DurationInt}
@@ -538,11 +533,17 @@ object TestNet4ChainParams extends BitcoinChainParams {
     * blockchain.
     */
   override val genesisBlock: Block = {
+    val asm = Seq(
+      BytesToPushOntoStack(33),
+      ScriptConstant(
+        "000000000000000000000000000000000000000000000000000000000000000000"),
+      OP_CHECKSIG
+    )
+    val spk = ScriptPubKey.fromAsm(asm)
     createGenesisBlock(
       timestamp =
         "03/May/2024 000000000000000000001ebd58c244970b3aa9d783bb001011fbe8ea8e98e00e",
-      scriptPubKey = P2PKScriptPubKey(ECPublicKey.fromHex(
-        "000000000000000000000000000000000000000000000000000000000000000000")),
+      scriptPubKey = spk,
       time = UInt32(1714777860),
       nonce = UInt32(393743547),
       nBits = UInt32.fromHex("1d00ffff"),
