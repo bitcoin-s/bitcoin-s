@@ -21,10 +21,9 @@ case class ControlMessageHandler(peerFinder: PeerFinder)(implicit
       peerMsgSenderApi: PeerMessageSenderApi
   ): Future[Option[ControlMessageHandlerState]] = {
     val peer = peerMsgSenderApi.peer
+    logger.debug(s"Received control message=${payload.commandName} from peer=$peer")
     payload match {
-
       case versionMsg: VersionMessage =>
-        logger.trace(s"Received versionMsg=$versionMsg from peer=$peer")
         peerFinder.onVersionMessage(peer, versionMsg)
         peerMsgSenderApi
           .sendVerackMessage()
