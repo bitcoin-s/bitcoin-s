@@ -97,7 +97,7 @@ object MuSigNoncePriv extends Factory[MuSigNoncePriv] {
     MuSigNoncePriv(privNonceKeys)
   }
 
-  /** Generates 32 bytes of entropy and contructs a MuSigNoncePriv from this,
+  /** Generates 32 bytes of entropy and constructs a MuSigNoncePriv from this,
     * and possibly some other sources, as specified in the BIP.
     */
   def gen(
