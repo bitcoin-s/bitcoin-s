@@ -92,7 +92,10 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
   }
 
   private def sendVersionMsg(): Future[Unit] = {
-    versionMsgF.flatMap(v => sendMsg(v.bytes, mergeHubSink))
+    versionMsgF.flatMap { v =>
+      logger.debug(s"Sending version message=$v to peer=$peer")
+      sendMsg(v.bytes, mergeHubSink)
+    }
   }
 
   private def parseHelper(
