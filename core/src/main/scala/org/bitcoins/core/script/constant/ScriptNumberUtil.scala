@@ -54,7 +54,10 @@ trait ScriptNumberUtil {
     */
   def toLong(bytes: ByteVector): Long = {
     val reversedBytes = bytes.reverse
-    if (bytes.size == 1 && bytes.head == -128) {
+
+    if (bytes.isEmpty) {
+      0
+    } else if (bytes.size == 1 && bytes.head == -128) {
       // the case for negative zero
       0
     } else if (isPositive(bytes)) {
