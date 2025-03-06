@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.script.descriptor
 
-import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.script.*
 import org.bitcoins.crypto.{ECPrivateKey, ECPublicKey}
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalatest.Assertion
@@ -536,7 +536,7 @@ class DescriptorTest extends BitcoinSUnitTest {
             case pub: ECPublicKey   => pub.toXOnly
           }
           val tree =
-            TapLeaf(TapLeaf.leafVersion, P2PKScriptPubKey(derivedKey.toXOnly))
+            TapLeaf(LeafVersion.Tapscript, P2PKScriptPubKey(derivedKey.toXOnly))
           val (_, spk) =
             TaprootScriptPubKey.fromInternalKeyTapscriptTree(internal, tree)
           spk

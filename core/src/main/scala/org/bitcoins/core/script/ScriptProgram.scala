@@ -1,18 +1,12 @@
 package org.bitcoins.core.script
 
-import org.bitcoins.core.crypto._
+import org.bitcoins.core.crypto.*
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script.{
-  TapLeaf,
-  TaprootKeyPath,
-  TaprootScriptPath,
-  TaprootUnknownPath,
-  TaprootWitness
-}
-import org.bitcoins.core.script.constant._
+import org.bitcoins.core.protocol.script.*
+import org.bitcoins.core.script.constant.*
 import org.bitcoins.core.script.control.{OP_ELSE, OP_ENDIF, OP_IF, OP_NOTIF}
 import org.bitcoins.core.script.flag.ScriptFlag
-import org.bitcoins.core.script.result._
+import org.bitcoins.core.script.result.*
 import org.bitcoins.core.util.BitcoinScriptUtil
 import org.bitcoins.crypto.Sha256Digest
 
@@ -91,7 +85,7 @@ sealed trait ScriptProgram {
     */
   def tapLeafHashOpt: Option[Sha256Digest] = {
     getTapscriptOpt.map { sp =>
-      val leaf = TapLeaf(TaprootScriptPath.TAPROOT_LEAF_TAPSCRIPT, sp.script)
+      val leaf = TapLeaf(LeafVersion.Tapscript, sp.script)
       val hash = TaprootScriptPath.computeTapleafHash(leaf)
       hash
     }
