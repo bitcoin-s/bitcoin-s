@@ -24,7 +24,7 @@ class TaprootWitnessTest extends BitcoinSUnitTest {
       "3052c652d53f6ecb8a55586614e8950cde9ab6fe8e22802e93b3b9139112250b80ebc589aba231af535bb20f7eeec2e412f698c17f3fdc0a2" +
       "e20924a5e38b21a628a9e3b2a61e35958e60c7f5087c"
 
-  val controlBlock = ControlBlock.fromHex(controlBlockHex)
+  val controlBlock = TapscriptControlBlock.fromHex(controlBlockHex)
 
   val merkleRootHex =
     "c5c62d7fc595ba5fbe61602eb1a29e2e4763408fe1e2b161beb7cb3c71ebcad9"
@@ -137,5 +137,13 @@ class TaprootWitnessTest extends BitcoinSUnitTest {
     )
     val stack = stackHex.map(ByteVector.fromValidHex(_))
     assert(!TaprootKeyPath.isValid(stack))
+  }
+
+  it must "have a correct constructor" in {
+    val x = TapscriptControlBlock.apply(controlBlock.bytes.head,
+                                        controlBlock.p,
+                                        leafHashes = controlBlock.hashes)
+    assert(x.bytes.toHex == controlBlock.bytes.toHex)
+    assert(x == controlBlock)
   }
 }
