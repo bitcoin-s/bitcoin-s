@@ -23,10 +23,10 @@ sealed abstract class ControlBlock extends NetworkElement {
   }
 
   val leafVersion: LeafVersion =
-    LeafVersion.fromByte((bytes.head & LeafVersion.TAPROOT_LEAF_MASK).toByte)
+    LeafVersion.fromMaskedByte(bytes.head)
 
   val isTapLeafMask: Boolean = {
-    (bytes.head & LeafVersion.TAPROOT_LEAF_MASK).toByte == LeafVersion.Tapscript.toByte
+    leafVersion == LeafVersion.Tapscript
   }
 
   /** Leaf or branch hashes embedded in the control block */
