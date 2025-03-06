@@ -18,8 +18,7 @@ object LeafVersion {
 
   case class UnknownLeafVersion(toByte: Byte) extends LeafVersion
 
-  val knownLeafVersions: Vector[LeafVersion] = Vector(
-    Tapscript /*, 0xc1.toByte*/ )
+  val knownLeafVersions: Vector[LeafVersion] = Vector(Tapscript)
 
   final val TAPROOT_LEAF_MASK: Byte = 0xfe.toByte
 

@@ -99,7 +99,7 @@ object TapscriptControlBlock extends Factory[TapscriptControlBlock] {
       internalKey: XOnlyPubKey,
       leafHashes: Vector[Sha256Digest]): TapscriptControlBlock = {
     val bytes =
-      (leafVersion.toByte +: internalKey.bytes) ++ ByteVector
+      ((leafVersion.toByte | 0x1).toByte +: internalKey.bytes) ++ ByteVector
         .concat(leafHashes.map(_.bytes))
     TapscriptControlBlock(bytes)
   }
