@@ -50,7 +50,7 @@ class TaprootWitnessTest extends BitcoinSUnitTest {
       "7520c7b5db9562078049719228db2ac80cb9643ec96c8055aa3b29c2c03d4d99edb0ac"
     val spk = ScriptPubKey.fromAsmHex(asmHex)
     assert(asmHex == spk.asmHex)
-    val leaf = TapLeaf(0xc0.toByte, spk)
+    val leaf = TapLeaf(LeafVersion.Tapscript, spk)
     val hash = TaprootScriptPath.computeTapleafHash(leaf)
     assert(hash.hex == expected)
   }

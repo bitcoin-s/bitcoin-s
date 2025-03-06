@@ -4,7 +4,7 @@ import org.bitcoins.core.crypto.ExtPublicKey
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.script.*
 import org.bitcoins.core.protocol.transaction.{
   BaseTransaction,
   NonWitnessTransaction,
@@ -13,7 +13,7 @@ import org.bitcoins.core.protocol.transaction.{
 }
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 import org.bitcoins.core.util.BytesUtil
-import org.bitcoins.crypto.{HashType, _}
+import org.bitcoins.crypto.*
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -59,7 +59,7 @@ sealed trait GlobalPSBTRecord extends PSBTRecord {
 }
 
 object GlobalPSBTRecord extends Factory[GlobalPSBTRecord] {
-  import org.bitcoins.core.psbt.PSBTGlobalKeyId._
+  import org.bitcoins.core.psbt.PSBTGlobalKeyId.*
 
   case class UnsignedTransaction(transaction: NonWitnessTransaction)
       extends GlobalPSBTRecord {
@@ -107,7 +107,7 @@ object GlobalPSBTRecord extends Factory[GlobalPSBTRecord] {
   }
 
   override def fromBytes(bytes: ByteVector): GlobalPSBTRecord = {
-    import org.bitcoins.core.psbt.PSBTGlobalKeyId._
+    import org.bitcoins.core.psbt.PSBTGlobalKeyId.*
 
     val (key, value) = PSBTRecord.fromBytes(bytes)
     PSBTGlobalKeyId.fromByte(key.head) match {
@@ -141,7 +141,7 @@ sealed trait InputPSBTRecord extends PSBTRecord {
 }
 
 object InputPSBTRecord extends Factory[InputPSBTRecord] {
-  import org.bitcoins.core.psbt.PSBTInputKeyId._
+  import org.bitcoins.core.psbt.PSBTInputKeyId.*
 
   case class NonWitnessOrUnknownUTXO(transactionSpent: Transaction)
       extends InputPSBTRecord {
@@ -352,7 +352,7 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
   case class TRLeafScript(
       controlBlock: ControlBlock,
       script: RawScriptPubKey,
-      leafVersion: Byte)
+      leafVersion: LeafVersion)
       extends InputPSBTRecord {
     override type KeyId = TRLeafScriptKeyId.type
 
@@ -361,7 +361,7 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
     }
 
     override val value: ByteVector = {
-      script.asmBytes ++ ByteVector.fromByte(leafVersion)
+      script.asmBytes ++ ByteVector.fromByte(leafVersion.toByte)
     }
   }
 
@@ -411,7 +411,7 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
   }
 
   override def fromBytes(bytes: ByteVector): InputPSBTRecord = {
-    import org.bitcoins.core.psbt.PSBTInputKeyId._
+    import org.bitcoins.core.psbt.PSBTInputKeyId.*
 
     val (key, value) = PSBTRecord.fromBytes(bytes)
     PSBTInputKeyId.fromByte(key.head) match {
@@ -530,7 +530,7 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
 
         val script = RawScriptPubKey.fromAsmBytes(value.init)
 
-        TRLeafScript(controlBlock, script, value.last)
+        TRLeafScript(controlBlock, script, LeafVersion.fromByte(value.last))
       case TRBIP32DerivationPathKeyId =>
         val pubKey = XOnlyPubKey(key.tail)
         val numHashes = CompactSizeUInt.fromBytes(value)
@@ -575,7 +575,7 @@ sealed trait OutputPSBTRecord extends PSBTRecord {
 }
 
 object OutputPSBTRecord extends Factory[OutputPSBTRecord] {
-  import org.bitcoins.core.psbt.PSBTOutputKeyId._
+  import org.bitcoins.core.psbt.PSBTOutputKeyId.*
 
   case class RedeemScript(redeemScript: ScriptPubKey) extends OutputPSBTRecord {
     override type KeyId = RedeemScriptKeyId.type

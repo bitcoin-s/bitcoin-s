@@ -1,9 +1,9 @@
 package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.protocol.Bech32mAddress
-import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.script.*
 import org.bitcoins.crypto.{Sha256Digest, XOnlyPubKey}
-import upickle.default._
+import upickle.default.*
 
 case class Given(internalPubkey: XOnlyPubKey, treeOpt: Option[TapscriptTree]) {
 
@@ -74,7 +74,7 @@ object TaprootWalletTestCase {
     else if (`given`.objOpt.isDefined) {
       val givenObj = `given`.obj
       val script = ScriptPubKey.fromAsmHex(givenObj("script").str)
-      val leafVersion = givenObj("leafVersion").num.toByte
+      val leafVersion = LeafVersion.fromByte(givenObj("leafVersion").num.toByte)
       val leaf = TapLeaf(leafVersion, script)
       Some(leaf)
     } else {

@@ -29,28 +29,17 @@ case class TapBranch(tree1: TapscriptTree, tree2: TapscriptTree)
   }
 }
 
-case class TapLeaf(leafVersion: Byte, spk: ScriptPubKey) extends TapscriptTree {
+case class TapLeaf(leafVersion: LeafVersion, spk: ScriptPubKey)
+    extends TapscriptTree {
 
   override val bytes: ByteVector =
-    ByteVector.fromInt(leafVersion, 1) ++ spk.bytes
+    ByteVector.fromInt(leafVersion.toByte, 1) ++ spk.bytes
   val sha256: Sha256Digest = CryptoUtil.tapLeafHash(bytes)
   override val leafs: Vector[TapLeaf] = Vector(this)
 
   override def toString(): String = {
     s"${spk.toString}"
   }
-}
-
-object TapLeaf {
-  val leafVersion: Byte = 0xc0.toByte
-
-  /** BIP342 specifies validity rules that apply for leaf version 0xc0, but
-    * future proposals can introduce rules for other leaf versions.
-    *
-    * @see
-    *   https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#rationale
-    */
-  val knownLeafVersions: Vector[Byte] = Vector(leafVersion, 0xc1.toByte)
 }
 
 object TapscriptTree {

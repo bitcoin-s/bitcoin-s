@@ -7,7 +7,7 @@ import org.bitcoins.core.serializers.script.{
   ScriptParser
 }
 import org.bitcoins.core.util.{BitcoinScriptUtil, BytesUtil}
-import org.bitcoins.crypto._
+import org.bitcoins.crypto.*
 import scodec.bits.ByteVector
 
 /** Created by chris on 11/10/16. The witness used to evaluate a
@@ -416,10 +416,6 @@ object TaprootScriptPath extends Factory[TaprootScriptPath] {
   final val TAPROOT_CONTROL_MAX_SIZE: Int = {
     TAPROOT_CONTROL_BASE_SIZE + TAPROOT_CONTROL_NODE_SIZE * TAPROOT_CONTROL_MAX_NODE_COUNT
   }
-
-  final val TAPROOT_LEAF_MASK: Byte = 0xfe.toByte
-  final val TAPROOT_LEAF_TAPSCRIPT: Byte = 0xc0.toByte
-
   override def fromBytes(bytes: ByteVector): TaprootScriptPath = {
     RawScriptWitnessParser.read(bytes) match {
       case t: TaprootScriptPath => t
@@ -485,7 +481,8 @@ object TaprootScriptPath extends Factory[TaprootScriptPath] {
     */
   def computeTapleafHash(leaf: TapLeaf): Sha256Digest = {
     val bytes =
-      ByteVector.fromInt(i = leaf.leafVersion, size = 1) ++ leaf.spk.bytes
+      ByteVector.fromInt(i = leaf.leafVersion.toByte,
+                         size = 1) ++ leaf.spk.bytes
     CryptoUtil.tapLeafHash(bytes)
   }
 

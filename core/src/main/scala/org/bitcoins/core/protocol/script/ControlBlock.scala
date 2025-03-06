@@ -22,11 +22,11 @@ sealed abstract class ControlBlock extends NetworkElement {
     XOnlyPubKey.fromBytes(bytes.slice(1, 33))
   }
 
-  val leafVersion: Byte =
-    (bytes.head & TaprootScriptPath.TAPROOT_LEAF_MASK).toByte
+  val leafVersion: LeafVersion =
+    LeafVersion.fromByte((bytes.head & LeafVersion.TAPROOT_LEAF_MASK).toByte)
 
   val isTapLeafMask: Boolean = {
-    (bytes.head & TaprootScriptPath.TAPROOT_LEAF_MASK).toByte == TaprootScriptPath.TAPROOT_LEAF_TAPSCRIPT
+    (bytes.head & LeafVersion.TAPROOT_LEAF_MASK).toByte == LeafVersion.Tapscript.toByte
   }
 
   /** Leaf or branch hashes embedded in the control block */
@@ -71,7 +71,8 @@ object TapscriptControlBlock extends Factory[TapscriptControlBlock] {
     if (bytes.isEmpty) {
       false
     } else {
-      TapLeaf.knownLeafVersions.contains(bytes.head) &&
+      LeafVersion.knownLeafVersions.contains(
+        LeafVersion.fromMaskedByte(bytes.head)) &&
       ControlBlock.isValid(bytes) &&
       XOnlyPubKey.fromBytesT(bytes.slice(1, 33)).isSuccess
     }
@@ -79,7 +80,7 @@ object TapscriptControlBlock extends Factory[TapscriptControlBlock] {
 
   /** Creates a control block with no scripts, just an internal key */
   def fromXOnlyPubKey(internalKey: XOnlyPubKey): TapscriptControlBlock = {
-    fromBytes(TapLeaf.leafVersion +: internalKey.bytes)
+    fromBytes(LeafVersion.Tapscript.toByte +: internalKey.bytes)
   }
 
   override def fromBytes(bytes: ByteVector): TapscriptControlBlock = {
