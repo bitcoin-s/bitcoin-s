@@ -448,12 +448,8 @@ case class TaprootTxSigComponent(
 
   override val witnessVersion: WitnessVersion1.type = WitnessVersion1
 
-  override def sigVersion: SigVersionTaproot = {
-    witness match {
-      case _: TaprootKeyPath  => SigVersionTaprootKeySpend
-      case sp: TaprootWitness => sp.sigVersion
-    }
-  }
+  override def sigVersion: SigVersionTaproot = witness.sigVersion
+
 }
 
 object BaseTxSigComponent {
