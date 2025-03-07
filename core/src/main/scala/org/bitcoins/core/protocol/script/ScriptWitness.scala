@@ -1,6 +1,7 @@
 package org.bitcoins.core.protocol.script
 
 import org.bitcoins.core.protocol.CompactSizeUInt
+import org.bitcoins.core.protocol.script.LeafVersion.UnknownLeafVersion
 import org.bitcoins.core.script.constant.{OP_0, ScriptNumberOperation}
 import org.bitcoins.core.serializers.script.{
   RawScriptWitnessParser,
@@ -236,6 +237,8 @@ sealed trait TaprootWitness extends ScriptWitness {
       CryptoUtil.sha256(cmpct.bytes ++ annex)
     }
   }
+
+  def sigVersion: SigVersionTaproot
 }
 
 object TaprootWitness extends Factory[TaprootWitness] {
@@ -277,6 +280,8 @@ case class TaprootKeyPath(
         Vector(signature.bytes)
     }
   }
+
+  override def sigVersion: SigVersionTaproot = SigVersionTaprootKeySpend
 }
 
 object TaprootKeyPath extends Factory[TaprootKeyPath] {
@@ -401,6 +406,14 @@ case class TaprootScriptPath(stack: Vector[ByteVector]) extends TaprootWitness {
     * defined as in BIP340. Fail if this point is not on the curve.
     */
   def p: XOnlyPubKey = controlBlock.p
+
+  def leafVersion: LeafVersion = controlBlock.leafVersion
+
+  def sigVersion: SigVersionTaproot = leafVersion match {
+    case LeafVersion.Tapscript => SigVersionTapscript
+    case UnknownLeafVersion(toByte) =>
+      sys.error(s"Unknown leaf version=$toByte, cannot determine sigVersion")
+  }
 }
 
 object TaprootScriptPath extends Factory[TaprootScriptPath] {
@@ -566,5 +579,10 @@ case class TaprootUnknownPath(stack: Vector[ByteVector])
     } else {
       None
     }
+  }
+
+  override def sigVersion: SigVersionTaproot = {
+    // default to tapscript for unknown leafver and sigversion?
+    SigVersionTapscript
   }
 }
