@@ -281,7 +281,8 @@ case class TaprootKeyPath(
     }
   }
 
-  override def sigVersion: SigVersionTaproot = SigVersionTaprootKeySpend
+  override def sigVersion: SigVersionTaprootKeySpend.type =
+    SigVersionTaprootKeySpend
 }
 
 object TaprootKeyPath extends Factory[TaprootKeyPath] {
@@ -409,7 +410,7 @@ case class TaprootScriptPath(stack: Vector[ByteVector]) extends TaprootWitness {
 
   def leafVersion: LeafVersion = controlBlock.leafVersion
 
-  def sigVersion: SigVersionTaproot = leafVersion match {
+  override def sigVersion: SigVersionTapscript.type = leafVersion match {
     case LeafVersion.Tapscript => SigVersionTapscript
     case UnknownLeafVersion(toByte) =>
       sys.error(s"Unknown leaf version=$toByte, cannot determine sigVersion")
