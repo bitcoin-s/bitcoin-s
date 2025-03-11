@@ -39,8 +39,10 @@ case class TapscriptControlBlock(bytes: ByteVector) extends ControlBlock {
   require(TapscriptControlBlock.isValid(bytes),
           s"Invalid tapscript control block, got=$bytes")
 
-  def parity: KeyParity = if ((bytes.head & 1) == 1) { OddParity }
-  else EvenParity
+  def parity: KeyParity = {
+    if ((bytes.head & 1) == 1) OddParity
+    else EvenParity
+  }
 }
 
 /** A control block that does not have a leaf version defined as per BIP342 This
