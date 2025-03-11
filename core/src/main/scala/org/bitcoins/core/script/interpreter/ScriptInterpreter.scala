@@ -1,31 +1,31 @@
 package org.bitcoins.core.script.interpreter
 
 import org.bitcoins.core.consensus.Consensus
-import org.bitcoins.core.crypto._
+import org.bitcoins.core.crypto.*
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.script._
-import org.bitcoins.core.script.arithmetic._
-import org.bitcoins.core.script.bitwise._
-import org.bitcoins.core.script.constant._
-import org.bitcoins.core.script.control._
-import org.bitcoins.core.script.crypto._
-import org.bitcoins.core.script.flag._
+import org.bitcoins.core.protocol.script.*
+import org.bitcoins.core.protocol.transaction.*
+import org.bitcoins.core.script.*
+import org.bitcoins.core.script.arithmetic.*
+import org.bitcoins.core.script.bitwise.*
+import org.bitcoins.core.script.constant.*
+import org.bitcoins.core.script.control.*
+import org.bitcoins.core.script.crypto.*
+import org.bitcoins.core.script.flag.*
 import org.bitcoins.core.script.locktime.{
   LockTimeInterpreter,
   OP_CHECKLOCKTIMEVERIFY,
   OP_CHECKSEQUENCEVERIFY
 }
-import org.bitcoins.core.script.reserved._
-import org.bitcoins.core.script.result._
-import org.bitcoins.core.script.splice._
-import org.bitcoins.core.script.stack._
+import org.bitcoins.core.script.reserved.*
+import org.bitcoins.core.script.result.*
+import org.bitcoins.core.script.splice.*
+import org.bitcoins.core.script.stack.*
 import org.bitcoins.core.script.util.PreviousOutputMap
-import org.bitcoins.core.util._
+import org.bitcoins.core.util.*
 import org.bitcoins.crypto.SchnorrPublicKey
 
 import scala.annotation.tailrec
@@ -1461,7 +1461,8 @@ sealed abstract class ScriptInterpreter {
   private def rebuildWTxSigComponent(
       old: WitnessTxSigComponent,
       rebuildScriptPubKey: ScriptPubKey): Try[WitnessTxSigComponentRebuilt] = {
-    val updatedOutput = TransactionOutput(old.output.value, rebuildScriptPubKey)
+    val updatedOutput =
+      TransactionOutput(old.fundingOutput.value, rebuildScriptPubKey)
     old match {
       case wTxSigComponentRaw: WitnessTxSigComponentRaw =>
         Success(
@@ -1474,7 +1475,7 @@ sealed abstract class ScriptInterpreter {
         wTxSigComponentP2SH.witnessScriptPubKey.map {
           (wit: WitnessScriptPubKey) =>
             val updatedOutput =
-              TransactionOutput(old.output.value, rebuildScriptPubKey)
+              TransactionOutput(old.fundingOutput.value, rebuildScriptPubKey)
             WitnessTxSigComponentRebuilt(old.transaction,
                                          old.inputIndex,
                                          updatedOutput,

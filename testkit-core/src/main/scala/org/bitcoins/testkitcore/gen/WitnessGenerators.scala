@@ -1,11 +1,11 @@
 package org.bitcoins.testkitcore.gen
 
-import org.bitcoins.core.crypto._
+import org.bitcoins.core.crypto.*
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.script.*
+import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.crypto.{ECPrivateKey, HashType}
 import org.scalacheck.Gen
@@ -144,7 +144,7 @@ sealed abstract class WitnessGenerators {
         txWitness
       )
       signedWtxSigComponent =
-        WitnessTxSigComponentRaw(wtx, u.inputIndex, u.output, u.flags)
+        WitnessTxSigComponentRaw(wtx, u.inputIndex, u.fundingOutput, u.flags)
     } yield (txWitness, signedWtxSigComponent, Seq(privKeys))
 
   def signedP2WSHP2PKHTransactionWitness
@@ -179,7 +179,7 @@ sealed abstract class WitnessGenerators {
         txWitness
       )
       signedWtxSigComponent =
-        WitnessTxSigComponentRaw(wtx, u.inputIndex, u.output, u.flags)
+        WitnessTxSigComponentRaw(wtx, u.inputIndex, u.fundingOutput, u.flags)
     } yield (txWitness, signedWtxSigComponent, Seq(privKey))
 
   def signedP2WSHMultiSigTransactionWitness
@@ -212,7 +212,7 @@ sealed abstract class WitnessGenerators {
         txWitness
       )
       signedWtxSigComponent =
-        WitnessTxSigComponentRaw(wtx, u.inputIndex, u.output, u.flags)
+        WitnessTxSigComponentRaw(wtx, u.inputIndex, u.fundingOutput, u.flags)
     } yield (txWitness, signedWtxSigComponent, privKeys)
 
   /** Generates a random signed
@@ -295,7 +295,7 @@ sealed abstract class WitnessGenerators {
         WitnessTxSigComponent(
           signedSpendingTx,
           unsignedWTxComponent.inputIndex,
-          wtxP2SH.output,
+          wtxP2SH.fundingOutput,
           PreviousOutputMap.empty,
           unsignedWTxComponent.flags
         )
@@ -303,7 +303,7 @@ sealed abstract class WitnessGenerators {
         WitnessTxSigComponent(
           signedSpendingTx,
           unsignedWTxComponent.inputIndex,
-          wtxRaw.output,
+          wtxRaw.fundingOutput,
           PreviousOutputMap.empty,
           unsignedWTxComponent.flags
         )

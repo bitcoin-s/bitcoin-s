@@ -31,15 +31,15 @@ sealed abstract class TxSigComponent {
   /** This is the output we are spending. We need this for script and digital
     * signatures checks
     */
-  def output: TransactionOutput
+  def fundingOutput: TransactionOutput
 
   /** The scriptPubKey for which the input is being checked against */
-  def scriptPubKey: ScriptPubKey = output.scriptPubKey
+  def scriptPubKey: ScriptPubKey = fundingOutput.scriptPubKey
 
   /** The amount of [[org.bitcoins.core.currency.CurrencyUnit CurrencyUnit]] we
     * are spending in this TxSigComponent
     */
-  def amount: CurrencyUnit = output.value
+  def amount: CurrencyUnit = fundingOutput.value
 
   /** The flags that are needed to verify if the signature is correct */
   def flags: Seq[ScriptFlag]
@@ -262,13 +262,13 @@ sealed abstract class P2SHTxSigComponent extends BaseTxSigComponent {
     "Must have P2SHScriptSignature for P2SH, got: " + input.scriptSignature
   )
   require(
-    output.scriptPubKey
+    fundingOutput.scriptPubKey
       .isInstanceOf[P2SHScriptPubKey],
-    "Must have P2SHScriptPubKey for P2SH, got: " + output.scriptPubKey
+    "Must have P2SHScriptPubKey for P2SH, got: " + fundingOutput.scriptPubKey
   )
 
   override def scriptPubKey: P2SHScriptPubKey =
-    output.scriptPubKey.asInstanceOf[P2SHScriptPubKey]
+    fundingOutput.scriptPubKey.asInstanceOf[P2SHScriptPubKey]
 
   override def scriptSignature: P2SHScriptSignature =
     input.scriptSignature.asInstanceOf[P2SHScriptSignature]
@@ -302,7 +302,7 @@ sealed trait WitnessTxSigComponent extends TxSigComponent {
 sealed abstract class WitnessTxSigComponentRaw extends WitnessTxSigComponent {
 
   override def scriptPubKey: WitnessScriptPubKey =
-    output.scriptPubKey.asInstanceOf[WitnessScriptPubKey]
+    fundingOutput.scriptPubKey.asInstanceOf[WitnessScriptPubKey]
 
   override def witnessVersion: WitnessVersion = {
     scriptPubKey.witnessVersion
@@ -328,7 +328,7 @@ sealed abstract class WitnessTxSigComponentP2SH
     with WitnessTxSigComponent {
 
   override def scriptPubKey: P2SHScriptPubKey =
-    output.scriptPubKey.asInstanceOf[P2SHScriptPubKey]
+    fundingOutput.scriptPubKey.asInstanceOf[P2SHScriptPubKey]
 
   override def scriptSignature: P2SHScriptSignature = {
     val s = transaction.inputs(inputIndex.toInt).scriptSignature
@@ -358,7 +358,7 @@ sealed abstract class WitnessTxSigComponentP2SH
       case Failure(err) => throw err
     }
 
-  override def amount: CurrencyUnit = output.value
+  override def amount: CurrencyUnit = fundingOutput.value
 
   override def sigVersion: SignatureVersion = SigVersionWitnessV0
 }
@@ -376,7 +376,7 @@ sealed abstract class WitnessTxSigComponentP2SH
 sealed abstract class WitnessTxSigComponentRebuilt extends TxSigComponent {
   override def transaction: WitnessTransaction
 
-  override def scriptPubKey: ScriptPubKey = output.scriptPubKey
+  override def scriptPubKey: ScriptPubKey = fundingOutput.scriptPubKey
 
   /** The
     * [[org.bitcoins.core.protocol.script.WitnessScriptPubKey WitnessScriptPubKey]]
@@ -425,15 +425,15 @@ case class TaprootTxSigComponent(
     scriptPubKey.isInstanceOf[TaprootScriptPubKey],
     s"Can only spend taproot spks with TaprootTxSigComponent, got=$scriptPubKey")
 
-  override lazy val output: TransactionOutput = {
+  override lazy val fundingOutput: TransactionOutput = {
     val outpoint = transaction.inputs(inputIndex.toInt).previousOutput
     outputMap(outpoint)
   }
 
-  val outputs: Vector[TransactionOutput] = outputMap.values.toVector
+  val fundingOutputs: Vector[TransactionOutput] = outputMap.values.toVector
 
   override def scriptPubKey: TaprootScriptPubKey = {
-    output.scriptPubKey.asInstanceOf[TaprootScriptPubKey]
+    fundingOutput.scriptPubKey.asInstanceOf[TaprootScriptPubKey]
   }
 
   override def witness: TaprootWitness = {
@@ -457,7 +457,7 @@ object BaseTxSigComponent {
   private case class BaseTxSigComponentImpl(
       transaction: Transaction,
       inputIndex: UInt32,
-      output: TransactionOutput,
+      fundingOutput: TransactionOutput,
       flags: Seq[ScriptFlag])
       extends BaseTxSigComponent
 
@@ -476,7 +476,7 @@ object P2SHTxSigComponent {
   private case class P2SHTxSigComponentImpl(
       transaction: Transaction,
       inputIndex: UInt32,
-      output: TransactionOutput,
+      fundingOutput: TransactionOutput,
       flags: Seq[ScriptFlag])
       extends P2SHTxSigComponent
 
@@ -530,7 +530,7 @@ object WitnessTxSigComponentRaw {
   private case class WitnessTxSigComponentRawImpl(
       transaction: WitnessTransaction,
       inputIndex: UInt32,
-      output: TransactionOutput,
+      fundingOutput: TransactionOutput,
       flags: Seq[ScriptFlag])
       extends WitnessTxSigComponentRaw
 
@@ -559,7 +559,7 @@ object WitnessTxSigComponentP2SH {
   private case class WitnessTxSigComponentP2SHImpl(
       transaction: WitnessTransaction,
       inputIndex: UInt32,
-      output: TransactionOutput,
+      fundingOutput: TransactionOutput,
       flags: Seq[ScriptFlag])
       extends WitnessTxSigComponentP2SH
 
@@ -588,7 +588,7 @@ object WitnessTxSigComponentRebuilt {
   private case class WitnessTxSigComponentRebuiltImpl(
       transaction: WitnessTransaction,
       inputIndex: UInt32,
-      output: TransactionOutput,
+      fundingOutput: TransactionOutput,
       witnessScriptPubKey: WitnessScriptPubKey,
       flags: Seq[ScriptFlag])
       extends WitnessTxSigComponentRebuilt
