@@ -6,17 +6,11 @@ import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, CurrencyUnits}
 import org.bitcoins.core.hd.{HDChainType, HDCoinType, SegWitHDPath}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.Bech32mAddress
-import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.script.*
+import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.utxo.TxoState
-import org.bitcoins.crypto.{
-  DoubleSha256Digest,
-  DoubleSha256DigestBE,
-  ECPrivateKey,
-  ECPublicKey,
-  ECPublicKeyBytes
-}
+import org.bitcoins.crypto.*
 
 /** Created by chris on 2/12/16.
   */
@@ -256,6 +250,16 @@ trait TransactionTestUtil {
       Vector.empty,
       EmptyTransaction.lockTime
     )
+
+  def testWitnessTransaction: WitnessTransaction = {
+    WitnessTransaction(
+      EmptyTransaction.version,
+      Vector(EmptyTransactionInput),
+      Vector.empty,
+      EmptyTransaction.lockTime,
+      EmptyWitness.fromN(1)
+    )
+  }
 
   /** Builds a dummy transaction that sends money to the given output */
   def buildTransactionTo(output: TransactionOutput): Transaction = {

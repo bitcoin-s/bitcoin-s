@@ -1,6 +1,6 @@
 package org.bitcoins.core.protocol.script
 
-import org.bitcoins.crypto.{Factory, NetworkElement, Sha256Digest, XOnlyPubKey}
+import org.bitcoins.crypto.*
 import scodec.bits.ByteVector
 
 /** Control block as defined by BIP341
@@ -38,6 +38,11 @@ sealed abstract class ControlBlock extends NetworkElement {
 case class TapscriptControlBlock(bytes: ByteVector) extends ControlBlock {
   require(TapscriptControlBlock.isValid(bytes),
           s"Invalid tapscript control block, got=$bytes")
+
+  def parity: KeyParity = {
+    if ((bytes.head & 1) == 1) OddParity
+    else EvenParity
+  }
 }
 
 /** A control block that does not have a leaf version defined as per BIP342 This
@@ -87,21 +92,31 @@ object TapscriptControlBlock extends Factory[TapscriptControlBlock] {
     new TapscriptControlBlock(bytes)
   }
 
-  def fromLeaves(
-      leafVersion: LeafVersion,
-      internalKey: XOnlyPubKey,
-      leafs: Vector[TapLeaf]): TapscriptControlBlock = {
-    TapscriptControlBlock(leafVersion, internalKey, leafs.map(_.sha256))
-  }
-
   def apply(
       leafVersion: LeafVersion,
       internalKey: XOnlyPubKey,
+      parity: KeyParity,
       leafHashes: Vector[Sha256Digest]): TapscriptControlBlock = {
+    val parityByte: Byte = parity match {
+      case OddParity  => 0x01
+      case EvenParity => 0x0
+    }
     val bytes =
-      ((leafVersion.toByte | 0x1).toByte +: internalKey.bytes) ++ ByteVector
+      ((parityByte | leafVersion.toByte).toByte +: internalKey.bytes) ++ ByteVector
         .concat(leafHashes.map(_.bytes))
     TapscriptControlBlock(bytes)
+  }
+
+  /** Constructs a tapscript control block for the case where we have one single
+    * [[TapLeaf]] in the entire tree In this case, we don't have any elements in
+    * the control block besides the internal key, leaf version and parity of the
+    * output xonly pubkey
+    */
+  def fromSingleLeaf(
+      leafVersion: LeafVersion,
+      internalKey: XOnlyPubKey,
+      parity: KeyParity): TapscriptControlBlock = {
+    TapscriptControlBlock(leafVersion, internalKey, parity, Vector.empty)
   }
 }
 

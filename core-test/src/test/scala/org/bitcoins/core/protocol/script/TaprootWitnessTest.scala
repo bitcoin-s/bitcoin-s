@@ -142,6 +142,7 @@ class TaprootWitnessTest extends BitcoinSUnitTest {
   it must "have a correct constructor" in {
     val x = TapscriptControlBlock.apply(controlBlock.leafVersion,
                                         controlBlock.p,
+                                        controlBlock.parity,
                                         leafHashes = controlBlock.hashes)
     assert(x.bytes.toHex == controlBlock.bytes.toHex)
     assert(x == controlBlock)
