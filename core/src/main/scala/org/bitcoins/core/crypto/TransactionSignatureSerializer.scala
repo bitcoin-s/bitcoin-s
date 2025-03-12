@@ -40,7 +40,7 @@ sealed abstract class TransactionSignatureSerializer {
       taprootOptions: TaprootSerializationOptions): ByteVector = {
     val spendingTransaction = txSigComponent.transaction
     val inputIndex = txSigComponent.inputIndex
-    val output = txSigComponent.output
+    val output = txSigComponent.fundingOutput
     val script = BitcoinScriptUtil.calculateScriptForSigning(
       txSigComponent,
       output.scriptPubKey.asm)
@@ -59,7 +59,7 @@ sealed abstract class TransactionSignatureSerializer {
         serializeForSignature(spendingTransaction,
                               inputIndex,
                               hashType,
-                              t.outputs,
+                              t.fundingOutputs,
                               script,
                               txSigComponent.sigVersion,
                               taprootOptions)

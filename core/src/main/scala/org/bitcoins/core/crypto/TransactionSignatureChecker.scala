@@ -1,26 +1,13 @@
 package org.bitcoins.core.crypto
 
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script.{
-  ScriptPubKey,
-  SigVersionBase,
-  SigVersionTaprootKeySpend,
-  SigVersionTapscript,
-  SigVersionWitnessV0,
-  TaprootKeyPath
-}
+import org.bitcoins.core.protocol.script.*
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagUtil}
-import org.bitcoins.core.script.result.{
-  ScriptErrorSchnorrSig,
-  ScriptErrorSchnorrSigHashType,
-  ScriptErrorWitnessPubKeyType,
-  ScriptOk,
-  ScriptResult
-}
+import org.bitcoins.core.script.result.*
 import org.bitcoins.core.util.BitcoinScriptUtil
-import org.bitcoins.crypto._
+import org.bitcoins.crypto.*
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -35,7 +22,8 @@ trait TransactionSignatureChecker {
       pubKeyBytes: ECPublicKeyBytes,
       signature: ECDigitalSignature): TransactionSignatureCheckerResult =
     checkSignature(txSignatureComponent = txSignatureComponent,
-                   script = txSignatureComponent.output.scriptPubKey.asm.toList,
+                   script =
+                     txSignatureComponent.fundingOutput.scriptPubKey.asm.toList,
                    pubKey = pubKeyBytes,
                    signature = signature)
 
@@ -45,7 +33,7 @@ trait TransactionSignatureChecker {
       signature: ECDigitalSignature): TransactionSignatureCheckerResult = {
     checkSignature(
       txSignatureComponent = txSignatureComponent,
-      script = txSignatureComponent.output.scriptPubKey.asm.toList,
+      script = txSignatureComponent.fundingOutput.scriptPubKey.asm.toList,
       pubKey = pubKey.toPublicKeyBytes(),
       signature = signature
     )
@@ -179,7 +167,7 @@ trait TransactionSignatureChecker {
               val sigsRemovedTxSigComponent = BaseTxSigComponent(
                 b.transaction,
                 b.inputIndex,
-                TransactionOutput(b.output.value, spk),
+                TransactionOutput(b.fundingOutput.value, spk),
                 b.flags)
               TransactionSignatureSerializer.hashForSignature(
                 sigsRemovedTxSigComponent,
@@ -189,7 +177,7 @@ trait TransactionSignatureChecker {
               val sigsRemovedTxSigComponent = WitnessTxSigComponentRebuilt(
                 wtx = r.transaction,
                 inputIndex = r.inputIndex,
-                output = TransactionOutput(r.output.value, spk),
+                output = TransactionOutput(r.fundingOutput.value, spk),
                 witScriptPubKey = r.witnessScriptPubKey,
                 flags = r.flags)
               TransactionSignatureSerializer.hashForSignature(

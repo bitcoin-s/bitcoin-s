@@ -3,14 +3,14 @@ package org.bitcoins.core.crypto
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script._
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.script.*
+import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.serializers.script.ScriptParser
-import org.bitcoins.core.util._
+import org.bitcoins.core.util.*
 import org.bitcoins.core.wallet.builder.StandardNonInteractiveFinalizer
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.crypto._
+import org.bitcoins.crypto.*
 import org.bitcoins.testkitcore.gen.{CreditingTxGen, ScriptGenerators}
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
@@ -618,7 +618,7 @@ class TransactionSignatureSerializerTest extends BitcoinSUnitTest {
               val oldScript =
                 BitcoinScriptUtil.calculateScriptForSigning(
                   txSigComponent,
-                  txSigComponent.output.scriptPubKey.asm
+                  txSigComponent.fundingOutput.scriptPubKey.asm
                 )
 
               val newScript =

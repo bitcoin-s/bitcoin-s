@@ -133,7 +133,7 @@ object DLCSignatureVerifier {
     TransactionSignatureChecker
       .checkSignature(
         sigComponent,
-        sigComponent.output.scriptPubKey.asm.toVector,
+        sigComponent.fundingOutput.scriptPubKey.asm.toVector,
         refundSig.pubKey,
         refundSig.signature,
         Policy.standardFlags
