@@ -48,6 +48,9 @@ sealed abstract class TxSigComponent {
     * for Bitcoin
     */
   def sigVersion: SignatureVersion
+
+  /** Where we we are spending money to */
+  def spendingOutputs: Vector[TransactionOutput] = transaction.outputs
 }
 
 object TxSigComponent {
