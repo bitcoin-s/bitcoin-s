@@ -39,8 +39,8 @@ object HDCoinType {
 
   def fromNetwork(np: NetworkParameters): HDCoinType = {
     np match {
-      case MainNet                     => Bitcoin
-      case TestNet3 | RegTest | SigNet => Testnet
+      case MainNet                                => Bitcoin
+      case TestNet3 | TestNet4 | RegTest | SigNet => Testnet
     }
   }
 
