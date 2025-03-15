@@ -17,13 +17,13 @@
 
 package org.bitcoin;
 
+import java.math.BigInteger;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-
-import java.math.BigInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import static org.bitcoin.NativeSecp256k1Util.*;
 
 /**
@@ -571,7 +571,7 @@ public class NativeSecp256k1 {
      * @param secKey key to sign with
      */
     public static byte[] schnorrSign(byte[] data, byte[] secKey, byte[] auxRand) throws AssertFailException {
-        checkArgument(data.length == 32 && secKey.length == 32 && auxRand.length == 32);
+        checkArgument(secKey.length == 32 && auxRand.length == 32);
 
         ByteBuffer byteBuff = nativeECDSABuffer.get();
         if (byteBuff == null || byteBuff.capacity() < 32 + 32 + 32) {
@@ -608,7 +608,7 @@ public class NativeSecp256k1 {
      * @param nonce the nonce (k value) used in signing
      */
     public static byte[] schnorrSignWithNonce(byte[] data, byte[] secKey, byte[] nonce) throws AssertFailException {
-        checkArgument(data.length == 32 && secKey.length == 32 && nonce.length == 32);
+        checkArgument(secKey.length == 32 && nonce.length == 32);
 
         ByteBuffer byteBuff = nativeECDSABuffer.get();
         if (byteBuff == null || byteBuff.capacity() < 32 + 32 + 32) {
