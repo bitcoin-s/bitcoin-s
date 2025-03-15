@@ -679,7 +679,7 @@ public class NativeSecp256k1 {
      * @param pubx the key that did the signing
      */
     public static boolean schnorrVerify(byte[] sig, byte[] data, byte[] pubx) throws AssertFailException {
-        checkArgument(sig.length == 64 && data.length == 32 && pubx.length == 32);
+        checkArgument(sig.length == 64 && pubx.length == 32);
 
         ByteBuffer byteBuffer = nativeECDSABuffer.get();
         if (byteBuffer == null || byteBuffer.capacity() < 64 + 32 + 32) {
