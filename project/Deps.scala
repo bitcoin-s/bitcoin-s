@@ -8,6 +8,7 @@ object Deps {
 
     val bouncyCastle = "1.80"
     val dropwizardMetricsV = "4.2.30" // https://github.com/dropwizard/metrics
+    val dropWizardMetrics5V = "5.0.0-rc17"
 
     val logback = "1.5.17" // https://github.com/qos-ch/logback
     val log4jV = "1.2.17"
@@ -39,7 +40,7 @@ object Deps {
     val postgresV = "42.7.5" // https://jdbc.postgresql.org/
     val akkaActorV = akkaStreamv
 
-    val slickV = "3.5.2"
+    val slickV = "3.6.0"
     val sqliteV = "3.49.1.0" // https://github.com/xerial/sqlite-jdbc
 
     val scalameterV = "0.17"
@@ -249,6 +250,8 @@ object Deps {
     val dropwizardMetricsJvm =
       "io.dropwizard.metrics" % "metrics-jvm" % V.dropwizardMetricsV // https://mvnrepository.com/artifact/io.dropwizard.metrics/metrics-jvm
 
+    val dropWizardMetricsCore5 =
+      "io.dropwizard.metrics5" % "metrics-core" % V.dropWizardMetrics5V
     val monixExecution =
       Def.setting(
         "io.monix" %%% "monix-execution" % V.monixV withSources () withJavadoc ())
@@ -472,6 +475,7 @@ object Deps {
     Compile.guava,
     Compile.dropwizardMetricsHealthChecks,
     Compile.dropwizardMetricsJvm,
+    Compile.dropWizardMetricsCore5,
     // postgres transitive deps
     Compile.jna,
     Compile.waffleJna,
