@@ -219,7 +219,7 @@ object Networks extends StringFactory[NetworkParameters] {
 object BitcoinNetworks extends StringFactory[BitcoinNetwork] {
 
   val knownNetworks: Seq[BitcoinNetwork] =
-    Seq(MainNet, TestNet3, RegTest, SigNet)
+    Seq(MainNet, TestNet3, RegTest, SigNet, TestNet4)
   val secretKeyBytes: Seq[ByteVector] = knownNetworks.map(_.privateKey)
   val p2pkhNetworkBytes: Seq[ByteVector] = knownNetworks.map(_.p2pkhNetworkByte)
   val p2shNetworkBytes: Seq[ByteVector] = knownNetworks.map(_.p2shNetworkByte)
@@ -246,7 +246,8 @@ object BitcoinNetworks extends StringFactory[BitcoinNetwork] {
       MainNet.magicBytes -> MainNet,
       TestNet3.magicBytes -> TestNet3,
       RegTest.magicBytes -> RegTest,
-      SigNet.magicBytes -> SigNet
+      SigNet.magicBytes -> SigNet,
+      TestNet4.magicBytes -> TestNet4
     )
 
   lazy val bytesToNetwork: Map[ByteVector, NetworkParameters] =
