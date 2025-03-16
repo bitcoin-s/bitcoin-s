@@ -114,13 +114,18 @@ case class PeerFinder(
   private def getLastSeenBlockFilterPeers(
       dbSlots: Int
   ): Future[Vector[PeerDb]] = {
-    val cooldown = Instant
-      .now()
-      .minusMillis(nodeAppConfig.connectionAttemptCooldownPeriod.toMillis)
-    for {
-      potentialPeerDbs <- getPeersFromDb.map(_._2)
-      filtered = potentialPeerDbs.filter(_.lastSeen.isBefore(cooldown))
-    } yield Random.shuffle(filtered).take(dbSlots)
+    if (nodeAppConfig.enablePeerDiscovery) {
+      val cooldown = Instant
+        .now()
+        .minusMillis(nodeAppConfig.connectionAttemptCooldownPeriod.toMillis)
+      for {
+        potentialPeerDbs <- getPeersFromDb.map(_._2)
+        filtered = potentialPeerDbs.filter(_.lastSeen.isBefore(cooldown))
+      } yield Random.shuffle(filtered).take(dbSlots)
+    } else {
+      Future.successful(Vector.empty)
+    }
+
   }
 
   /** Returns peers from bitcoin-s.config file unless peers are supplied as an
@@ -373,18 +378,22 @@ case class PeerFinder(
       val dbSlots = nodeAppConfig.maxConnectedPeers
       val dbPeersDbF =
         getLastSeenBlockFilterPeers(dbSlots)
-      val dnsPeersF = if (_peersToTry.size < maxPeerSearchCount) {
-        val pdsF = getPeersFromDnsSeeds
-          .map { dnsPeers =>
-            val shuffled = Random.shuffle(getPeersFromResources ++ dnsPeers)
-            val pds = shuffled.map(p => buildPeerData(p, isPersistent = false))
-            _peersToTry.pushAll(pds)
-          }
-          .map(_ => ())
-        pdsF
-      } else {
-        Future.unit
-      }
+      val dnsPeersF =
+        if (
+          _peersToTry.size < maxPeerSearchCount && nodeAppConfig.enablePeerDiscovery
+        ) {
+          val pdsF = getPeersFromDnsSeeds
+            .map { dnsPeers =>
+              val shuffled = Random.shuffle(getPeersFromResources ++ dnsPeers)
+              val pds =
+                shuffled.map(p => buildPeerData(p, isPersistent = false))
+              _peersToTry.pushAll(pds)
+            }
+            .map(_ => ())
+          pdsF
+        } else {
+          Future.unit
+        }
       val paramPdsF = for {
         _ <- dnsPeersF
         dbPeersDb <- dbPeersDbF
