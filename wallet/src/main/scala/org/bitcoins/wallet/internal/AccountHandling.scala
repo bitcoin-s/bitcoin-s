@@ -15,6 +15,7 @@ import org.bitcoins.core.protocol.blockchain.{
   MainNetChainParams,
   RegTestNetChainParams,
   SigNetChainParams,
+  TestNet4ChainParams,
   TestNetChainParams
 }
 import org.bitcoins.core.protocol.script.ScriptPubKey
@@ -522,7 +523,8 @@ case class AccountHandling(
   protected[wallet] lazy val DEFAULT_HD_COIN_TYPE: HDCoinType = {
     chainParams match {
       case MainNetChainParams => HDCoinType.Bitcoin
-      case RegTestNetChainParams | TestNetChainParams | SigNetChainParams(_) =>
+      case RegTestNetChainParams | TestNetChainParams | TestNet4ChainParams |
+          SigNetChainParams(_) =>
         HDCoinType.Testnet
 
     }
