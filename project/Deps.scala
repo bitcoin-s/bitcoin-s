@@ -10,7 +10,7 @@ object Deps {
     val dropwizardMetricsV = "4.2.30" // https://github.com/dropwizard/metrics
     val dropWizardMetrics5V = "5.0.0"
 
-    val logback = "1.5.17" // https://github.com/qos-ch/logback
+    val logback = "1.5.18" // https://github.com/qos-ch/logback
     val log4jV = "1.2.17"
 
     val logkitV = "20020529"
