@@ -28,15 +28,6 @@ object CLightningInstanceLocal
 
   override val DEFAULT_CONF_FILE: Path = DEFAULT_DATADIR.resolve("config")
 
-  private[clightning] def getNetworkDirName(network: BitcoinNetwork): String = {
-    network match {
-      case MainNet  => ""
-      case TestNet3 => "testnet"
-      case SigNet   => "signet"
-      case RegTest  => "regtest"
-    }
-  }
-
   override def fromConfigFile(
       file: File = DEFAULT_CONF_FILE.toFile
   )(implicit system: ActorSystem): CLightningInstanceLocal = {
