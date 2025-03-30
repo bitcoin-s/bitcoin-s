@@ -5,7 +5,7 @@ import org.apache.pekko.stream.scaladsl.SourceQueue
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.node.{Peer, PeerManagerApi}
-import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3}
+import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3, TestNet4}
 import org.bitcoins.core.p2p.{ServiceIdentifier, VersionMessage}
 import org.bitcoins.core.util.StartStopAsync
 import org.bitcoins.node.config.NodeAppConfig
@@ -82,7 +82,7 @@ case class PeerFinder(
           .filter(nodeAppConfig.torConf.enabled || !_.contains(".onion"))
         val peers = BitcoinSNodeUtil.stringsToPeers(addresses)
         Random.shuffle(peers)
-      case TestNet3 | RegTest | SigNet =>
+      case TestNet3 | RegTest | SigNet | TestNet4 =>
         Vector.empty
 
     }

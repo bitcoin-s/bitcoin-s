@@ -16,7 +16,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
 import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.wallet.{NeutrinoHDWalletApi, WalletApi}
-import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3}
+import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3, TestNet4}
 import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -430,8 +430,8 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
     import system.dispatcher
     val interval = intervalOpt.getOrElse {
       bitcoind.bitcoindRpcAppConfig.network match {
-        case MainNet | TestNet3 | SigNet => 10.seconds
-        case RegTest                     => 1.second
+        case MainNet | TestNet3 | TestNet4 | SigNet => 10.seconds
+        case RegTest                                => 1.second
       }
     }
     val processingBitcoindBlocks = new AtomicBoolean(false)

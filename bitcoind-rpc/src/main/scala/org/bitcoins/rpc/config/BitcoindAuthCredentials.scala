@@ -61,6 +61,7 @@ object BitcoindAuthCredentials extends BitcoinSLogger {
         case TestNet3 => "testnet3"
         case RegTest  => "regtest"
         case SigNet   => "signet"
+        case TestNet4 => "testnet4"
 
       }
       Paths.get(datadir.toString, middleSegment, ".cookie")

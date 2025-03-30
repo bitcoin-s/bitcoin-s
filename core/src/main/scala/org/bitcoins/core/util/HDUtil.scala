@@ -15,18 +15,22 @@ object HDUtil {
 
     (hdPurpose, network) match {
       case (SegWit, MainNet) | (Taproot, MainNet) => SegWitMainNetPriv
-      case (SegWit, TestNet3 | RegTest | SigNet)  => SegWitTestNet3Priv
-      case (Taproot, TestNet3 | RegTest | SigNet) => SegWitTestNet3Priv
-      case (NestedSegWit, MainNet)                => NestedSegWitMainNetPriv
-      case (NestedSegWit, TestNet3 | RegTest | SigNet) =>
+      case (SegWit, TestNet3 | RegTest | SigNet | TestNet4) =>
+        SegWitTestNet3Priv
+      case (Taproot, TestNet3 | RegTest | SigNet | TestNet4) =>
+        SegWitTestNet3Priv
+      case (NestedSegWit, MainNet) => NestedSegWitMainNetPriv
+      case (NestedSegWit, TestNet3 | RegTest | SigNet | TestNet4) =>
         NestedSegWitTestNet3Priv
       case (Multisig, MainNet) => LegacyMainNetPriv
-      case (Multisig, TestNet3 | RegTest | SigNet) =>
+      case (Multisig, TestNet3 | RegTest | SigNet | TestNet4) =>
         LegacyTestNet3Priv
-      case (Legacy, MainNet)                             => LegacyMainNetPriv
-      case (Legacy, TestNet3 | RegTest | SigNet)         => LegacyTestNet3Priv
-      case (HDPurpose(585), MainNet)                     => SegWitMainNetPriv
-      case (HDPurpose(585), TestNet3 | RegTest | SigNet) => SegWitTestNet3Priv
+      case (Legacy, MainNet) => LegacyMainNetPriv
+      case (Legacy, TestNet3 | RegTest | SigNet | TestNet4) =>
+        LegacyTestNet3Priv
+      case (HDPurpose(585), MainNet) => SegWitMainNetPriv
+      case (HDPurpose(585), TestNet3 | RegTest | SigNet | TestNet4) =>
+        SegWitTestNet3Priv
       case (unknown: HDPurpose, _) =>
         throw new IllegalArgumentException(s"Got unknown HD purpose $unknown")
     }
@@ -40,16 +44,16 @@ object HDUtil {
 
     (hdPurpose, network) match {
       case (SegWit, MainNet | SigNet) => ExtKeyPubVersion.SegWitMainNetPub
-      case (SegWit, TestNet3 | RegTest | SigNet) =>
+      case (SegWit, TestNet3 | RegTest | SigNet | TestNet4) =>
         ExtKeyPubVersion.SegWitTestNet3Pub
       case (NestedSegWit, MainNet) => ExtKeyPubVersion.NestedSegWitMainNetPub
-      case (NestedSegWit, TestNet3 | RegTest | SigNet) =>
+      case (NestedSegWit, TestNet3 | RegTest | SigNet | TestNet4) =>
         ExtKeyPubVersion.NestedSegWitTestNet3Pub
       case (Multisig, MainNet) => ExtKeyPubVersion.LegacyMainNetPub
-      case (Multisig, TestNet3 | RegTest | SigNet) =>
+      case (Multisig, TestNet3 | RegTest | SigNet | TestNet4) =>
         ExtKeyPubVersion.LegacyTestNet3Pub
       case (Legacy, MainNet) => ExtKeyPubVersion.LegacyMainNetPub
-      case (Legacy, TestNet3 | RegTest | SigNet) =>
+      case (Legacy, TestNet3 | RegTest | SigNet | TestNet4) =>
         ExtKeyPubVersion.LegacyTestNet3Pub
       case (unknown: HDPurpose, _) =>
         throw new IllegalArgumentException(s"Got unknown HD purpose $unknown")

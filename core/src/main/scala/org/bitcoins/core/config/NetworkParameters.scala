@@ -173,6 +173,24 @@ sealed abstract class SigNet extends BitcoinNetwork {
 }
 
 case object SigNet extends SigNet
+
+sealed abstract class TestNet4 extends BitcoinNetwork {
+  override def chainParams: BitcoinChainParams = TestNet4ChainParams
+  override def port: Int = 48333
+  override def rpcPort: Int = 48334
+  override def magicBytes: ByteVector = ByteVector(
+    0x1c,
+    0x16,
+    0x3f,
+    0x28
+  )
+  override def dnsSeeds: Seq[String] = Vector(
+    "seed.testnet4.bitcoin.sprovoost.nl",
+    "seed.testnet4.wiz.biz"
+  )
+}
+
+case object TestNet4 extends TestNet4
 // $COVERAGE-ON$
 
 object Networks extends StringFactory[NetworkParameters] {
@@ -201,7 +219,7 @@ object Networks extends StringFactory[NetworkParameters] {
 object BitcoinNetworks extends StringFactory[BitcoinNetwork] {
 
   val knownNetworks: Seq[BitcoinNetwork] =
-    Seq(MainNet, TestNet3, RegTest, SigNet)
+    Seq(MainNet, TestNet3, RegTest, SigNet, TestNet4)
   val secretKeyBytes: Seq[ByteVector] = knownNetworks.map(_.privateKey)
   val p2pkhNetworkBytes: Seq[ByteVector] = knownNetworks.map(_.p2pkhNetworkByte)
   val p2shNetworkBytes: Seq[ByteVector] = knownNetworks.map(_.p2shNetworkByte)
@@ -214,6 +232,7 @@ object BitcoinNetworks extends StringFactory[BitcoinNetwork] {
       case "testnet3" => TestNet3
       case "testnet"  => TestNet3
       case "test"     => TestNet3
+      case "testnet4" => TestNet4
       case "regtest"  => RegTest
       case "signet"   => SigNet
       case "sig"      => SigNet
@@ -227,7 +246,8 @@ object BitcoinNetworks extends StringFactory[BitcoinNetwork] {
       MainNet.magicBytes -> MainNet,
       TestNet3.magicBytes -> TestNet3,
       RegTest.magicBytes -> RegTest,
-      SigNet.magicBytes -> SigNet
+      SigNet.magicBytes -> SigNet,
+      TestNet4.magicBytes -> TestNet4
     )
 
   lazy val bytesToNetwork: Map[ByteVector, NetworkParameters] =

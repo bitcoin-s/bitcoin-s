@@ -49,7 +49,7 @@ sealed abstract class Pow {
                   case RegTestNetChainParams =>
                     RegTestNetChainParams.compressedPowLimit
                   case TestNetChainParams | MainNetChainParams |
-                      SigNetChainParams(_) =>
+                      SigNetChainParams(_) | TestNet4ChainParams =>
                     // if we can't find a non min difficulty block, let's just fail
                     throw new RuntimeException(
                       s"Could not find non mindifficulty block in chain of size=${blockchain.length}! hash=${tip.hashBE.hex} height=${currentHeight}"
@@ -119,8 +119,13 @@ sealed abstract class Pow {
 
       val powLimit = chainParams.powLimit
 
-      var bnNew = NumberUtil.targetExpansion(currentTip.nBits).difficulty
-
+      var bnNew = chainParams match {
+        case MainNetChainParams | TestNetChainParams | RegTestNetChainParams |
+            SigNetChainParams(_) =>
+          NumberUtil.targetExpansion(currentTip.nBits).difficulty
+        case TestNet4ChainParams =>
+          NumberUtil.targetExpansion(firstBlock.nBits).difficulty
+      }
       bnNew = bnNew * actualTimespan
 
       bnNew = bnNew / timespanSeconds
