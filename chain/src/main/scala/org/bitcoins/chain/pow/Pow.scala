@@ -119,8 +119,13 @@ sealed abstract class Pow {
 
       val powLimit = chainParams.powLimit
 
-      var bnNew = NumberUtil.targetExpansion(currentTip.nBits).difficulty
-
+      var bnNew = chainParams match {
+        case MainNetChainParams | TestNetChainParams | RegTestNetChainParams |
+            SigNetChainParams(_) =>
+          NumberUtil.targetExpansion(currentTip.nBits).difficulty
+        case TestNet4ChainParams =>
+          NumberUtil.targetExpansion(firstBlock.nBits).difficulty
+      }
       bnNew = bnNew * actualTimespan
 
       bnNew = bnNew / timespanSeconds
