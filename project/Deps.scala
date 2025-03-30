@@ -10,11 +10,12 @@ object Deps {
     val dropwizardMetricsV = "4.2.30" // https://github.com/dropwizard/metrics
     val dropWizardMetrics5V = "5.0.0"
 
-    val logback = "1.5.17" // https://github.com/qos-ch/logback
+    val logback = "1.5.18" // https://github.com/qos-ch/logback
     val log4jV = "1.2.17"
 
     val logkitV = "20020529"
     val avalonLoggingV = "20020627"
+    val xzV = "1.10"
 
     val scalacheck = "1.18.1"
     val scalaTest = "3.2.19" // https://www.scalatest.org/
@@ -180,7 +181,7 @@ object Deps {
       "logkit" % "logkit" % V.logkitV // https://github.com/apache/commons-logging/blob/0d4f2604ada038fd95e714d504d2278f1bd5814a/pom.xml#L492
     val avalonLogging =
       "avalon-framework" % "avalon-framework" % V.avalonLoggingV // https://github.com/apache/commons-logging/blob/0d4f2604ada038fd95e714d504d2278f1bd5814a/pom.xml#L498
-
+    val xz = "org.tukaani" % "xz" % V.xzV // https://github.com/tukaani-project/xz-java
     val codehaus = "org.codehaus.janino" % "janino" % V.codehausV
 
     // for loading secp256k1 natively
@@ -450,7 +451,8 @@ object Deps {
       Compile.scopt,
       Compile.logback,
       Compile.codehaus,
-      Compile.ant
+      Compile.ant,
+      Compile.xz //transitive
     )
   }
 
@@ -486,6 +488,7 @@ object Deps {
     Compile.log4j,
     Compile.avalonLogging,
     Compile.logkit,
+    Compile.xz,
     // transitive javax deps
     Compile.javaxServlet,
     Compile.javaxMail,
