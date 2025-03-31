@@ -135,7 +135,7 @@ object Deps {
       "com.google.code.gson" % "gson" % V.gsonV // https://github.com/google/gson
 
     val guava =
-      "com.google.guava" % "guava" % "33.4.5-jre" // https://github.com/google/guava/
+      "com.google.guava" % "guava" % "33.4.6-jre" // https://github.com/google/guava/
 
     val jUnixSocket =
       "com.kohlschutter.junixsocket" % "junixsocket-core" % V.jUnixSocketV
@@ -181,7 +181,8 @@ object Deps {
       "logkit" % "logkit" % V.logkitV // https://github.com/apache/commons-logging/blob/0d4f2604ada038fd95e714d504d2278f1bd5814a/pom.xml#L492
     val avalonLogging =
       "avalon-framework" % "avalon-framework" % V.avalonLoggingV // https://github.com/apache/commons-logging/blob/0d4f2604ada038fd95e714d504d2278f1bd5814a/pom.xml#L498
-    val xz = "org.tukaani" % "xz" % V.xzV // https://github.com/tukaani-project/xz-java
+    val xz =
+      "org.tukaani" % "xz" % V.xzV // https://github.com/tukaani-project/xz-java
     val codehaus = "org.codehaus.janino" % "janino" % V.codehausV
 
     // for loading secp256k1 natively
@@ -452,7 +453,7 @@ object Deps {
       Compile.logback,
       Compile.codehaus,
       Compile.ant,
-      Compile.xz //transitive
+      Compile.xz // transitive
     )
   }
 
