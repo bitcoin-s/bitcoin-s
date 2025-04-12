@@ -81,7 +81,7 @@ object Deps {
     val javaxJmsV = "2.0.1"
     val javaxMailV = "1.4.7"
 
-    val gsonV = "2.12.1"
+    val gsonV = "2.13.0"
     val jnaV = "5.17.0"
     val waffleJnaV = "3.5.1"
   }
