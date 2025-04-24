@@ -82,7 +82,7 @@ val clearedWalletF = for {
 }
 
 //we need to pick how many addresses we want to generate off of our keychain
-//when doing a rescan, this means we are generating 100 addrsses
+//when doing a rescan, this means we are generating 100 addresses
 //and then looking for matches. If we find a match, we generate _another_
 //100 fresh addresses and search those. We keep doing this until we find
 //100 addresses that do not contain a match.
