@@ -27,7 +27,7 @@ implicit val system = ActorSystem("explorer-client-actor-system")
 val env = ExplorerEnv.Test
 val explorerClient = SbExplorerClient(env)
 
-//list all announcemnts on the explorer
+//list all announcements on the explorer
 val announcementsF: Future[Vector[SbAnnouncementEvent]] = explorerClient.listAnnouncements()
 
 

@@ -5,7 +5,7 @@ original_id: secp256k1
 ---
 
 [Libsecp256k1](https://github.com/bitcoin-core/secp256k1) is used to preform cryptographic operations on the secp256k1 curve.
-This is the curve that bitcoin uses. There is a _signficant_ speedup when using this library compared to java crypto libraries
+This is the curve that bitcoin uses. There is a _significantt_ speedup when using this library compared to java crypto libraries
 like bouncy castle.
 
 In bitcoin-s, we support native binaries for libsecp256k1
