@@ -45,7 +45,7 @@ object Deps {
     val sqliteV = "3.49.1.0" // https://github.com/xerial/sqlite-jdbc
 
     val scalameterV = "0.17"
-    val scalamockV = "7.3.1"
+    val scalamockV = "7.3.2"
     val scalaCollectionCompatV = "2.13.0"
     val pgEmbeddedV = "1.1.0"
 
