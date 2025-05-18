@@ -185,8 +185,6 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
   override def downloadBlocks(
       blockHashes: Vector[DoubleSha256DigestBE]
   ): Future[Unit] = {
-    logger.info(
-      s"downloadBlocks() callback.length=${bitcoindRpcAppConfig.callBacks} blockHashes=${blockHashes}")
     val callback =
       bitcoindRpcAppConfig.callBacks.executeOnBlockReceivedCallbacks(_)
     val graph: RunnableGraph[Future[Done]] = Source(blockHashes)
