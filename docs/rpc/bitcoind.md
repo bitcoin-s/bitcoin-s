@@ -102,6 +102,7 @@ val authCredentials = BitcoindAuthCredentials.PasswordBased(
   username = username,
   password = password
 )
+implicit val bitcoindRpcAppConfig: BitcoindRpcAppConfig = BitcoindRpcAppConfig.fromDatadir(BitcoindConfig.DEFAULT_DATADIR.toPath)
 
 val bitcoindInstance = {
   BitcoindInstanceLocal(
