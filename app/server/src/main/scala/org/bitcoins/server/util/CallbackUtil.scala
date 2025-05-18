@@ -2,11 +2,15 @@ package org.bitcoins.server.util
 
 import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.commons.util.BitcoinSLogger
-import org.bitcoins.core.api.callback.OnBlockReceived
+import org.bitcoins.core.api.callback.{OnBlockReceived, OnTxReceived}
 import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
 import org.bitcoins.core.api.wallet.{NeutrinoWalletApi, WalletApi}
 import org.bitcoins.node.*
 import org.bitcoins.node.callback.NodeCallbackStreamManager
+import org.bitcoins.rpc.callback.{
+  BitcoindCallbackStreamManager,
+  BitcoindCallbacks
+}
 
 import scala.concurrent.Future
 
@@ -59,7 +63,7 @@ object CallbackUtil extends BitcoinSLogger {
 
   def createBitcoindNodeCallbacksForWallet(
       wallet: DLCNeutrinoHDWalletApi
-  )(implicit system: ActorSystem): Future[NodeCallbackStreamManager] = {
+  )(implicit system: ActorSystem): Future[BitcoindCallbackStreamManager] = {
     import system.dispatcher
     val onTx: OnTxReceived = { tx =>
       logger.debug(s"Receiving transaction txid=${tx.txIdBE.hex} as a callback")
@@ -73,9 +77,9 @@ object CallbackUtil extends BitcoinSLogger {
         .processBlock(block)
         .map(_ => ())
     }
-    val callbacks = NodeCallbacks(onTxReceived = Vector(onTx),
-                                  onBlockReceived = Vector(onBlock))
-    val streamManager = NodeCallbackStreamManager(callbacks)
+    val callbacks = BitcoindCallbacks(onTxReceived = Vector(onTx),
+                                      onBlockReceived = Vector(onBlock))
+    val streamManager = BitcoindCallbackStreamManager(callbacks)
     Future.successful(streamManager)
   }
 }

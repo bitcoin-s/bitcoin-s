@@ -33,8 +33,8 @@ import org.bitcoins.feeprovider.*
 import org.bitcoins.node.Node
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.NodeStateDescriptorDAO
-import org.bitcoins.rpc.BitcoindCallbacks
 import org.bitcoins.commons.rpc.BitcoindException.InWarmUp
+import org.bitcoins.rpc.callback.BitcoindCallbacks
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.{BitcoindRpcAppConfig, ZmqConfig}
 import org.bitcoins.server.bitcoind.BitcoindSyncState
@@ -428,11 +428,11 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
           Some(walletName),
           conf.walletConf.aesPasswordOpt
         )
-        bitcoind <- bitcoindF
-        walletHolder = result._1
-        callback = BitcoindCallbacks.onBlockReceived(
-          walletHolder.transactionProcessing.processBlock(_).map(_ => ()))
-        _ = bitcoind.bitcoindRpcAppConfig.addCallbacks(callback)
+//        bitcoind <- bitcoindF
+//        walletHolder = result._1
+//        callback = BitcoindCallbacks.onBlockReceived(
+//          walletHolder.transactionProcessing.processBlock(_).map(_ => ()))
+//        _ = bitcoind.bitcoindRpcAppConfig.addCallbacks(callback)
       } yield result
     }
 
@@ -475,6 +475,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         bitcoindSyncState <- syncWalletWithBitcoindAndStartPolling(
           bitcoind,
           wallet,
+          bitcoind.bitcoindRpcAppConfig.callBacks,
           Some(chainCallbacks)
         )
         _ = {
@@ -600,6 +601,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   private def syncWalletWithBitcoindAndStartPolling(
       bitcoind: BitcoindRpcClient,
       wallet: NeutrinoHDWalletApi,
+      bitcoindCallbacks: BitcoindCallbacks,
       chainCallbacksOpt: Option[ChainCallbacks]
   ): Future[BitcoindSyncState] = {
     val f = for {
@@ -616,10 +618,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         if (bitcoindRpcConf.zmqConfig == ZmqConfig.empty) {
           val blockingPollingCancellable = BitcoindRpcBackendUtil
             .startBitcoindBlockPolling(wallet, bitcoind, chainCallbacksOpt)(
-              nodeConf.callBacks.executeOnBlockReceivedCallbacks(_))
+              bitcoindCallbacks.executeOnBlockReceivedCallbacks(_))
           val mempoolCancellable = BitcoindRpcBackendUtil
             .startBitcoindMempoolPolling(wallet, bitcoind) { tx =>
-              nodeConf.callBacks
+              bitcoindCallbacks
                 .executeOnTxReceivedCallbacks(tx)
             }
           val combinedCancellable =

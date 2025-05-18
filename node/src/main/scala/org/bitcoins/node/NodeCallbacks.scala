@@ -4,9 +4,9 @@ import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.callback.{
   CallbackFactory,
-  ModuleCallbacks,
   NodeApiCallbacks,
-  OnBlockReceived
+  OnBlockReceived,
+  OnTxReceived
 }
 import org.bitcoins.core.api.{Callback, Callback2, CallbackHandler}
 import org.bitcoins.core.gcs.GolombFilter
@@ -21,8 +21,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * executed whenever the node receives a `getdata` message matching it.
   */
 trait NodeCallbacks
-    extends ModuleCallbacks[NodeCallbacks]
-    with NodeApiCallbacks
+    extends NodeApiCallbacks[NodeCallbacks]
     with BitcoinSLogger {
 
   def onCompactFiltersReceived
@@ -30,8 +29,6 @@ trait NodeCallbacks
                           (DoubleSha256DigestBE, GolombFilter)
                         ],
                         OnCompactFiltersReceived]
-
-  def onTxReceived: CallbackHandler[Transaction, OnTxReceived]
 
   def onMerkleBlockReceived: CallbackHandler[
     (MerkleBlock, Vector[Transaction]),
@@ -42,16 +39,6 @@ trait NodeCallbacks
       : CallbackHandler[Vector[BlockHeader], OnBlockHeadersReceived]
 
   override def +(other: NodeCallbacks): NodeCallbacks
-
-  def executeOnTxReceivedCallbacks(
-      tx: Transaction
-  )(implicit ec: ExecutionContext): Future[Unit] = {
-    onTxReceived.execute(
-      tx,
-      (err: Throwable) =>
-        logger.error(s"${onTxReceived.name} Callback failed with error: ", err)
-    )
-  }
 
   override def executeOnBlockReceivedCallbacks(
       block: Block
@@ -109,9 +96,6 @@ trait NodeCallbacks
 
 /** Callback for handling a received Merkle block with its corresponding TXs */
 trait OnMerkleBlockReceived extends Callback2[MerkleBlock, Vector[Transaction]]
-
-/** Callback for handling a received transaction */
-trait OnTxReceived extends Callback[Transaction]
 
 /** Callback for handling a received compact block filter */
 trait OnCompactFiltersReceived

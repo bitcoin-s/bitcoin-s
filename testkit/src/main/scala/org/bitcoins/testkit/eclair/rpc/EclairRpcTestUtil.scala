@@ -24,8 +24,10 @@ import org.bitcoins.eclair.rpc.config.EclairInstanceLocal
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.config.{
   BitcoindAuthCredentials,
+  BitcoindConfig,
   BitcoindInstance,
   BitcoindInstanceLocal,
+  BitcoindRpcAppConfig,
   ZmqConfig
 }
 import org.bitcoins.rpc.util.RpcUtil
@@ -756,13 +758,15 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
     val bitcoindRpc = {
       val instance = eclairRpcClient.instance
       val auth = instance.authCredentials
+      val bitcoindRpcAppConfig =
+        BitcoindRpcAppConfig.fromDatadir(BitcoindConfig.DEFAULT_DATADIR.toPath)
       val bitcoindInstance = BitcoindInstanceLocal(
         network = instance.network,
         uri = new URI("http://localhost:18333"),
         rpcUri = auth.bitcoindRpcUri,
         authCredentials = auth.bitcoinAuthOpt.get,
         binary = BitcoindRpcTestUtil.getBinary(bitcoindVersion)
-      )
+      )(system, bitcoindRpcAppConfig)
       BitcoindRpcClient(bitcoindInstance)
     }
     bitcoindRpc

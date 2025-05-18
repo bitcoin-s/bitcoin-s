@@ -1,3 +1,7 @@
--Xms512M
--Xmx4G
+# .jvmopts
+-Xms1G
+-Xmx2G
 -Xss2M
+-XX:ActiveProcessorCount=3
+-DCI=true
+-DGITHUB_ACTIONS=true

@@ -27,6 +27,8 @@ sealed trait BitcoindInstance extends BitcoinSLogger {
   def p2pPort: Int = uri.getPort
   implicit def system: ActorSystem
 
+  def bitcoindRpcAppConfig: BitcoindRpcAppConfig
+
 }
 
 /** Represents a bitcoind instance that is running locally on the same host */
@@ -77,10 +79,6 @@ sealed trait BitcoindInstanceLocal extends BitcoindInstance {
         throw exception
     }
   }
-
-  def bitcoindRpcAppConfig: BitcoindRpcAppConfig = {
-    BitcoindRpcAppConfig.fromDatadir(datadir.toPath)
-  }
 }
 
 /** Refers to a bitcoind instance that is running remotely on another machine */
@@ -99,7 +97,9 @@ object BitcoindInstanceLocal
       zmqConfig: ZmqConfig,
       binary: File,
       datadir: File
-  )(implicit override val system: ActorSystem)
+  )(
+      implicit override val system: ActorSystem,
+      implicit override val bitcoindRpcAppConfig: BitcoindRpcAppConfig)
       extends BitcoindInstanceLocal
 
   def apply(
@@ -111,9 +111,10 @@ object BitcoindInstanceLocal
       binary: File = DEFAULT_BITCOIND_LOCATION match {
         case Some(file) => file
         case None       => bitcoindLocationFromConfigFile
-      },
-      datadir: File = BitcoindConfig.DEFAULT_DATADIR
-  )(implicit system: ActorSystem): BitcoindInstanceLocal = {
+      }
+  )(implicit
+      system: ActorSystem,
+      bitcoindRpcAppConfig: BitcoindRpcAppConfig): BitcoindInstanceLocal = {
     BitcoindInstanceLocalImpl(
       network,
       uri,
@@ -121,8 +122,8 @@ object BitcoindInstanceLocal
       authCredentials,
       zmqConfig = zmqConfig,
       binary = binary,
-      datadir = datadir
-    )
+      datadir = bitcoindRpcAppConfig.datadir.toFile
+    )(system, bitcoindRpcAppConfig)
   }
 
   lazy val DEFAULT_BITCOIND_LOCATION: Option[File] = {
@@ -229,6 +230,8 @@ object BitcoindInstanceLocal
   )(implicit system: ActorSystem): BitcoindInstanceLocal = {
 
     val authCredentials = BitcoindAuthCredentials.fromConfig(config)
+    val bitcoindRpcAppConfig =
+      BitcoindRpcAppConfig.fromDatadir(config.datadir.toPath)
     BitcoindInstanceLocalImpl(
       config.network,
       config.uri,
@@ -237,7 +240,7 @@ object BitcoindInstanceLocal
       zmqConfig = ZmqConfig.fromConfig(config),
       binary = binary,
       datadir = config.datadir
-    )
+    )(system, bitcoindRpcAppConfig)
   }
 
   override val DEFAULT_DATADIR: Path = BitcoindConfig.DEFAULT_DATADIR.toPath
@@ -255,7 +258,9 @@ object BitcoindInstanceRemote
       authCredentials: BitcoindAuthCredentials,
       zmqConfig: ZmqConfig,
       proxyParams: Option[Socks5ProxyParams]
-  )(implicit override val system: ActorSystem)
+  )(
+      implicit override val system: ActorSystem,
+      implicit override val bitcoindRpcAppConfig: BitcoindRpcAppConfig)
       extends BitcoindInstanceRemote
 
   def apply(
@@ -265,7 +270,9 @@ object BitcoindInstanceRemote
       authCredentials: BitcoindAuthCredentials,
       zmqConfig: ZmqConfig = ZmqConfig(),
       proxyParams: Option[Socks5ProxyParams] = None
-  )(implicit system: ActorSystem): BitcoindInstanceRemote = {
+  )(implicit
+      system: ActorSystem,
+      bitcoindRpcAppConfig: BitcoindRpcAppConfig): BitcoindInstanceRemote = {
     BitcoindInstanceRemoteImpl(
       network,
       uri,
@@ -305,7 +312,7 @@ object BitcoindInstanceRemote
       config.authCredentials,
       zmqConfig = config.zmqConfig,
       proxyParams = None
-    )
+    )(system, config)
   }
 
   override def fromDataDir(

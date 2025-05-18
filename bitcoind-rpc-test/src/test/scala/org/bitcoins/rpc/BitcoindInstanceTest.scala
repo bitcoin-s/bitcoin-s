@@ -6,7 +6,8 @@ import org.bitcoins.rpc.config.{
   BitcoindAuthCredentials,
   BitcoindConfig,
   BitcoindInstanceLocal,
-  BitcoindInstanceRemote
+  BitcoindInstanceRemote,
+  BitcoindRpcAppConfig
 }
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
@@ -114,9 +115,8 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
         uri = new URI(s"http://localhost:$port"),
         rpcUri = new URI(s"http://localhost:$rpcPort"),
         authCredentials = authCredentials,
-        datadir = conf.datadir,
         binary = BitcoindRpcTestUtil.newestBitcoindBinary
-      )
+      )(system, BitcoindRpcAppConfig.fromDatadir(conf.datadir.toPath))
 
     testClientStart(BitcoindRpcClient(instance))
   }
@@ -139,15 +139,16 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
         username = "bitcoin-s",
         password = "strong_password"
       )
+    val bitcoindRpcAppConfig =
+      BitcoindRpcAppConfig.fromDatadir(conf.datadir.toPath)
     val instance =
       BitcoindInstanceLocal(
         network = RegTest,
         uri = new URI(s"http://localhost:$port"),
         rpcUri = new URI(s"http://localhost:$rpcPort"),
         authCredentials = authCredentials,
-        datadir = conf.datadir,
         binary = BitcoindRpcTestUtil.newestBitcoindBinary
-      )
+      )(system, bitcoindRpcAppConfig)
 
     val client =
       BitcoindRpcClient(instance)
@@ -160,10 +161,8 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
         authCredentials = instance.authCredentials,
         zmqConfig = instance.zmqConfig,
         proxyParams = None
-      )
-      remoteClient = new BitcoindRpcClient(remoteInstance)(
-        system,
-        instance.bitcoindRpcAppConfig)
+      )(system, bitcoindRpcAppConfig)
+      remoteClient = new BitcoindRpcClient(remoteInstance)(system)
       _ <- remoteClient.start()
       _ <- remoteClient.isStartedF.map {
         case false =>

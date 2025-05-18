@@ -2,7 +2,6 @@ package org.bitcoins.testkit.fixtures
 
 import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.config.BitcoindRpcAppConfig
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
 import org.scalatest.*
@@ -126,11 +125,10 @@ object BitcoinSFixture {
       versionOpt = versionOpt,
       enableNeutrino = enableNeutrino
     )
-    val appConfig = BitcoindRpcAppConfig.fromDatadir(instance.datadir.toPath)
     val bitcoind = versionOpt match {
       case Some(v) =>
         BitcoindRpcClient.fromVersion(v, instance)
-      case None => new BitcoindRpcClient(instance)(system, appConfig)
+      case None => new BitcoindRpcClient(instance)(system)
     }
     BitcoindRpcTestUtil.startServers(Vector(bitcoind)).map(_ => bitcoind)
   }

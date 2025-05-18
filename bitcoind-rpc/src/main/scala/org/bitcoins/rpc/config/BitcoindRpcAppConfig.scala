@@ -7,8 +7,8 @@ import org.bitcoins.commons.config.{AppConfig, ConfigOps}
 import org.bitcoins.core.api.CallbackConfig
 import org.bitcoins.core.api.callback.CallbackFactory
 import org.bitcoins.core.api.tor.Socks5ProxyParams
-import org.bitcoins.rpc.BitcoindCallbacks
 import org.bitcoins.commons.rpc.BitcoindException.InWarmUp
+import org.bitcoins.rpc.callback.BitcoindCallbacks
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.util.AppConfigFactoryActorSystem
 import org.bitcoins.tor.config.TorAppConfig
@@ -155,17 +155,16 @@ case class BitcoindRpcAppConfig(
   lazy val zmqConfig: ZmqConfig =
     ZmqConfig(zmqHashBlock, zmqRawBlock, zmqHashTx, zmqRawTx)
 
-  lazy val bitcoindInstance = binaryOpt match {
+  lazy val bitcoindInstance: BitcoindInstance = binaryOpt match {
     case Some(file) =>
-      BitcoindInstanceLocal(
+      BitcoindInstanceLocal.apply(
         network = network,
         uri = uri,
         rpcUri = rpcUri,
         authCredentials = authCredentials,
         zmqConfig = zmqConfig,
-        binary = file,
-        datadir = bitcoindDataDir
-      )
+        binary = file
+      )(system, this)
 
     case None =>
       BitcoindInstanceRemote(
@@ -175,7 +174,7 @@ case class BitcoindRpcAppConfig(
         authCredentials = authCredentials,
         zmqConfig = zmqConfig,
         proxyParams = socks5ProxyParams
-      )
+      )(system, this)
   }
 
   /** Creates a bitcoind rpc client based on the [[bitcoindInstance]] configured
@@ -190,7 +189,7 @@ case class BitcoindRpcAppConfig(
       case remote: BitcoindInstanceRemote =>
         // first get a generic rpc client so we can retrieve
         // the proper version of the remote running bitcoind
-        val noVersionRpc = new BitcoindRpcClient(remote)(system, this)
+        val noVersionRpc = new BitcoindRpcClient(remote)(system)
         val versionF = getBitcoindVersion(noVersionRpc)
 
         // if we don't retrieve the proper version, we can
@@ -199,8 +198,7 @@ case class BitcoindRpcAppConfig(
         // such as blockfilters
         // see: https://github.com/bitcoin-s/bitcoin-s/issues/3695#issuecomment-929492945
         versionF.map { version =>
-          BitcoindRpcClient.fromVersion(version, instance = remote)(system,
-                                                                    this)
+          BitcoindRpcClient.fromVersion(version, instance = remote)(system)
         }
     }
   }
