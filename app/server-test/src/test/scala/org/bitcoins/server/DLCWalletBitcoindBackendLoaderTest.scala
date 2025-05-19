@@ -1,6 +1,7 @@
 package org.bitcoins.server
 
 import org.bitcoins.asyncutil.AsyncUtil
+import org.bitcoins.core.currency.CurrencyUnits
 import org.bitcoins.server.util.WalletHolderWithBitcoindLoaderApi
 import org.bitcoins.testkit.server.WalletLoaderFixtures
 import org.bitcoins.wallet.models.WalletStateDescriptorDAO
@@ -40,11 +41,18 @@ class DLCWalletBitcoindBackendLoaderTest extends WalletLoaderFixtures {
     val loadedWalletF = loader.load(walletNameOpt = None, aesPasswordOpt = None)
 
     val walletConfigF = loadedWalletF.map(_._2)
+    val walletF = loadedWalletF.map(_._1)
 
     // as a hack, set rescanning to true, so next time we load it starts a rescan
     val setRescanF = for {
       _ <- blocksF
       walletConfig <- walletConfigF
+      wallet <- walletF
+      address <- wallet.getNewAddress()
+      // send some funds to get discovered during the rescan
+      _ <- bitcoind.generateToAddress(1, address)
+      balance <- wallet.getBalance()
+      _ = assert(balance == CurrencyUnits.zero)
       descriptorDAO = WalletStateDescriptorDAO()(
         system.dispatcher,
         walletConfig
@@ -59,6 +67,8 @@ class DLCWalletBitcoindBackendLoaderTest extends WalletLoaderFixtures {
         walletNameOpt = None,
         aesPasswordOpt = None
       ) // load wallet again
+      balanceBeforeRescan <- loadWallet2.getBalance()
+      _ = assert(balanceBeforeRescan == CurrencyUnits.zero)
       isRescanning <- loadWallet2.isRescanning()
       _ = assert(isRescanning)
       _ = assert(loader.isRescanStateDefined)
@@ -69,8 +79,10 @@ class DLCWalletBitcoindBackendLoaderTest extends WalletLoaderFixtures {
         },
         1.second
       )
+      balanceAfterRescan <- loadWallet2.getBalance()
     } yield {
       assert(loader.isRescanStateEmpty)
+      assert(balanceAfterRescan != CurrencyUnits.zero)
     }
   }
 }

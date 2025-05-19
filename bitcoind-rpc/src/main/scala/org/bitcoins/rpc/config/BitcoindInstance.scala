@@ -21,11 +21,14 @@ sealed trait BitcoindInstance extends BitcoinSLogger {
   def network: NetworkParameters
   def uri: URI
   def rpcUri: URI
-  def authCredentials: BitcoindAuthCredentials
+  final def authCredentials: BitcoindAuthCredentials =
+    bitcoindRpcAppConfig.authCredentials
   def zmqConfig: ZmqConfig
 
   def p2pPort: Int = uri.getPort
   implicit def system: ActorSystem
+
+  def bitcoindRpcAppConfig: BitcoindRpcAppConfig
 
 }
 
@@ -54,13 +57,17 @@ sealed trait BitcoindInstanceLocal extends BitcoindInstance {
     val versionT = Try {
       val cmd =
         Seq(binaryPath, s"-datadir=${datadir.toPath.toString}", "--version")
-      val foundVersion =
+      if (!Files.exists(datadir.toPath)) {
+        Files.createDirectories(datadir.toPath)
+      }
+      val foundVersion = {
         cmd
           .!!(NativeProcessFactory.processLogger)
           .split(Properties.lineSeparator)
           .head
           .split(" ")
           .last
+      }
       BitcoindVersion.findVersion(foundVersion).getOrElse {
         // else just default to the newest version of bitcoind
         logger.warn(
@@ -77,10 +84,6 @@ sealed trait BitcoindInstanceLocal extends BitcoindInstance {
         throw exception
     }
   }
-
-  def bitcoindRpcAppConfig: BitcoindRpcAppConfig = {
-    BitcoindRpcAppConfig.fromDatadir(datadir.toPath)
-  }
 }
 
 /** Refers to a bitcoind instance that is running remotely on another machine */
@@ -95,34 +98,35 @@ object BitcoindInstanceLocal
       network: NetworkParameters,
       uri: URI,
       rpcUri: URI,
-      authCredentials: BitcoindAuthCredentials,
       zmqConfig: ZmqConfig,
       binary: File,
       datadir: File
-  )(implicit override val system: ActorSystem)
+  )(
+      implicit override val system: ActorSystem,
+      implicit override val bitcoindRpcAppConfig: BitcoindRpcAppConfig)
       extends BitcoindInstanceLocal
 
   def apply(
       network: NetworkParameters,
       uri: URI,
       rpcUri: URI,
-      authCredentials: BitcoindAuthCredentials,
       zmqConfig: ZmqConfig = ZmqConfig(),
+      bitcoindDatadir: File,
       binary: File = DEFAULT_BITCOIND_LOCATION match {
         case Some(file) => file
         case None       => bitcoindLocationFromConfigFile
-      },
-      datadir: File = BitcoindConfig.DEFAULT_DATADIR
-  )(implicit system: ActorSystem): BitcoindInstanceLocal = {
+      }
+  )(implicit
+      system: ActorSystem,
+      bitcoindRpcAppConfig: BitcoindRpcAppConfig): BitcoindInstanceLocal = {
     BitcoindInstanceLocalImpl(
       network,
       uri,
       rpcUri,
-      authCredentials,
       zmqConfig = zmqConfig,
       binary = binary,
-      datadir = datadir
-    )
+      datadir = bitcoindDatadir
+    )(system, bitcoindRpcAppConfig)
   }
 
   lazy val DEFAULT_BITCOIND_LOCATION: Option[File] = {
@@ -229,15 +233,18 @@ object BitcoindInstanceLocal
   )(implicit system: ActorSystem): BitcoindInstanceLocal = {
 
     val authCredentials = BitcoindAuthCredentials.fromConfig(config)
+    val bitcoindRpcAppConfig =
+      BitcoindRpcAppConfig(config.datadir.toPath,
+                           Vector.empty,
+                           authCredentinalsOpt = Some(authCredentials))
     BitcoindInstanceLocalImpl(
       config.network,
       config.uri,
       config.rpcUri,
-      authCredentials,
       zmqConfig = ZmqConfig.fromConfig(config),
       binary = binary,
       datadir = config.datadir
-    )
+    )(system, bitcoindRpcAppConfig)
   }
 
   override val DEFAULT_DATADIR: Path = BitcoindConfig.DEFAULT_DATADIR.toPath
@@ -252,25 +259,26 @@ object BitcoindInstanceRemote
       network: NetworkParameters,
       uri: URI,
       rpcUri: URI,
-      authCredentials: BitcoindAuthCredentials,
       zmqConfig: ZmqConfig,
       proxyParams: Option[Socks5ProxyParams]
-  )(implicit override val system: ActorSystem)
+  )(
+      implicit override val system: ActorSystem,
+      implicit override val bitcoindRpcAppConfig: BitcoindRpcAppConfig)
       extends BitcoindInstanceRemote
 
   def apply(
       network: NetworkParameters,
       uri: URI,
       rpcUri: URI,
-      authCredentials: BitcoindAuthCredentials,
       zmqConfig: ZmqConfig = ZmqConfig(),
       proxyParams: Option[Socks5ProxyParams] = None
-  )(implicit system: ActorSystem): BitcoindInstanceRemote = {
+  )(implicit
+      system: ActorSystem,
+      bitcoindRpcAppConfig: BitcoindRpcAppConfig): BitcoindInstanceRemote = {
     BitcoindInstanceRemoteImpl(
       network,
       uri,
       rpcUri,
-      authCredentials,
       zmqConfig = zmqConfig,
       proxyParams = proxyParams
     )
@@ -282,7 +290,9 @@ object BitcoindInstanceRemote
     require(file.exists, s"${file.getPath} does not exist!")
     require(file.isFile, s"${file.getPath} is not a file!")
 
-    val conf = BitcoindRpcAppConfig(file.toPath, Vector.empty)
+    val conf = BitcoindRpcAppConfig(file.toPath,
+                                    Vector.empty,
+                                    authCredentinalsOpt = None)
     fromConfig(conf)
   }
 
@@ -302,10 +312,9 @@ object BitcoindInstanceRemote
       config.network,
       config.uri,
       config.rpcUri,
-      config.authCredentials,
       zmqConfig = config.zmqConfig,
       proxyParams = None
-    )
+    )(system, config)
   }
 
   override def fromDataDir(
@@ -313,7 +322,8 @@ object BitcoindInstanceRemote
   )(implicit system: ActorSystem): BitcoindInstanceRemote = {
     require(dir.exists, s"${dir.getPath} does not exist!")
     require(dir.isDirectory, s"${dir.getPath} is not a directory!")
-    val conf = BitcoindRpcAppConfig(dir.toPath, Vector.empty)
+    val conf =
+      BitcoindRpcAppConfig(dir.toPath, Vector.empty, authCredentinalsOpt = None)
     fromConfig(conf)
   }
 }

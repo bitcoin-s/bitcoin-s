@@ -41,8 +41,7 @@ import scala.concurrent.Future
   * see fit.
   */
 class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
-    override val system: ActorSystem,
-    val bitcoindRpcAppConfig: BitcoindRpcAppConfig
+    override val system: ActorSystem
 ) extends Client
     with FeeRateApi
     with NodeApi
@@ -65,6 +64,8 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
     with V20MultisigRpc {
 
   private val syncing = new AtomicBoolean(false)
+
+  def bitcoindRpcAppConfig: BitcoindRpcAppConfig = instance.bitcoindRpcAppConfig
 
   override lazy val version: Future[BitcoindVersion] = {
     import org.bitcoins.commons.serializers.JsonSerializers.{
@@ -331,7 +332,7 @@ object BitcoindRpcClient {
   def apply(instance: BitcoindInstanceLocal)(implicit
       system: ActorSystem
   ): BitcoindRpcClient =
-    new BitcoindRpcClient(instance)(system, instance.bitcoindRpcAppConfig)
+    new BitcoindRpcClient(instance)(system)
 
   /** Constructs a RPC client from the given datadir, or the default datadir if
     * no directory is provided. This is always a [[BitcoindInstanceLocal]] since
@@ -368,9 +369,7 @@ object BitcoindRpcClient {
     * bitcoind is NOT started.
     */
   def fromVersion(version: BitcoindVersion, instance: BitcoindInstanceRemote)(
-      implicit
-      system: ActorSystem,
-      bitcoindRpcAppConfig: BitcoindRpcAppConfig
+      implicit system: ActorSystem
   ): BitcoindRpcClient = {
     val bitcoind = version match {
       case BitcoindVersion.V26 => new BitcoindV26RpcClient(instance)

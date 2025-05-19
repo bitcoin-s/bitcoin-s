@@ -2,6 +2,8 @@ package org.bitcoins.server
 
 import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.commons.util.BitcoinSLogger
+import org.bitcoins.core.api.CallbackConfig
+import org.bitcoins.core.api.callback.NodeApiCallbacks
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.commons.ArgumentSource
 import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
@@ -14,8 +16,8 @@ import org.bitcoins.crypto.AesPassword
 import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.node.NodeCallbacks
 import org.bitcoins.node.callback.NodeCallbackStreamManager
-import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.models.NodeStateDescriptorDAO
+import org.bitcoins.rpc.callback.BitcoindCallbacks
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.util.CallbackUtil
 import org.bitcoins.wallet.WalletHolder
@@ -264,29 +266,29 @@ sealed trait DLCWalletLoaderApi
     }
   }
 
-  private def stopNodeCallbacks(nodeCallbacks: NodeCallbacks): Future[Unit] = {
+  private def stopNodeCallbacks[T <: NodeApiCallbacks[T]](
+      nodeCallbacks: NodeApiCallbacks[T]): Future[Unit] = {
     nodeCallbacks match {
       case stream: NodeCallbackStreamManager =>
         stream.stop()
-      case _: NodeCallbacks =>
+      case _: NodeCallbacks | _: NodeApiCallbacks[?] =>
         Future.unit
     }
   }
 
-  protected def loadHelper(
+  protected def loadHelper[T <: NodeApiCallbacks[T]](
       walletNameOpt: Option[String],
       aesPasswordOpt: Option[AesPassword],
-      nodeConf: NodeAppConfig,
+      conf: CallbackConfig[T],
       chainQueryApi: ChainQueryApi,
       nodeApi: NodeApi,
-      createCallbacks: DLCNeutrinoHDWalletApi => Future[
-        NodeCallbackStreamManager])
+      createCallbacks: DLCNeutrinoHDWalletApi => Future[T])
       : Future[(WalletHolder, WalletAppConfig, DLCAppConfig)] = {
     logger.info(s"Beginning to load=$walletNameOpt")
 
     for {
       _ <- stopRescan()
-      _ <- stopNodeCallbacks(nodeConf.callBacks)
+      _ <- stopNodeCallbacks(conf.callBacks)
       (dlcWallet, walletConfig, dlcConfig) <- loadWallet(
         chainQueryApi = chainQueryApi,
         nodeApi = nodeApi,
@@ -295,11 +297,11 @@ sealed trait DLCWalletLoaderApi
       )
       _ <- stopOldWalletAppConfig(walletConfig)
       _ <- stopOldDLCAppConfig(dlcConfig)
-      _ <- walletHolder.replaceWallet(dlcWallet)
       nodeCallbacks <- createCallbacks(dlcWallet)
-      _ = nodeConf.replaceCallbacks(nodeCallbacks)
+      _ = conf.replaceCallbacks(nodeCallbacks)
+      _ <- walletHolder.replaceWallet(dlcWallet)
       _ <- updateWalletName(walletNameOpt)
-      rescanState <- restartRescanIfNeeded(walletHolder.rescanHandling)
+      rescanState <- restartRescanIfNeeded(dlcWallet.rescanHandling)
       _ = setRescanState(rescanState)
     } yield {
       logger.info(s"Done loading=$walletNameOpt")
@@ -317,18 +319,16 @@ case class DLCWalletNeutrinoBackendLoader(
     override val system: ActorSystem
 ) extends DLCWalletLoaderApi {
 
-  implicit private val nodeConf: NodeAppConfig = conf.nodeConf
-
   override def isWalletLoaded: Boolean = walletHolder.isInitialized
 
   override def load(
       walletNameOpt: Option[String],
       aesPasswordOpt: Option[AesPassword]
   ): Future[(WalletHolder, WalletAppConfig, DLCAppConfig)] = {
-    loadHelper(
+    loadHelper[NodeCallbacks](
       walletNameOpt = walletNameOpt,
       aesPasswordOpt = aesPasswordOpt,
-      nodeConf = nodeConf,
+      conf = conf.nodeConf,
       chainQueryApi = chainQueryApi,
       nodeApi = nodeApi,
       createCallbacks = CallbackUtil.createNeutrinoNodeCallbacksForWallet
@@ -346,16 +346,15 @@ case class DLCWalletBitcoindBackendLoader(
     override val conf: BitcoinSAppConfig,
     override val system: ActorSystem
 ) extends DLCWalletLoaderApi {
-  implicit private val nodeConf: NodeAppConfig = conf.nodeConf
 
   override def load(
       walletNameOpt: Option[String],
       aesPasswordOpt: Option[AesPassword]
   ): Future[(WalletHolder, WalletAppConfig, DLCAppConfig)] = {
-    loadHelper(
+    loadHelper[BitcoindCallbacks](
       walletNameOpt = walletNameOpt,
       aesPasswordOpt = aesPasswordOpt,
-      nodeConf = nodeConf,
+      conf = bitcoind.bitcoindRpcAppConfig,
       chainQueryApi = bitcoind,
       nodeApi = nodeApi,
       createCallbacks = CallbackUtil.createBitcoindNodeCallbacksForWallet

@@ -102,13 +102,15 @@ val authCredentials = BitcoindAuthCredentials.PasswordBased(
   username = username,
   password = password
 )
+implicit val bitcoindRpcAppConfig: BitcoindRpcAppConfig = 
+  BitcoindRpcAppConfig(BitcoindConfig.DEFAULT_DATADIR.toPath, Vector.empty, Some(authCredentials))
 
 val bitcoindInstance = {
   BitcoindInstanceLocal(
     network = MainNet,
     uri = new URI(s"http://localhost:${MainNet.port}"),
     rpcUri = new URI(s"http://localhost:${MainNet.rpcPort}"),
-    authCredentials = authCredentials
+    bitcoindDatadir = BitcoindConfig.DEFAULT_DATADIR
   )
 }
 

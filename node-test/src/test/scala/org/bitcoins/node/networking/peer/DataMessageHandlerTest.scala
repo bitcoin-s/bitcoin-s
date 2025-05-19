@@ -3,7 +3,7 @@ package org.bitcoins.node.networking.peer
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandler
-import org.bitcoins.core.api.callback.OnBlockReceived
+import org.bitcoins.core.api.callback.{OnBlockReceived, OnTxReceived}
 import org.bitcoins.core.config.SigNet
 import org.bitcoins.core.currency.*
 import org.bitcoins.core.gcs.{FilterType, GolombFilter}

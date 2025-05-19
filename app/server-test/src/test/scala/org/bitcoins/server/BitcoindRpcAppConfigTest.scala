@@ -11,7 +11,9 @@ class BitcoindRpcAppConfigTest extends BitcoinSAsyncTest {
   val tempDir: Path = Files.createTempDirectory("bitcoin-s")
 
   val config: BitcoindRpcAppConfig =
-    BitcoindRpcAppConfig(baseDatadir = tempDir, Vector.empty)
+    BitcoindRpcAppConfig(baseDatadir = tempDir,
+                         Vector.empty,
+                         authCredentinalsOpt = None)
 
   override def afterAll(): Unit = {
     super.afterAll()
@@ -38,7 +40,9 @@ class BitcoindRpcAppConfigTest extends BitcoinSAsyncTest {
     val overrider =
       ConfigFactory.parseString(s"bitcoin-s.bitcoind-rpc.rpcport = 5555")
 
-    val throughConstructor = BitcoindRpcAppConfig(tempDir, Vector(overrider))
+    val throughConstructor = BitcoindRpcAppConfig(tempDir,
+                                                  Vector(overrider),
+                                                  authCredentinalsOpt = None)
     val throughWithOverrides = config.withOverrides(overrider)
     assert(throughWithOverrides.rpcPort == 5555)
     assert(throughWithOverrides.rpcPort == throughConstructor.rpcPort)
@@ -89,7 +93,9 @@ class BitcoindRpcAppConfigTest extends BitcoinSAsyncTest {
     """.stripMargin
     val _ = Files.write(tempFile, confStr.getBytes())
 
-    val appConfig = BitcoindRpcAppConfig(baseDatadir = tempDir, Vector.empty)
+    val appConfig = BitcoindRpcAppConfig(baseDatadir = tempDir,
+                                         Vector.empty,
+                                         authCredentinalsOpt = None)
 
     assert(appConfig.datadir == tempDir.resolve("testnet3"))
     assert(appConfig.network == TestNet3)

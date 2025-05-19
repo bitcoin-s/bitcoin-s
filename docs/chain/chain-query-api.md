@@ -5,7 +5,7 @@ title: Chain Query API
 
 ```scala mdoc:invisible
 import org.apache.pekko.actor.ActorSystem
-import org.bitcoins.core.api.callback.OnBlockReceived
+import org.bitcoins.core.api.callback.{OnBlockReceived, OnTxReceived}
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.crypto._
