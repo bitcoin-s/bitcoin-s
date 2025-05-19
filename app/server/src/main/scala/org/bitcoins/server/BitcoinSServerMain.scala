@@ -428,11 +428,6 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
           Some(walletName),
           conf.walletConf.aesPasswordOpt
         )
-//        bitcoind <- bitcoindF
-//        walletHolder = result._1
-//        callback = BitcoindCallbacks.onBlockReceived(
-//          walletHolder.transactionProcessing.processBlock(_).map(_ => ()))
-//        _ = bitcoind.bitcoindRpcAppConfig.addCallbacks(callback)
       } yield result
     }
 

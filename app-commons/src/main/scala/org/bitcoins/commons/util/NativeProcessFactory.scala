@@ -35,7 +35,6 @@ trait NativeProcessFactory extends BitcoinSLogger {
         ()
       case None =>
         if (cmd.nonEmpty) {
-
           val started = process.run(NativeProcessFactory.processLogger)
           processOpt = Some(started)
         } else {

@@ -1,6 +1,5 @@
 package org.bitcoins.rpc
 
-import com.typesafe.config.ConfigFactory
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.{
@@ -112,9 +111,7 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
       )
     val bitcoindRpcAppConfig =
       BitcoindRpcAppConfig(conf.datadir.toPath,
-                           Vector(
-                             ConfigFactory.parseString(
-                               s"bitcoin-s.bitcoind-rpc.rpcport=${rpcPort}")),
+                           Vector.empty,
                            authCredentinalsOpt = Some(authCredentials))
     val instance =
       BitcoindInstanceLocal(
