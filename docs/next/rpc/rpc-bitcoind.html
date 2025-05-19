@@ -121,13 +121,15 @@ ready to create the connection with our RPC client</p>
   username = username,
   password = password
 )
+<span class="hljs-keyword">implicit</span> <span class="hljs-keyword">val</span> bitcoindRpcAppConfig: <span class="hljs-type">BitcoindRpcAppConfig</span> = 
+  <span class="hljs-type">BitcoindRpcAppConfig</span>(<span class="hljs-type">BitcoindConfig</span>.<span class="hljs-type">DEFAULT_DATADIR</span>.toPath, <span class="hljs-type">Vector</span>.empty, <span class="hljs-type">Some</span>(authCredentials))
 
 <span class="hljs-keyword">val</span> bitcoindInstance = {
   <span class="hljs-type">BitcoindInstanceLocal</span>(
     network = <span class="hljs-type">MainNet</span>,
     uri = <span class="hljs-keyword">new</span> <span class="hljs-type">URI</span>(<span class="hljs-string">s"http://localhost:<span class="hljs-subst">${MainNet.port}</span>"</span>),
     rpcUri = <span class="hljs-keyword">new</span> <span class="hljs-type">URI</span>(<span class="hljs-string">s"http://localhost:<span class="hljs-subst">${MainNet.rpcPort}</span>"</span>),
-    authCredentials = authCredentials
+    bitcoindDatadir = <span class="hljs-type">BitcoindConfig</span>.<span class="hljs-type">DEFAULT_DATADIR</span>
   )
 }
 
