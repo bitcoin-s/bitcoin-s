@@ -58,7 +58,9 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
         nodeType match {
           case NodeType.BitcoindBackend =>
             val bitcoindRpcAppConfig =
-              BitcoindRpcAppConfig(baseDatadir, configOverrides)(system)
+              BitcoindRpcAppConfig(baseDatadir,
+                                   configOverrides,
+                                   authCredentinalsOpt = None)(system)
             bitcoindRpcAppConfig.binaryOpt match {
               case Some(_) =>
                 bitcoindRpcAppConfig.clientF

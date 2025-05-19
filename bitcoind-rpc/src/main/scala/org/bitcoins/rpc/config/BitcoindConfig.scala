@@ -26,17 +26,15 @@ case class BitcoindConfig(
     private[bitcoins] val lines: Seq[String],
     datadir: File
 ) extends BitcoinSLogger {
-
+  private val confFile = datadir.toPath.resolve("bitcoin.conf")
   // create datadir and config if it DNE on disk
-  if (!datadir.exists()) {
+  if (!Files.exists(confFile)) {
     logger.debug(
-      s"datadir=${datadir.getAbsolutePath} does not exist, creating now"
+      s"confFile=${confFile.toAbsolutePath} does not exist, creating now"
     )
     datadir.mkdirs()
     BitcoindConfig.writeConfigToFile(this, datadir)
   }
-
-  private val confFile = datadir.toPath.resolve("bitcoin.conf")
 
   // create bitcoin.conf file in datadir if it does not exist
   if (!Files.exists(confFile)) {

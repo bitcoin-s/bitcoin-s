@@ -27,7 +27,8 @@ import scala.concurrent.{Future, Promise}
   */
 case class BitcoindRpcAppConfig(
     baseDatadir: Path,
-    configOverrides: Vector[Config]
+    configOverrides: Vector[Config],
+    authCredentinalsOpt: Option[BitcoindAuthCredentials]
 )(implicit val system: ActorSystem)
     extends AppConfig
     with CallbackConfig[BitcoindCallbacks] {
@@ -42,7 +43,9 @@ case class BitcoindRpcAppConfig(
   override protected[bitcoins] def newConfigOfType(
       configs: Vector[Config]
   ): BitcoindRpcAppConfig =
-    BitcoindRpcAppConfig(baseDatadir, configs)
+    BitcoindRpcAppConfig(baseDatadir,
+                         configs,
+                         authCredentinalsOpt = authCredentinalsOpt)
 
   override def start(): Future[Unit] = Future.unit
 
@@ -96,11 +99,17 @@ case class BitcoindRpcAppConfig(
     u
   }
 
-  lazy val rpcUser: Option[String] =
-    config.getStringOrNone("bitcoin-s.bitcoind-rpc.rpcuser")
+  lazy val rpcUser: Option[String] = {
+    authCredentinalsOpt.map(_.username).orElse {
+      config.getStringOrNone("bitcoin-s.bitcoind-rpc.rpcuser")
+    }
+  }
 
-  lazy val rpcPassword: Option[String] =
-    config.getStringOrNone("bitcoin-s.bitcoind-rpc.rpcpassword")
+  lazy val rpcPassword: Option[String] = {
+    authCredentinalsOpt.map(_.password).orElse {
+      config.getStringOrNone("bitcoin-s.bitcoind-rpc.rpcpassword")
+    }
+  }
 
   lazy val torConf: TorAppConfig =
     TorAppConfig(baseDatadir, Some(moduleName), configOverrides)
@@ -116,16 +125,20 @@ case class BitcoindRpcAppConfig(
   lazy val isRemote: Boolean =
     config.getBooleanOrElse("bitcoin-s.bitcoind-rpc.remote", default = false)
 
-  lazy val authCredentials: BitcoindAuthCredentials = rpcUser match {
-    case Some(rpcUser) => {
-      rpcPassword match {
-        case Some(rpcPassword) =>
-          BitcoindAuthCredentials.PasswordBased(rpcUser, rpcPassword)
-        case None =>
-          BitcoindAuthCredentials.CookieBased(network)
+  lazy val authCredentials: BitcoindAuthCredentials = {
+    authCredentinalsOpt.getOrElse {
+      rpcUser match {
+        case Some(rpcUser) => {
+          rpcPassword match {
+            case Some(rpcPassword) =>
+              BitcoindAuthCredentials.PasswordBased(rpcUser, rpcPassword)
+            case None =>
+              BitcoindAuthCredentials.CookieBased(network)
+          }
+        }
+        case None => BitcoindAuthCredentials.CookieBased(network)
       }
     }
-    case None => BitcoindAuthCredentials.CookieBased(network)
   }
 
   lazy val zmqRawBlock: Option[InetSocketAddress] =
@@ -161,9 +174,9 @@ case class BitcoindRpcAppConfig(
         network = network,
         uri = uri,
         rpcUri = rpcUri,
-        authCredentials = authCredentials,
         zmqConfig = zmqConfig,
-        binary = file
+        binary = file,
+        bitcoindDatadir = bitcoindDataDir
       )(system, this)
 
     case None =>
@@ -171,7 +184,6 @@ case class BitcoindRpcAppConfig(
         network = network,
         uri = uri,
         rpcUri = rpcUri,
-        authCredentials = authCredentials,
         zmqConfig = zmqConfig,
         proxyParams = socks5ProxyParams
       )(system, this)
@@ -248,6 +260,6 @@ object BitcoindRpcAppConfig
   override def fromDatadir(datadir: Path, confs: Vector[Config])(implicit
       system: ActorSystem
   ): BitcoindRpcAppConfig =
-    BitcoindRpcAppConfig(datadir, confs)
+    BitcoindRpcAppConfig(datadir, confs, authCredentinalsOpt = None)
 
 }

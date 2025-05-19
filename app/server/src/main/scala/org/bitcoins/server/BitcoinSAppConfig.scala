@@ -63,7 +63,9 @@ case class BitcoinSAppConfig(
     KeyManagerAppConfig(baseDatadir, configOverrides)
 
   lazy val bitcoindRpcConf: BitcoindRpcAppConfig =
-    BitcoindRpcAppConfig(baseDatadir, configOverrides)
+    BitcoindRpcAppConfig(baseDatadir,
+                         configOverrides,
+                         authCredentinalsOpt = None)
 
   def copyWithConfig(newConfs: Vector[Config]): BitcoinSAppConfig = {
     val configs = newConfs ++ configOverrides
