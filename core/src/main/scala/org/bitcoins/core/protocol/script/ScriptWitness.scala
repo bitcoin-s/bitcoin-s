@@ -224,7 +224,7 @@ object ScriptWitness extends Factory[ScriptWitness] {
 sealed trait TaprootWitness extends ScriptWitness {
   override def bytes: ByteVector = RawScriptWitnessParser.write(this)
 
-  def annexOpt: Option[ByteVector]
+  def annexOpt: Option[Annex]
 
   /** As per bip341 the SHA256 of (compact_size(size of annex) || annex), where
     * annex includes the mandatory 0x50 prefix.
@@ -233,8 +233,8 @@ sealed trait TaprootWitness extends ScriptWitness {
     */
   def annexHashOpt: Option[Sha256Digest] = {
     annexOpt.map { annex =>
-      val cmpct = CompactSizeUInt.calc(annex)
-      CryptoUtil.sha256(cmpct.bytes ++ annex)
+      val cmpct = CompactSizeUInt.calc(annex.bytes)
+      CryptoUtil.sha256(cmpct.bytes ++ annex.bytes)
     }
   }
 
@@ -266,7 +266,7 @@ object TaprootWitness extends Factory[TaprootWitness] {
 /** Spending a taproot output via the key path spend */
 case class TaprootKeyPath(
     signature: SchnorrDigitalSignature,
-    annexOpt: Option[ByteVector])
+    annexOpt: Option[Annex])
     extends TaprootWitness {
 
   val hashType: HashType =
@@ -275,7 +275,7 @@ case class TaprootKeyPath(
   override val stack: Vector[ByteVector] = {
     annexOpt match {
       case Some(annex) =>
-        annex +: Vector(signature.bytes)
+        annex.bytes +: Vector(signature.bytes)
       case None =>
         Vector(signature.bytes)
     }
@@ -308,7 +308,7 @@ object TaprootKeyPath extends Factory[TaprootKeyPath] {
 
     val annexOpt = {
       if (hasAnnex) {
-        Some(vec.head)
+        Some(Annex.fromBytes(vec.head))
       } else {
         None
       }
@@ -383,9 +383,9 @@ case class TaprootScriptPath(stack: Vector[ByteVector]) extends TaprootWitness {
     * covered by the signature and contributes to transaction weight, but is
     * otherwise ignored during taproot validation.
     */
-  override def annexOpt: Option[ByteVector] = {
+  override def annexOpt: Option[Annex] = {
     if (TaprootScriptPath.hasAnnex(stack)) {
-      Some(stack.head)
+      Some(Annex.fromBytes(stack.head))
     } else {
       None
     }
@@ -463,11 +463,11 @@ object TaprootScriptPath extends Factory[TaprootScriptPath] {
 
   def apply(
       controlBlock: TapscriptControlBlock,
-      annexOpt: Option[ByteVector],
+      annexOpt: Option[Annex],
       spk: RawScriptPubKey): TaprootScriptPath = {
     annexOpt match {
       case Some(annexBytes) =>
-        fromStack(Vector(annexBytes, controlBlock.bytes, spk.asmBytes))
+        fromStack(Vector(annexBytes.bytes, controlBlock.bytes, spk.asmBytes))
       case None =>
         fromStack(Vector(controlBlock.bytes, spk.asmBytes))
     }
@@ -574,9 +574,9 @@ case class TaprootUnknownPath(stack: Vector[ByteVector])
     }
   }
 
-  override def annexOpt: Option[ByteVector] = {
+  override def annexOpt: Option[Annex] = {
     if (TaprootScriptPath.hasAnnex(stack)) {
-      Some(stack.head)
+      Some(Annex.fromBytes(stack.head))
     } else {
       None
     }
