@@ -12,7 +12,7 @@ import sbt.Keys.*
 import sbtprotoc.ProtocPlugin.autoImport.PB
 import sbtassembly.AssemblyKeys.*
 import sbtdynver.DynVer
-import xerial.sbt.Sonatype.autoImport.sonatypeCredentialHost
+import xerial.sbt.Sonatype.autoImport.{sonatypeCredentialHost, sonatypePublishToBundle}
 
 import scala.sys.process.Process
 import scala.util.Properties
@@ -40,6 +40,7 @@ object CommonSettings {
       )
     ),
     sonatypeCredentialHost := "s01.oss.sonatype.org",
+    publishTo := sonatypePublishToBundle.value,
     Compile / scalacOptions ++= compilerOpts,
     Test / scalacOptions ++= testCompilerOpts,
     Test / scalacOptions --= scala2_13SourceCompilerOpts,
