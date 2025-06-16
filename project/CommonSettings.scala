@@ -3,28 +3,16 @@ import com.typesafe.sbt.SbtNativePackager.Docker
 import com.typesafe.sbt.SbtNativePackager.autoImport.packageName
 
 import java.nio.file.Paths
-import com.typesafe.sbt.packager.Keys.{
-  daemonUser,
-  daemonUserUid,
-  dockerAlias,
-  dockerAliases,
-  dockerCommands,
-  dockerExposedVolumes,
-  dockerRepository,
-  dockerUpdateLatest,
-  maintainer
-}
+import com.typesafe.sbt.packager.Keys.{daemonUser, daemonUserUid, dockerAlias, dockerAliases, dockerCommands, dockerExposedVolumes, dockerRepository, dockerUpdateLatest, maintainer}
 import com.typesafe.sbt.packager.archetypes.jlink.JlinkPlugin.autoImport.JlinkIgnore
 import com.typesafe.sbt.packager.docker.{Cmd, DockerChmodType}
-import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{
-  dockerAdditionalPermissions,
-  dockerBaseImage
-}
-import sbt._
-import sbt.Keys._
+import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{dockerAdditionalPermissions, dockerBaseImage}
+import sbt.*
+import sbt.Keys.*
 import sbtprotoc.ProtocPlugin.autoImport.PB
-import sbtassembly.AssemblyKeys._
+import sbtassembly.AssemblyKeys.*
 import sbtdynver.DynVer
+import xerial.sbt.Sonatype.autoImport.sonatypeCredentialHost
 
 import scala.sys.process.Process
 import scala.util.Properties
@@ -51,6 +39,7 @@ object CommonSettings {
         url("https://twitter.com/Chris_Stewart_5")
       )
     ),
+    sonatypeCredentialHost := "s01.oss.sonatype.org",
     Compile / scalacOptions ++= compilerOpts,
     Test / scalacOptions ++= testCompilerOpts,
     Test / scalacOptions --= scala2_13SourceCompilerOpts,
