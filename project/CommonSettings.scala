@@ -39,8 +39,6 @@ object CommonSettings {
         url("https://twitter.com/Chris_Stewart_5")
       )
     ),
-    sonatypeCredentialHost := "s01.oss.sonatype.org",
-    publishTo := sonatypePublishToBundle.value,
     Compile / scalacOptions ++= compilerOpts,
     Test / scalacOptions ++= testCompilerOpts,
     Test / scalacOptions --= scala2_13SourceCompilerOpts,
