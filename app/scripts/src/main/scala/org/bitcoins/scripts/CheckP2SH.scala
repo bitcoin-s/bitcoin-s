@@ -36,13 +36,13 @@ case class CheckP2SH()(implicit
     val grouping = 645_000
     val drop = 230_265_000
     var count = drop
-    val fmt = { combo: Combo => AddressDescriptor(combo.bitcoinAddress) }
+    val fmt = { (combo: Combo) => AddressDescriptor(combo.bitcoinAddress) }
 
     val parallelism = 1
     val source =
       CheckP2SH.getP2SHSource(filePath, fmt, grouping, drop, parallelism)
     val resultF: Future[Seq[ScanTxoutSetResult]] = source
-      .mapAsync(parallelism) { descs: Vector[Descriptor] =>
+      .mapAsync(parallelism) { (descs: Vector[Descriptor]) =>
         val batchStart = Instant.now()
         val req = ScanTxoutSetRequest(action = RpcOpts.ScanBlocksOpt.Start,
                                       descs = descs)
