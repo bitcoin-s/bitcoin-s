@@ -38,7 +38,7 @@ object Deps {
     val typesafeConfigV = "1.4.9"
 
     val flywayV =
-      "11.8.0" // https://flywaydb.org/documentation/learnmore/releaseNotes
+      "11.8.2" // https://flywaydb.org/documentation/learnmore/releaseNotes
     val postgresV = "42.7.13" // https://jdbc.postgresql.org/
     val akkaActorV = akkaStreamv
 
