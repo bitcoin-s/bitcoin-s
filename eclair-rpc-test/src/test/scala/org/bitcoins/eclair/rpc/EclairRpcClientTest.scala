@@ -905,7 +905,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
     }
   }
 
-  it should "fail to get received info about an invoice that hasn't been paid too, and then sucessfully get the info after the payment happened" in {
+  it should "fail to get received info about an invoice that hasn't been paid too, and then successfully get the info after the payment happened" in {
     val amt = 1000.msat
     for {
       c1 <- clientF
