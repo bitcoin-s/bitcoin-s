@@ -333,7 +333,7 @@ trait Client
     isStartedF.map(started => !started)
   }
 
-  // This RPC call is here to avoid circular trait depedency
+  // This RPC call is here to avoid circular trait dependency
   def ping(): Future[Unit] = {
     bitcoindCall[Unit]("ping")
   }
