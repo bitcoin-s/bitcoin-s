@@ -113,7 +113,7 @@ class UTXOHandlingTest extends BitcoinSUnitTest {
     val withSpendingTxId =
       reserved.copyWithSpendingTxId(DoubleSha256DigestBE.empty)
 
-    // it must transition from reserved to broacast spent
+    // it must transition from reserved to broadcast spent
     assert(
       UtxoHandling
         .updateSpentTxoWithConfs(withSpendingTxId, 0, requiredConfs)
