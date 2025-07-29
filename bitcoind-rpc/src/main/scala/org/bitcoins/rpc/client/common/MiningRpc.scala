@@ -15,7 +15,7 @@ import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.rpc.client.common.BitcoindVersion.{Unknown, V26, V27, V28}
+import org.bitcoins.rpc.client.common.BitcoindVersion.{Unknown, V27, V28}
 import play.api.libs.json.{JsArray, JsNumber, JsString, Json}
 
 import scala.concurrent.Future
@@ -79,7 +79,7 @@ trait MiningRpc { self: Client & BlockchainRpc =>
 
   def getMiningInfo: Future[GetMiningInfoResult] = {
     self.version.flatMap {
-      case V26 | V27 | Unknown =>
+      case V27 | Unknown =>
         bitcoindCall[GetMiningInfoResultPre28]("getmininginfo")
       case V28 =>
         bitcoindCall[GetMiningInfoResultV28]("getmininginfo")
