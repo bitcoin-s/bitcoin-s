@@ -23,7 +23,7 @@ TaskKeys.downloadBitcoind := {
   }
 
   val versions =
-    List("28.1", "27.2", "26.1")
+    List("28.1", "27.2")
 
   logger.debug(
     s"(Maybe) downloading Bitcoin Core binaries for versions: ${versions.mkString(",")}")
@@ -94,16 +94,11 @@ TaskKeys.downloadBitcoind := {
         val expectedHash =
           if (Properties.isLinux)
             Map(
-              "26.1" -> "a5b7d206384a8100058d3f2e2f02123a8e49e83f523499e70e86e121a4897d5b",
               "27.2" -> "acc223af46c178064c132b235392476f66d486453ddbd6bca6f1f8411547da78",
               "28.1" -> "07f77afd326639145b9ba9562912b2ad2ccec47b8a305bd075b4f4cb127b7ed7"
             )
           else if (Properties.isMac)
             Map(
-              "26.1" -> (if (System.getProperty("os.arch") == "aarch64")
-                "8a8e415763b7ffd5988153cf03967d812eca629016dd3b0ddf6da3ab6f4a3621"
-              else
-                "acb50edd20692a9d023de12da573b64ca0fd9b4e9a2b88d1251020a3022b0f27"),
               "27.2" -> (if (System.getProperty("os.arch") == "aarch64")
                 "8f2247f4786f3559d37189b58452c91623efc5fa6886c975fa9386f9ff3f1001"
               else
@@ -115,7 +110,6 @@ TaskKeys.downloadBitcoind := {
             )
           else if (Properties.isWin)
             Map(
-              "26.1" -> "7bd0849e47472aeff99a0ea2c0cefd98f5be829e5a2d3b0168b5a54456cc638a",
               "27.2" -> "82e18f768aa5962b3c002d7f5d6ec9338896804f48406af4b5054c927575dbdf",
               "28.1" -> "2d636ad562b347c96d36870d6ed810f4a364f446ca208258299f41048b35eab0"
             )

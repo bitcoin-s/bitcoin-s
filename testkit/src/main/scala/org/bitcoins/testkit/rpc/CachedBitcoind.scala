@@ -95,17 +95,6 @@ trait CachedBitcoindFunded[T <: BitcoindRpcClient] extends CachedBitcoind[T] {
   }
 }
 
-trait CachedBitcoindV26 extends CachedBitcoindFunded[BitcoindRpcClient] {
-  _: BitcoinSPekkoAsyncTest =>
-
-  override protected lazy val cachedBitcoindWithFundsF
-      : Future[BitcoindRpcClient] = {
-    val _ = isBitcoindUsed.set(true)
-    BitcoinSFixture
-      .createBitcoindWithFunds(Some(BitcoindVersion.V26))
-  }
-}
-
 trait CachedBitcoindV27 extends CachedBitcoindFunded[BitcoindV27RpcClient] {
   _: BitcoinSPekkoAsyncTest =>
 
