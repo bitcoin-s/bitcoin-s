@@ -14,7 +14,7 @@ import org.bitcoins.core.gcs.{BlockFilter, FilterHeader, FilterType}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.rpc.client.common.BitcoindVersion.{Unknown, V27, V28}
+import org.bitcoins.rpc.client.common.BitcoindVersion.{Unknown, V27, V28, V29}
 import play.api.libs.json.*
 
 import scala.concurrent.Future
@@ -43,7 +43,7 @@ trait BlockchainRpc extends ChainApi { self: Client =>
     self.version.flatMap {
       case V27 | Unknown =>
         bitcoindCall[GetBlockChainInfoResultPostV23]("getblockchaininfo")
-      case V28 =>
+      case V28 | V29 =>
         bitcoindCall[GetBlockChainInfoResultPostV27]("getblockchaininfo")
     }
 

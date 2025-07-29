@@ -553,6 +553,11 @@ object JsonSerializers {
   implicit val miningInfoResultV28: Reads[GetMiningInfoResultV28] = {
     Json.reads[GetMiningInfoResultV28]
   }
+  implicit val nextMiningInfo: Reads[NextBlockMiningInfo] =
+    Json.reads[NextBlockMiningInfo]
+  implicit val miningInfoResultV29: Reads[GetMiningInfoResultV29] = {
+    Json.reads[GetMiningInfoResultV29]
+  }
   implicit val miningInfoReads: Reads[GetMiningInfoResult] =
     Json.reads[GetMiningInfoResult]
 
