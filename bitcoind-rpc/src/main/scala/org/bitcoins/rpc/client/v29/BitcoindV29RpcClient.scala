@@ -10,7 +10,7 @@ class BitcoindV29RpcClient(override val instance: BitcoindInstance)(implicit
     actorSystem: ActorSystem
 ) extends BitcoindRpcClient(instance) {
   override lazy val version: Future[BitcoindVersion] =
-    Future.successful(BitcoindVersion.V28)
+    Future.successful(BitcoindVersion.V29)
 }
 
 object BitcoindV29RpcClient {

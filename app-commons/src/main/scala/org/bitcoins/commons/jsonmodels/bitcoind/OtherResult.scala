@@ -99,7 +99,6 @@ case class GetMiningInfoResultV29(
     networkhashps: BigDecimal,
     pooledtx: Int,
     chain: String,
-    nBits: Long,
     target: String,
     bits: String,
     next: NextBlockMiningInfo,
