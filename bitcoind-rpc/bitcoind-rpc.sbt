@@ -114,7 +114,7 @@ TaskKeys.downloadBitcoind := {
             Map(
               "27.2" -> "82e18f768aa5962b3c002d7f5d6ec9338896804f48406af4b5054c927575dbdf",
               "28.1" -> "2d636ad562b347c96d36870d6ed810f4a364f446ca208258299f41048b35eab0",
-              "29.0" -> ""
+              "29.0" -> "4c1780532031129fcacfc0e393c8430b3cea414c9f8c5e0c0c87ebe59a5ada1b"
             )
           else sys.error(s"Unsupported OS: ${Properties.osName}")
 
