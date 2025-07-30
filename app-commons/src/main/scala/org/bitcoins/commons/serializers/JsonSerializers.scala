@@ -968,4 +968,52 @@ object JsonSerializers {
   implicit val getAddrmanInfoResponseReads: Reads[GetAddrmanInfoResponse] = {
     Json.reads[GetAddrmanInfoResponse]
   }
+
+  // Custom Reads for DescriptorActivityType (to parse "receive" or "spend" strings)
+  implicit val descriptorActivityTypeReads: Reads[DescriptorActivityType] =
+    Reads {
+      case JsString("receive") => JsSuccess(DescriptorActivityType.Receive)
+      case JsString("spend")   => JsSuccess(DescriptorActivityType.Spend)
+      case other => JsError(s"Unknown DescriptorActivityType: $other")
+    }
+
+  implicit val spendDescriptorActivityReads
+      : Reads[DescriptorActivity.SpendDescriptorActivity] = {
+    (
+      (JsPath \ "amount").read[Bitcoins] and
+        (JsPath \ "blockhash").readNullable[DoubleSha256DigestBE] and
+        (JsPath \ "height").readNullable[Int] and
+        (JsPath \ "spend_txid").read[DoubleSha256DigestBE] and
+        (JsPath \ "spend_vout").read[Int] and
+        (JsPath \ "prevout_txid").read[DoubleSha256DigestBE] and
+        (JsPath \ "prevout_vout").read[Int] and
+        (JsPath \ "prevout_spk").read[RpcPsbtScript]
+    )(DescriptorActivity.SpendDescriptorActivity.apply _)
+  }
+
+  implicit val receiveDescriptorActivityReads
+      : Reads[DescriptorActivity.ReceiveDescriptorActivity] = {
+    (
+      (JsPath \ "amount").read[Bitcoins] and
+        (JsPath \ "blockhash").readNullable[DoubleSha256DigestBE] and
+        (JsPath \ "height").readNullable[Int] and
+        (JsPath \ "txid").read[DoubleSha256DigestBE] and
+        (JsPath \ "vout").read[Int] and
+        (JsPath \ "output_spk").read[RpcPsbtScript]
+    )(DescriptorActivity.ReceiveDescriptorActivity.apply _)
+  }
+
+  // --- Custom Reads for the sealed trait DescriptorActivity ---
+  implicit val descriptorActivityReads: Reads[DescriptorActivity] = Reads {
+    json =>
+      (json \ "type").validate[DescriptorActivityType].flatMap {
+        case DescriptorActivityType.Spend =>
+          json.validate[DescriptorActivity.SpendDescriptorActivity]
+        case DescriptorActivityType.Receive =>
+          json.validate[DescriptorActivity.ReceiveDescriptorActivity]
+      }
+  }
+  implicit val getDescriptorActivityResultReads
+      : Reads[GetDescriptorActivityResult] =
+    Json.reads[GetDescriptorActivityResult]
 }

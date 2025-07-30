@@ -337,4 +337,22 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
       assert(chainStateResult.chainstates.head.bestblockhash == bestBlockHash)
     }
   }
+
+  it must "getdescriptoractivity" in { case nodePair =>
+    val client = nodePair.node1
+    val addressF = client.getNewAddress
+    val txidF = addressF.map(client.sendToAddress(_, Bitcoins.one))
+    for {
+      txid <- txidF
+      address <- addressF
+      addressDesc = AddressDescriptor.apply(address)
+      _ = print(addressDesc.toString)
+      blockHashes <- client.generate(1)
+      activityResult <- client.getDescriptorActivity(blockHashes,
+                                                     Vector(addressDesc))
+    } yield {
+      assert(activityResult.activity.nonEmpty)
+    }
+
+  }
 }
