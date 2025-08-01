@@ -6,7 +6,7 @@ import org.bitcoins.commons.serializers.JsonSerializers.*
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.blockchain.MerkleBlock
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.rpc.client.common.BitcoindVersion.{V27, V28}
+import org.bitcoins.rpc.client.common.BitcoindVersion.{V27, V28, V29}
 import play.api.libs.json.*
 
 import scala.concurrent.Future
@@ -85,7 +85,7 @@ trait TransactionRpc { self: Client =>
           List(JsString(txid.hex), JsBoolean(watchOnly)),
           uriExtensionOpt = Some(walletExtension(walletName))
         )
-      case V28 =>
+      case V28 | V29 =>
         bitcoindCall[GetTransactionResultV28](
           "gettransaction",
           List(JsString(txid.hex), JsBoolean(watchOnly)),

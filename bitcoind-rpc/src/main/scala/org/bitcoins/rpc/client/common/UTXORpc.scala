@@ -1,5 +1,6 @@
 package org.bitcoins.rpc.client.common
 
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.DumpTxOutSetType
 import org.bitcoins.commons.jsonmodels.bitcoind.{
   DumpTxOutSetResult,
   LoadTxOutSetResult,
@@ -79,10 +80,12 @@ trait UTXORpc { self: Client =>
     )
   }
 
-  def dumpTxOutSet(path: Path): Future[DumpTxOutSetResult] = {
+  def dumpTxOutSet(
+      path: Path,
+      dumpTxOutSetType: DumpTxOutSetType): Future[DumpTxOutSetResult] = {
     bitcoindCall[DumpTxOutSetResult](
       "dumptxoutset",
-      List(Json.toJson(path.toString))
+      List(Json.toJson(path.toString), dumpTxOutSetType.toJson)
     )
   }
 

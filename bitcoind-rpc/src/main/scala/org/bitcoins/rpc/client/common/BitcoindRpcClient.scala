@@ -24,6 +24,7 @@ import org.bitcoins.rpc.client.v18.V18AssortedRpc
 import org.bitcoins.rpc.client.v20.V20MultisigRpc
 import org.bitcoins.rpc.client.v27.BitcoindV27RpcClient
 import org.bitcoins.rpc.client.v28.BitcoindV28RpcClient
+import org.bitcoins.rpc.client.v29.BitcoindV29RpcClient
 import org.bitcoins.rpc.config.*
 
 import java.io.File
@@ -355,6 +356,7 @@ object BitcoindRpcClient {
     val bitcoind = version match {
       case BitcoindVersion.V27 => BitcoindV27RpcClient(instance)
       case BitcoindVersion.V28 => BitcoindV28RpcClient(instance)
+      case BitcoindVersion.V29 => BitcoindV29RpcClient(instance)
       case BitcoindVersion.Unknown =>
         sys.error(
           s"Cannot create a Bitcoin Core RPC client: unsupported version"
@@ -372,6 +374,7 @@ object BitcoindRpcClient {
     val bitcoind = version match {
       case BitcoindVersion.V27 => new BitcoindV27RpcClient(instance)
       case BitcoindVersion.V28 => new BitcoindV28RpcClient(instance)
+      case BitcoindVersion.V29 => new BitcoindV29RpcClient(instance)
       case BitcoindVersion.Unknown =>
         sys.error(
           s"Cannot create a Bitcoin Core RPC client: unsupported version"
@@ -388,10 +391,10 @@ object BitcoindVersion
     with BitcoinSLogger {
 
   /** The newest version of `bitcoind` we support */
-  val newest: BitcoindVersion = V28
+  val newest: BitcoindVersion = V29
 
   val standard: Vector[BitcoindVersion] =
-    Vector(V28, V27)
+    Vector(V29, V28, V27)
 
   val known: Vector[BitcoindVersion] = standard
 
@@ -401,6 +404,10 @@ object BitcoindVersion
 
   case object V28 extends BitcoindVersion {
     override def toString: String = "v28.1"
+  }
+
+  case object V29 extends BitcoindVersion {
+    override def toString: String = "v29.0"
   }
 
   case object Unknown extends BitcoindVersion {
@@ -423,6 +430,7 @@ object BitcoindVersion
     int.toString.substring(0, 2) match {
       case "27" => V27
       case "28" => V28
+      case "29" => V29
       case _ =>
         logger.warn(
           s"Unsupported Bitcoin Core version: $int. The latest supported version is ${BitcoindVersion.newest}"

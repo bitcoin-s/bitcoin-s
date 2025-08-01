@@ -1,7 +1,10 @@
 package org.bitcoins.rpc.common
 
 import org.bitcoins.commons.jsonmodels.bitcoind.{RpcOpts, ScanTxoutSetRequest}
-import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.ScanBlocksOpt
+import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
+  DumpTxOutSetType,
+  ScanBlocksOpt
+}
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits}
 import org.bitcoins.core.protocol.script.descriptor.AddressDescriptor
 import org.bitcoins.crypto.DoubleSha256DigestBE
@@ -78,7 +81,7 @@ class UTXORpcTest extends BitcoindFixturesFundedCachedNewest {
     for {
       hash <- client.getBestBlockHash()
       height <- client.getBestHashBlockHeight()
-      result <- client.dumpTxOutSet(path)
+      result <- client.dumpTxOutSet(path, DumpTxOutSetType.Latest)
       // now attempt to load it
       // unfortunately it seems this cannot be properly tested
       // we end up with this error:
