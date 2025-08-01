@@ -553,7 +553,7 @@ object DescriptorActivity {
       blockhash: Option[DoubleSha256DigestBE],
       height: Option[Int],
       spend_txid: DoubleSha256DigestBE,
-      spend_vout: Int,
+      spend_vin: Int,
       prevout_txid: DoubleSha256DigestBE,
       prevout_vout: Int,
       prevout_spk: RpcPsbtScript)

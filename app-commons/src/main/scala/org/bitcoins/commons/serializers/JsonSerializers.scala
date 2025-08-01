@@ -984,7 +984,7 @@ object JsonSerializers {
         (JsPath \ "blockhash").readNullable[DoubleSha256DigestBE] and
         (JsPath \ "height").readNullable[Int] and
         (JsPath \ "spend_txid").read[DoubleSha256DigestBE] and
-        (JsPath \ "spend_vout").read[Int] and
+        (JsPath \ "spend_vin").read[Int] and
         (JsPath \ "prevout_txid").read[DoubleSha256DigestBE] and
         (JsPath \ "prevout_vout").read[Int] and
         (JsPath \ "prevout_spk").read[RpcPsbtScript]

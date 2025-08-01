@@ -6,14 +6,22 @@ import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
 }
 import org.bitcoins.commons.jsonmodels.bitcoind._
 import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.currency.Bitcoins
+import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.gcs.{BlockFilter, FilterType}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
+import org.bitcoins.core.protocol.script.{P2WPKHWitnessSPKV0, ScriptSignature}
 import org.bitcoins.core.protocol.script.descriptor.{
   AddressDescriptor,
   P2WPKHDescriptor
+}
+import org.bitcoins.core.protocol.transaction.{
+  EmptyWitness,
+  TransactionConstants,
+  TransactionInput,
+  TransactionOutPoint,
+  TransactionOutput,
+  WitnessTransaction
 }
 import org.bitcoins.crypto.ECPrivateKey
 import org.bitcoins.testkit.rpc.{
@@ -341,17 +349,53 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
   it must "getdescriptoractivity" in { case nodePair =>
     val client = nodePair.node1
     val addressF = client.getNewAddress
-    val txidF = addressF.map(client.sendToAddress(_, Bitcoins.one))
-    for {
-      txid <- txidF
+    val fundTxidF = addressF.flatMap(client.sendToAddress(_, Bitcoins.one))
+    val spendTxIdF = for {
+      _ <- fundTxidF
+      _ <- client.generate(1)
       address <- addressF
+      unspent <- client.listUnspent.map { unspents =>
+        unspents.filter(_.address.contains(address)).head
+      }
+      outpoint = TransactionOutPoint(unspent.txid, unspent.vout)
+      addr2 <- client.getNewAddress
+      unsignedSpendTx = WitnessTransaction(
+        TransactionConstants.version,
+        Vector(
+          TransactionInput(outpoint,
+                           ScriptSignature.empty,
+                           TransactionConstants.sequence)),
+        Vector(
+          TransactionOutput(Bitcoins.one - Satoshis(500), addr2.scriptPubKey)),
+        TransactionConstants.validLockVersionU32,
+        EmptyWitness.fromN(1)
+      )
+      signedSpendTx <- client.signRawTransactionWithWallet(unsignedSpendTx)
+      signedTxId <- client.sendRawTransaction(signedSpendTx.hex)
+    } yield {
+      signedTxId
+    }
+
+    for {
+      fundTxId <- fundTxidF
+      spendTxId <- spendTxIdF
+      address <- addressF
+      fundTxId2 <- client.sendToAddress(address, Bitcoins.two)
       addressDesc = AddressDescriptor.apply(address)
-      _ = print(addressDesc.toString)
       blockHashes <- client.generate(1)
       activityResult <- client.getDescriptorActivity(blockHashes,
                                                      Vector(addressDesc))
     } yield {
       assert(activityResult.activity.nonEmpty)
+      val spends = activityResult.activity.collect {
+        case s: DescriptorActivity.SpendDescriptorActivity => s
+      }
+      val receives = activityResult.activity.collect {
+        case r: DescriptorActivity.ReceiveDescriptorActivity => r
+      }
+      assert(spends.exists(s =>
+        s.spend_txid == spendTxId && s.prevout_txid == fundTxId))
+      assert(receives.exists(r => r.txid == fundTxId2))
     }
 
   }
