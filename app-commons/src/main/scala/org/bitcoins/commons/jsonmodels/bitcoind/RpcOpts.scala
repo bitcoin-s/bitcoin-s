@@ -16,7 +16,7 @@ import org.bitcoins.crypto.{
   ECPrivateKeyBytes,
   StringFactory
 }
-import play.api.libs.json.{Json, Writes}
+import play.api.libs.json.{JsString, Json, Writes}
 import ujson.{Num, Str, Value}
 
 import scala.collection.mutable
@@ -276,5 +276,18 @@ object RpcOpts {
       : Writes[CreateWalletDescriptorOptions] = {
     import JsonWriters.ExtKeyWrites
     Json.writes[CreateWalletDescriptorOptions]
+  }
+
+  sealed trait DumpTxOutSetType {
+    def toJson: JsString = JsString(toString)
+  }
+
+  object DumpTxOutSetType {
+    case object Rollback extends DumpTxOutSetType {
+      override def toString: String = "rollback"
+    }
+    case object Latest extends DumpTxOutSetType {
+      override def toString: String = "latest"
+    }
   }
 }

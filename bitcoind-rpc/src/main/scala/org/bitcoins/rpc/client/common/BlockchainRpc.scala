@@ -1,7 +1,8 @@
 package org.bitcoins.rpc.client.common
 
 import org.bitcoins.commons.jsonmodels.bitcoind.*
-import org.bitcoins.commons.serializers.JsonSerializers
+import org.bitcoins.commons.serializers.{JsonSerializers, JsonWriters}
+import JsonWriters.DescriptorWrites
 import org.bitcoins.commons.serializers.JsonSerializers.*
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
 import org.bitcoins.core.api.chain.db.{
@@ -12,9 +13,10 @@ import org.bitcoins.core.api.chain.db.{
 import org.bitcoins.core.api.chain.{ChainApi, ChainQueryApi}
 import org.bitcoins.core.gcs.{BlockFilter, FilterHeader, FilterType}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
+import org.bitcoins.core.protocol.script.descriptor.Descriptor
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.rpc.client.common.BitcoindVersion.{Unknown, V27, V28}
+import org.bitcoins.rpc.client.common.BitcoindVersion.{Unknown, V27, V28, V29}
 import play.api.libs.json.*
 
 import scala.concurrent.Future
@@ -43,7 +45,7 @@ trait BlockchainRpc extends ChainApi { self: Client =>
     self.version.flatMap {
       case V27 | Unknown =>
         bitcoindCall[GetBlockChainInfoResultPostV23]("getblockchaininfo")
-      case V28 =>
+      case V28 | V29 =>
         bitcoindCall[GetBlockChainInfoResultPostV27]("getblockchaininfo")
     }
 
@@ -446,5 +448,14 @@ trait BlockchainRpc extends ChainApi { self: Client =>
 
   def getChainStates(): Future[ChainStateResult] = {
     bitcoindCall("getchainstates")(JsonSerializers.chainStateResultReads)
+  }
+
+  def getDescriptorActivity(
+      blockHashes: Vector[DoubleSha256DigestBE],
+      scanobjects: Vector[Descriptor],
+      includeMempool: Boolean = true): Future[GetDescriptorActivityResult] = {
+    bitcoindCall("getdescriptoractivity",
+                 List(Json.toJson(blockHashes), Json.toJson(scanobjects)))(
+      JsonSerializers.getDescriptorActivityResultReads)
   }
 }

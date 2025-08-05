@@ -55,7 +55,8 @@ object ChainUtil {
             difficulty = BigDecimal(header.difficulty),
             chainwork = chainworkStr,
             previousblockhash = Some(header.previousBlockHashBE),
-            nextblockhash = None
+            nextblockhash = None,
+            target = None
           )
           result
       }
