@@ -1584,6 +1584,7 @@ object Picklers {
     val nextblockhash = obj(PicklerKeys.nextblockhashKey).strOpt.map { str =>
       DoubleSha256DigestBE.fromHex(str)
     }
+    val targetOpt = obj.apply(PicklerKeys.targetKey).strOpt
 
     GetBlockHeaderResult(
       hash = hash,
@@ -1599,7 +1600,8 @@ object Picklers {
       difficulty = difficulty,
       chainwork = chainWork,
       previousblockhash = previousBlockHash,
-      nextblockhash = nextblockhash
+      nextblockhash = nextblockhash,
+      target = targetOpt
     )
   }
 
@@ -1627,6 +1629,12 @@ object Picklers {
       PicklerKeys.nextblockhashKey -> {
         header.nextblockhash.map(_.hex) match {
           case Some(str) => Str(str)
+          case None      => ujson.Null
+        }
+      },
+      PicklerKeys.targetKey -> {
+        header.target match {
+          case Some(str) => str
           case None      => ujson.Null
         }
       }

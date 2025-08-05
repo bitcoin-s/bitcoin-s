@@ -33,6 +33,7 @@ object PicklerKeys {
   final val chainworkKey: String = "chainwork"
   final val previousblockhashKey: String = "previousblockhash"
   final val nextblockhashKey: String = "nextblockhash"
+  final val targetKey: String = "target"
   final val blockHashKey: String = "blockHash"
   final val blockHeightKey: String = "blockHeight"
   final val myCollateral: String = "myCollateral"

@@ -99,7 +99,10 @@ case class GetBlockResult(
     difficulty: BigDecimal,
     chainwork: String,
     previousblockhash: Option[DoubleSha256DigestBE],
-    nextblockhash: Option[DoubleSha256DigestBE]
+    nextblockhash: Option[DoubleSha256DigestBE],
+    target: Option[
+      String
+    ] // once v29 is minimal supported version, remove Option
 ) extends BlockchainResult
 
 abstract trait GetBlockWithTransactionsResult extends BlockchainResult {
@@ -191,7 +194,10 @@ case class GetBlockChainInfoResultPostV27(
     size_on_disk: Long,
     pruned: Boolean,
     pruneheight: Option[Int],
-    warnings: Vector[String]
+    warnings: Vector[String],
+    target: Option[
+      String
+    ] // once v29 is minimal supported version, remove Option
 ) extends GetBlockChainInfoResult
 
 case class SoftforkPreV19(
@@ -246,7 +252,10 @@ case class GetBlockHeaderResult(
     difficulty: BigDecimal,
     chainwork: String,
     previousblockhash: Option[DoubleSha256DigestBE],
-    nextblockhash: Option[DoubleSha256DigestBE]
+    nextblockhash: Option[DoubleSha256DigestBE],
+    target: Option[
+      String
+    ] // once v29 is minimal supported version, remove Option
 ) extends BlockchainResult {
 
   lazy val blockHeaderDb: BlockHeaderDb = {
@@ -528,7 +537,11 @@ case class ChainState(
     verificationprogress: BigDecimal,
     coins_db_cache_bytes: Long,
     coins_tip_cache_bytes: Long,
-    validated: Boolean)
+    validated: Boolean,
+    target: Option[
+      String
+    ] // once v29 is minimal supported version, remove Option
+)
 case class ChainStateResult(headers: Int, chainstates: Vector[ChainState])
 
 sealed trait DescriptorActivityType

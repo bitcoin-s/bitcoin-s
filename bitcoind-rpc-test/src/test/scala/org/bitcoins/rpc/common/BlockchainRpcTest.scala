@@ -52,9 +52,10 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
       bestHash <- client.getBestBlockHash()
     } yield {
       assert(info.isInstanceOf[GetBlockChainInfoResultPostV27])
-      val postV23 = info.asInstanceOf[GetBlockChainInfoResultPostV27]
-      assert(postV23.chain == RegTest)
-      assert(postV23.bestblockhash == bestHash)
+      val postV27 = info.asInstanceOf[GetBlockChainInfoResultPostV27]
+      assert(postV27.chain == RegTest)
+      assert(postV27.bestblockhash == bestHash)
+      assert(postV27.target.isDefined)
     }
   }
 
@@ -152,6 +153,7 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
       assert(block.weight > 0)
       assert(block.height > 0)
       assert(block.difficulty > 0)
+      assert(block.target.isDefined)
     }
   }
 
@@ -343,6 +345,7 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
       assert(chainStateResult.headers == blockCount)
       assert(chainStateResult.chainstates.size == 1)
       assert(chainStateResult.chainstates.head.bestblockhash == bestBlockHash)
+      assert(chainStateResult.chainstates.head.target.isDefined)
     }
   }
 
