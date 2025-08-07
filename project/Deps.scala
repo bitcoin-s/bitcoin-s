@@ -84,6 +84,8 @@ object Deps {
     val javaxServletV = "4.0.1"
     val javaxJmsV = "2.0.1"
     val javaxMailV = "1.4.7"
+    val jacksonV = "2.17.0"
+    val javaxAnnotationV = "1.3.2" // Or a similar version
 
     val gsonV = "2.14.0"
     val jnaV = "5.19.1"
@@ -198,6 +200,9 @@ object Deps {
       "javax.jms" % "javax.jms-api" % V.javaxJmsV // https://mvnrepository.com/artifact/javax.jms/javax.jms-api
     val javaxMail =
       "javax.mail" % "mail" % V.javaxMailV // https://mvnrepository.com/artifact/javax.mail/mail
+
+    val jacksonDataFormat = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-toml" % V.jacksonV
+    val javaxAnnotation = "javax.annotation" % "javax.annotation-api" % V.javaxAnnotationV
 
     val jna = "net.java.dev.jna" % "jna" % V.jnaV
     val waffleJna = "com.github.waffle" % "waffle-jna" % V.waffleJnaV
@@ -519,6 +524,7 @@ object Deps {
       Compile.slickHikari,
       Compile.micrometerCore,
       Compile.slf4j,
+      Compile.jacksonDataFormat,
       Test.scalaTest.value,
       Test.testcontainersPostgres
     )
