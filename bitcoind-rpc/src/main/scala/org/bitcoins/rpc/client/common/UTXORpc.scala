@@ -45,7 +45,7 @@ trait UTXORpc { self: Client =>
   def listUnspent(
       addresses: Vector[BitcoinAddress]
   ): Future[Vector[UnspentOutput]] =
-    listUnspent(addresses = addresses)
+    listUnspent(addresses = Some(addresses))
 
   def listUnspent(
       minConfirmations: Int,
