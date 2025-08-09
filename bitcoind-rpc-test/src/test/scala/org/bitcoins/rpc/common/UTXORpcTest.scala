@@ -22,8 +22,15 @@ class UTXORpcTest extends BitcoindFixturesFundedCachedNewest {
 
   it should "be able to list utxos" in { case client =>
     for {
-      unspent <- client.listUnspent
-    } yield assert(unspent.nonEmpty)
+      unspent0 <- client.listUnspent
+      address <- client.getNewAddress
+      _ <- client.sendToAddress(address, Bitcoins.one)
+      _ <- client.generate(1)
+      unspent1 <- client.listUnspent(Vector(address))
+    } yield {
+      assert(unspent0.nonEmpty)
+      assert(unspent1.size == 1)
+    }
 
   }
 
