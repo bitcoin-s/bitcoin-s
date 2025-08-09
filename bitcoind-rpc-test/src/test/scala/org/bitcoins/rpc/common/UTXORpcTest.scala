@@ -20,6 +20,16 @@ class UTXORpcTest extends BitcoindFixturesFundedCachedNewest {
 
   behavior of "UTXORpc"
 
+  it should "be able to get utxo info" in { case client =>
+    for {
+      block <- BitcoindRpcTestUtil.getFirstBlock(client)
+      info1 <- client.getTxOut(block.tx.head.txid, 0)
+    } yield {
+      assert(info1.isDefined)
+      assert(info1.get.coinbase)
+    }
+  }
+
   it should "be able to list utxos" in { case client =>
     for {
       unspent0 <- client.listUnspent
@@ -63,16 +73,6 @@ class UTXORpcTest extends BitcoindFixturesFundedCachedNewest {
         assert(secondSuccess)
         assert(newLocked.isEmpty)
       }
-  }
-
-  it should "be able to get utxo info" in { case client =>
-    for {
-      block <- BitcoindRpcTestUtil.getFirstBlock(client)
-      info1 <- client.getTxOut(block.tx.head.txid, 0)
-    } yield {
-      assert(info1.isDefined)
-      assert(info1.get.coinbase)
-    }
   }
 
   it should "be able to fail to get utxo info" in { case client =>
