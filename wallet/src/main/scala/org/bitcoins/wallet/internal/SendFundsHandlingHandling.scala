@@ -580,7 +580,7 @@ case class SendFundsHandlingHandling(
 
     processedTxF.recoverWith { case _ =>
       // if something fails, we need to unreserve the utxos associated with this tx
-      // and then propogate the failed future upwards
+      // and then propagate the failed future upwards
       utxoHandling.unmarkUTXOsAsReserved(signed).flatMap(_ => processedTxF)
     }
   }
