@@ -866,8 +866,6 @@ class EclairRpcClient(
       case Some(logback) => base.appended(logback)
       case None          => base
     }
-
-    println(s"cmd=$cmd")
     cmd
   }
 
