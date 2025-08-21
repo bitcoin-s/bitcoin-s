@@ -207,7 +207,7 @@ This will start syncing your testnet node from block header ~1,900,000 rather th
 
 ```bashrc
 unzip chaindb-testnet-2021-02-03.zip
-mv chaindb.sqlite ~/.bitcoin-s/testnet3/
+mv chaindb.sqlite ${bitcoin-s.datadir}/testnet3/
 ```
 
 This should take a couple minutes to execute, but once it is done, you will only have a short while left to sync once you start your server.

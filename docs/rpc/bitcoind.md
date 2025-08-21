@@ -19,7 +19,7 @@ You can fetch them using bitcoin-s by running the following sbt command. If you 
 sbt downloadBitcoind
 ```
 
-The binaries will be stored in `~/.bitcoin-s/binaries/bitcoind/`
+The binaries will be stored in `${bitcoin-s.datadir}/binaries/bitcoind/`
 
 
 ## Connecting to a local `bitcoind` instance
