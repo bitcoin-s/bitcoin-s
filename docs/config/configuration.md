@@ -448,7 +448,7 @@ pekko {
 ## Database configuration
 
 By default, bitcoin-s uses Sqlite to store its data. It creates three Sqlite databases
-in `~/.bitcoin-s/${network}`: `chain.sqlite` for `chain` project,
+in `${bitcoin-s.datadir}/${network}`: `chain.sqlite` for `chain` project,
 `node.sqlite` for `node` project and `wallet.sqlite` the wallet. This is the default configuration, it doesn't require
 additional changes in the config file.
 

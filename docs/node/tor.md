@@ -40,7 +40,7 @@ or Mac OS X:
 brew services start tor
 ```
 
-Next you need to enable SOCKS5 proxy support in your `~/.bitcoin-s/bitcoin-s.conf` file:
+Next you need to enable SOCKS5 proxy support in your `bitcoin-s.conf` file:
 
 ```
 bitcoin-s.node.proxy.enabled = true

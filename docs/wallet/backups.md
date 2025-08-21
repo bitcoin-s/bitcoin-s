@@ -37,7 +37,13 @@ To restore from a backup you simply to place the contents of the `zip` archive i
 
 The default for different operating systems is:
 
-Linux & MacOs: `~/.bitcoin-s`
+Linux: `~/.bitcoin-s`
+
+Starting with Bitcoin-S v1.9.11, the default data directory on macOS now follows Apple’s standard application data location:
+
+Previous location: `~/.bitcoin-s`
+
+New location: `~/Library/Application Support/bitcoin-s`
 
 Windows: `C:/Users/{Your Username}/.bitcoin-s`
 

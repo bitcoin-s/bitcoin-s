@@ -23,7 +23,7 @@ seed's file name will be prefixed with the wallet name.
 For example, if you have a default wallet, and 2 wallets named `test-wallet` and `rickRollWallet` your seeds folder will look like:
 
 ```
-tree ~/.bitcoin-s/seeds
+tree ${bitcoin-s.datadir}/seeds
 /home/suredbits/.bitcoin-s/seeds
 ├── encrypted-bitcoin-s-seed.json
 ├── test-wallet-encrypted-bitcoin-s-seed.json
