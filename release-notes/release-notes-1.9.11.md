@@ -13,7 +13,7 @@ If you are a typescript developer, [you can access the backend via our typescrip
 This release
 
 - Improves performance of serialization/deserialization in `core`
-- Adds support for the `testnet4` network
+- Adds support for the `testnet4` network. You can set this with `bitcoin-s.network = "testnet4"` in your `bitcoin-s.conf`
 - Adds support for `v29` of bitcoind
 - Installs the datadir in the correct place for mac installs
 
