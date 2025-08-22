@@ -10,8 +10,14 @@ If you are a typescript developer, [you can access the backend via our typescrip
 
 # Executive Summary
 
-This release adds taproot keypath signing support. You can enable this with `bitcoin-s.wallet.purpose=taproot` in your `bitcoin-s.conf`.
-This release improves wallet performance and reliability and fixes various deadlocking issuese in the `node/` module.
+This release
+
+- Improves performance of serialization/deserialization in `core`
+- Adds support for the `testnet4` network
+- Adds support for `v29` of bitcoind
+- Installs the datadir in the correct place for mac installs
+
+
 ## Running bitcoin-s
 
 If you want to run the standalone server binary, after verifying gpg signatures, you
@@ -65,7 +71,7 @@ https://repo1.maven.org/maven2/org/bitcoin-s/
 
 ### Snapshot releases
 
-https://oss.sonatype.org/content/repositories/snapshots/org/bitcoin-s/
+https://central.sonatype.com/repository/maven-snapshots/
 
 # Modules
 
@@ -73,10 +79,20 @@ https://oss.sonatype.org/content/repositories/snapshots/org/bitcoin-s/
 
 ## App server
 
+Starting with Bitcoin-S 1.9.11, the macOS data directory has moved:
+- Before 1.9.11: ~/.bitcoin-s 
+- 1.9.11 and later: ~/Library/Application Support/bitcoin-s
+
+This change aligns with Apple’s guidelines for application data storage. macOS expects apps to keep user-specific support files in the Application Support folder inside your Library directory. This keeps your home folder organized, ensures compatibility with macOS backups (like Time Machine), and follows best practices for sandboxed and secure applications.
+
+Your existing data will not be automatically migrated. If you want to keep your old data, you can manually move the contents from ~/.bitcoin-s to ~/Library/Application Support/bitcoin-s.
+
 fd3901fa285 Add migration code to put app data in proper spot on mac for fresh installs (#5622)
 4f1be339308 appServer: Fix bug where we weren't implementing bitcoind callbacks correctly for rescans (#5998)
 
 ## bitcoind rpc
+
+This release adds support for v29 of bitcoind and bumps the minor releases to 28.2 and 27.2.
 
 2a8fbc44470 bitcoindRpc: Fix `listUnspent()` for `Vector[BitcoinAddress]` param (#6038)
 1b139d825ab Add support for bitcoind 28.2 (#6037)
@@ -88,10 +104,11 @@ f97d61c0d78 bitcoindRpc: Remove support for v26 of bitcoind-rpc as its past EOL 
 
 ## Build
 
+We now publish our SNAPSHOT release to central sonatype. For more information please read [here](https://central.sonatype.org/publish/publish-portal-snapshots/)
+
 ab8d2944d0f build: Remove sonatype build settings as it doesn't fix redirect loop (#6014)
 7bc7a773139 Explicitly state the publishTo configuration to whatever sonatype says (#6013)
 0d083426df4 Try specifiy explicit sonatype endpoint to publish jars to to be compatible with the changes in sbt ci release 1.11.x (#6012)
-
 
 ## chain
 
@@ -100,6 +117,9 @@ ab8d2944d0f build: Remove sonatype build settings as it doesn't fix redirect loo
 ## clightning rpc
 
 ## Core
+
+This release improves support and fixes bugs for handling Taproot transactions.
+It also improves performance of core.
 
 2a8b4653770 core: Add a type to the taproot annex (#5999)
 c0a1219362f core: Add support for testnet4 (#5945)
@@ -134,6 +154,9 @@ db06873634d crypto: Cache ECPublicKeyApi.isFullyValid (#5916)
 73cf14d03e3 core: Optimize ScriptParser.parseOperationByte() (#5899)
 
 ## Crypto
+
+This release removes the requirement that data being signed be 32 bytes in length. 
+Arbitrary data lengths can now be signed in accordance to BIP340.
 
 45fbbd9b255 2025 03 15 Remove `data.length == 32` requirement from secp256k1jni (#5961)
 74d8b59c9b8 crypto: Avoid recomputing ECPublicKey by caching it (#5915)
