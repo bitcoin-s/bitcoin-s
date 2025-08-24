@@ -15,7 +15,7 @@ addSbtPlugin("org.scoverage" % "sbt-coveralls" % "1.3.15")
 
 // sbt plugin to unify scaladoc/javadoc across multiple projects
 //https://github.com/sbt/sbt-unidoc
-addSbtPlugin("com.github.sbt" % "sbt-unidoc" % "0.5.0")
+addSbtPlugin("com.github.sbt" % "sbt-unidoc" % "0.6.0")
 
 // export typed values from sbt configuration into Scala sources
 //https://github.com/sbt/sbt-buildinfo
