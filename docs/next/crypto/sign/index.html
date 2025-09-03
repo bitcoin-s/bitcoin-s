@@ -96,13 +96,13 @@
 <span class="hljs-comment">// extPrivKey: ExtPrivateKey = Masked(ExtPrivateKeyImpl)</span>
 
 extPrivKey.sign(<span class="hljs-type">DoubleSha256Digest</span>.empty.bytes)
-<span class="hljs-comment">// res0: ECDigitalSignature = ECDigitalSignature(3045022100e9a3fbf0be02a82971c4ebed974ee82231df1ff64f102d4e3fe49a08f18848c90220302a56a2d4ba490ab4da89f35d5b6f9d692379332c85b02acbf1aadc519f94c5)</span>
+<span class="hljs-comment">// res0: ECDigitalSignature = ECDigitalSignature(304502210087652099c1457721d2b381e71aece4911a76825b2501fcf7e72dfb58769e1055022022f49d0b5fd26a63aa46af7a5007e654febe34e3f692ae5744523505ca901185)</span>
 
 <span class="hljs-keyword">val</span> path = <span class="hljs-type">BIP32Path</span>(<span class="hljs-type">Vector</span>(<span class="hljs-type">BIP32Node</span>(<span class="hljs-number">0</span>,<span class="hljs-type">HardenedType</span>.defaultOpt)))
 <span class="hljs-comment">// path: BIP32Path = m/0'</span>
 
 extPrivKey.sign(<span class="hljs-type">DoubleSha256Digest</span>.empty.bytes,path)
-<span class="hljs-comment">// res1: ECDigitalSignature = ECDigitalSignature(304402203ac51efe7a6c0ef2227b1da651123c5527ba03482e7d8c3c6b72931d0fd43ac902204fa368589f3de32ac6b5554e3505c6c2a6ae48147c8878f92acb28bfc5f88c26)</span>
+<span class="hljs-comment">// res1: ECDigitalSignature = ECDigitalSignature(3044022038853e2a0cd12426128f3eaaeed6013bcf77f56f68ba356ffdbd9f94cfd40b860220675e8248b4f796c605bdba0f81a76d7fb55f4ddd0982ce841ce009064ebf1f53)</span>
 </code></pre>
 <p>With <code>ExtSign</code>, you can use <code>ExtPrivateKey</code> to sign transactions inside of <code>TxBuilder</code> since <code>UTXOSpendingInfo</code> takes in <code>Sign</code> as a parameter.</p>
 <p>You can also provide a <code>path</code> to use to derive a child <code>ExtPrivateKey</code>, and then sign with that child private key</p>
