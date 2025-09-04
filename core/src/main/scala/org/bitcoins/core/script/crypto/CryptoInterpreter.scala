@@ -442,7 +442,6 @@ sealed abstract class CryptoInterpreter {
           if (updatedProgram.validationWeightRemaining.exists(_ < 0)) {
             program.failExecution(ScriptErrorSigCount)
           } else {
-            val flags = updatedProgram.flags
             val requireMinimal =
               ScriptFlagUtil.requireMinimalData(updatedProgram.flags)
 
@@ -457,44 +456,77 @@ sealed abstract class CryptoInterpreter {
 
               val tapscriptE = evalChecksigTapscript(updatedProgram)
 
-              tapscriptE match {
-                case Left(err) =>
-                  if (
-                    err == ScriptErrorDiscourageUpgradablePubkeyType && !ScriptFlagUtil
-                      .discourageUpgradablePublicKey(flags)
-                  ) {
-                    // trivially pass signature validation as required by BIP342
-                    // when the public key type is not known and the
-                    // SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_PUBKEYTYPE is NOT set
-                    handleSignatureValidation(program = updatedProgram,
-                                              result =
-                                                SignatureValidationSuccess,
-                                              restOfStack = restOfStack,
-                                              numOpt = Some(numT.get))
-                  } else if (err == ScriptErrorEvalFalse) {
-                    // means signature validation failed, don't increment the stack counter
-                    handleSignatureValidation(
-                      program = updatedProgram,
-                      result = SignatureValidationErrorIncorrectSignatures,
-                      restOfStack = restOfStack,
-                      numOpt = Some(numT.get))
-                  } else {
-                    updatedProgram.failExecution(err)
-                  }
-                case Right(result) =>
-                  if (result == SignatureValidationErrorIncorrectSignatures) {
-                    program.failExecution(ScriptErrorSchnorrSig)
-                  } else {
-                    handleSignatureValidation(program = updatedProgram,
-                                              result = result,
-                                              restOfStack = restOfStack,
-                                              numOpt = Some(numT.get))
-                  }
-
-              }
+              translateSignatureCheckerResult(tapscriptE,
+                                              updatedProgram,
+                                              restOfStack.toVector,
+                                              numT.toOption)
             }
           }
         }
+    }
+  }
+
+  def opCheckSigFromStack(
+      program: ExecutionInProgressScriptProgram): StartedScriptProgram = {
+    require(
+      program.script.headOption.contains(OP_CHECKSIGFROMSTACK),
+      s"Script top must be OP_CHECKSIGFROMSTACK, got=${program.script.headOption}")
+    program.txSignatureComponent.sigVersion match {
+      case SigVersionBase | SigVersionWitnessV0 =>
+        program.failExecution(ScriptErrorBadOpCode)
+      case SigVersionTapscript | SigVersionTaprootKeySpend =>
+        if (program.stack.length < 3) {
+          program.failExecution(ScriptErrorInvalidStackOperation)
+        } else {
+          val sigBytes = program.stack(2).bytes
+
+          val updatedProgram = if (sigBytes.nonEmpty) {
+            program.decrementValidationWeightRemaining()
+          } else program
+          if (updatedProgram.validationWeightRemaining.exists(_ < 0)) {
+            updatedProgram.failExecution(ScriptErrorSigCount)
+          } else {
+            val msg = updatedProgram.stack(1).bytes
+            val pubKeyBytes = updatedProgram.stack.head.bytes
+            val restOfStack =
+              updatedProgram.stack.tail.tail.tail // remove signature, msg, pubkey
+            val checksigE
+                : Either[ScriptError, TransactionSignatureCheckerResult] = {
+              val xOnlyPubKeyT = XOnlyPubKey.fromBytesT(pubKeyBytes)
+
+              val discourageUpgradablePubKey =
+                ScriptFlagUtil.discourageUpgradablePublicKey(program.flags)
+
+              // need to do weight validation
+              if (pubKeyBytes.isEmpty) {
+                // this failure catches two types of errors, if the pubkey is empty
+                // and if its using an "upgraded" pubkey from a future soft fork
+                // from bip342:
+                // If the public key size is not zero and not 32 bytes, the public key is of an unknown public key type[6] and no actual signature verification is applied.
+                // During script execution of signature opcodes they behave exactly as known public key types except that signature validation is considered to be successful.
+                // see: https://github.com/bitcoin/bitcoin/blob/9e4fbebcc8e497016563e46de4c64fa094edab2d/src/script/interpreter.cpp#L374
+                Left(ScriptErrorPubKeyType)
+              } else if (sigBytes.isEmpty) {
+                // fail if we don't have a signature
+                Left(ScriptErrorEvalFalse)
+              } else if (discourageUpgradablePubKey && xOnlyPubKeyT.isFailure) {
+                Left(ScriptErrorDiscourageUpgradablePubkeyType)
+              } else {
+
+                val schnorrSig = SchnorrDigitalSignature.fromBytes(sigBytes)
+                val result = xOnlyPubKeyT.get.schnorrPublicKey
+                  .verify(msg, signature = schnorrSig)
+                if (result) Right(SignatureValidationSuccess)
+                else Right(SignatureValidationErrorIncorrectSignatures)
+              }
+            }
+            translateSignatureCheckerResult(checksigE,
+                                            updatedProgram,
+                                            restOfStack = restOfStack.toVector,
+                                            numOpt = None)
+          }
+        }
+
     }
   }
 
@@ -584,6 +616,53 @@ sealed abstract class CryptoInterpreter {
         program.failExecution(ScriptErrorWitnessPubKeyType)
       case SignatureValidationErrorNullFail =>
         program.failExecution(ScriptErrorSigNullFail)
+    }
+  }
+
+  /** Translates a [[TransactionSignatureCheckerResult]] into a
+    * [[StartedScriptProgram]] with either the appropriate [[ScriptError]] set
+    * or the stack top indicating the result of the signature verification
+    * operation
+    */
+  private def translateSignatureCheckerResult(
+      resultE: Either[ScriptError, TransactionSignatureCheckerResult],
+      updatedProgram: ExecutionInProgressScriptProgram,
+      restOfStack: Vector[ScriptToken],
+      numOpt: Option[ScriptNumber]): StartedScriptProgram = {
+    val flags = updatedProgram.flags
+    resultE match {
+      case Left(err) =>
+        if (
+          err == ScriptErrorDiscourageUpgradablePubkeyType && !ScriptFlagUtil
+            .discourageUpgradablePublicKey(flags)
+        ) {
+          // trivially pass signature validation as required by BIP342
+          // when the public key type is not known and the
+          // SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_PUBKEYTYPE is NOT set
+          handleSignatureValidation(program = updatedProgram,
+                                    result = SignatureValidationSuccess,
+                                    restOfStack = restOfStack,
+                                    numOpt = numOpt)
+        } else if (err == ScriptErrorEvalFalse) {
+          // means signature validation failed, don't increment the stack counter
+          handleSignatureValidation(
+            program = updatedProgram,
+            result = SignatureValidationErrorIncorrectSignatures,
+            restOfStack = restOfStack,
+            numOpt = numOpt)
+        } else {
+          updatedProgram.failExecution(err)
+        }
+      case Right(result) =>
+        if (result == SignatureValidationErrorIncorrectSignatures) {
+          updatedProgram.failExecution(ScriptErrorSchnorrSig)
+        } else {
+          handleSignatureValidation(program = updatedProgram,
+                                    result = result,
+                                    restOfStack = restOfStack,
+                                    numOpt = numOpt)
+        }
+
     }
   }
 }

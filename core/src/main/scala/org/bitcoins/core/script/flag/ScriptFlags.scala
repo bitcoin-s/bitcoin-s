@@ -184,6 +184,15 @@ case object ScriptVerifyDiscourageUpgradablePubKeyType extends ScriptFlag {
   override val name: String = "DISCOURAGE_UPGRADABLE_PUBKEYTYPE"
 }
 
+case object ScriptVerifyCheckSigFromStack extends ScriptFlag {
+  override val flag: Int = 1 << 24
+  override val name: String = "CHECKSIGFROMSTACK"
+}
+case object ScriptVerifyDiscourageChecksigFromStack extends ScriptFlag {
+  override val flag: Int = 1 << 23
+  override val name: String = "DISCOURAGE_CHECKSIGFROMSTACK"
+}
+
 object ScriptFlag {
 
   // what is this?
@@ -198,6 +207,8 @@ object ScriptFlag {
     ScriptVerifyTaproot,
     ScriptVerifyDiscourageUpgradableTaprootVersion,
     ScriptVerifyDiscourageOpSuccess,
-    ScriptVerifyDiscourageUpgradablePubKeyType
+    ScriptVerifyDiscourageUpgradablePubKeyType,
+    ScriptVerifyCheckSigFromStack,
+    ScriptVerifyDiscourageChecksigFromStack
   )
 }
