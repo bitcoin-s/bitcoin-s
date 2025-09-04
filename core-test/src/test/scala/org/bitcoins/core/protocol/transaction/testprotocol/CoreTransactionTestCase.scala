@@ -3,14 +3,19 @@ package org.bitcoins.core.protocol.transaction.testprotocol
 import org.bitcoins.core.currency.{CurrencyUnit, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.ScriptPubKey
-import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionOutPoint,
+  TransactionOutput
+}
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptFlagFactory}
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.crypto.DoubleSha256Digest
-import ujson._
-import upickle.default._
+import ujson.*
+import upickle.default.*
 
 /** Created by chris on 5/4/16. Used to represent the test cases found inside of
   * tx_valid.json & tx_invalid.json from bitcoin core
@@ -22,7 +27,17 @@ case class CoreTransactionTestCase(
     spendingTx: Transaction,
     flags: Seq[ScriptFlag],
     raw: String
-)
+) {
+  lazy val outputMap: PreviousOutputMap = {
+    val map = creditingTxsInfo.flatMap { c =>
+      c._3 match {
+        case Some(amt) => Some((c._1, TransactionOutput(amt, c._2)))
+        case None      => None
+      }
+    }.toMap
+    PreviousOutputMap(map)
+  }
+}
 
 object CoreTransactionTestCase {
 
