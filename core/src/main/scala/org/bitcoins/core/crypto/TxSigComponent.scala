@@ -543,13 +543,13 @@ object WitnessTxSigComponentRaw {
       output: TransactionOutput,
       flags: Seq[ScriptFlag]): WitnessTxSigComponentRaw = {
     output.scriptPubKey match {
-      case _: WitnessScriptPubKey =>
+      case _: WitnessScriptPubKeyV0 | _: UnassignedWitnessScriptPubKey =>
         WitnessTxSigComponentRawImpl(transaction, inputIndex, output, flags)
       case x @ (_: P2PKScriptPubKey | _: P2PKHScriptPubKey |
           _: P2PKWithTimeoutScriptPubKey | _: MultiSignatureScriptPubKey |
           _: P2SHScriptPubKey | _: LockTimeScriptPubKey |
           _: ConditionalScriptPubKey | _: NonStandardScriptPubKey |
-          _: WitnessCommitment | EmptyScriptPubKey) =>
+          _: WitnessCommitment | EmptyScriptPubKey | _: TaprootScriptPubKey) =>
         throw new IllegalArgumentException(
           s"Cannot create a WitnessTxSigComponentRaw with a spk of $x")
     }

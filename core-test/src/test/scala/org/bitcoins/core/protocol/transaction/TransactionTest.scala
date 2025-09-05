@@ -2,12 +2,13 @@ package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.crypto.{
   BaseTxSigComponent,
+  TaprootTxSigComponent,
   WitnessTxSigComponentP2SH,
   WitnessTxSigComponentRaw
 }
 import org.bitcoins.core.currency.{Bitcoins, CurrencyUnits}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.script.*
 import org.bitcoins.core.protocol.transaction.testprotocol.CoreTransactionTestCase
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
@@ -19,7 +20,7 @@ import org.bitcoins.testkitcore.util.{
   TestUtil,
   TransactionTestUtil
 }
-import scodec.bits._
+import scodec.bits.*
 
 class TransactionTest extends BitcoinSUnitTest {
   behavior of "Transaction"
@@ -194,7 +195,8 @@ class TransactionTest extends BitcoinSUnitTest {
                     flags = testCase.flags
                   )
               }
-            case wit: WitnessScriptPubKey =>
+            case wit @ (_: WitnessScriptPubKeyV0 |
+                _: UnassignedWitnessScriptPubKey) =>
               tx match {
                 case btx: NonWitnessTransaction =>
                   BaseTxSigComponent(
@@ -208,6 +210,23 @@ class TransactionTest extends BitcoinSUnitTest {
                     transaction = wtx,
                     inputIndex = UInt32(inputIndex),
                     output = TransactionOutput(amount, wit),
+                    flags = testCase.flags
+                  )
+              }
+            case tr: TaprootScriptPubKey =>
+              tx match {
+                case btx: NonWitnessTransaction =>
+                  BaseTxSigComponent(
+                    transaction = btx,
+                    inputIndex = UInt32(inputIndex),
+                    output = TransactionOutput(amount, tr),
+                    flags = testCase.flags
+                  )
+                case wtx: WitnessTransaction =>
+                  TaprootTxSigComponent(
+                    transaction = wtx,
+                    inputIndex = UInt32(inputIndex),
+                    outputMap = testCase.outputMap,
                     flags = testCase.flags
                   )
               }
@@ -271,7 +290,8 @@ class TransactionTest extends BitcoinSUnitTest {
                         flags = testCase.flags
                       )
                   }
-                case wit: WitnessScriptPubKey =>
+                case wit @ (_: WitnessScriptPubKeyV0 |
+                    _: UnassignedWitnessScriptPubKey) =>
                   tx match {
                     case btx: NonWitnessTransaction =>
                       BaseTxSigComponent(
@@ -285,6 +305,23 @@ class TransactionTest extends BitcoinSUnitTest {
                         transaction = wtx,
                         inputIndex = UInt32(inputIndex),
                         output = TransactionOutput(amount, wit),
+                        flags = testCase.flags
+                      )
+                  }
+                case tr: TaprootScriptPubKey =>
+                  tx match {
+                    case btx: NonWitnessTransaction =>
+                      BaseTxSigComponent(
+                        transaction = btx,
+                        inputIndex = UInt32(inputIndex),
+                        output = TransactionOutput(amount, tr),
+                        flags = testCase.flags
+                      )
+                    case wtx: WitnessTransaction =>
+                      TaprootTxSigComponent(
+                        transaction = wtx,
+                        inputIndex = UInt32(inputIndex),
+                        outputMap = testCase.outputMap,
                         flags = testCase.flags
                       )
                   }
