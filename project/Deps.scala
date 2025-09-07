@@ -17,7 +17,7 @@ object Deps {
     val avalonLoggingV = "20020627"
     val xzV = "1.10"
 
-    val scalacheck = "1.18.1"
+    val scalacheck = "1.19.0"
     val scalaTest = "3.2.19" // https://www.scalatest.org/
 
     val scalaTestPlus =
