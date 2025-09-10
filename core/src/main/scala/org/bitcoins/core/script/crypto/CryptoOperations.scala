@@ -85,10 +85,6 @@ case object OP_CHECKSIGADD extends CryptoSignatureEvaluation {
   override val opCode: Int = 186
 }
 
-case object OP_CHECKSIGFROMSTACK extends CryptoSignatureEvaluation {
-  override val opCode: Int = 204
-}
-
 object CryptoOperation extends ScriptOperationFactory[CryptoOperation] {
 
   override val operations: Vector[CryptoOperation] =
@@ -103,7 +99,6 @@ object CryptoOperation extends ScriptOperationFactory[CryptoOperation] {
       OP_HASH256,
       OP_RIPEMD160,
       OP_SHA1,
-      OP_SHA256,
-      OP_CHECKSIGFROMSTACK
+      OP_SHA256
     )
 }

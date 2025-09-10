@@ -32,9 +32,7 @@ trait ScriptFlagFactory extends StringFactory[ScriptFlag] {
       ScriptVerifyTaproot,
       ScriptVerifyDiscourageUpgradableTaprootVersion,
       ScriptVerifyDiscourageOpSuccess,
-      ScriptVerifyDiscourageUpgradablePubKeyType,
-      ScriptVerifyCheckSigFromStack,
-      ScriptVerifyDiscourageChecksigFromStack
+      ScriptVerifyDiscourageUpgradablePubKeyType
     )
 
   /** Takes in a string and tries to match it with a [[ScriptFlag]]. */
