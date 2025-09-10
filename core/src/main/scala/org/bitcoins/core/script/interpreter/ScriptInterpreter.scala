@@ -612,7 +612,8 @@ sealed abstract class ScriptInterpreter {
       131.to(134).map(_.toByte).toVector ++
       Vector(137.toByte, 138.toByte, 141.toByte, 142.toByte) ++
       149.to(153).map(_.toByte) ++
-      187.to(254).map(_.toByte)
+      187.to(203).map(_.toByte) ++
+      205.to(254).map(_.toByte)
   }
 
   /** Checks if there is an opcode defined as OP_SUCCESSx in BIP342
@@ -1225,6 +1226,12 @@ sealed abstract class ScriptInterpreter {
           val programOrError = CryptoInterpreter.opCheckSigAdd(program)
           val newOpCount =
             calcOpCount(opCount, OP_CHECKSIGVERIFY)
+          (programOrError, newOpCount)
+
+        case OP_CHECKSIGFROMSTACK :: _ =>
+          val programOrError = CryptoInterpreter.opCheckSigFromStack(program)
+          val newOpCount =
+            calcOpCount(opCount, OP_CHECKSIGFROMSTACK)
           (programOrError, newOpCount)
 
         case OP_SHA1 :: _ =>

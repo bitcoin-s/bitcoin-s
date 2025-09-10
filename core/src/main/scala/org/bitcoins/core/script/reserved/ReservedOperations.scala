@@ -2,6 +2,7 @@ package org.bitcoins.core.script.reserved
 
 import org.bitcoins.core.script.ScriptOperationFactory
 import org.bitcoins.core.script.constant.ScriptOperation
+import org.bitcoins.core.script.crypto.OP_CHECKSIGFROMSTACK
 
 /** Created by chris on 1/22/16.
   */
@@ -90,7 +91,10 @@ case object OP_NOP10 extends NOP {
 case class UndefinedOP_NOP(opCode: Int) extends ReservedOperation
 
 object ReservedOperation extends ScriptOperationFactory[ReservedOperation] {
-  lazy val undefinedOpCodes = for { i <- 0xbb to 0xff } yield UndefinedOP_NOP(i)
+  lazy val undefinedOpCodes: Vector[UndefinedOP_NOP] = {
+    (for { i <- 0xbb to 0xff } yield UndefinedOP_NOP(i))
+      .filterNot(_.opCode == OP_CHECKSIGFROMSTACK.opCode)
+  }.toVector
 
   override val operations: scala.collection.immutable.Vector[
     org.bitcoins.core.script.reserved.ReservedOperation
