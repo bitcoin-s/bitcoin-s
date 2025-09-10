@@ -84,11 +84,7 @@ trait ScriptOperationFactory[T <: ScriptOperation] extends StringFactory[T] {
 
 object ScriptOperation extends ScriptOperationFactory[ScriptOperation] {
 
-  /** This contains duplicate operations There is an optimization here by moving
-    * popular opcodes to the front of the vector so when we iterate through it,
-    * we are more likely to find the op code we are looking for sooner
-    */
-  final override val operations: Vector[ScriptOperation] = {
+  private[script] val nonReservedOpCodes: Vector[ScriptOperation] = {
     StackPushOperationFactory.pushDataOperations ++
       StackOperation.operations ++
       LocktimeOperation.operations ++
@@ -98,8 +94,15 @@ object ScriptOperation extends ScriptOperationFactory[ScriptOperation] {
       ArithmeticOperation.operations ++
       BytesToPushOntoStack.operations ++
       SpliceOperation.operations ++
-      ReservedOperation.operations ++
       ScriptNumberOperation.operations
+  }
+
+  /** This contains duplicate operations There is an optimization here by moving
+    * popular opcodes to the front of the vector so when we iterate through it,
+    * we are more likely to find the op code we are looking for sooner
+    */
+  final override lazy val operations: Vector[ScriptOperation] = {
+    nonReservedOpCodes ++ ReservedOperation.operations
   }
 
 }
