@@ -78,7 +78,7 @@ case class CheckP2SHDb()(override implicit val system: ActorSystem)
     val grouping = 15_000
     val drop = 0
     val count = new AtomicInteger(drop)
-    val fmt = { combo: Combo => combo.spk }
+    val fmt = { (combo: Combo) => combo.spk }
 
     val parallelism = FutureUtil.getParallelism
     val source =

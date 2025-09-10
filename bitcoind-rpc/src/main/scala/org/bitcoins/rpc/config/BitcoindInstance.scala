@@ -101,9 +101,9 @@ object BitcoindInstanceLocal
       zmqConfig: ZmqConfig,
       binary: File,
       datadir: File
-  )(
-      implicit override val system: ActorSystem,
-      implicit override val bitcoindRpcAppConfig: BitcoindRpcAppConfig)
+  )(implicit
+      override val system: ActorSystem,
+      override val bitcoindRpcAppConfig: BitcoindRpcAppConfig)
       extends BitcoindInstanceLocal
 
   def apply(
@@ -261,9 +261,9 @@ object BitcoindInstanceRemote
       rpcUri: URI,
       zmqConfig: ZmqConfig,
       proxyParams: Option[Socks5ProxyParams]
-  )(
-      implicit override val system: ActorSystem,
-      implicit override val bitcoindRpcAppConfig: BitcoindRpcAppConfig)
+  )(implicit
+      override val system: ActorSystem,
+      override val bitcoindRpcAppConfig: BitcoindRpcAppConfig)
       extends BitcoindInstanceRemote
 
   def apply(
