@@ -94,7 +94,7 @@ object ReservedOperation extends ScriptOperationFactory[ReservedOperation] {
   /** Filter out allocated opcodes so this set of [[ReservedOperation]] NOPs
     * stays up to date
     */
-  private lazy val undefinedOpCodes: Vector[ReservedOperation] = (0xbb to 0xff)
+  private val undefinedOpCodes: Vector[ReservedOperation] = (0xbb to 0xff)
     .filterNot(b => ScriptOperation.nonReservedOpCodes.exists(_.opCode == b))
     .map(UndefinedOP_NOP(_))
     .toVector
