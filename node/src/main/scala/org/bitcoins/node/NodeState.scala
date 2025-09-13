@@ -138,8 +138,15 @@ sealed trait NodeRunningState extends NodeState {
         } else {
           sync.replacePeers(filtered)
         }
-      case x @ (_: DoneSyncing | _: MisbehavingPeer | _: RemovePeers |
-          _: NodeShuttingDown) =>
+      case m: MisbehavingPeer =>
+        if (m.badPeer == peer && m.peers.size > 1) {
+          DoneSyncing(filtered, m.waitingForDisconnection, m.peerFinder)
+        } else {
+          NodeState.NoPeers(m.waitingForDisconnection,
+                            m.peerFinder,
+                            cachedOutboundMessages = Vector.empty)
+        }
+      case x @ (_: DoneSyncing | _: RemovePeers | _: NodeShuttingDown) =>
         x.replacePeers(filtered)
       case n: NodeState.NoPeers =>
         sys.error(s"Cannot remove peer=$peer when we have no peers! $n")
@@ -348,12 +355,16 @@ object NodeState {
     if (peers.nonEmpty) {
       // needed for the case where the last peer we are connected to is the bad peer
       require(
-        peers.exists(_ == badPeer),
+        peers.contains(badPeer),
         s"MisbehavingPeer must be in peers, badPeer=$badPeer peers=$peers"
       )
     }
 
     override val isSyncing: Boolean = false
+
+    override def toString: String = {
+      s"MisbehavingPeer(badPeer=$badPeer,peers=${peers},waitingForDisconnection=${waitingForDisconnection})"
+    }
   }
 
   case class RemovePeers(

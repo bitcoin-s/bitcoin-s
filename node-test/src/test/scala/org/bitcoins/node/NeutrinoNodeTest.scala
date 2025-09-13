@@ -5,7 +5,9 @@ import org.apache.pekko.actor.Cancellable
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.models.{CompactFilterDAO, CompactFilterHeaderDAO}
 import org.bitcoins.core.api.node.Peer
-import org.bitcoins.core.util.NetworkUtil
+import org.bitcoins.core.p2p.HeadersMessage
+import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.models.{PeerDAO, PeerDb}
 import org.bitcoins.server.BitcoinSAppConfig
@@ -419,6 +421,61 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         _ <- node.nodeConfig.stop()
       } yield {
         assert(connCount == max)
+      }
+  }
+
+  it must "disconnect a peer that keeps sending invalid headers" in {
+    nodeConnectedWithBitcoinds =>
+      lazy val invalidHeader = BlockHeader.fromHex(
+        s"0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4adae5494dffff7f2003000000"
+      )
+
+      val node = nodeConnectedWithBitcoinds.node
+      val bitcoinds = nodeConnectedWithBitcoinds.bitcoinds
+      val bitcoinPeersF: Future[Vector[Peer]] = {
+        Future.traverse(bitcoinds)(NodeTestUtil.getBitcoindPeer)
+      }
+
+      def sendInvalidHeaders(peer: Peer): Future[Unit] = {
+        val invalidHeaderMessage =
+          HeadersMessage(headers = Vector(invalidHeader))
+        val sendFs = {
+          val count = 1
+            .to(node.nodeConfig.maxInvalidResponsesAllowed + 1)
+          FutureUtil.sequentially[Int, Unit](count) { _ =>
+            val msg =
+              NodeStreamMessage.DataMessageWrapper(invalidHeaderMessage, peer)
+            node
+              .offer(msg)
+              // add a delay to not overwhelm queue so other messages can be processed
+              .flatMap(_ => AsyncUtil.nonBlockingSleep(100.millis))
+          }
+        }
+
+        sendFs.map(_ => ())
+      }
+
+      for {
+        _ <- node.start()
+        _ <- NodeTestUtil.awaitConnectionCount(
+          node = node,
+          expectedConnectionCount = bitcoinds.size
+        )
+        peers <- bitcoinPeersF
+        peer = peers(1)
+        _ <- node.peerManager.isConnected(peer).map(assert(_))
+        bitcoind0 = bitcoinds(0)
+        bitcoind1 = bitcoinds(1)
+        _ <- NodeTestUtil.awaitAllSync(node, bitcoind1)
+        // disconnect bitcoind(0) as its not needed for this test
+        peer0 <- NodeTestUtil.getBitcoindPeer(bitcoind0)
+        _ <- NodeTestUtil.awaitAllSync(node, bitcoind1)
+        _ <- sendInvalidHeaders(peer)
+        _ <- AsyncUtil.retryUntilSatisfied(
+          !node.peerManager.peers.contains(peer)
+        )
+      } yield {
+        succeed
       }
   }
 
