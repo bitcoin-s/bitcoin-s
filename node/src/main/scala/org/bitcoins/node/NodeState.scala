@@ -26,6 +26,11 @@ sealed abstract class NodeState
 
 /** Means our node has been started and is running */
 sealed trait NodeRunningState extends NodeState {
+  require(
+    peers.intersect(waitingForDisconnection).isEmpty,
+    s"Cannot have a peer both in steady state and waiting for disconnect, got=${peers
+        .intersect(waitingForDisconnection)} state=$this"
+  )
   def peerWithServicesDataMap: Map[PeerWithServices, PersistentPeerData]
 
   def peerDataMap: Map[Peer, PersistentPeerData] = peerWithServicesDataMap.map {
@@ -434,7 +439,7 @@ object NodeState {
       cachedOutboundMessages: Vector[NetworkMessage])
       extends NodeRunningState {
     override val isSyncing: Boolean = false
-    override val peerWithServicesDataMap: Map[PeerWithServices, Nothing] =
+    override def peerWithServicesDataMap: Map[PeerWithServices, Nothing] =
       Map.empty
 
     def toDoneSyncing(
