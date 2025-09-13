@@ -350,7 +350,7 @@ case class PeerManager(
           syncHelper(s).map(_.getOrElse(s.toDoneSyncing))
         case d: DoneSyncing =>
           // defensively try to sync with the new peer
-          // this headerSync is not safe, need to exclude peer we are disconnencting
+          // this headerSync is not safe, need to exclude peer we are disconnecting
           val hsOpt = d
             .removePeer(disconnectedPeer)
             .asInstanceOf[DoneSyncing]
@@ -379,7 +379,8 @@ case class PeerManager(
         logger.info(
           s"No new peers to connect to, querying for new connections... state=${state} peers=$peers"
         )
-        finder.queryForPeerConnections(Set(disconnectedPeer)) match {
+        finder.queryForPeerConnections(excludePeers =
+          Set(disconnectedPeer)) match {
           case Some(_) => Future.successful(done)
           case None =>
             logger.debug(
