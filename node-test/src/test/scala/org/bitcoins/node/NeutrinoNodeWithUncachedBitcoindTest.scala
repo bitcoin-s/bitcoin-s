@@ -131,6 +131,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
       }
   }
 
+  // test for https://github.com/bitcoin-s/bitcoin-s/issues/6073
   it must "disconnect a peer that keeps sending invalid headers" in {
     nodeConnectedWithBitcoinds =>
       val node = nodeConnectedWithBitcoinds.node
