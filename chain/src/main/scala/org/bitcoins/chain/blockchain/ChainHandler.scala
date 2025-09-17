@@ -451,8 +451,6 @@ class ChainHandler(
       startHeightOpt: Option[Int],
       batchSize: Int
   ): Future[Option[FilterSyncMarker]] = {
-    logger.info(
-      s"getFilterSyncMarkerFromStopBlockHeader() stopBlockHeaderDB=${stopBlockHeaderDb.hashBE} startheightOpt=$startHeightOpt batchSize=$batchSize")
     val hasFilterF = getFilter(stopBlockHeaderDb.hashBE).map(_.isDefined)
     hasFilterF.flatMap { hasFilter =>
       if (hasFilter) {
