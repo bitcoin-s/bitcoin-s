@@ -122,8 +122,8 @@ trait DbManagement extends BitcoinSLogger {
     result
   }
 
-  def dropTable(tableName: String)(implicit
-      ec: ExecutionContext): Future[Int] = {
+  def dropTable(
+      tableName: String)(implicit ec: ExecutionContext): Future[Int] = {
     val fullTableName =
       appConfig.schemaName.map(_ + ".").getOrElse("") + tableName
     val sql = sqlu"""DROP TABLE IF EXISTS #$fullTableName"""
