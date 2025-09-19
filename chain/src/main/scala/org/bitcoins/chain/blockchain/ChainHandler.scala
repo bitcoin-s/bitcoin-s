@@ -451,48 +451,55 @@ class ChainHandler(
       startHeightOpt: Option[Int],
       batchSize: Int
   ): Future[Option[FilterSyncMarker]] = {
-    val candidateStartHeadersF: Future[Vector[BlockHeaderDb]] =
-      startHeightOpt match {
-        case Some(height) => getHeadersAtHeight(height)
-        case None =>
-          for {
-            bestFilterOpt <- getBestFilter()
-            candidateHeaders <- {
-              bestFilterOpt match {
-                case Some(filter) =>
-                  getHeadersAtHeight(filter.height + 1).flatMap { headers =>
-                    if (headers.isEmpty) {
-                      // if we have no headers at height + 1
-                      // we must be in a reorg scenario
-                      getHeadersAtHeight(filter.height)
-                    } else {
-                      // remove the bestFilter's block header
-                      val filtered =
-                        headers.filter(_.hashBE != filter.blockHashBE)
-                      Future.successful(filtered)
-                    }
-                  }
-                case None => getHeadersAtHeight(0)
-              }
-            }
-          } yield {
-            candidateHeaders
-          }
-      }
-
-    for {
-      candidateStartHeaders <- candidateStartHeadersF
-      fsmOptVec <- Future.traverse(candidateStartHeaders)(h =>
-        getFilterSyncStopHash(h, stopBlockHeaderDb, batchSize))
-    } yield {
-      val flatten = fsmOptVec.flatten
-      if (flatten.length > 1) {
-        logger.warn(
-          s"Multiple filter sync makers!!! choosing first one fsmOptVec=$fsmOptVec"
-        )
-        flatten.headOption
+    val hasFilterF = getFilter(stopBlockHeaderDb.hashBE).map(_.isDefined)
+    hasFilterF.flatMap { hasFilter =>
+      if (hasFilter) {
+        Future.successful(None)
       } else {
-        flatten.headOption
+        val candidateStartHeadersF: Future[Vector[BlockHeaderDb]] =
+          startHeightOpt match {
+            case Some(height) => getHeadersAtHeight(height)
+            case None =>
+              for {
+                bestFilterOpt <- getBestFilter()
+                candidateHeaders <- {
+                  bestFilterOpt match {
+                    case Some(filter) =>
+                      getHeadersAtHeight(filter.height + 1).flatMap { headers =>
+                        if (headers.isEmpty) {
+                          // if we have no headers at height + 1
+                          // we must be in a reorg scenario
+                          getHeadersAtHeight(filter.height)
+                        } else {
+                          // remove the bestFilter's block header
+                          val filtered =
+                            headers.filter(_.hashBE != filter.blockHashBE)
+                          Future.successful(filtered)
+                        }
+                      }
+                    case None => getHeadersAtHeight(0)
+                  }
+                }
+              } yield {
+                candidateHeaders
+              }
+          }
+
+        for {
+          candidateStartHeaders <- candidateStartHeadersF
+          fsmOptVec <- Future.traverse(candidateStartHeaders)(h =>
+            getFilterSyncStopHash(h, stopBlockHeaderDb, batchSize))
+        } yield {
+          val flatten = fsmOptVec.flatten
+          if (flatten.length > 1) {
+            logger.warn(
+              s"Multiple filter sync makers!!! choosing first one fsmOptVec=$fsmOptVec"
+            )
+            flatten.headOption
+          } else {
+            flatten.headOption
+          }
+        }
       }
     }
   }
