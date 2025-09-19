@@ -6,9 +6,9 @@ object Deps {
   object V {
     val antV = "1.10.15"
 
-    val bouncyCastle = "1.81"
-
+    val bouncyCastle = "1.82"
     val dropWizardMetrics5V = "5.0.5"
+
     val dropwizardMetricsV = "4.2.37" // https://github.com/dropwizard/metrics
 
     val logback = "1.5.18" // https://github.com/qos-ch/logback
@@ -39,7 +39,7 @@ object Deps {
 
     val flywayV =
       "11.8.0" // https://flywaydb.org/documentation/learnmore/releaseNotes
-    val postgresV = "42.7.7" // https://jdbc.postgresql.org/
+    val postgresV = "42.7.8" // https://jdbc.postgresql.org/
     val akkaActorV = akkaStreamv
 
     val slickV = "3.6.1"
@@ -136,7 +136,7 @@ object Deps {
       "com.google.code.gson" % "gson" % V.gsonV // https://github.com/google/gson
 
     val guava =
-      "com.google.guava" % "guava" % "33.4.8-jre" // https://github.com/google/guava/
+      "com.google.guava" % "guava" % "33.5.0-jre" // https://github.com/google/guava/
 
     val jUnixSocket =
       "com.kohlschutter.junixsocket" % "junixsocket-core" % V.jUnixSocketV
