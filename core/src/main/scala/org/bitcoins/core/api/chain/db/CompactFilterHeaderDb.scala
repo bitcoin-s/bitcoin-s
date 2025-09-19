@@ -14,7 +14,7 @@ case class CompactFilterHeaderDb(
     FilterHeader(filterHashBE.flip, previousFilterHeaderBE.flip)
 
   override def toString: String = {
-    s"CompactFilterDb(hashBE=$hashBE,filterHashBE=$filterHashBE,previousFilterHeaderBE=$previousFilterHeaderBE,blockHashBE=$blockHashBE,height=$height)"
+    s"CompactFilterHeaderDb(hashBE=$hashBE,filterHashBE=$filterHashBE,previousFilterHeaderBE=$previousFilterHeaderBE,blockHashBE=$blockHashBE,height=$height)"
   }
 }
 
