@@ -102,6 +102,26 @@ class FilterSyncTest extends ChainWithBitcoindNewestCachedUnitTest {
       } yield assert(filterCount == bitcoindFilterCount)
   }
 
+  it must "not throw an exception when calling nextFilterHeaderBatchRange for a filter header we have already seen" in {
+    (bitcoindWithChainHandler) =>
+      // see: https://github.com/bitcoin-s/bitcoin-s/issues/6074
+      val bitcoind = bitcoindWithChainHandler.bitcoindRpc
+      val synced1F = syncHelper(bitcoindWithChainHandler)
+      for {
+        chainHandler <- synced1F
+        bestBlockHeader <- chainHandler.getBestBlockHeader()
+        prevBestBlockHeader <- bitcoind.getBlockHeader(
+          bestBlockHeader.previousBlockHashBE)
+        fsmOpt <- chainHandler.nextFilterHeaderBatchRange(
+          stopBlockHash = prevBestBlockHeader.blockHeader.hashBE,
+          batchSize = 10,
+          startHeightOpt = None)
+      } yield {
+        logger.warn(s"FilterSyncMarkerOpt=$fsmOpt")
+        succeed
+      }
+  }
+
   private def syncHelper(
       bitcoindChainHandler: BitcoindBaseVersionChainHandlerViaRpc
   ): Future[ChainApi] = {
