@@ -846,9 +846,9 @@ case class DataMessageHandler(
         logger.warn(s"Received duplicate headers from ${peer} in state=$state")
         val d = headerSyncState.toDoneSyncing
         Future.successful(d)
-      case _: InvalidBlockHeader =>
+      case i: InvalidBlockHeader =>
         logger.warn(
-          s"Invalid headers of count $count sent from ${peer} in state=$state"
+          s"Invalid headers of count $count sent from ${peer} in state=$state error=$i"
         )
         recoverInvalidHeader(peerData)
       case e: Throwable => throw e
