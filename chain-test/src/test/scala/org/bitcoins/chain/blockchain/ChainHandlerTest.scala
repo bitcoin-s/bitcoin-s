@@ -1065,7 +1065,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
       }
   }
 
-  it must "not throw an exception when processing a filter we have already  seen" in {
+  it must "not throw an exception when processing a filter we have already seen" in {
     (chainHandler: ChainHandler) =>
       val filter = ChainTestUtil.genesisFilterMessage
       val filters = Vector.fill(2)(filter)
