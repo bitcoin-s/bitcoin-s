@@ -1,6 +1,7 @@
 package org.bitcoins.node.networking.peer
 
 import com.typesafe.config.ConfigFactory
+import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.core.api.callback.{OnBlockReceived, OnTxReceived}
@@ -10,6 +11,7 @@ import org.bitcoins.core.gcs.{FilterType, GolombFilter}
 import org.bitcoins.core.p2p.HeadersMessage
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.NodeState.{FilterHeaderSync, HeaderSync}
 import org.bitcoins.node.*
@@ -258,6 +260,63 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         assert(blockCount == initBlockCount + 2)
         // should still be FilterHeaderSync state
         assert(newDmh1.state.isInstanceOf[FilterHeaderSync])
+      }
+  }
+
+  it must "reset sentQuery when processing a header message" in {
+    (param: FixtureParam) =>
+      val node = param.node
+      val bitcoind = param.bitcoind
+      val peerManager = node.peerManager
+      for {
+        _ <- bitcoind.generate(1)
+        _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
+        peer = peerManager.peers.head
+        chainApi = ChainHandler.fromDatabase()(
+          executionContext,
+          node.chainConfig
+        )
+        _ = require(peerManager.getPeerData(peer).isDefined)
+        peerFinder = PeerFinder(
+          peerManagerApi = peerManager,
+          paramPeers = Vector.empty,
+          queue = node
+        )(system.dispatcher, system, node.nodeConfig, node.chainConfig)
+        sentQuery0 = Instant.now()
+        dataMessageHandler = DataMessageHandler(
+          chainApi = chainApi,
+          walletCreationTimeOpt = None,
+          peerManager = peerManager,
+          state = HeaderSync(
+            syncPeer = peer,
+            peerWithServicesDataMap = peerManager.peerWithServicesDataMap,
+            waitingForDisconnection = Set.empty,
+            peerFinder = peerFinder,
+            sentQuery = sentQuery0
+          )
+        )(node.executionContext, node.nodeAppConfig, node.chainConfig)
+
+        // disconnect our node from bitcoind, then
+        // use bitcoind to generate 2,000 blocks, and then try to send the headers
+        // via directly via our queue. Our internal logic says that we should send another
+        // getheaders request to our peer thus reseting the sentQuery time
+        peerData = peerManager.getPeerData(peer).get
+        _ <- NodeTestUtil.disconnectNode(bitcoind, node)
+        hashes <- bitcoind.generate(2000)
+        blockHeaders <- Source(hashes)
+          .mapAsync(FutureUtil.getParallelism)(bitcoind.getBlockHeaderRaw)
+          .runWith(Sink.seq)
+        payload0 =
+          HeadersMessage(blockHeaders.toVector)
+        newDmh0 <- dataMessageHandler.handleDataPayload(payload0, peerData)
+        _ = assert(newDmh0.state.isInstanceOf[HeaderSync])
+        // now process another header, even though we are in FilterHeaderSync
+        // state, we should process the block header since our query timed out
+        _ <- node.stop()
+        _ <- node.nodeConfig.stop()
+      } yield {
+        assert(
+          newDmh0.state.asInstanceOf[HeaderSync].sentQuery.isAfter(sentQuery0))
       }
   }
 
