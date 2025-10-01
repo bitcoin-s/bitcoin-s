@@ -431,7 +431,20 @@ case class GetMemPoolEntryResultPostV23(
   override def size: Int = vsize
 }
 
-case class GetMemPoolInfoResult(
+sealed abstract class GetMemPoolInfoResult extends BlockchainResult {
+  def loaded: Boolean
+  def size: Int
+  def bytes: Int
+  def usage: Int
+  def maxmempool: Int
+  def mempoolminfee: BitcoinFeeUnit
+  def minrelaytxfee: Bitcoins
+  def incrementalrelayfee: BigDecimal // BTC/kvb
+  def unbroadcastcount: Int
+  def fullrbf: Boolean
+  def total_fee: Bitcoins
+}
+case class GetMemPoolInfoResultV29(
     loaded: Boolean,
     size: Int,
     bytes: Int,
@@ -441,8 +454,25 @@ case class GetMemPoolInfoResult(
     minrelaytxfee: Bitcoins,
     incrementalrelayfee: BigDecimal, // BTC/kvb
     unbroadcastcount: Int,
-    fullrbf: Boolean
-) extends BlockchainResult
+    fullrbf: Boolean,
+    total_fee: Bitcoins
+) extends GetMemPoolInfoResult
+
+case class GetMemPoolInfoResultV30(
+    loaded: Boolean,
+    size: Int,
+    bytes: Int,
+    usage: Int,
+    maxmempool: Int,
+    mempoolminfee: BitcoinFeeUnit,
+    minrelaytxfee: Bitcoins,
+    incrementalrelayfee: BigDecimal, // BTC/kvb
+    unbroadcastcount: Int,
+    fullrbf: Boolean,
+    permitbaremultisig: Boolean,
+    maxdatacarriersize: Int,
+    total_fee: Bitcoins
+) extends GetMemPoolInfoResult
 
 sealed abstract trait GetTxOutResult extends BlockchainResult {
   def bestblock: DoubleSha256DigestBE

@@ -328,8 +328,32 @@ object JsonSerializers {
       : Reads[GetMemPoolEntryResultPostV23] =
     Json.reads[GetMemPoolEntryResultPostV23]
 
-  implicit val getMemPoolInfoResultReads: Reads[GetMemPoolInfoResult] =
-    Json.reads[GetMemPoolInfoResult]
+  implicit val getMemPoolInfoResultReads: Reads[GetMemPoolInfoResult] = Reads {
+    case jsObj: JsObject =>
+      // 1. Check for the new V30 fields
+      val hasV30Fields = (jsObj \ "permitbaremultisig").isDefined &&
+        (jsObj \ "maxdatacarriersize").isDefined
+
+      if (hasV30Fields) {
+        // 2. If fields are present, attempt to parse as V30
+        // We must explicitly use the V30Reads here
+        getMemPoolInfoResultV30Reads.reads(jsObj)
+      } else {
+        // 3. If fields are missing (or partially missing), fallback to V29
+        // We must explicitly use the V29Reads here
+        getMemPoolInfoResultV29Reads.reads(jsObj)
+      }
+
+    case _ =>
+      // Fail if the input isn't a JSON object
+      JsError(s"Expected JSON object for GetMemPoolInfoResult")
+  }
+
+  implicit val getMemPoolInfoResultV29Reads: Reads[GetMemPoolInfoResultV29] =
+    Json.reads[GetMemPoolInfoResultV29]
+
+  implicit val getMemPoolInfoResultV30Reads: Reads[GetMemPoolInfoResultV30] =
+    Json.reads[GetMemPoolInfoResultV30]
 
   implicit val getRawMempoolVerboseResultReads
       : Reads[GetRawMempoolVerboseResult] =
@@ -557,6 +581,9 @@ object JsonSerializers {
     Json.reads[NextBlockMiningInfo]
   implicit val miningInfoResultV29: Reads[GetMiningInfoResultV29] = {
     Json.reads[GetMiningInfoResultV29]
+  }
+  implicit val miningInfoResultV30: Reads[GetMiningInfoResultV30] = {
+    Json.reads[GetMiningInfoResultV30]
   }
   implicit val miningInfoReads: Reads[GetMiningInfoResult] =
     Json.reads[GetMiningInfoResult]
