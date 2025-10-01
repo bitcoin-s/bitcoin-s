@@ -704,7 +704,7 @@ case class DataMessageHandler(
           // ask for headers more from the same peer
           peerMessageSenderApi
             .sendGetHeadersMessage(lastHash.flip)
-            .map(_ => state)
+            .map(_ => state.copy(sentQuery = Instant.now()))
 
         } else {
           logger.debug(
@@ -833,13 +833,13 @@ case class DataMessageHandler(
     val getHeadersF: Future[NodeRunningState] = {
       for {
         newDmh <- chainApiHeaderProcessF
-        dmh <- getHeaders(
+        nodeRunningState <- getHeaders(
           state = headerSyncState,
           headers = headers,
           peerMessageSenderApi = peerData.peerMessageSender,
           newDmh.chainApi
         )
-      } yield dmh
+      } yield nodeRunningState
     }
     val recoveredStateF: Future[NodeRunningState] = getHeadersF.recoverWith {
       case _: DuplicateHeaders =>
@@ -893,7 +893,7 @@ case class DataMessageHandler(
             peerMessageSenderApi = peerMessageSenderApi,
             prevStopHash = filterHeader.stopHashBE,
             stopHash = bestBlockHash
-          ).map(_ => filterHeaderSync)
+          ).map(_ => filterHeaderSync.copy(sentQuery = Instant.now()))
         } else {
           for {
             startHeightOpt <- PeerManager.getCompactFilterStartHeight(
