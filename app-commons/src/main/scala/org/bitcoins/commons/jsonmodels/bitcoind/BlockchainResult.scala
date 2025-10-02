@@ -617,3 +617,6 @@ object DescriptorActivity {
 }
 
 case class GetDescriptorActivityResult(activity: Vector[DescriptorActivity])
+
+case class WaitForBlockResult(hash: DoubleSha256DigestBE, height: Int)
+    extends BlockchainResult
