@@ -26,6 +26,7 @@ import org.bitcoins.rpc.client.common.BitcoindVersion.{
 import play.api.libs.json.*
 
 import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
 
 /** RPC calls related to querying the state of the blockchain
   */
@@ -463,5 +464,36 @@ trait BlockchainRpc extends ChainApi { self: Client =>
     bitcoindCall("getdescriptoractivity",
                  List(Json.toJson(blockHashes), Json.toJson(scanobjects)))(
       JsonSerializers.getDescriptorActivityResultReads)
+  }
+
+  def waitForNewBlock(
+      timeout: FiniteDuration,
+      currentTipOpt: Option[DoubleSha256DigestBE])
+      : Future[WaitForBlockResult] = {
+    val params: List[JsValue] = currentTipOpt match {
+      case Some(currentTip) =>
+        List(JsNumber(timeout.toMillis), JsString(currentTip.hex))
+      case None => List(JsNumber(timeout.toMillis))
+    }
+    bitcoindCall("waitfornewblock", params)(
+      JsonSerializers.waitForBlockResultReads)
+  }
+
+  def waitForBlock(
+      timeout: FiniteDuration,
+      blockHash: DoubleSha256DigestBE): Future[WaitForBlockResult] = {
+    val params: List[JsValue] =
+      List(JsString(blockHash.hex), JsNumber(timeout.toMillis))
+    bitcoindCall("waitforblock", params)(
+      JsonSerializers.waitForBlockResultReads)
+  }
+
+  def waitForBlockHeight(
+      timeout: FiniteDuration,
+      height: Int): Future[WaitForBlockResult] = {
+    val params: List[JsValue] =
+      List(JsNumber(height), JsNumber(timeout.toMillis))
+    bitcoindCall("waitforblockheight", params)(
+      JsonSerializers.waitForBlockResultReads)
   }
 }

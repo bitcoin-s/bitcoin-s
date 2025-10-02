@@ -1043,4 +1043,7 @@ object JsonSerializers {
   implicit val getDescriptorActivityResultReads
       : Reads[GetDescriptorActivityResult] =
     Json.reads[GetDescriptorActivityResult]
+
+  implicit val waitForBlockResultReads: Reads[WaitForBlockResult] =
+    Json.reads[WaitForBlockResult]
 }
