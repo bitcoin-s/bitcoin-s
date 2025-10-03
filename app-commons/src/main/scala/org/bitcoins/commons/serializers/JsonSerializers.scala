@@ -445,9 +445,34 @@ object JsonSerializers {
     Json.reads[GetTransactionResult]
   }
 
+  implicit val getWalletInfoResultReads: Reads[GetWalletInfoResult] =
+    Reads {
+      case jsObj: JsObject =>
+        // 1. Check for the new V30 fields
+        val hasPre30Fields = (jsObj \ "balance").isDefined &&
+          (jsObj \ "immature_balance").isDefined &&
+          (jsObj \ "unconfirmed_balance").isDefined
+
+        if (hasPre30Fields) {
+          // 2. If fields are present, attempt to parse as V30
+          // We must explicitly use the V30Reads here
+          getWalletInfoResultReadsPostV22.reads(jsObj)
+        } else {
+          // 3. If fields are missing (or partially missing), fallback to V29
+          // We must explicitly use the V29Reads here
+          getWalletInfoResultReadsV30.reads(jsObj)
+        }
+
+      case _ =>
+        // Fail if the input isn't a JSON object
+        JsError(s"Expected JSON object for GetMemPoolInfoResult")
+    }
   implicit val getWalletInfoResultReadsPostV22
       : Reads[GetWalletInfoResultPostV22] =
     Json.reads[GetWalletInfoResultPostV22]
+
+  implicit val getWalletInfoResultReadsV30: Reads[GetWalletInfoResultV30] =
+    Json.reads[GetWalletInfoResultV30]
 
   implicit val importMultiErrorReads: Reads[ImportMultiError] =
     Json.reads[ImportMultiError]

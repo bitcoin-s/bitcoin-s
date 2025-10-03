@@ -138,9 +138,6 @@ case class TransactionDetails(
 sealed trait GetWalletInfoResult extends WalletResult {
   def walletname: String
   def walletversion: Int
-  def balance: Bitcoins
-  def unconfirmed_balance: Bitcoins
-  def immature_balance: Bitcoins
   def txcount: Int
   def keypoololdest: Option[UInt32]
   def keypoolsize: Int
@@ -148,6 +145,8 @@ sealed trait GetWalletInfoResult extends WalletResult {
   def paytxfee: BitcoinFeeUnit
   def hdmasterkeyid: Option[Sha256Hash160Digest]
   def unlocked_until: Option[Int]
+  def descriptors: Boolean
+  def private_keys_enabled: Boolean
 
 }
 
@@ -157,6 +156,20 @@ case class GetWalletInfoResultPostV22(
     balance: Bitcoins,
     unconfirmed_balance: Bitcoins,
     immature_balance: Bitcoins,
+    txcount: Int,
+    keypoololdest: Option[UInt32],
+    keypoolsize: Int,
+    keypoolsize_hd_internal: Int,
+    paytxfee: BitcoinFeeUnit,
+    hdmasterkeyid: Option[Sha256Hash160Digest],
+    unlocked_until: Option[Int],
+    private_keys_enabled: Boolean,
+    descriptors: Boolean
+) extends GetWalletInfoResult
+
+case class GetWalletInfoResultV30(
+    walletname: String,
+    walletversion: Int,
     txcount: Int,
     keypoololdest: Option[UInt32],
     keypoolsize: Int,
