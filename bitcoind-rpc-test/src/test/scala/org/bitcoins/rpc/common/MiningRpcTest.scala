@@ -82,7 +82,9 @@ class MiningRpcTest extends BitcoindFixturesCachedPairNewest {
     val client = nodePair.node1
     for {
       info <- client.getMiningInfo
-    } yield assert(info.chain == "regtest")
+    } yield {
+      assert(info.chain == "regtest")
+    }
   }
 
   it should "be able to generate blocks to an address" in { case nodePair =>
