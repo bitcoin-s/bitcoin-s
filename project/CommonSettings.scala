@@ -1,9 +1,9 @@
 // these two imports are needed for sbt syntax to work
-import com.typesafe.sbt.SbtNativePackager.Docker
+import com.typesafe.sbt.SbtNativePackager.{Docker, Universal}
 import com.typesafe.sbt.SbtNativePackager.autoImport.packageName
 
 import java.nio.file.{Files, Paths}
-import com.typesafe.sbt.packager.Keys.{daemonUser, daemonUserUid, dockerAlias, dockerAliases, dockerCommands, dockerExposedVolumes, dockerRepository, dockerUpdateLatest, maintainer}
+import com.typesafe.sbt.packager.Keys.{bashScriptExtraDefines, daemonUser, daemonUserUid, dockerAlias, dockerAliases, dockerCommands, dockerExposedVolumes, dockerRepository, dockerUpdateLatest, maintainer}
 import com.typesafe.sbt.packager.archetypes.jlink.JlinkPlugin.autoImport.JlinkIgnore
 import com.typesafe.sbt.packager.docker.{Cmd, DockerChmodType}
 import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{dockerAdditionalPermissions, dockerBaseImage}
@@ -166,7 +166,16 @@ object CommonSettings {
 
   lazy val appSettings: Seq[Setting[_]] = prodSettings ++ Vector(
     //gives us the 'universal' directory in build artifacts
-    Compile / unmanagedResourceDirectories += baseDirectory.value / "src" / "universal"
+    Compile / unmanagedResourceDirectories += baseDirectory.value / "src" / "universal",
+    Universal / mappings += {
+      // 1. Define the Logback file you want to be dynamic (e.g., logback.xml)
+      val logbackFile = (Compile / resourceDirectory).value / "logback.xml"
+
+      // 2. Map the Logback file to the application's 'conf' directory
+      // The 'Universal' setting is inherited by most other package types (Debian, RPM, etc.)
+      logbackFile -> "conf/logback.xml"
+    },
+    bashScriptExtraDefines += """addJava "-Dlogback.configurationFile=$app_home/../conf/logback.xml""""
   )
 
   lazy val dockerSettings: Seq[Setting[_]] = {
