@@ -173,7 +173,7 @@ case class DataMessageHandler(
           }
         case filterHeader: CompactFilterHeadersMessage =>
           logger.debug(
-            s"Got ${filterHeader.filterHashes.size} compact filter header hashes, state=$state"
+            s"Got ${filterHeader.filterHashes.size} from peer=$peer compact filter header hashes, state=$state"
           )
           state match {
             case s @ (_: HeaderSync | _: DoneSyncing) =>
@@ -213,7 +213,7 @@ case class DataMessageHandler(
 
         case filter: CompactFilterMessage =>
           logger.debug(
-            s"Received ${filter.commandName}, filter.blockHash=${filter.blockHash.flip} state=$state"
+            s"Received ${filter.commandName} from peer=$peer, filter.blockHash=${filter.blockHash.flip} state=$state"
           )
           state match {
             case f: FilterSync =>
@@ -310,12 +310,12 @@ case class DataMessageHandler(
               if (isIBD && headerOpt.isEmpty) {
                 // ignore block, don't execute callbacks until IBD is done
                 logger.info(
-                  s"Received block=${block.blockHeader.hashBE.hex} while in IBD, ignoring it until IBD complete state=${state}."
+                  s"Received block=${block.blockHeader.hashBE.hex} from peer=${peer} while in IBD, ignoring it until IBD complete state=${state}."
                 )
                 Future.successful(this)
               } else if (!isIBD && headerOpt.isEmpty) {
                 logger.info(
-                  s"Received block=${block.blockHeader.hash.flip.hex}, processing block's header... state=$state"
+                  s"Received block=${block.blockHeader.hash.flip.hex} from peer=${peer} processing block's header... state=$state"
                 )
                 val headersMessage =
                   HeadersMessage(CompactSizeUInt.one, Vector(block.blockHeader))
@@ -326,7 +326,7 @@ case class DataMessageHandler(
                 newDmhF
               } else {
                 logger.info(
-                  s"Received block=${block.blockHeader.hash.flip.hex} state=$state"
+                  s"Received block=${block.blockHeader.hash.flip.hex} from peer=${peer} state=$state"
                 )
                 appConfig.callBacks
                   .executeOnBlockReceivedCallbacks(block)
@@ -338,7 +338,7 @@ case class DataMessageHandler(
           newMsgHandlerF
         case TransactionMessage(tx) =>
           logger.trace(
-            s"Received txmsg=${tx.txIdBE}, processing given callbacks"
+            s"Received txmsg=${tx.txIdBE} from peer=${peer}, processing given callbacks"
           )
           appConfig.callBacks
             .executeOnTxReceivedCallbacks(tx)
@@ -537,7 +537,8 @@ case class DataMessageHandler(
       invMsg: InventoryMessage,
       peerMessageSenderApi: PeerMessageSenderApi
   ): Future[DataMessageHandler] = {
-    logger.debug(s"Received inv=${invMsg}")
+    logger.debug(
+      s"Received inv=${invMsg} from peer=${peerMessageSenderApi.peer}")
     val invsOptF: Future[Seq[Option[Inventory]]] =
       Future.traverse(invMsg.inventories) {
         case Inventory(TypeIdentifier.MsgBlock, hash) =>
