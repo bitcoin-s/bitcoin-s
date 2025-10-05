@@ -421,9 +421,6 @@ lazy val appServer = project
   .settings(jlinkOptions ++= CommonSettings.jlinkOptions)
   .settings(jlinkIgnoreMissingDependency := CommonSettings.appServerJlinkIgnore)
   .settings(bashScriptExtraDefines ++= IO.readLines(baseDirectory.value / "src" / "universal" / "wallet-server-extra-startup-script.sh"))
-/*  .settings(
-    // The correct form to define the path as ABSOLUTE from the app root ($app_home)
-    bashScriptExtraDefines += """addJava "-Dlogback.configurationFile=$app_home/../conf/logback.xml"""")*/
   .dependsOn(
     serverRoutes,
     appCommons,
