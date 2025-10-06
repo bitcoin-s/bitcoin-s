@@ -7,7 +7,7 @@ on:
 
 jobs:
   compile:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
       DISABLE_SECP256K1: "true"
@@ -16,12 +16,16 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - name: Setup Scala
+      - name: Setup JDK
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '21.0.4'
           cache: 'sbt'
+      - uses: sbt/setup-sbt@v1
+      - name: Build and test
+        shell: bash
+        run: sbt -v +test
       - name: Cache
         uses: actions/cache@v3
         with:
