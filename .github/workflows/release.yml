@@ -8,18 +8,20 @@ on:
 
 jobs:
   publish:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Setup Scala
+      - name: Setup JDK
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '21.0.4'
           cache: 'sbt'
+      - name: Install sbt
+        uses: sbt/setup-sbt@v1
       - uses: olafurpg/setup-gpg@v3
       - run: sbt ci-release docs/publishWebsite
         env:
