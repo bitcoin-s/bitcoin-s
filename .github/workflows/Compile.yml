@@ -22,10 +22,8 @@ jobs:
           distribution: 'temurin'
           java-version: '21.0.4'
           cache: 'sbt'
-      - uses: sbt/setup-sbt@v1
-      - name: Build and test
-        shell: bash
-        run: sbt -v +test
+      - name: Install sbt
+        uses: sbt/setup-sbt@v1
       - name: Cache
         uses: actions/cache@v3
         with:
