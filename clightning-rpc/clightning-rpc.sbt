@@ -29,8 +29,12 @@ TaskKeys.downloadCLightning := {
       val version = new java.io.BufferedReader(inputStream).readLine()
       if (version == "22.04")  {
         ("Ubuntu-22.04", "tar.xz")
-      } else {
+      } else if( version == "20.04") {
         ("Ubuntu-20.04", "tar.xz")
+      } else if (version == "24.04") {
+        ("Ubuntu-24.04", "tar.xz")
+      } else {
+        sys.error(s"Unsupported OS version=$version")
       }
     }
 //    else if (Properties.isMac) ("darwin-amd64", "tar.gz") // todo c-lightning adding in a future release
@@ -66,6 +70,8 @@ TaskKeys.downloadCLightning := {
         "0068852306bca9df3d213c6a29bb90451eb538be83e413d6838e9e2d2729ff7f"
       } else if (platform == "Ubuntu-22.04") {
         "7d78e49615ace6ff8ee9ebfdf30e108ecf41ce98834493260ee31486389b781f"
+      } else if (platform == "Ubuntu-24.04") {
+        "49c1bfb49806a878d9bb17557a0a265af93099bbac3271bb083e39a1c8eb1c14"
       }
       else sys.error(s"Unsupported OS: ${Properties.osName}")
 
