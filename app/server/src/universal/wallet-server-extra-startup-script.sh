@@ -58,7 +58,7 @@ if [[ $chip == "arm64" || $chip == "aarch64" ]]; then
   declare java_cmd=$(get_java_no_jlink)
 
   # if configuration files exist, prepend their contents to $@ so it can be processed by this runner
-  [[ -f "$script_conf_file" ]] && set -- $(loadConfigFile "$script_conf_file") "$@"
+  [[ -f "$script_conf_file" ]] && set -- $(loadConfigFile "$script_conf_file  ") "$@"
 
   run "$@"
 fi
