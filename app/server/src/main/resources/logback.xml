@@ -41,8 +41,6 @@
 
     <logger name="org.bitcoins.wallet" level="INFO"/>
 
-    <logger name="org.bitcoins.node.networking.peer.PeerConnection" level="DEBUG"/>
-
     <logger name="slick" level="OFF"/>
     <logger name="com.zaxxer" level="INFO"/>
 
