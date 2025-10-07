@@ -33,7 +33,7 @@ sealed abstract class TransactionSignatureCreator {
       txSignatureComponent: TxSigComponent,
       privateKey: ECPrivateKey,
       hashType: HashType): ECDigitalSignature = {
-    createSig(txSignatureComponent, privateKey.signWithHashType, hashType)
+    createSig(txSignatureComponent, privateKey.signWithHashType(_, _), hashType)
   }
 
   /** This is intended to be a low level hardware wallet API. At a fundamental

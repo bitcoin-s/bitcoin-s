@@ -1587,7 +1587,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .expects(contractId, Vector(dummyOracleAttestment))
         .returning(Future.successful(Some(EmptyTransaction)))
 
-      (mockWalletApi.broadcastTransaction)
+      (mockWalletApi
+        .broadcastTransaction(_))
         .expects(EmptyTransaction)
         .returning(FutureUtil.unit)
         .anyNumberOfTimes()
@@ -1642,7 +1643,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .expects(contractId)
         .returning(Future.successful(EmptyTransaction))
 
-      (mockWalletApi.broadcastTransaction)
+      (mockWalletApi
+        .broadcastTransaction(_))
         .expects(EmptyTransaction)
         .returning(FutureUtil.unit)
         .anyNumberOfTimes()
@@ -1698,7 +1700,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
                  Vector.empty)
         .returning(Future.successful(EmptyTransaction))
 
-      (mockWalletApi.broadcastTransaction)
+      (mockWalletApi
+        .broadcastTransaction(_))
         .expects(EmptyTransaction)
         .returning(Future.unit)
         .anyNumberOfTimes()
@@ -1817,7 +1820,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         )
         .returning(Future.successful(EmptyTransaction))
 
-      (mockWalletApi.broadcastTransaction)
+      (mockWalletApi
+        .broadcastTransaction(_))
         .expects(EmptyTransaction)
         .returning(Future.unit)
         .anyNumberOfTimes()
@@ -1936,7 +1940,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .expects(Vector.empty, testAddress, fee)
         .returning(Future.successful(EmptyTransaction))
 
-      (mockWalletApi.broadcastTransaction)
+      (mockWalletApi
+        .broadcastTransaction(_))
         .expects(EmptyTransaction)
         .returning(Future.unit)
         .anyNumberOfTimes()
@@ -1977,7 +1982,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         )
         .returning(Future.successful(EmptyTransaction))
 
-      (mockWalletApi.broadcastTransaction)
+      (mockWalletApi
+        .broadcastTransaction(_))
         .expects(EmptyTransaction)
         .returning(Future.unit)
         .anyNumberOfTimes()
@@ -2122,7 +2128,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .expects(message, false, *)
         .returning(Future.successful(EmptyTransaction))
 
-      (mockWalletApi.broadcastTransaction)
+      (mockWalletApi
+        .broadcastTransaction(_))
         .expects(EmptyTransaction)
         .returning(Future.unit)
         .anyNumberOfTimes()
@@ -2151,7 +2158,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .expects(DoubleSha256DigestBE.empty, SatoshisPerVirtualByte.one)
         .returning(Future.successful(EmptyTransaction))
 
-      (mockWalletApi.broadcastTransaction)
+      (mockWalletApi
+        .broadcastTransaction(_))
         .expects(EmptyTransaction)
         .returning(Future.unit)
         .anyNumberOfTimes()
@@ -2182,7 +2190,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .expects(DoubleSha256DigestBE.empty, SatoshisPerVirtualByte.one)
         .returning(Future.successful(EmptyTransaction))
 
-      (mockWalletApi.broadcastTransaction)
+      (mockWalletApi
+        .broadcastTransaction(_))
         .expects(EmptyTransaction)
         .returning(Future.unit)
         .anyNumberOfTimes()
