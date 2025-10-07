@@ -19,8 +19,10 @@ jobs:
       - name: Setup JDK
         uses: actions/setup-java@v3
         with:
-          distribution: 'temurin'
-          java-version: '21.0.4'
+          # for some reason there seems to be a bug in the temurin runtime with jlink/jdeps
+          # this can likely be reverted back to temurin in the future
+          distribution: 'zulu'
+          java-version: '25'
           cache: 'sbt'
       - name: Install sbt
         uses: sbt/setup-sbt@v1
