@@ -117,7 +117,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         "eclair.api.binding-ip" -> "127.0.0.1",
         "eclair.api.password" -> "abc123",
         "eclair.api.port" -> apiPort,
-        "eclair.channel.mindepth-blocks" -> 2,
+        "eclair.channel.min-depth-blocks" -> 6,
         "eclair.channel.max-htlc-value-in-flight-msat" -> 100000000000L,
         "eclair.router.broadcast-interval" -> "2 second",
         "eclair.auto-reconnect" -> false,
@@ -243,6 +243,18 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
       system: ActorSystem
   ): Future[Unit] = {
     awaitUntilChannelState(client, chanId, ChannelState.CLOSING)
+  }
+
+  def awaitUntilChannelClosed(client: EclairApi, chanId: ChannelId)(implicit
+      system: ActorSystem
+  ): Future[Unit] = {
+    awaitUntilChannelState(client, chanId, ChannelState.CLOSED)
+  }
+
+  def awaitUntilChannelNegotiatingSimple(client: EclairApi, chanId: ChannelId)(
+      implicit system: ActorSystem
+  ): Future[Unit] = {
+    awaitUntilChannelState(client, chanId, ChannelState.NEGOTIATING_SIMPLE)
   }
 
   private def awaitUntilChannelState(

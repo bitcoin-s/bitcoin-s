@@ -1,7 +1,7 @@
 package org.bitcoins.eclair.rpc
 
 import org.bitcoins.asyncutil.AsyncUtil
-import org.bitcoins.commons.jsonmodels.eclair._
+import org.bitcoins.commons.jsonmodels.eclair.*
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt64
@@ -12,7 +12,7 @@ import org.bitcoins.core.protocol.ln.channel.{
   ChannelState,
   FundedChannelId
 }
-import org.bitcoins.core.protocol.ln.currency._
+import org.bitcoins.core.protocol.ln.currency.*
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.ln.routing.NodeRoute
 import org.bitcoins.core.protocol.ln.{
@@ -20,7 +20,7 @@ import org.bitcoins.core.protocol.ln.{
   LnInvoice,
   PaymentPreimage
 }
-import org.bitcoins.eclair.rpc.api._
+import org.bitcoins.eclair.rpc.api.*
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.{
   EclairAuthCredentials,
@@ -35,8 +35,8 @@ import org.scalatest.Assertion
 
 import java.nio.file.Files
 import java.time.Instant
-import scala.concurrent._
-import scala.concurrent.duration.{DurationInt, _}
+import scala.concurrent.*
+import scala.concurrent.duration.*
 
 class EclairRpcClientTest extends BitcoinSAsyncTest {
 
@@ -500,17 +500,32 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
         val getIsClosed = { (client: EclairRpcClient, _: EclairRpcClient) =>
           isConfirmedF.flatMap { case (chanId, _) =>
             val closedF = changeAddrF.flatMap { addr =>
-              val closedF = client.close(chanId, addr.scriptPubKey)
-
-              closedF.flatMap { _ =>
-                EclairRpcTestUtil.awaitUntilChannelClosing(client, chanId)
-              }
+              for {
+                _ <- client.close(chanId, addr.scriptPubKey)
+                _ <- EclairRpcTestUtil.awaitUntilChannelNegotiatingSimple(
+                  client,
+                  chanId)
+                _ <- AsyncUtil.retryUntilSatisfiedF(() => {
+                  // is there any better way to get informed when the closing txid
+                  // is finally negotiated with our peer?
+                  client
+                    .channel(chanId)
+                    .map(_.publishedClosingTxIdOpt.isDefined)
+                })
+                closingTxId <- client
+                  .channel(chanId)
+                  .map(_.publishedClosingTxIdOpt.get.head.txid)
+                bitcoind <- bitcoindRpcClientF
+                _ <- bitcoind.generate(6)
+                _ <- EclairRpcTestUtil.awaitEclairInSync(client, bitcoind)
+                _ <- EclairRpcTestUtil.awaitUntilChannelClosed(client, chanId)
+              } yield closingTxId
             }
 
             closedF.flatMap { _ =>
               val chanF = client.channel(chanId)
               chanF.map { chan =>
-                assert(chan.state == ChannelState.CLOSING)
+                assert(chan.state == ChannelState.CLOSED)
               }
             }
           }
@@ -1335,7 +1350,8 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   private def updateIsInChannels(
       channels: Seq[OpenChannelInfo]
   )(update: ChannelUpdate): Boolean = {
-    channels.exists(_.shortChannelId == update.shortChannelId)
+    // channels.exists(_.shortChannelId == update.shortChannelId)
+    ???
   }
 
   override def afterAll(): Unit = {

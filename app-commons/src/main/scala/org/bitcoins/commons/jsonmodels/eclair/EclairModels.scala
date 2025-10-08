@@ -1,6 +1,6 @@
 package org.bitcoins.commons.jsonmodels.eclair
 
-import org.bitcoins.commons.serializers.JsonReaders._
+import org.bitcoins.commons.serializers.JsonReaders.*
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.protocol.ln.channel.{
@@ -14,8 +14,10 @@ import org.bitcoins.core.protocol.ln.currency.MilliSatoshis
 import org.bitcoins.core.protocol.ln.fee.FeeProportionalMillionths
 import org.bitcoins.core.protocol.ln.node.{Feature, FeatureSupport, NodeId}
 import org.bitcoins.core.protocol.ln.{LnHumanReadablePart, PaymentPreimage}
+import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.wallet.fee.SatoshisPerKW
-import org.bitcoins.crypto._
+import org.bitcoins.crypto.*
 import play.api.libs.json.JsObject
 
 import java.net.InetSocketAddress
@@ -121,7 +123,6 @@ case class BaseChannelInfo(
   */
 case class OpenChannelInfo(
     nodeId: NodeId,
-    shortChannelId: ShortChannelId,
     channelId: FundedChannelId,
     localMsat: MilliSatoshis,
     remoteMsat: MilliSatoshis,
@@ -194,14 +195,14 @@ object ChannelStats {
 case class RealChannelId(status: String, realScid: ShortChannelId)
 
 case class ShortIds(
-    real: RealChannelId,
     localAlias: String,
     remoteAlias: String
 )
 
 case class UsableBalancesResult(
     remoteNodeId: NodeId,
-    shortIds: ShortIds,
+    realScid: ShortChannelId,
+    aliases: ShortIds,
     canSend: MilliSatoshis,
     canReceive: MilliSatoshis,
     isPublic: Boolean,
@@ -269,6 +270,14 @@ case class ChannelUpdate(
     feeBaseMsat: MilliSatoshis
 )
 
+case class ToLocalOutput(
+    index: Int,
+    amount: Satoshis,
+    publicKeyScript: ScriptPubKey)
+case class PublishedClosingTx(
+    txid: DoubleSha256DigestBE,
+    tx: Transaction,
+    toLocalOutput: ToLocalOutput)
 case class ChannelResult(
     nodeId: NodeId,
     channelId: FundedChannelId,
@@ -280,6 +289,12 @@ case class ChannelResult(
 
   lazy val shortChannelId: Option[ShortChannelId] =
     (data \ "shortIds" \ "real" \ "realScid").validate[ShortChannelId].asOpt
+
+  lazy val publishedClosingTxIdOpt: Option[Vector[PublishedClosingTx]] = {
+    val validate =
+      (data \ "publishedClosingTxs").validate[Vector[PublishedClosingTx]]
+    validate.asOpt
+  }
 }
 
 // ChannelResult ends here

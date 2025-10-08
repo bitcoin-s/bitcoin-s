@@ -1086,8 +1086,6 @@ object JsonReaders {
   implicit val openChannelInfoReads: Reads[OpenChannelInfo] = Reads { jsValue =>
     for {
       nodeId <- (jsValue \ "nodeId").validate[NodeId]
-      shortChannelId <- (jsValue \ "data" \ "shortIds" \ "real" \ "realScid")
-        .validate[ShortChannelId]
       channelId <- (jsValue \ "channelId").validate[FundedChannelId]
       state <- (jsValue \ "state").validate[ChannelState.NORMAL.type]
       active <- (jsValue \ "data" \ "commitments" \ "active")
@@ -1101,7 +1099,6 @@ object JsonReaders {
 
     } yield OpenChannelInfo(
       nodeId = nodeId,
-      shortChannelId = shortChannelId,
       channelId = channelId,
       localMsat = localMsat,
       remoteMsat = remoteMsat,
@@ -1747,5 +1744,10 @@ object JsonReaders {
       : Reads[CreateWalletDescriptorResult] = {
     Json.reads[CreateWalletDescriptorResult]
   }
+
+  implicit val toLocalOutputReads: Reads[ToLocalOutput] =
+    Json.reads[ToLocalOutput]
+  implicit val publishClosingTxReads: Reads[PublishedClosingTx] =
+    Json.reads[PublishedClosingTx]
 
 }

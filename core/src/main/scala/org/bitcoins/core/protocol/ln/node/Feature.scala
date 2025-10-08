@@ -347,6 +347,10 @@ object Features {
     override val rfcName = "option_quiesce"
     override val mandatory = 34
   }
+  case object SimpleClose extends Feature {
+    override val rfcName: String = "option_simple_close"
+    override val mandatory: Int = 60
+  }
 
   val knownFeatures: Set[Feature] = Set(
     DataLossProtect,
@@ -372,7 +376,8 @@ object Features {
     KeySend,
     TrampolinePaymentPrototype,
     AsyncPaymentPrototype,
-    Quiesce
+    Quiesce,
+    SimpleClose
   )
 
   // Features may depend on other features, as specified in Bolt 9.
@@ -385,7 +390,8 @@ object Features {
     RouteBlinding -> (VariableLengthOnion :: Nil),
     TrampolinePaymentPrototype -> (PaymentSecret :: Nil),
     KeySend -> (VariableLengthOnion :: Nil),
-    AsyncPaymentPrototype -> (TrampolinePaymentPrototype :: Nil)
+    AsyncPaymentPrototype -> (TrampolinePaymentPrototype :: Nil),
+    SimpleClose -> (ShutdownAnySegwit :: Nil)
   )
 
   case class FeatureException(message: String)

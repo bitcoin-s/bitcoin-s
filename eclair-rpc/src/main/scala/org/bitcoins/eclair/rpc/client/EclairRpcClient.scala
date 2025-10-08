@@ -729,15 +729,20 @@ class EclairRpcClient(
   ): Future[T] = {
     val request = buildRequest(getDaemon, command, parameters*)
 
-    logger.trace(s"eclair rpc call ${request}")
+    logger.debug(s"eclair rpc call command=$command ${request}")
     val responseF = sendRequest(request)
 
     val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
-    payloadF.map { payload =>
+
+    val resultF = payloadF.map { payload =>
+      logger.debug(s"eclair rpc payload=$payload")
       val validated: JsResult[T] = payload.validate[T]
       val parsed: T = parseResult(validated, payload, command)
       parsed
     }
+    resultF.failed.foreach(err =>
+      logger.error(s"Failed to get eclair response", err))
+    resultF
   }
 
   case class RpcError(error: String)
