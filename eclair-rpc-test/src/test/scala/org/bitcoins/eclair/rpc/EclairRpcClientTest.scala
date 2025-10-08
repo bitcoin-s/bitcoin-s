@@ -20,6 +20,7 @@ import org.bitcoins.core.protocol.ln.{
   LnInvoice,
   PaymentPreimage
 }
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.eclair.rpc.api.*
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.{
@@ -499,28 +500,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       val isClosedF = {
         val getIsClosed = { (client: EclairRpcClient, _: EclairRpcClient) =>
           isConfirmedF.flatMap { case (chanId, _) =>
-            val closedF = changeAddrF.flatMap { addr =>
-              for {
-                _ <- client.close(chanId, addr.scriptPubKey)
-                _ <- EclairRpcTestUtil.awaitUntilChannelNegotiatingSimple(
-                  client,
-                  chanId)
-                _ <- AsyncUtil.retryUntilSatisfiedF(() => {
-                  // is there any better way to get informed when the closing txid
-                  // is finally negotiated with our peer?
-                  client
-                    .channel(chanId)
-                    .map(_.publishedClosingTxIdOpt.isDefined)
-                })
-                closingTxId <- client
-                  .channel(chanId)
-                  .map(_.publishedClosingTxIdOpt.get.head.txid)
-                bitcoind <- bitcoindRpcClientF
-                _ <- bitcoind.generate(6)
-                _ <- EclairRpcTestUtil.awaitEclairInSync(client, bitcoind)
-                _ <- EclairRpcTestUtil.awaitUntilChannelClosed(client, chanId)
-              } yield closingTxId
-            }
+            val closedF = changeAddrF.flatMap(closeHelper(client, chanId, _))
 
             closedF.flatMap { _ =>
               val chanF = client.channel(chanId)
@@ -747,13 +727,10 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
             _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client, paymentId)
             succeeded <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
             received <- otherClient.getReceivedInfo(invoice)
-            _ <- client.close(channelId)
-            _ <-
-              EclairRpcTestUtil.awaitUntilChannelClosing(otherClient, channelId)
-            channel <- otherClient.channel(channelId)
             bitcoind <- bitcoindRpcClientF
-            address <- bitcoind.getNewAddress
-            _ <- bitcoind.generateToAddress(6, address)
+            addr <- bitcoind.getNewAddress
+            _ <- closeHelper(client, channelId, addr)
+            channel <- otherClient.channel(channelId)
           } yield {
             assert(succeeded.nonEmpty)
 
@@ -775,7 +752,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
                 fail(s"Unexpected payment status ${s}")
             }
 
-            assert(channel.state == ChannelState.CLOSING)
+            assert(channel.state == ChannelState.CLOSED)
           }
         }
     }
@@ -1356,6 +1333,37 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       .map(_.shortChannelId)
       .contains(channel.channelUpdate.shortChannelId)
 
+  }
+
+  /** Closing a channel became much more difficult in v0.12. The problem is
+    * giving an illusion of a synchronous API when in reality the closing API is
+    * highly asynchronous in Eclair This method's Future completes when the
+    * closing transaciton is fully confirmed on chain
+    * @return
+    *   the closing transactions transaction id
+    */
+  private def closeHelper(
+      client: EclairRpcClient,
+      chanId: ChannelId,
+      destination: BitcoinAddress): Future[DoubleSha256DigestBE] = {
+    for {
+      _ <- client.close(chanId, destination.scriptPubKey)
+      _ <- EclairRpcTestUtil.awaitUntilChannelNegotiatingSimple(client, chanId)
+      _ <- AsyncUtil.retryUntilSatisfiedF(() => {
+        // is there any better way to get informed when the closing txid
+        // is finally negotiated with our peer?
+        client
+          .channel(chanId)
+          .map(_.publishedClosingTxIdOpt.isDefined)
+      })
+      closingTxId <- client
+        .channel(chanId)
+        .map(_.publishedClosingTxIdOpt.get.head.txid)
+      bitcoind <- bitcoindRpcClientF
+      _ <- bitcoind.generate(6)
+      _ <- EclairRpcTestUtil.awaitEclairInSync(client, bitcoind)
+      _ <- EclairRpcTestUtil.awaitUntilChannelClosed(client, chanId)
+    } yield closingTxId
   }
 
   override def afterAll(): Unit = {
