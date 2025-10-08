@@ -126,8 +126,14 @@ case class OpenChannelInfo(
     channelId: FundedChannelId,
     localMsat: MilliSatoshis,
     remoteMsat: MilliSatoshis,
-    state: ChannelState.NORMAL.type
-) extends ChannelInfo
+    state: ChannelState.NORMAL.type,
+    data: JsObject
+) extends ChannelInfo {
+  val channelUpdate: ChannelUpdate = {
+    (data \ "channelUpdate").validate[ChannelUpdate].get
+  }
+
+}
 
 case class ActivatedFeature(feature: Feature, support: FeatureSupport)
 

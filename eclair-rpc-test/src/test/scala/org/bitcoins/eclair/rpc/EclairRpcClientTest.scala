@@ -1067,9 +1067,11 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
           _ <- AsyncUtil
             .retryUntilSatisfiedF(
               (() => {
-                firstFreshClient
-                  .allUpdates(nodeId)
-                  .map(_.forall(updateIsInChannels(ourOpenChannels)))
+                for {
+                  allUpdates <- firstFreshClient.allUpdates(nodeId)
+                  result = ourOpenChannels.forall(
+                    updateIsInChannels(allUpdates))
+                } yield result
               }),
               interval = 1.second,
               maxTries = 60
@@ -1348,10 +1350,12 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   }
 
   private def updateIsInChannels(
-      channels: Seq[OpenChannelInfo]
-  )(update: ChannelUpdate): Boolean = {
-    // channels.exists(_.shortChannelId == update.shortChannelId)
-    ???
+      allUpdates: Vector[ChannelUpdate]
+  )(channel: OpenChannelInfo): Boolean = {
+    allUpdates
+      .map(_.shortChannelId)
+      .contains(channel.channelUpdate.shortChannelId)
+
   }
 
   override def afterAll(): Unit = {

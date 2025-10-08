@@ -1088,7 +1088,8 @@ object JsonReaders {
       nodeId <- (jsValue \ "nodeId").validate[NodeId]
       channelId <- (jsValue \ "channelId").validate[FundedChannelId]
       state <- (jsValue \ "state").validate[ChannelState.NORMAL.type]
-      active <- (jsValue \ "data" \ "commitments" \ "active")
+      data <- (jsValue \ "data").validate[JsObject]
+      active <- (data \ "commitments" \ "active")
         .validate[Vector[JsObject]]
       remoteMsat <-
         (active.head \ "localCommit" \ "spec" \ "toRemote")
@@ -1102,7 +1103,8 @@ object JsonReaders {
       channelId = channelId,
       localMsat = localMsat,
       remoteMsat = remoteMsat,
-      state = state
+      state = state,
+      data
     )
   }
 

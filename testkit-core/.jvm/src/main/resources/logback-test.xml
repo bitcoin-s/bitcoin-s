@@ -35,7 +35,7 @@
 
     <logger name="org.bitcoins.server" level="WARN"/>
 
-    <logger name="org.bitcoins.eclair" level="INFO"/>
+    <logger name="org.bitcoins.eclair" level="DEBUG"/>
 
     <logger name="org.bitcoins.testkit.eclair" level="DEBUG"/>
 
