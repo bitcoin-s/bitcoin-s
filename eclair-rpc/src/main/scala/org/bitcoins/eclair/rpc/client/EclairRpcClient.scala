@@ -729,15 +729,18 @@ class EclairRpcClient(
   ): Future[T] = {
     val request = buildRequest(getDaemon, command, parameters*)
 
-    logger.trace(s"eclair rpc call ${request}")
+    logger.debug(s"eclair rpc call command=$command params=${parameters}")
     val responseF = sendRequest(request)
 
     val payloadF: Future[JsValue] = responseF.flatMap(getPayload)
-    payloadF.map { payload =>
+
+    val resultF = payloadF.map { payload =>
+      logger.debug(s"eclair rpc payload=$payload")
       val validated: JsResult[T] = payload.validate[T]
       val parsed: T = parseResult(validated, payload, command)
       parsed
     }
+    resultF
   }
 
   case class RpcError(error: String)
@@ -1087,15 +1090,15 @@ object EclairRpcClient {
   ) = new EclairRpcClient(instance, binary)
 
   /** The current commit we support of Eclair */
-  private[bitcoins] val commit = "7e7ad45"
+  private[bitcoins] val commit = "4df8cd0"
 
   /** The current version we support of Eclair */
-  private[bitcoins] val version = "0.11.0"
+  private[bitcoins] val version = "0.12.0"
 
   /** The bitcoind version that eclair is officially tested & supported with by
     * ACINQ
     * @see
     *   https://github.com/ACINQ/eclair/releases/tag/v0.11.0
     */
-  val bitcoindV: BitcoindVersion = BitcoindVersion.V27
+  val bitcoindV: BitcoindVersion = BitcoindVersion.V28
 }

@@ -1,7 +1,7 @@
 package org.bitcoins.eclair.rpc
 
 import org.bitcoins.asyncutil.AsyncUtil
-import org.bitcoins.commons.jsonmodels.eclair._
+import org.bitcoins.commons.jsonmodels.eclair.*
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt64
@@ -12,7 +12,7 @@ import org.bitcoins.core.protocol.ln.channel.{
   ChannelState,
   FundedChannelId
 }
-import org.bitcoins.core.protocol.ln.currency._
+import org.bitcoins.core.protocol.ln.currency.*
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.protocol.ln.routing.NodeRoute
 import org.bitcoins.core.protocol.ln.{
@@ -20,7 +20,8 @@ import org.bitcoins.core.protocol.ln.{
   LnInvoice,
   PaymentPreimage
 }
-import org.bitcoins.eclair.rpc.api._
+import org.bitcoins.crypto.DoubleSha256DigestBE
+import org.bitcoins.eclair.rpc.api.*
 import org.bitcoins.eclair.rpc.client.EclairRpcClient
 import org.bitcoins.eclair.rpc.config.{
   EclairAuthCredentials,
@@ -35,8 +36,8 @@ import org.scalatest.Assertion
 
 import java.nio.file.Files
 import java.time.Instant
-import scala.concurrent._
-import scala.concurrent.duration.{DurationInt, _}
+import scala.concurrent.*
+import scala.concurrent.duration.*
 
 class EclairRpcClientTest extends BitcoinSAsyncTest {
 
@@ -499,18 +500,12 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
       val isClosedF = {
         val getIsClosed = { (client: EclairRpcClient, _: EclairRpcClient) =>
           isConfirmedF.flatMap { case (chanId, _) =>
-            val closedF = changeAddrF.flatMap { addr =>
-              val closedF = client.close(chanId, addr.scriptPubKey)
-
-              closedF.flatMap { _ =>
-                EclairRpcTestUtil.awaitUntilChannelClosing(client, chanId)
-              }
-            }
+            val closedF = changeAddrF.flatMap(closeHelper(client, chanId, _))
 
             closedF.flatMap { _ =>
               val chanF = client.channel(chanId)
               chanF.map { chan =>
-                assert(chan.state == ChannelState.CLOSING)
+                assert(chan.state == ChannelState.CLOSED)
               }
             }
           }
@@ -732,13 +727,10 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
             _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client, paymentId)
             succeeded <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
             received <- otherClient.getReceivedInfo(invoice)
-            _ <- client.close(channelId)
-            _ <-
-              EclairRpcTestUtil.awaitUntilChannelClosing(otherClient, channelId)
-            channel <- otherClient.channel(channelId)
             bitcoind <- bitcoindRpcClientF
-            address <- bitcoind.getNewAddress
-            _ <- bitcoind.generateToAddress(6, address)
+            addr <- bitcoind.getNewAddress
+            _ <- closeHelper(client, channelId, addr)
+            channel <- otherClient.channel(channelId)
           } yield {
             assert(succeeded.nonEmpty)
 
@@ -760,7 +752,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
                 fail(s"Unexpected payment status ${s}")
             }
 
-            assert(channel.state == ChannelState.CLOSING)
+            assert(channel.state == ChannelState.CLOSED)
           }
         }
     }
@@ -1052,9 +1044,11 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
           _ <- AsyncUtil
             .retryUntilSatisfiedF(
               (() => {
-                firstFreshClient
-                  .allUpdates(nodeId)
-                  .map(_.forall(updateIsInChannels(ourOpenChannels)))
+                for {
+                  allUpdates <- firstFreshClient.allUpdates(nodeId)
+                  result = ourOpenChannels.forall(
+                    updateIsInChannels(allUpdates))
+                } yield result
               }),
               interval = 1.second,
               maxTries = 60
@@ -1333,9 +1327,43 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   }
 
   private def updateIsInChannels(
-      channels: Seq[OpenChannelInfo]
-  )(update: ChannelUpdate): Boolean = {
-    channels.exists(_.shortChannelId == update.shortChannelId)
+      allUpdates: Vector[ChannelUpdate]
+  )(channel: OpenChannelInfo): Boolean = {
+    allUpdates
+      .map(_.shortChannelId)
+      .contains(channel.channelUpdate.shortChannelId)
+
+  }
+
+  /** Closing a channel became much more difficult in v0.12. The problem is
+    * giving an illusion of a synchronous API when in reality the closing API is
+    * highly asynchronous in Eclair This method's Future completes when the
+    * closing transaciton is fully confirmed on chain
+    * @return
+    *   the closing transactions transaction id
+    */
+  private def closeHelper(
+      client: EclairRpcClient,
+      chanId: ChannelId,
+      destination: BitcoinAddress): Future[DoubleSha256DigestBE] = {
+    for {
+      _ <- client.close(chanId, destination.scriptPubKey)
+      _ <- EclairRpcTestUtil.awaitUntilChannelNegotiatingSimple(client, chanId)
+      _ <- AsyncUtil.retryUntilSatisfiedF(() => {
+        // is there any better way to get informed when the closing txid
+        // is finally negotiated with our peer?
+        client
+          .channel(chanId)
+          .map(_.publishedClosingTxIdOpt.isDefined)
+      })
+      closingTxId <- client
+        .channel(chanId)
+        .map(_.publishedClosingTxIdOpt.get.head.txid)
+      bitcoind <- bitcoindRpcClientF
+      _ <- bitcoind.generate(6)
+      _ <- EclairRpcTestUtil.awaitEclairInSync(client, bitcoind)
+      _ <- EclairRpcTestUtil.awaitUntilChannelClosed(client, chanId)
+    } yield closingTxId
   }
 
   override def afterAll(): Unit = {
