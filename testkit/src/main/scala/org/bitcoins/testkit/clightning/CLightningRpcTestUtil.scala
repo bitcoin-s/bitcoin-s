@@ -3,7 +3,6 @@ package org.bitcoins.testkit.clightning
 import org.apache.pekko.actor.ActorSystem
 import com.bitcoins.clightning.rpc.CLightningRpcClient
 import com.bitcoins.clightning.rpc.config.CLightningInstanceLocal
-import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.jsonmodels.clightning.CLightningJsonModels.FundChannelResult
 import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.currency.*
@@ -67,6 +66,8 @@ trait CLightningRpcTestUtil extends BitcoinSLogger {
           "Local bitcoind instance required for clightning"
         )
     }
+    // disable plugins as they require external dependencies
+    // installed on the OS, and we don't use the deps in tests
     s"""
        |network=regtest
        |addr=127.0.0.1:$port
@@ -236,8 +237,6 @@ trait CLightningRpcTestUtil extends BitcoinSLogger {
       b <- startBF
     } yield (a, b)
 
-    clientsF.failed.foreach(err => logger.error(s"Failed clientsF", err))
-
     def isSynced: Future[Boolean] = for {
       (client, otherClient) <- clientsF
       height <- bitcoind.getBlockCount()
@@ -255,14 +254,10 @@ trait CLightningRpcTestUtil extends BitcoinSLogger {
 
     for {
       (client, otherClient) <- clientsF
-      _ = logger.debug(s"CLightnings started, attempting to connect")
       _ <- connectLNNodes(client, otherClient)
-      _ = logger.debug(s"CLightnings connected, attempting to fund")
       _ <- fundLNNodes(bitcoind, client, otherClient)
-
       _ <- TestAsyncUtil.awaitConditionF(() => isSynced, interval = 1.second)
       _ <- TestAsyncUtil.awaitConditionF(() => isFunded)
-
       _ <- openChannel(bitcoind, client, otherClient)
     } yield (client, otherClient)
   }
@@ -301,7 +296,6 @@ trait CLightningRpcTestUtil extends BitcoinSLogger {
 
     val genF = for {
       _ <- fundedChannelIdF
-      _ <- AsyncUtil.nonBlockingSleep(5.second)
       address <- bitcoind.getNewAddress
       blocks <- bitcoind.generateToAddress(6, address)
     } yield blocks
