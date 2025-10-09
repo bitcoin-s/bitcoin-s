@@ -5,11 +5,11 @@ import com.bitcoins.clightning.rpc.CLightningRpcClient
 import com.bitcoins.clightning.rpc.config.CLightningInstanceLocal
 import org.bitcoins.commons.jsonmodels.clightning.CLightningJsonModels.FundChannelResult
 import org.bitcoins.commons.util.BitcoinSLogger
-import org.bitcoins.core.currency._
+import org.bitcoins.core.currency.*
 import org.bitcoins.core.protocol.ln.node.NodeId
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.config._
+import org.bitcoins.rpc.config.*
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.async.TestAsyncUtil
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
@@ -66,6 +66,8 @@ trait CLightningRpcTestUtil extends BitcoinSLogger {
           "Local bitcoind instance required for clightning"
         )
     }
+    // disable plugins as they require external dependencies
+    // installed on the OS, and we don't use the deps in tests
     s"""
        |network=regtest
        |addr=127.0.0.1:$port
@@ -79,6 +81,12 @@ trait CLightningRpcTestUtil extends BitcoinSLogger {
        |bitcoin-rpcconnect=127.0.0.1
        |bitcoin-rpcport=${bitcoindInstance.rpcUri.getPort}
        |log-file=${datadir.resolve("clightning.log")}
+       |disable-plugin=clnrest
+       |disable-plugin=wss-proxy
+       |disable-plugin=cln-grpc
+       |disable-plugin=cln-xpay
+       |disable-plugin=cln-renepay
+       |disable-plugin=cln-askrene
        |""".stripMargin
   }
 
@@ -93,7 +101,7 @@ trait CLightningRpcTestUtil extends BitcoinSLogger {
       // creates a random clightning datadir, but still assumes that a bitcoind instance is running right now
       val datadir = randomCLightningDatadir()
       datadir.mkdirs()
-      logger.trace(s"Creating temp clightning dir ${datadir.getAbsolutePath}")
+      logger.debug(s"Creating temp clightning dir ${datadir.getAbsolutePath}")
 
       val config = commonConfig(datadir.toPath, bitcoindInstance)
 
@@ -246,13 +254,10 @@ trait CLightningRpcTestUtil extends BitcoinSLogger {
 
     for {
       (client, otherClient) <- clientsF
-
       _ <- connectLNNodes(client, otherClient)
       _ <- fundLNNodes(bitcoind, client, otherClient)
-
       _ <- TestAsyncUtil.awaitConditionF(() => isSynced, interval = 1.second)
       _ <- TestAsyncUtil.awaitConditionF(() => isFunded)
-
       _ <- openChannel(bitcoind, client, otherClient)
     } yield (client, otherClient)
   }
@@ -285,7 +290,7 @@ trait CLightningRpcTestUtil extends BitcoinSLogger {
           fundingAmount = amt,
           pushAmt = pushAmt,
           feeRate = SatoshisPerVirtualByte.fromLong(10),
-          privateChannel = false
+          announce = true
         )
       }
 

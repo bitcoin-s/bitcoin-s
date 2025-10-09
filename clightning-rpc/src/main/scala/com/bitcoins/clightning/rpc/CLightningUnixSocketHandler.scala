@@ -15,10 +15,11 @@ abstract class CLightningUnixSocketHandler { self: CLightningRpcClient =>
   def clightningCall[T](command: String, parameters: JsValue = JsArray.empty)(
       implicit reader: Reads[T]
   ): Future[T] = {
-    logger.trace(s"clightning rpc call $command")
+    logger.debug(s"clightning rpc call $command parameters=$parameters")
     val responseF = sendRequest(command, parameters)
 
     responseF.map { payload =>
+      logger.debug(s"clightning rpc response=$payload")
       parseResult(payload, command)
     }
   }

@@ -21,7 +21,7 @@ class CLightningChannelOpenerTest extends CLightningChannelOpenerFixture {
       fundDetails <- clightningA.initChannelOpen(
         nodeId = nodeId,
         amount = amount,
-        privateChannel = false
+        announce = false
       )
     } yield {
       assert(
@@ -46,7 +46,7 @@ class CLightningChannelOpenerTest extends CLightningChannelOpenerFixture {
       fundDetails <- clightningA.initChannelOpen(
         nodeId = nodeId,
         amount = amount,
-        privateChannel = false
+        announce = true
       )
 
       // construct psbt
@@ -73,12 +73,12 @@ class CLightningChannelOpenerTest extends CLightningChannelOpenerFixture {
       _ <- TestAsyncUtil.awaitConditionF(
         () => clightningA.listChannels().map(_.nonEmpty),
         interval = 1.second,
-        maxTries = 500
+        maxTries = 30
       )
       _ <- TestAsyncUtil.awaitConditionF(
         () => clightningB.listChannels().map(_.nonEmpty),
         interval = 1.second,
-        maxTries = 500
+        maxTries = 30
       )
     } yield succeed
   }
@@ -98,7 +98,7 @@ class CLightningChannelOpenerTest extends CLightningChannelOpenerFixture {
       fundDetails <- clightningA.initChannelOpen(
         nodeId = nodeId,
         amount = amount,
-        privateChannel = false
+        announce = false
       )
 
       // construct psbt
@@ -128,12 +128,12 @@ class CLightningChannelOpenerTest extends CLightningChannelOpenerFixture {
       _ <- TestAsyncUtil.awaitConditionF(
         () => clightningA.listChannels().map(_.isEmpty),
         interval = 1.second,
-        maxTries = 500
+        maxTries = 30
       )
       _ <- TestAsyncUtil.awaitConditionF(
         () => clightningB.listChannels().map(_.isEmpty),
         interval = 1.second,
-        maxTries = 500
+        maxTries = 30
       )
     } yield succeed
   }

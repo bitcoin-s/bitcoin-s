@@ -162,7 +162,7 @@ object CLightningJsonModels {
       connected: Boolean,
       features: ByteVector,
       netaddr: Vector[String],
-      channels: Vector[CLightningPeerChannel]
+      num_channels: Int
   ) extends CLightningJsonModel
 
   case class CLightningPeers(peers: Vector[CLightningPeer])
