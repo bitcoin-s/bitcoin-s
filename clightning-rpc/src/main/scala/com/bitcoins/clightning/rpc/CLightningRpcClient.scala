@@ -138,7 +138,7 @@ class CLightningRpcClient(val instance: CLightningInstanceLocal, binary: File)(
       fundingAmount: CurrencyUnit,
       pushAmt: CurrencyUnit,
       feeRate: FeeUnit,
-      privateChannel: Boolean
+      announce: Boolean
   ): Future[FundChannelResult] = {
 
     val params = JsObject(
@@ -146,7 +146,7 @@ class CLightningRpcClient(val instance: CLightningInstanceLocal, binary: File)(
         "id" -> JsString(nodeId.toString),
         "amount" -> JsNumber(fundingAmount.satoshis.toLong),
         "feerate" -> feeRateToJson(feeRate),
-        "announce" -> JsBoolean(privateChannel),
+        "announce" -> JsBoolean(announce),
         "push_msat" -> JsNumber(MilliSatoshis(pushAmt).toLong)
       )
     )
@@ -335,13 +335,13 @@ class CLightningRpcClient(val instance: CLightningInstanceLocal, binary: File)(
   def initChannelOpen(
       nodeId: NodeId,
       amount: CurrencyUnit,
-      privateChannel: Boolean
+      announce: Boolean
   ): Future[FundChannelStartResult] = {
     val params = JsObject(
       Vector(
         "id" -> JsString(nodeId.toString),
         "amount" -> JsNumber(amount.satoshis.toLong),
-        "announce" -> JsBoolean(privateChannel)
+        "announce" -> JsBoolean(announce)
       )
     )
 
@@ -414,7 +414,8 @@ class CLightningRpcClient(val instance: CLightningInstanceLocal, binary: File)(
   }
 
   override def stop(): Future[CLightningRpcClient] = {
-    clightningCall[String]("stop").map(_ => this)
+    clightningCall[JsObject]("stop")
+      .map(_ => this)
   }
 }
 
