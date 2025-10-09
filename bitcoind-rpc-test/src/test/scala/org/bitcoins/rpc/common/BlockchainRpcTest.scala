@@ -1,5 +1,6 @@
 package org.bitcoins.rpc.common
 
+import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
   AddressType,
   ScanBlocksOpt
@@ -28,8 +29,8 @@ import org.bitcoins.testkit.rpc.{
   BitcoindFixturesCachedPairNewest,
   BitcoindRpcTestUtil
 }
-
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 
 class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
 
@@ -400,6 +401,53 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
         s.spend_txid == spendTxId && s.prevout_txid == fundTxId))
       assert(receives.exists(r => r.txid == fundTxId2))
     }
+  }
 
+  it must "waitfornewblock" in { case nodePair =>
+    val client = nodePair.node1
+    val bestHashF = client.getBestBlockHash()
+    val timeout = 0.millis // no timeout
+    for {
+      bestHash <- bestHashF
+      waitF = client.waitForNewBlock(timeout, Some(bestHash))
+      _ <- AsyncUtil.nonBlockingSleep(
+        1.second
+      ) // wait a bit to make sure future isn't complete
+      _ = assert(!waitF.isCompleted)
+      hashes <- client.generate(1)
+      wait <- waitF
+    } yield {
+      assert(hashes.head == wait.hash)
+    }
+  }
+
+  it must "waitforblock" in { case nodePair =>
+    val client = nodePair.node1
+    val timeout = 0.millis // no timeout
+    for {
+      hashes <- client.generate(1)
+      wait <- client.waitForBlock(timeout, hashes.head)
+    } yield {
+      assert(hashes.head == wait.hash)
+    }
+  }
+
+  it must "waitforblockheight" in { case nodePair =>
+    val client = nodePair.node1
+    val heightF = client.getBlockCount()
+    val timeout = 0.millis // no timeout
+    for {
+      height <- heightF
+      waitF = client.waitForBlockHeight(timeout, height + 1)
+      _ <- AsyncUtil.nonBlockingSleep(
+        1.second
+      ) // wait a bit to make sure future isn't complete
+      _ = assert(!waitF.isCompleted)
+      hashes <- client.generate(1)
+      wait <- waitF
+    } yield {
+      assert(hashes.head == wait.hash)
+      assert(height + 1 == wait.height)
+    }
   }
 }
