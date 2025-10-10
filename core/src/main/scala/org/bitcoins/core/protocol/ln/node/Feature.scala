@@ -352,6 +352,14 @@ object Features {
     override val mandatory: Int = 60
   }
 
+  case object AttributionData
+      extends Feature
+      with InitFeature
+      with NodeFeature {
+    override val rfcName: String = "option_attribution_data"
+    override val mandatory: Int = 36
+  }
+
   val knownFeatures: Set[Feature] = Set(
     DataLossProtect,
     InitialRoutingSync,
@@ -377,7 +385,8 @@ object Features {
     TrampolinePaymentPrototype,
     AsyncPaymentPrototype,
     Quiesce,
-    SimpleClose
+    SimpleClose,
+    AttributionData
   )
 
   // Features may depend on other features, as specified in Bolt 9.

@@ -237,7 +237,7 @@ case class RelayedPayment(
     paymentHash: Sha256Digest,
     fromChannelId: FundedChannelId,
     toChannelId: FundedChannelId,
-    startedAt: RelayTimestamp,
+    receivedAt: RelayTimestamp,
     settledAt: RelayTimestamp
 )
 
@@ -276,10 +276,7 @@ case class ChannelUpdate(
     feeBaseMsat: MilliSatoshis
 )
 
-case class ToLocalOutput(
-    index: Int,
-    amount: Satoshis,
-    publicKeyScript: ScriptPubKey)
+case class ToLocalOutput(amount: Satoshis, publicKeyScript: ScriptPubKey)
 case class PublishedClosingTx(
     txid: DoubleSha256DigestBE,
     tx: Transaction,
@@ -494,7 +491,7 @@ object WebSocketEvent {
 
   case class ChannelCreated(
       remoteNodeId: NodeId,
-      isInitiator: Boolean,
+      isOpener: Boolean,
       temporaryChannelId: TempChannelId,
       commitTxFeeratePerKw: SatoshisPerKW,
       fundingTxFeeratePerKw: Option[SatoshisPerKW])
