@@ -975,7 +975,7 @@ object JsonReaders {
         unknown <- (jsValue \ "unknown").validate[Set[UnknownFeature]]
       } yield {
         val activated = activatedObj.toSeq.map(x =>
-          ActivatedFeature(featuresByName(x._1), x._2))
+          ActivatedFeature(featuresByName.apply(x._1), x._2))
         Features(
           activated = activated.toSet,
           unknown = unknown
@@ -1477,7 +1477,7 @@ object JsonReaders {
       paymentHash <- (js \ "paymentHash").validate[Sha256Digest]
       fromChannelId <- (js \ "fromChannelId").validate[FundedChannelId]
       toChannelId <- (js \ "toChannelId").validate[FundedChannelId]
-      startedAt <- (js \ "startedAt").validate[RelayTimestamp]
+      receivedAt <- (js \ "receivedAt").validate[RelayTimestamp]
       settledAt <- (js \ "settledAt").validate[RelayTimestamp]
     } yield RelayedPayment(
       amountIn,
@@ -1485,7 +1485,7 @@ object JsonReaders {
       paymentHash,
       fromChannelId,
       toChannelId,
-      startedAt,
+      receivedAt,
       settledAt
     )
   }
