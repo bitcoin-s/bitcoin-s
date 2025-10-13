@@ -11,11 +11,6 @@ libraryDependencies ++= Deps.bitcoindRpc
 
 CommonSettings.prodSettings
 
-
-private def isAarch64: Boolean = {
-  System.getProperty("os.arch") == "aarch64"
-}
-
 TaskKeys.downloadBitcoind := {
   val logger = streams.value.log
   import scala.sys.process._
@@ -32,6 +27,10 @@ TaskKeys.downloadBitcoind := {
 
   logger.debug(
     s"(Maybe) downloading Bitcoin Core binaries for versions: ${versions.mkString(",")}")
+
+  def isAarch64: Boolean = {
+    System.getProperty("os.arch") == "aarch64"
+  }
 
   def getPlatformAndSuffix(version: String): (String, String) = {
     if (Properties.isLinux) ("x86_64-linux-gnu", "tar.gz")
