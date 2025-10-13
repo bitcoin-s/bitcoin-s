@@ -302,6 +302,9 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         // getheaders request to our peer thus reseting the sentQuery time
         peerData = peerManager.getPeerData(peer).get
         _ <- NodeTestUtil.disconnectNode(bitcoind, node)
+        // fully functioning node no longer needed so shut it down
+        _ <- node.stop()
+        _ <- node.nodeConfig.stop()
         hashes <- bitcoind.generate(2000)
         blockHeaders <- Source(hashes)
           .mapAsync(FutureUtil.getParallelism)(bitcoind.getBlockHeaderRaw)
@@ -310,10 +313,6 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
           HeadersMessage(blockHeaders.toVector)
         newDmh0 <- dataMessageHandler.handleDataPayload(payload0, peerData)
         _ = assert(newDmh0.state.isInstanceOf[HeaderSync])
-        // now process another header, even though we are in FilterHeaderSync
-        // state, we should process the block header since our query timed out
-        _ <- node.stop()
-        _ <- node.nodeConfig.stop()
       } yield {
         assert(
           newDmh0.state.asInstanceOf[HeaderSync].sentQuery.isAfter(sentQuery0))
