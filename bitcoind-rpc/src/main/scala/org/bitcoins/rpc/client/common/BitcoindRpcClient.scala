@@ -14,7 +14,7 @@ import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
-import org.bitcoins.core.protocol.BlockStamp
+import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
@@ -287,9 +287,10 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
     Future.successful(this)
 
   def generate(numBlocks: Int): Future[Vector[DoubleSha256DigestBE]] = {
+    //see: https://github.com/bitcoin/bitcoin/issues/33618#issuecomment-3402590889
+    val address = BitcoinAddress("2NFyxovf6MyxfHqtVjstGzs6HeLqv92Nq4U")
     for {
-      addr <- getNewAddress
-      blocks <- generateToAddress(numBlocks, addr)
+      blocks <- generateToAddress(numBlocks, address)
     } yield blocks
   }
 
