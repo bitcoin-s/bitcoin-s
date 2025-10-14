@@ -287,7 +287,7 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
     Future.successful(this)
 
   def generate(numBlocks: Int): Future[Vector[DoubleSha256DigestBE]] = {
-    //see: https://github.com/bitcoin/bitcoin/issues/33618#issuecomment-3402590889
+    // see: https://github.com/bitcoin/bitcoin/issues/33618#issuecomment-3402590889
     val address = BitcoinAddress("2NFyxovf6MyxfHqtVjstGzs6HeLqv92Nq4U")
     for {
       blocks <- generateToAddress(numBlocks, address)
