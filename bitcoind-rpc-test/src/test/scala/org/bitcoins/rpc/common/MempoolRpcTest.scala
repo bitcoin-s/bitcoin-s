@@ -1,6 +1,9 @@
 package org.bitcoins.rpc.common
 
-import org.bitcoins.commons.jsonmodels.bitcoind.{GetMemPoolInfoResultV30}
+import org.bitcoins.commons.jsonmodels.bitcoind.{
+  GetMemPoolInfoResultV29,
+  GetMemPoolInfoResultV30
+}
 import org.bitcoins.commons.rpc.BitcoindException
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
@@ -105,7 +108,7 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
       _ <-
         BitcoindRpcTestUtil
           .sendCoinbaseTransaction(client, otherClient)
-      case newInfo <- client.getMemPoolInfo
+      newInfo <- client.getMemPoolInfo
     } yield {
       val defaultRelayFee = Bitcoins(Satoshis(100))
       assert(info.loaded)
@@ -120,7 +123,7 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
         case v30: GetMemPoolInfoResultV30 =>
           assert(v30.permitbaremultisig)
           assert(v30.maxdatacarriersize == 100000)
-        case _ => fail()
+        case _: GetMemPoolInfoResultV29 => fail()
       }
 
     }

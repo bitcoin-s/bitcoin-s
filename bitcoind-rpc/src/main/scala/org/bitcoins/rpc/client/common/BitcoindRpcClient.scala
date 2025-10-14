@@ -288,9 +288,9 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
   ): Future[ChainApi] =
     Future.successful(this)
 
-  /** Sends funds to an extran address to bitcoin core's wallet, this increases
-    * bitcoin core performance If you want to send funds somewhere specific use
-    * [[generateToAddress]]
+  /** Sends funds to an external address to bitcoin core's wallet, this
+    * increases bitcoin core performance If you want to send funds somewhere
+    * specific use [[generateToAddress]]
     */
   def generate(numBlocks: Int): Future[Vector[DoubleSha256DigestBE]] = {
     // see: https://github.com/bitcoin/bitcoin/issues/33618#issuecomment-3402590889

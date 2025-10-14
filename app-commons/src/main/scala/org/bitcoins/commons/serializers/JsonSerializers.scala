@@ -344,9 +344,9 @@ object JsonSerializers {
         getMemPoolInfoResultV29Reads.reads(jsObj)
       }
 
-    case _ =>
+    case x @ (_: JsString | _: JsBoolean | _: JsNumber | _: JsArray | JsNull) =>
       // Fail if the input isn't a JSON object
-      JsError(s"Expected JSON object for GetMemPoolInfoResult")
+      JsError(s"Expected JSON object for GetMemPoolInfoResult, got=$x")
   }
 
   implicit val getMemPoolInfoResultV29Reads: Reads[GetMemPoolInfoResultV29] =
@@ -463,9 +463,10 @@ object JsonSerializers {
           getWalletInfoResultReadsV30.reads(jsObj)
         }
 
-      case _ =>
+      case x @ (_: JsString | _: JsBoolean | _: JsNumber | _: JsArray |
+          JsNull) =>
         // Fail if the input isn't a JSON object
-        JsError(s"Expected JSON object for GetMemPoolInfoResult")
+        JsError(s"Expected JSON object for GetWalletInfoResult, got=$x")
     }
   implicit val getWalletInfoResultReadsPostV22
       : Reads[GetWalletInfoResultPostV22] =
