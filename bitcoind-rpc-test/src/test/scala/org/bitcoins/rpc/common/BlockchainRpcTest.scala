@@ -204,7 +204,8 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
   it should "be able to list all blocks since a given block" in { nodePair =>
     val client = nodePair.node1
     for {
-      blocks <- client.generate(3)
+      addr <- client.getNewAddress
+      blocks <- client.generateToAddress(3, addr)
       list <- client.listSinceBlock(blocks(0))
     } yield {
       assert(list.transactions.length >= 2)
@@ -244,7 +245,8 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
   it should "get a block filter given a block hash" in { nodePair =>
     val client = nodePair.node1
     for {
-      blocks <- client.generate(1)
+      addr <- client.getNewAddress
+      blocks <- client.generateToAddress(1, addr)
       blockFilter <- client.getBlockFilter(blocks.head, FilterType.Basic)
 
       block <- client.getBlockRaw(blocks.head)

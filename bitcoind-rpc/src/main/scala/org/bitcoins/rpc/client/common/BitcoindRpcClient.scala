@@ -12,14 +12,16 @@ import org.bitcoins.core.api.chain.db.BlockHeaderDb
 import org.bitcoins.core.api.chain.{ChainApi, FilterSyncMarker}
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
+import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
-import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
+import org.bitcoins.core.protocol.{BlockStamp, P2PKHAddress}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.protocol.script.P2PKHScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.crypto.{DoubleSha256DigestBE, StringFactory}
+import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPublicKey, StringFactory}
 import org.bitcoins.rpc.client.v18.V18AssortedRpc
 import org.bitcoins.rpc.client.v20.V20MultisigRpc
 import org.bitcoins.rpc.client.v27.BitcoindV27RpcClient
@@ -286,12 +288,19 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
   ): Future[ChainApi] =
     Future.successful(this)
 
+  /** Sends funds to an extran address to bitcoin core's wallet, this increases
+    * bitcoin core performance If you want to send funds somewhere specific use
+    * [[generateToAddress]]
+    */
   def generate(numBlocks: Int): Future[Vector[DoubleSha256DigestBE]] = {
     // see: https://github.com/bitcoin/bitcoin/issues/33618#issuecomment-3402590889
-    val address = BitcoinAddress("2NFyxovf6MyxfHqtVjstGzs6HeLqv92Nq4U")
-    for {
+    val address = P2PKHAddress.fromScriptPubKey(
+      P2PKHScriptPubKey(ECPublicKey.freshPublicKey),
+      RegTest)
+    val resultF = for {
       blocks <- generateToAddress(numBlocks, address)
     } yield blocks
+    resultF
   }
 
   override def isSyncing(): Future[Boolean] = Future.successful(syncing.get())
