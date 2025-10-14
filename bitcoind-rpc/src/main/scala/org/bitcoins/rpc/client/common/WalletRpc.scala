@@ -77,14 +77,11 @@ trait WalletRpc { self: Client =>
   }
 
   def getUnconfirmedBalance: Future[Bitcoins] = {
-    bitcoindCall[Bitcoins]("getunconfirmedbalance")
+    getBalances.map(_.mine.untrusted_pending)
   }
 
   def getUnconfirmedBalance(walletName: String): Future[Bitcoins] = {
-    bitcoindCall[Bitcoins](
-      "getunconfirmedbalance",
-      uriExtensionOpt = Some(walletExtension(walletName))
-    )
+    getBalances(walletName).map(_.mine.untrusted_pending)
   }
 
   private def getNewAddressInternal(
@@ -168,7 +165,7 @@ trait WalletRpc { self: Client =>
   def getWalletInfo(
       walletName: String
   ): Future[GetWalletInfoResult] = {
-    bitcoindCall[GetWalletInfoResultPostV22](
+    bitcoindCall[GetWalletInfoResult](
       "getwalletinfo",
       uriExtensionOpt = Some(walletExtension(walletName))
     )
@@ -304,18 +301,6 @@ trait WalletRpc { self: Client =>
   def getBalances(walletName: String): Future[GetBalancesResult] = {
     bitcoindCall[GetBalancesResult](
       "getbalances",
-      uriExtensionOpt = Some(walletExtension(walletName))
-    )
-  }
-
-  // TODO: Should be BitcoinFeeUnit
-  def setTxFee(
-      feePerKB: Bitcoins,
-      walletName: String = DEFAULT_WALLET
-  ): Future[Boolean] = {
-    bitcoindCall[Boolean](
-      "settxfee",
-      List(JsNumber(feePerKB.toBigDecimal)),
       uriExtensionOpt = Some(walletExtension(walletName))
     )
   }

@@ -12,19 +12,22 @@ import org.bitcoins.core.api.chain.db.BlockHeaderDb
 import org.bitcoins.core.api.chain.{ChainApi, FilterSyncMarker}
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
+import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
-import org.bitcoins.core.protocol.BlockStamp
+import org.bitcoins.core.protocol.{BlockStamp, P2PKHAddress}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
+import org.bitcoins.core.protocol.script.P2PKHScriptPubKey
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
 import org.bitcoins.core.wallet.fee.FeeUnit
-import org.bitcoins.crypto.{DoubleSha256DigestBE, StringFactory}
+import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPublicKey, StringFactory}
 import org.bitcoins.rpc.client.v18.V18AssortedRpc
 import org.bitcoins.rpc.client.v20.V20MultisigRpc
 import org.bitcoins.rpc.client.v27.BitcoindV27RpcClient
 import org.bitcoins.rpc.client.v28.BitcoindV28RpcClient
 import org.bitcoins.rpc.client.v29.BitcoindV29RpcClient
+import org.bitcoins.rpc.client.v30.BitcoindV30RpcClient
 import org.bitcoins.rpc.config.*
 
 import java.io.File
@@ -285,11 +288,19 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
   ): Future[ChainApi] =
     Future.successful(this)
 
+  /** Sends funds to an external address to bitcoin core's wallet, this
+    * increases bitcoin core performance If you want to send funds somewhere
+    * specific use [[generateToAddress]]
+    */
   def generate(numBlocks: Int): Future[Vector[DoubleSha256DigestBE]] = {
-    for {
-      addr <- getNewAddress
-      blocks <- generateToAddress(numBlocks, addr)
+    // see: https://github.com/bitcoin/bitcoin/issues/33618#issuecomment-3402590889
+    val address = P2PKHAddress.fromScriptPubKey(
+      P2PKHScriptPubKey(ECPublicKey.freshPublicKey),
+      RegTest)
+    val resultF = for {
+      blocks <- generateToAddress(numBlocks, address)
     } yield blocks
+    resultF
   }
 
   override def isSyncing(): Future[Boolean] = Future.successful(syncing.get())
@@ -357,6 +368,7 @@ object BitcoindRpcClient {
       case BitcoindVersion.V27 => BitcoindV27RpcClient(instance)
       case BitcoindVersion.V28 => BitcoindV28RpcClient(instance)
       case BitcoindVersion.V29 => BitcoindV29RpcClient(instance)
+      case BitcoindVersion.V30 => BitcoindV30RpcClient(instance)
       case BitcoindVersion.Unknown =>
         sys.error(
           s"Cannot create a Bitcoin Core RPC client: unsupported version"
@@ -375,6 +387,7 @@ object BitcoindRpcClient {
       case BitcoindVersion.V27 => new BitcoindV27RpcClient(instance)
       case BitcoindVersion.V28 => new BitcoindV28RpcClient(instance)
       case BitcoindVersion.V29 => new BitcoindV29RpcClient(instance)
+      case BitcoindVersion.V30 => new BitcoindV30RpcClient(instance)
       case BitcoindVersion.Unknown =>
         sys.error(
           s"Cannot create a Bitcoin Core RPC client: unsupported version"
@@ -391,10 +404,10 @@ object BitcoindVersion
     with BitcoinSLogger {
 
   /** The newest version of `bitcoind` we support */
-  val newest: BitcoindVersion = V29
+  val newest: BitcoindVersion = V30
 
   val standard: Vector[BitcoindVersion] =
-    Vector(V29, V28, V27)
+    Vector(V30, V29, V28, V27)
 
   val known: Vector[BitcoindVersion] = standard
 
@@ -408,6 +421,10 @@ object BitcoindVersion
 
   case object V29 extends BitcoindVersion {
     override def toString: String = "v29.0"
+  }
+
+  case object V30 extends BitcoindVersion {
+    override def toString: String = "v30.0"
   }
 
   case object Unknown extends BitcoindVersion {

@@ -2,9 +2,9 @@ package org.bitcoins.rpc.common
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddressType
 import org.bitcoins.commons.rpc.BitcoindWalletException
-import org.bitcoins.core.currency.{Bitcoins, Satoshis}
+import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
+
 import org.bitcoins.rpc.client.common._
 import org.bitcoins.rpc.config.{BitcoindInstanceLocal, BitcoindInstanceRemote}
 import org.bitcoins.rpc.util.{NodePair, RpcUtil}
@@ -185,7 +185,6 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairNewest {
     for {
       info <- client.getWalletInfo(walletName)
     } yield {
-      assert(info.balance.toBigDecimal > 0)
       assert(info.txcount > 0)
       assert(info.keypoolsize > 0)
       assert(info.unlocked_until.contains(0))
@@ -267,17 +266,6 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairNewest {
     } yield {
       assert(balance.toBigDecimal > 0)
       assert(balance.toBigDecimal < newBalance.toBigDecimal)
-    }
-  }
-
-  it should "be able to set the tx fee" in { nodePair =>
-    val client = nodePair.node2
-    for {
-      success <- client.setTxFee(Bitcoins(0.01), walletName)
-      info <- client.getWalletInfo(walletName)
-    } yield {
-      assert(success)
-      assert(info.paytxfee == SatoshisPerByte(Satoshis(1000)))
     }
   }
 

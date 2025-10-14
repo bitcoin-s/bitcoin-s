@@ -88,7 +88,8 @@ class RawTransactionRpcTest extends BitcoindFixturesCachedPairNewest {
   it should "be able to create a raw transaction" in { case nodePair =>
     val (client, otherClient) = (nodePair.node1, nodePair.node2)
     for {
-      blocks <- client.generate(2)
+      addr <- client.getNewAddress
+      blocks <- client.generateToAddress(2, addr)
       firstBlock <- client.getBlock(blocks(0))
       transaction0 <- client.getTransaction(firstBlock.tx(0))
       secondBlock <- client.getBlock(blocks(1))
@@ -214,7 +215,8 @@ class RawTransactionRpcTest extends BitcoindFixturesCachedPairNewest {
   it should "output more than one txid" in { case nodePair =>
     val (client, otherClient) = (nodePair.node1, nodePair.node2)
     for {
-      blocks <- client.generate(2)
+      addr <- client.getNewAddress
+      blocks <- client.generateToAddress(2, addr)
       firstBlock <- client.getBlock(blocks(0))
       transaction0 <- client.getTransaction(firstBlock.tx(0))
       secondBlock <- client.getBlock(blocks(1))
@@ -246,7 +248,7 @@ class RawTransactionRpcTest extends BitcoindFixturesCachedPairNewest {
         fundedTransactionOne.hex
       )
 
-      blocksTwo <- client.generate(2)
+      blocksTwo <- client.generateToAddress(2, addr)
       firstBlockTwo <- client.getBlock(blocksTwo(0))
       transaction2 <- client.getTransaction(firstBlockTwo.tx(0))
       secondBlockTwo <- client.getBlock(blocksTwo(1))

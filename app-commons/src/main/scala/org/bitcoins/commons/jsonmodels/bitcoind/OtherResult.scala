@@ -105,6 +105,21 @@ case class GetMiningInfoResultV29(
     warnings: Vector[String])
     extends GetMiningInfoResult
 
+case class GetMiningInfoResultV30(
+    blocks: Int,
+    currentblockweight: Option[Int],
+    currentblocktx: Option[Int],
+    difficulty: BigDecimal,
+    networkhashps: BigDecimal,
+    pooledtx: Int,
+    chain: String,
+    target: String,
+    bits: String,
+    next: NextBlockMiningInfo,
+    warnings: Vector[String],
+    blockmintxfee: BigDecimal)
+    extends GetMiningInfoResult
+
 case class GetMemoryInfoResult(locked: MemoryManager) extends OtherResult
 
 case class GenerateBlockResult(hash: DoubleSha256DigestBE) extends OtherResult

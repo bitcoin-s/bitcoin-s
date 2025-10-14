@@ -9,11 +9,13 @@ import org.bitcoins.commons.jsonmodels.bitcoind.{
   AddressInfoResultPostV21,
   DecodeScriptResultV22,
   DescriptorsResult,
-  GetWalletInfoResultPostV22
+  GetWalletInfoResult,
+  GetWalletInfoResultPostV22,
+  GetWalletInfoResultV30
 }
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.crypto.ExtPrivateKey
-import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit, Satoshis}
+import org.bitcoins.core.currency.{Bitcoins, CurrencyUnit}
 import org.bitcoins.core.hd.BIP32Path
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script._
@@ -31,7 +33,6 @@ import org.bitcoins.core.protocol.{
 }
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.ScriptType
-import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.signer.BitcoinSigner
 import org.bitcoins.core.wallet.utxo.{ECSignatureParams, P2WPKHV0InputInfo}
 import org.bitcoins.crypto.{
@@ -204,7 +205,6 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
     for {
       info <- client.getWalletInfo
     } yield {
-      assert(info.balance.toBigDecimal > 0)
       assert(info.txcount > 0)
       assert(info.keypoolsize > 0)
       assert(!info.unlocked_until.contains(0))
@@ -436,17 +436,6 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
     }
   }
 
-  it should "be able to set the tx fee" in { nodePair =>
-    val client = nodePair.node1
-    for {
-      success <- client.setTxFee(Bitcoins(0.01))
-      info <- client.getWalletInfo
-    } yield {
-      assert(success)
-      assert(info.paytxfee == SatoshisPerByte(Satoshis(1000)))
-    }
-  }
-
   it should "be able to bump a mem pool tx fee" in { nodePair =>
     val client = nodePair.node1
     val otherClient = nodePair.node2
@@ -662,6 +651,8 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
       descript match {
         case walletInfoPostV22: GetWalletInfoResultPostV22 =>
           assert(walletInfoPostV22.descriptors)
+        case v30: GetWalletInfoResultV30 =>
+          assert(v30.descriptors)
       }
     }
   }
@@ -676,8 +667,8 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
       _ <- client.loadWallet(BitcoindRpcClient.DEFAULT_WALLET_NAME)
     } yield {
       walletPriv match {
-        case walletInfoPostV22: GetWalletInfoResultPostV22 =>
-          assert(!walletInfoPostV22.private_keys_enabled)
+        case walletInfo: GetWalletInfoResult =>
+          assert(!walletInfo.private_keys_enabled)
       }
     }
   }
