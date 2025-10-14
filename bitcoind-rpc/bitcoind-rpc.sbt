@@ -100,7 +100,7 @@ TaskKeys.downloadBitcoind := {
             Map(
               "27.2" -> "acc223af46c178064c132b235392476f66d486453ddbd6bca6f1f8411547da78",
               "28.2" -> "98add5f220c01b387343b70edeb6273403fe081e22cd85fda132704cdcaa98aa",
-              "29.0" -> "a681e4f6ce524c338a105f214613605bac6c33d58c31dc5135bbc02bc458bb6c",
+              "29.2" -> "1fd58d0ae94b8a9e21bbaeab7d53395a44976e82bd5492b0a894826c135f9009",
               "30.0" -> "00964ae375084113b1162f2f493b9372421608af23539766e315a3cb0ee54248"
             )
           else if (Properties.isMac)
