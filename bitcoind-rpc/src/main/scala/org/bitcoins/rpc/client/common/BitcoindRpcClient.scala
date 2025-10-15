@@ -3,10 +3,7 @@ package org.bitcoins.rpc.client.common
 import org.apache.pekko.Done
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.stream.scaladsl.{Keep, RunnableGraph, Sink, Source}
-import org.bitcoins.commons.jsonmodels.bitcoind.{
-  GetNetworkInfoResultPostV21,
-  GetNetworkInfoResultV28
-}
+import org.bitcoins.commons.jsonmodels.bitcoind.{GetNetworkInfoResultV28}
 import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.chain.db.BlockHeaderDb
 import org.bitcoins.core.api.chain.{ChainApi, FilterSyncMarker}
@@ -24,7 +21,6 @@ import org.bitcoins.core.wallet.fee.FeeUnit
 import org.bitcoins.crypto.{DoubleSha256DigestBE, ECPublicKey, StringFactory}
 import org.bitcoins.rpc.client.v18.V18AssortedRpc
 import org.bitcoins.rpc.client.v20.V20MultisigRpc
-import org.bitcoins.rpc.client.v27.BitcoindV27RpcClient
 import org.bitcoins.rpc.client.v28.BitcoindV28RpcClient
 import org.bitcoins.rpc.client.v29.BitcoindV29RpcClient
 import org.bitcoins.rpc.client.v30.BitcoindV30RpcClient
@@ -71,19 +67,10 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
   def bitcoindRpcAppConfig: BitcoindRpcAppConfig = instance.bitcoindRpcAppConfig
 
   override lazy val version: Future[BitcoindVersion] = {
-    import org.bitcoins.commons.serializers.JsonSerializers.{
-      getNetworkInfoV28Reads,
-      getNetworkInfoPostV21Reads
-    }
+    import org.bitcoins.commons.serializers.JsonSerializers.getNetworkInfoV28Reads
     instance match {
       case _: BitcoindInstanceRemote =>
-        // work around for version specific calls to 'getnetworkinfo'
-        // the return payload is slightly different pre28 and post 28
-        // this can be removed in the future when we drop support for v27 of bitcoind
         bitcoindCall[GetNetworkInfoResultV28]("getnetworkinfo")
-          .recoverWith { _ =>
-            bitcoindCall[GetNetworkInfoResultPostV21]("getnetworkinfo")
-          }
           .map(result => BitcoindVersion.fromNetworkVersion(result.version))
       case local: BitcoindInstanceLocal =>
         Future.successful(local.getVersion)
@@ -365,7 +352,6 @@ object BitcoindRpcClient {
       implicit system: ActorSystem
   ): BitcoindRpcClient = {
     val bitcoind = version match {
-      case BitcoindVersion.V27 => BitcoindV27RpcClient(instance)
       case BitcoindVersion.V28 => BitcoindV28RpcClient(instance)
       case BitcoindVersion.V29 => BitcoindV29RpcClient(instance)
       case BitcoindVersion.V30 => BitcoindV30RpcClient(instance)
@@ -384,7 +370,6 @@ object BitcoindRpcClient {
       implicit system: ActorSystem
   ): BitcoindRpcClient = {
     val bitcoind = version match {
-      case BitcoindVersion.V27 => new BitcoindV27RpcClient(instance)
       case BitcoindVersion.V28 => new BitcoindV28RpcClient(instance)
       case BitcoindVersion.V29 => new BitcoindV29RpcClient(instance)
       case BitcoindVersion.V30 => new BitcoindV30RpcClient(instance)
@@ -407,13 +392,9 @@ object BitcoindVersion
   val newest: BitcoindVersion = V30
 
   val standard: Vector[BitcoindVersion] =
-    Vector(V30, V29, V28, V27)
+    Vector(V30, V29, V28)
 
   val known: Vector[BitcoindVersion] = standard
-
-  case object V27 extends BitcoindVersion {
-    override def toString: String = "v27.2"
-  }
 
   case object V28 extends BitcoindVersion {
     override def toString: String = "v28.2"
@@ -445,7 +426,6 @@ object BitcoindVersion
   def fromNetworkVersion(int: Int): BitcoindVersion = {
     // need to translate the int 210100 (as an example) to a BitcoindVersion
     int.toString.substring(0, 2) match {
-      case "27" => V27
       case "28" => V28
       case "29" => V29
       case _ =>

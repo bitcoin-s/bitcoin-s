@@ -64,17 +64,6 @@ sealed abstract class GetMiningInfoResult extends OtherResult {
   def chain: String
 }
 
-case class GetMiningInfoResultPre28(
-    blocks: Int,
-    currentblockweight: Option[Int],
-    currentblocktx: Option[Int],
-    difficulty: BigDecimal,
-    networkhashps: BigDecimal,
-    pooledtx: Int,
-    chain: String,
-    warnings: String)
-    extends GetMiningInfoResult
-
 case class GetMiningInfoResultV28(
     blocks: Int,
     currentblockweight: Option[Int],

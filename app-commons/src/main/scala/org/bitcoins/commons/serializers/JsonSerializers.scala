@@ -291,10 +291,6 @@ object JsonSerializers {
       }
     }
 
-  implicit val getBlockChainInfoResultPostV23Reads
-      : Reads[GetBlockChainInfoResultPostV23] =
-    Json.reads[GetBlockChainInfoResultPostV23]
-
   implicit val getBlockChainInfoResultPost27Reads
       : Reads[GetBlockChainInfoResultPostV27] = {
     Json.reads[GetBlockChainInfoResultPostV27]
@@ -433,9 +429,6 @@ object JsonSerializers {
     Json.reads[HDKeyDescriptor]
   implicit val getHDKeysReads: Reads[GetHDKeysResult] = {
     Json.reads[GetHDKeysResult]
-  }
-  implicit val getTranasctionResultPreV28: Reads[GetTransactionResultPreV28] = {
-    Json.reads[GetTransactionResultPreV28]
   }
   implicit val getTransactionResultV28: Reads[GetTransactionResultV28] = {
     Json.reads[GetTransactionResultV28]
@@ -597,9 +590,6 @@ object JsonSerializers {
   implicit val getBlockTemplateResultReads: Reads[GetBlockTemplateResult] =
     Json.reads[GetBlockTemplateResult]
 
-  implicit val miningInfoResultPre28: Reads[GetMiningInfoResultPre28] = {
-    Json.reads[GetMiningInfoResultPre28]
-  }
   implicit val miningInfoResultV28: Reads[GetMiningInfoResultV28] = {
     Json.reads[GetMiningInfoResultV28]
   }

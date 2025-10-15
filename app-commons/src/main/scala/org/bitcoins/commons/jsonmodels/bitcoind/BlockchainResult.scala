@@ -162,24 +162,6 @@ sealed trait GetBlockChainInfoResult extends BlockchainResult {
   def pruneheight: Option[Int]
 }
 
-// adds time field removes softforks field
-case class GetBlockChainInfoResultPostV23(
-    chain: NetworkParameters,
-    blocks: Int,
-    headers: Int,
-    bestblockhash: DoubleSha256DigestBE,
-    difficulty: BigDecimal,
-    time: Int,
-    mediantime: Int,
-    verificationprogress: BigDecimal,
-    initialblockdownload: Boolean,
-    chainwork: String, // How should this be handled?
-    size_on_disk: Long,
-    pruned: Boolean,
-    pruneheight: Option[Int],
-    warnings: String
-) extends GetBlockChainInfoResult
-
 case class GetBlockChainInfoResultPostV27(
     chain: NetworkParameters,
     blocks: Int,
