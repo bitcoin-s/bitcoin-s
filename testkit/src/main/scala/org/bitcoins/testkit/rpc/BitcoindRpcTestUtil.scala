@@ -27,15 +27,8 @@ import org.bitcoins.crypto.{
   DoubleSha256DigestBE,
   ECPublicKey
 }
-import org.bitcoins.rpc.client.common.BitcoindVersion.{
-  Unknown,
-  V27,
-  V28,
-  V29,
-  V30
-}
+import org.bitcoins.rpc.client.common.BitcoindVersion.{Unknown, V28, V29, V30}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
-import org.bitcoins.rpc.client.v27.BitcoindV27RpcClient
 import org.bitcoins.rpc.client.v28.BitcoindV28RpcClient
 import org.bitcoins.rpc.client.v29.BitcoindV29RpcClient
 import org.bitcoins.rpc.client.v30.BitcoindV30RpcClient
@@ -185,7 +178,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     version match {
       // default to newest version
       case Unknown => getBinary(BitcoindVersion.newest, binaryDirectory)
-      case known @ (V27 | V28 | V29 | V30) =>
+      case known @ (V28 | V29 | V30) =>
         val fileList: List[(Path, String)] = Files
           .list(binaryDirectory)
           .iterator()
@@ -260,22 +253,6 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     BitcoindInstanceLocal.fromConfig(conf, binary)
   }
 
-  def v27Instance(
-      port: Int = RpcUtil.randomPort,
-      rpcPort: Int = RpcUtil.randomPort,
-      zmqConfig: ZmqConfig = RpcUtil.zmqConfig,
-      pruneMode: Boolean = false,
-      binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
-  )(implicit system: ActorSystem): BitcoindInstanceLocal =
-    instance(
-      port = port,
-      rpcPort = rpcPort,
-      zmqConfig = zmqConfig,
-      pruneMode = pruneMode,
-      versionOpt = Some(BitcoindVersion.V27),
-      binaryDirectory = binaryDirectory
-    )
-
   def v28Instance(
       port: Int = RpcUtil.randomPort,
       rpcPort: Int = RpcUtil.randomPort,
@@ -334,14 +311,6 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
       binaryDirectory: Path = BitcoindRpcTestClient.sbtBinaryDirectory
   )(implicit system: ActorSystem): BitcoindInstanceLocal = {
     bitcoindVersion match {
-      case BitcoindVersion.V27 =>
-        BitcoindRpcTestUtil.v27Instance(
-          port,
-          rpcPort,
-          zmqConfig,
-          pruneMode,
-          binaryDirectory = binaryDirectory
-        )
       case BitcoindVersion.V28 =>
         BitcoindRpcTestUtil.v28Instance(
           port,
@@ -704,9 +673,6 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
         case BitcoindVersion.Unknown =>
           val instance = BitcoindRpcTestUtil.instance()
           BitcoindRpcClient(instance)
-        case BitcoindVersion.V27 =>
-          val instance = BitcoindRpcTestUtil.v27Instance()
-          BitcoindV27RpcClient(instance)
         case BitcoindVersion.V28 =>
           val instance = BitcoindRpcTestUtil.v28Instance()
           BitcoindV28RpcClient(instance)

@@ -16,13 +16,6 @@ import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.protocol.script.descriptor.Descriptor
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.rpc.client.common.BitcoindVersion.{
-  Unknown,
-  V27,
-  V28,
-  V29,
-  V30
-}
 import play.api.libs.json.*
 
 import scala.concurrent.Future
@@ -49,13 +42,7 @@ trait BlockchainRpc extends ChainApi { self: Client =>
   }
 
   def getBlockChainInfo: Future[GetBlockChainInfoResult] = {
-    self.version.flatMap {
-      case V27 | Unknown =>
-        bitcoindCall[GetBlockChainInfoResultPostV23]("getblockchaininfo")
-      case V28 | V29 | V30 =>
-        bitcoindCall[GetBlockChainInfoResultPostV27]("getblockchaininfo")
-    }
-
+    bitcoindCall[GetBlockChainInfoResultPostV27]("getblockchaininfo")
   }
 
   override def getBlockCount(): Future[Int] = {

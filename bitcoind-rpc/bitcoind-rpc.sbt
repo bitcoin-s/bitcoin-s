@@ -23,7 +23,7 @@ TaskKeys.downloadBitcoind := {
   }
 
   val versions =
-    List("30.0", "29.2", "28.2", "27.2")
+    List("30.0", "29.2", "28.2")
 
   logger.debug(
     s"(Maybe) downloading Bitcoin Core binaries for versions: ${versions.mkString(",")}")
@@ -98,17 +98,12 @@ TaskKeys.downloadBitcoind := {
         val expectedHash =
           if (Properties.isLinux)
             Map(
-              "27.2" -> "acc223af46c178064c132b235392476f66d486453ddbd6bca6f1f8411547da78",
               "28.2" -> "98add5f220c01b387343b70edeb6273403fe081e22cd85fda132704cdcaa98aa",
               "29.2" -> "1fd58d0ae94b8a9e21bbaeab7d53395a44976e82bd5492b0a894826c135f9009",
               "30.0" -> "00964ae375084113b1162f2f493b9372421608af23539766e315a3cb0ee54248"
             )
           else if (Properties.isMac)
             Map(
-              "27.2" -> (if (isAarch64)
-                "8f2247f4786f3559d37189b58452c91623efc5fa6886c975fa9386f9ff3f1001"
-              else
-                "e1efd8c4605b2aabc876da93b6eee2bedd868ce7d1f02b0220c1001f903b3e2c"),
             "28.2" -> (if (isAarch64)
               "c0270ed50effc174f7ff3332dba5183a8693999dac2ba78b37d8c8797b3ea2b2"
             else
@@ -119,9 +114,8 @@ TaskKeys.downloadBitcoind := {
             )
           else if (Properties.isWin)
             Map(
-              "27.2" -> "82e18f768aa5962b3c002d7f5d6ec9338896804f48406af4b5054c927575dbdf",
               "28.2" -> "da0869639c323bbf6f264f1829083b9514e10179b90c34b09d8cbcab8a1897e3",
-  "29.2" -> "83f90a5bab1fc30849862aa1db88906b91e0730b78993c085f9e547a1c3cce79",
+              "29.2" -> "83f90a5bab1fc30849862aa1db88906b91e0730b78993c085f9e547a1c3cce79",
               "30.0" -> "3d6f3af2cbfbeaf1958d0ffd77e04da6b8b82f26bb67aaa9111247620d5c95db"
             )
           else sys.error(s"Unsupported OS: ${Properties.osName}")

@@ -70,25 +70,6 @@ sealed trait GetTransactionResult extends WalletResult {
   def hex: Transaction
 }
 
-case class GetTransactionResultPreV28(
-    amount: Bitcoins,
-    fee: Option[Bitcoins],
-    confirmations: Int,
-    generated: Option[Boolean],
-    blockhash: Option[DoubleSha256DigestBE],
-    blockindex: Option[Int],
-    blocktime: Option[UInt32],
-    txid: DoubleSha256DigestBE,
-    walletconflicts: Vector[DoubleSha256DigestBE],
-    time: UInt32,
-    timereceived: UInt32,
-    bip125_replaceable: Option[String],
-    comment: Option[String],
-    to: Option[String],
-    details: Vector[TransactionDetails],
-    hex: Transaction
-) extends GetTransactionResult
-
 case class GetTransactionResultV28(
     amount: Bitcoins,
     fee: Option[Bitcoins],
