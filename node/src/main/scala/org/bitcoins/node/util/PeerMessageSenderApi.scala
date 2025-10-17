@@ -2,6 +2,7 @@ package org.bitcoins.node.util
 
 import org.bitcoins.core.api.chain.{ChainApi, FilterSyncMarker}
 import org.bitcoins.core.api.node.Peer
+import org.bitcoins.core.api.node.constant.NodeConstants
 import org.bitcoins.core.number.Int32
 import org.bitcoins.core.p2p.{
   GetAddrMessage,
@@ -19,7 +20,6 @@ import org.bitcoins.core.p2p.{
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.constant.NodeConstants
 
 import scala.concurrent.{ExecutionContext, Future}
 

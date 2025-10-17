@@ -4,9 +4,9 @@ import com.typesafe.config.Config
 import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.api.node.Peer
+import org.bitcoins.core.api.node.constant.NodeConstants
 import org.bitcoins.core.api.tor.Socks5ProxyParams
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.node.constant.NodeConstants
 import org.bitcoins.node.{NeutrinoNode, Node, P2PLogger}
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.testkit.async.TestAsyncUtil

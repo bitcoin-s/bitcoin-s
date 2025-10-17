@@ -21,12 +21,12 @@ import org.apache.pekko.util.ByteString
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.node.Peer
+import org.bitcoins.core.api.node.constant.NodeConstants
 import org.bitcoins.core.number.Int32
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.node.NodeStreamMessage.DisconnectedPeer
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.constant.NodeConstants
 import org.bitcoins.node.networking.peer.PeerConnection.ConnectionGraph
 import org.bitcoins.node.{NodeStreamMessage, P2PLogger}
 import org.bitcoins.tor.{Socks5Connection, Socks5ConnectionState}
