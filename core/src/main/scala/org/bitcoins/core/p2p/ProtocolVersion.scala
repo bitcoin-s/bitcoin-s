@@ -15,9 +15,6 @@ object ProtocolVersion extends Factory[ProtocolVersion] {
   /** The default protocol version */
   val default: ProtocolVersion = ProtocolVersion70013
 
-  /** The Bitcoin-S node useragent */
-  val userAgent = "/bitcoins-spv-node/0.0.1"
-
   val versions: Seq[ProtocolVersion] = List(
     ProtocolVersion106,
     ProtocolVersion209,
