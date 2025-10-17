@@ -126,7 +126,7 @@ object JsonSerializers {
       (__ \ "reqSigs").readNullable[Int] and
       (__ \ "type").read[ScriptType] and
       (__ \ "addresses")
-        .readNullable[Vector[BitcoinAddress]])(RpcScriptPubKeyPreV22.apply)
+        .readNullable[Vector[BitcoinAddress]])(RpcScriptPubKeyPreV22.apply _)
 
   implicit val rpcScriptPubKeyPostV22Reads: Reads[RpcScriptPubKeyPostV22] =
     Json.reads[RpcScriptPubKeyPostV22]
@@ -248,7 +248,7 @@ object JsonSerializers {
       (__ \ "bip152_hb_from").read[Boolean] and
       (__ \ "permissions").read[Vector[String]] and
       (__ \ "transport_protocol_type").read[String] and
-      (__ \ "session_id").read[String])(PeerInfoResponseV25.apply)
+      (__ \ "session_id").read[String])(PeerInfoResponseV25.apply _)
 
   implicit val nodeBanPostV22Reads: Reads[NodeBanPostV22] =
     Json.reads[NodeBanPostV22]
@@ -512,7 +512,7 @@ object JsonSerializers {
       (__ \ "timereceived").read[UInt32] and
       (__ \ "bip125-replaceable").read[String] and
       (__ \ "comment").readNullable[String] and
-      (__ \ "to").readNullable[String])(Payment.apply)
+      (__ \ "to").readNullable[String])(Payment.apply _)
 
   implicit val listSinceBlockResultReads: Reads[ListSinceBlockResult] =
     Json.reads[ListSinceBlockResult]
