@@ -44,7 +44,7 @@ sealed trait DataPayload extends NetworkPayload
   *   [[https://bitcoin.org/en/developer-reference#block]]
   */
 case class BlockMessage(block: Block) extends DataPayload {
-  override val commandName = NetworkPayload.blockCommandName
+  override val commandName: String = NetworkPayload.blockCommandName
 
   override def bytes: ByteVector = RawBlockMessageSerializer.write(this)
 }
@@ -63,7 +63,7 @@ object BlockMessage extends Factory[BlockMessage] {
   * @see
   *   [https://bitcoin.org/en/developer-reference#getblocks]]
   */
-trait GetBlocksMessage extends DataPayload with ExpectsResponse {
+sealed trait GetBlocksMessage extends DataPayload with ExpectsResponse {
 
   /** The protocol version number; the same as sent in the version message.
     */
@@ -90,7 +90,7 @@ trait GetBlocksMessage extends DataPayload with ExpectsResponse {
     */
   def stopHash: DoubleSha256Digest
 
-  override def commandName = NetworkPayload.getBlocksCommandName
+  override def commandName: String = NetworkPayload.getBlocksCommandName
 
   override def bytes: ByteVector = RawGetBlocksMessageSerializer.write(this)
 }
@@ -145,11 +145,11 @@ case class GetDataMessage(
     inventoryCount: CompactSizeUInt,
     inventories: Vector[Inventory])
     extends DataPayload {
-  override def commandName = NetworkPayload.getDataCommandName
+  override def commandName: String = NetworkPayload.getDataCommandName
 
   override def bytes: ByteVector = RawGetDataMessageSerializer.write(this)
 
-  override def toString(): String = {
+  override def toString: String = {
 
     val count = s"inventoryCount=${inventoryCount.toInt}"
     val invs = s"inventories=${val base = inventories.toString
@@ -196,16 +196,16 @@ sealed trait ExpectsResponse {
   * @see
   *   [[https://bitcoin.org/en/developer-reference#getheaders]]
   */
-trait GetHeadersMessage extends DataPayload with ExpectsResponse {
+sealed trait GetHeadersMessage extends DataPayload with ExpectsResponse {
   def version: ProtocolVersion
   def hashCount: CompactSizeUInt
   def hashes: Vector[DoubleSha256Digest]
   def hashStop: DoubleSha256Digest
 
-  override def commandName = NetworkPayload.getHeadersCommandName
+  override def commandName: String = NetworkPayload.getHeadersCommandName
   override def bytes: ByteVector = RawGetHeadersMessageSerializer.write(this)
 
-  override def toString(): String = {
+  override def toString: String = {
     val count = hashCount.toInt
     // only display first hash, otherwise this gets really long
     val hashesStr = {
@@ -291,7 +291,7 @@ object GetHeadersMessage extends Factory[GetHeadersMessage] {
 case class HeadersMessage(count: CompactSizeUInt, headers: Vector[BlockHeader])
     extends DataPayload {
 
-  override def commandName = NetworkPayload.headersCommandName
+  override def commandName: String = NetworkPayload.headersCommandName
 
   override def bytes: ByteVector = RawHeadersMessageSerializer.write(this)
 
@@ -332,7 +332,7 @@ object HeadersMessage extends Factory[HeadersMessage] {
   * @see
   *   [[https://bitcoin.org/en/developer-reference#inv]]
   */
-trait InventoryMessage extends DataPayload {
+sealed trait InventoryMessage extends DataPayload {
 
   /** The number of inventory enteries
     */
@@ -342,11 +342,11 @@ trait InventoryMessage extends DataPayload {
     */
   def inventories: Vector[Inventory]
 
-  override def commandName = NetworkPayload.invCommandName
+  override def commandName: String = NetworkPayload.invCommandName
 
   override def bytes: ByteVector = RawInventoryMessageSerializer.write(this)
 
-  override def toString(): String = {
+  override def toString: String = {
     val invCount = inventoryCount.toInt
     val invList =
       if (invCount > 1) {
@@ -407,7 +407,7 @@ object InventoryMessage extends Factory[InventoryMessage] {
   *   [[https://bitcoin.org/en/developer-reference#mempool]]
   */
 case object MemPoolMessage extends DataPayload {
-  override val commandName = NetworkPayload.memPoolCommandName
+  override val commandName: String = NetworkPayload.memPoolCommandName
   override val bytes: ByteVector = ByteVector.empty
 }
 
@@ -426,7 +426,7 @@ case object MemPoolMessage extends DataPayload {
   */
 case class MerkleBlockMessage(merkleBlock: MerkleBlock) extends DataPayload {
 
-  override val commandName = NetworkPayload.merkleBlockCommandName
+  override val commandName: String = NetworkPayload.merkleBlockCommandName
 
   def bytes: ByteVector = RawMerkleBlockMessageSerializer.write(this)
 
@@ -451,8 +451,8 @@ object MerkleBlockMessage extends Factory[MerkleBlockMessage] {
   * @see
   *   [[https://bitcoin.org/en/developer-reference#notfound]]
   */
-trait NotFoundMessage extends DataPayload with InventoryMessage {
-  override def commandName = NetworkPayload.notFoundCommandName
+sealed trait NotFoundMessage extends DataPayload with InventoryMessage {
+  override def commandName: String = NetworkPayload.notFoundCommandName
   override def bytes: ByteVector = RawNotFoundMessageSerializer.write(this)
 }
 
@@ -493,10 +493,10 @@ object NotFoundMessage extends Factory[NotFoundMessage] {
   */
 case class TransactionMessage(transaction: Transaction) extends DataPayload {
 
-  override val commandName = NetworkPayload.transactionCommandName
+  override val commandName: String = NetworkPayload.transactionCommandName
   override def bytes: ByteVector = RawTransactionMessageSerializer.write(this)
 
-  override def toString(): String = s"TransactionMessage(${transaction.txIdBE})"
+  override def toString: String = s"TransactionMessage(${transaction.txIdBE})"
 }
 
 /** Companion factory object for the TransactionMessage on the p2p network
@@ -526,10 +526,10 @@ sealed trait GossipAddrMessage extends ControlPayload
   * @see
   *   [[https://bitcoin.org/en/developer-reference#addr]]
   */
-trait AddrMessage extends GossipAddrMessage {
+sealed trait AddrMessage extends GossipAddrMessage {
   def ipCount: CompactSizeUInt
   def addresses: Seq[NetworkIpAddress]
-  override def commandName = NetworkPayload.addrCommandName
+  override def commandName: String = NetworkPayload.addrCommandName
   override def bytes: ByteVector = RawAddrMessageSerializer.write(this)
 }
 
@@ -783,7 +783,7 @@ case object SendAddrV2Message extends ControlPayload {
   * specified fee rate into its mempool, and therefore that the peers can skip
   * relaying inv messages for transactions below that fee rate to that node.
   */
-trait FeeFilterMessage extends ControlPayload {
+sealed trait FeeFilterMessage extends ControlPayload {
 
   /** The raw fee rate, in satoshis per kb. This is what is defined in the p2p
     * message
@@ -826,7 +826,7 @@ object FeeFilterMessage extends Factory[FeeFilterMessage] {
   * @see
   *   [[https://bitcoin.org/en/developer-reference#filteradd]]
   */
-trait FilterAddMessage extends ControlPayload {
+sealed trait FilterAddMessage extends ControlPayload {
 
   /** The number of bytes in the following element field.
     */
@@ -840,7 +840,7 @@ trait FilterAddMessage extends ControlPayload {
     */
   def element: ByteVector
 
-  override def commandName = NetworkPayload.filterAddCommandName
+  override def commandName: String = NetworkPayload.filterAddCommandName
 
   override def bytes: ByteVector = RawFilterAddMessageSerializer.write(this)
 }
@@ -879,7 +879,7 @@ object FilterAddMessage extends Factory[FilterAddMessage] {
   *   [[https://bitcoin.org/en/developer-reference#filterclear]]
   */
 case object FilterClearMessage extends ControlPayload {
-  override val commandName = NetworkPayload.filterClearCommandName
+  override val commandName: String = NetworkPayload.filterClearCommandName
   override val bytes: ByteVector = ByteVector.empty
 }
 
@@ -891,12 +891,12 @@ case object FilterClearMessage extends ControlPayload {
   * @see
   *   [[https://bitcoin.org/en/developer-reference#filterload]]
   */
-trait FilterLoadMessage extends ControlPayload {
+sealed trait FilterLoadMessage extends ControlPayload {
 
   /** The underlying bloom filter inside of the FilterLoadMessage */
   def bloomFilter: BloomFilter
 
-  override def commandName = NetworkPayload.filterLoadCommandName
+  override def commandName: String = NetworkPayload.filterLoadCommandName
 
   override def bytes: ByteVector = RawFilterLoadMessageSerializer.write(this)
 }
@@ -957,7 +957,7 @@ object FilterLoadMessage extends Factory[FilterLoadMessage] {
   *   [[https://bitcoin.org/en/developer-reference#getaddr]]
   */
 case object GetAddrMessage extends ControlPayload {
-  override val commandName = NetworkPayload.getAddrCommandName
+  override val commandName: String = NetworkPayload.getAddrCommandName
   override val bytes: ByteVector = ByteVector.empty
 }
 
@@ -968,7 +968,7 @@ case object GetAddrMessage extends ControlPayload {
   * @see
   *   [[https://bitcoin.org/en/developer-reference#ping]]
   */
-trait PingMessage extends ControlPayload {
+sealed trait PingMessage extends ControlPayload {
 
   /** Random nonce assigned to this ping message. The responding pong message
     * will include this nonce to identify the ping message to which it is
@@ -976,7 +976,7 @@ trait PingMessage extends ControlPayload {
     */
   def nonce: UInt64
 
-  override def commandName = NetworkPayload.pingCommandName
+  override def commandName: String = NetworkPayload.pingCommandName
 
   override def bytes: ByteVector = RawPingMessageSerializer.write(this)
 }
@@ -999,18 +999,18 @@ object PingMessage extends Factory[PingMessage] {
   * @see
   *   [[https://bitcoin.org/en/developer-reference#pong]]
   */
-trait PongMessage extends ControlPayload {
+sealed trait PongMessage extends ControlPayload {
 
   /** The nonce which is the nonce in the ping message the peer is responding
     * too
     */
   def nonce: UInt64
 
-  override def commandName = NetworkPayload.pongCommandName
+  override def commandName: String = NetworkPayload.pongCommandName
 
   override def bytes: ByteVector = RawPongMessageSerializer.write(this)
 
-  override def toString(): String = s"PongMessage(${nonce.toBigInt})"
+  override def toString: String = s"PongMessage(${nonce.toBigInt})"
 
 }
 
@@ -1030,7 +1030,7 @@ object PongMessage extends Factory[PongMessage] {
   * @see
   *   [[https://bitcoin.org/en/developer-reference#reject]]
   */
-trait RejectMessage extends ControlPayload {
+sealed trait RejectMessage extends ControlPayload {
 
   /** The number of bytes in the following message field.
     */
@@ -1061,7 +1061,7 @@ trait RejectMessage extends ControlPayload {
     */
   def extra: ByteVector
 
-  override def commandName = NetworkPayload.rejectCommandName
+  override def commandName: String = NetworkPayload.rejectCommandName
 
   override def bytes: ByteVector = RawRejectMessageSerializer.write(this)
 }
@@ -1112,7 +1112,7 @@ object RejectMessage extends Factory[RejectMessage] {
   *   [[https://bitcoin.org/en/developer-reference#sendheaders]]
   */
 case object SendHeadersMessage extends ControlPayload {
-  override def commandName = NetworkPayload.sendHeadersCommandName
+  override def commandName: String = NetworkPayload.sendHeadersCommandName
   override def bytes: ByteVector = ByteVector.empty
 }
 
@@ -1124,7 +1124,7 @@ case object SendHeadersMessage extends ControlPayload {
   *   [[https://bitcoin.org/en/developer-reference#verack]]
   */
 case object VerAckMessage extends ControlPayload {
-  override val commandName = NetworkPayload.verAckCommandName
+  override val commandName: String = NetworkPayload.verAckCommandName
   override val bytes: ByteVector = ByteVector.empty
 }
 
@@ -1173,7 +1173,7 @@ case class CompactFilterMessage(
   val numFilterBytes: CompactSizeUInt = CompactSizeUInt(
     UInt64(filterBytes.length))
 
-  val commandName: String = NetworkPayload.compactFilterCommandName
+  override val commandName: String = NetworkPayload.compactFilterCommandName
   def bytes: ByteVector = RawCompactFilterMessageSerializer.write(this)
 
   override def toString: String = {
@@ -1256,8 +1256,10 @@ case class CompactFilterHeadersMessage(
   val filterHashesLength: CompactSizeUInt = CompactSizeUInt(
     UInt64(filterHashes.length))
 
-  val commandName: String = NetworkPayload.compactFilterHeadersCommandName
-  def bytes: ByteVector = RawCompactFilterHeadersMessageSerializer.write(this)
+  override val commandName: String =
+    NetworkPayload.compactFilterHeadersCommandName
+  override def bytes: ByteVector =
+    RawCompactFilterHeadersMessageSerializer.write(this)
 
   def filterHeaders: Vector[FilterHeader] = {
     val z = FilterHeader(filterHashes.head, previousFilterHeader)
@@ -1284,7 +1286,7 @@ case class CompactFilterHeadersMessage(
 object CompactFilterHeadersMessage
     extends Factory[CompactFilterHeadersMessage] {
 
-  def fromBytes(bytes: ByteVector): CompactFilterHeadersMessage =
+  override def fromBytes(bytes: ByteVector): CompactFilterHeadersMessage =
     RawCompactFilterHeadersMessageSerializer.read(bytes)
 }
 
@@ -1295,9 +1297,10 @@ case class GetCompactFilterCheckPointMessage(
     filterType: FilterType,
     stopHash: DoubleSha256Digest)
     extends DataPayload {
-  val commandName: String = NetworkPayload.getCompactFilterCheckpointCommandName
+  override val commandName: String =
+    NetworkPayload.getCompactFilterCheckpointCommandName
 
-  def bytes: ByteVector =
+  override def bytes: ByteVector =
     RawGetCompactFilterCheckpointMessageSerializer.write(this)
 }
 
@@ -1308,7 +1311,7 @@ object GetCompactFilterCheckPointMessage
     new GetCompactFilterCheckPointMessage(FilterType.Basic, stopHash)
   }
 
-  def fromBytes(bytes: ByteVector): GetCompactFilterCheckPointMessage =
+  override def fromBytes(bytes: ByteVector): GetCompactFilterCheckPointMessage =
     RawGetCompactFilterCheckpointMessageSerializer.read(bytes)
 }
 
@@ -1325,9 +1328,10 @@ case class CompactFilterCheckPointMessage(
   val filterHeadersLength: CompactSizeUInt = CompactSizeUInt(
     UInt64(filterHeaders.length))
 
-  val commandName: String = NetworkPayload.compactFilterCheckpointCommandName
+  override val commandName: String =
+    NetworkPayload.compactFilterCheckpointCommandName
 
-  def bytes: ByteVector =
+  override def bytes: ByteVector =
     RawCompactFilterCheckpointMessageSerializer.write(this)
 
   override def toString: String = {
@@ -1345,7 +1349,7 @@ case class CompactFilterCheckPointMessage(
 object CompactFilterCheckPointMessage
     extends Factory[CompactFilterCheckPointMessage] {
 
-  def fromBytes(bytes: ByteVector): CompactFilterCheckPointMessage =
+  override def fromBytes(bytes: ByteVector): CompactFilterCheckPointMessage =
     RawCompactFilterCheckpointMessageSerializer.read(bytes)
 }
 
@@ -1357,7 +1361,7 @@ object CompactFilterCheckPointMessage
   * connection by first sending a version message.
   * [[https://bitcoin.org/en/developer-reference#version]]
   */
-trait VersionMessage extends ControlPayload {
+sealed trait VersionMessage extends ControlPayload {
 
   /** The highest protocol version understood by the transmitting node. See the
     * protocol version section.
@@ -1440,13 +1444,13 @@ trait VersionMessage extends ControlPayload {
     */
   def relay: Boolean
 
-  override def commandName = NetworkPayload.versionCommandName
+  override def commandName: String = NetworkPayload.versionCommandName
 
   override def bytes: ByteVector = RawVersionMessageSerializer.write(this)
 
   // TODO addressTransServices,  addressTransIpAddress and addressTransPort
   // what do these fields mean?
-  override def toString(): String =
+  override def toString: String =
     s"VersionMessage($version, $services, epoch=${timestamp.toLong}, receiverServices=${addressReceiveIpAddress.bytes.toHex}, receiverAddress=${addressReceiveIpAddress.bytes.toHex}, receiverPort=$addressReceivePort), userAgent=$userAgent, startHeight=${startHeight.toInt}, relay=$relay)"
 
 }
