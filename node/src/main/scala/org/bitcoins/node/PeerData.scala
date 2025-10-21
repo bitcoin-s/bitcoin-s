@@ -4,9 +4,9 @@ import org.apache.pekko.Done
 import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.node.{Peer, PeerWithServices}
-import org.bitcoins.core.p2p.ServiceIdentifier
+import org.bitcoins.core.p2p.{ServiceIdentifier, VersionMessage}
 import org.bitcoins.node.config.NodeAppConfig
-import org.bitcoins.node.networking.peer._
+import org.bitcoins.node.networking.peer.*
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
@@ -22,7 +22,7 @@ sealed trait PeerData {
   def peer: Peer
 
   def peerWithServicesOpt: Option[PeerWithServices] = {
-    _serviceIdentifier.map(PeerWithServices(peer, _))
+    _versionMessage.map(v => PeerWithServices(peer, v.services))
   }
 
   def peerMessageSender: PeerMessageSender
@@ -35,18 +35,23 @@ sealed trait PeerData {
     peerMessageSender.peerConnection
   }
 
-  private var _serviceIdentifier: Option[ServiceIdentifier] = None
+  private var _versionMessage: Option[VersionMessage] = None
 
-  def serviceIdentifier: ServiceIdentifier = {
-    _serviceIdentifier.getOrElse(
-      throw new RuntimeException(
-        s"Tried using ServiceIdentifier for uninitialized peer $peer"
-      )
+  def versionMessage: VersionMessage = _versionMessage.getOrElse {
+    throw new RuntimeException(
+      s"Tried using VersionMessage for uninitialized peer=$peer"
     )
   }
+  def serviceIdentifier: ServiceIdentifier = {
+    versionMessage.services
+  }
 
-  def setServiceIdentifier(serviceIdentifier: ServiceIdentifier): Unit = {
-    _serviceIdentifier = Some(serviceIdentifier)
+  def setVersionMessage(versionMessage: VersionMessage): Unit = {
+    _versionMessage = Some(versionMessage)
+  }
+
+  def userAgent: String = _versionMessage.map(_.userAgent).getOrElse {
+    sys.error(s"Tried using user agent for uninitialized peer=$peer")
   }
 }
 
@@ -102,7 +107,7 @@ case class AttemptToConnectPeerData(
 
   def toPersistentPeerData: PersistentPeerData = {
     val p = PersistentPeerData(peer, peerMessageSender)
-    p.setServiceIdentifier(serviceIdentifier = serviceIdentifier)
+    p.setVersionMessage(versionMessage = versionMessage)
     p
   }
 }

@@ -324,11 +324,11 @@ case class PeerFinder(
     }
   }
 
-  def setServiceIdentifier(
+  def setVersionMessage(
       peer: Peer,
-      serviceIdentifier: ServiceIdentifier
+      versionMessage: VersionMessage
   ): Unit = {
-    _peerData(peer).setServiceIdentifier(serviceIdentifier)
+    _peerData(peer).setVersionMessage(versionMessage)
   }
 
   def popFromCache(peer: Peer): Option[PeerData] = {
@@ -347,12 +347,8 @@ case class PeerFinder(
     _peersToTry.pushAll(peers, priority)
   }
 
-  def onVersionMessage(peer: Peer, versionMsg: VersionMessage): Unit = {
-    if (hasPeer(peer)) {
-      getPeerData(peer).get.setServiceIdentifier(versionMsg.services)
-    } else {
-      logger.warn(s"onVersionMessage called for unknown $peer")
-    }
+  def onVersionMessage(peer: Peer, versionMsg: VersionMessage): Option[Unit] = {
+    getPeerData(peer).map(_.setVersionMessage(versionMsg))
   }
 
   def buildPeerData(p: Peer, isPersistent: Boolean): PeerData = {
