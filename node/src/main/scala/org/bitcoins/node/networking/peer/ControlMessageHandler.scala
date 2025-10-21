@@ -25,10 +25,15 @@ case class ControlMessageHandler(peerFinder: PeerFinder)(implicit
       s"Received control message=${payload.commandName} from peer=$peer")
     payload match {
       case versionMsg: VersionMessage =>
-        peerFinder.onVersionMessage(peer, versionMsg)
-        peerMsgSenderApi
-          .sendVerackMessage()
-          .map(_ => None)
+        peerFinder.onVersionMessage(peer, versionMsg) match {
+          case Some(_) =>
+            peerMsgSenderApi
+              .sendVerackMessage()
+              .map(_ => None)
+          case None =>
+            logger.warn(s"Could not find peer=$peer in PeerFinder!")
+            Future.successful(None)
+        }
 
       case VerAckMessage =>
         val i = ControlMessageHandler.Initialized(peer)
