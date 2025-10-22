@@ -9,12 +9,7 @@ import org.bitcoins.core.protocol.script.descriptor.Descriptor
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.util.SeqWrapper
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
-import org.bitcoins.crypto.{
-  DoubleSha256Digest,
-  DoubleSha256DigestBE,
-  ECPublicKey,
-  Sha256Hash160Digest
-}
+import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
 import play.api.libs.json.JsObject
 
 sealed abstract class OtherResult
@@ -126,51 +121,13 @@ case class MemoryManager(
   *   This is defined as a trait and not just a raw case class (as is done in
   *   other RPC return values) in order to make it possible to deprecate fields.
   */
-trait ValidateAddressResult {
-
+sealed trait ValidateAddressResult {
   def isvalid: Boolean
   def address: Option[BitcoinAddress]
   def scriptPubKey: Option[ScriptPubKey]
   def error_locations: Option[Vector[Int]]
-
-  @deprecated("Use 'getaddressinfo' instead", since = "0.16")
-  def ismine: Option[Boolean]
-
-  @deprecated("Use 'getaddressinfo' instead", since = "0.16")
-  def iswatchonly: Option[Boolean]
   def isscript: Option[Boolean]
-
-  @deprecated("Use 'getaddressinfo' instead", since = "0.16")
-  def script: Option[String]
-
-  @deprecated("Use 'getaddressinfo' instead", since = "0.16")
-  def hex: Option[String]
-
   def sigsrequired: Option[Int]
-
-  @deprecated("Use 'getaddressinfo' instead", since = "0.16")
-  def pubkey: Option[ECPublicKey]
-
-  @deprecated("Use 'getaddressinfo' instead", since = "0.16")
-  def iscompressed: Option[Boolean]
-
-  @deprecated("Use 'getaddressinfo' instead", since = "0.16")
-  def account: Option[String]
-
-  @deprecated("Use 'getaddressinfo' instead", since = "0.16")
-  def hdkeypath: Option[String]
-
-  @deprecated("Use 'getaddressinfo' instead", since = "0.16")
-  def hdmasterkeyid: Option[Sha256Hash160Digest]
-
-  @deprecated("Use 'getaddressinfo' instead", since = "0.16")
-  def ischange: Option[Boolean]
-
-  @deprecated("Use 'getaddressinfo' instead", since = "0.16")
-  def solvable: Option[Boolean]
-
-  @deprecated("Use 'getaddressinfo' instead", since = "0.16")
-  def desc: Option[String]
 }
 
 case class ValidateAddressResultImpl(
@@ -178,20 +135,8 @@ case class ValidateAddressResultImpl(
     address: Option[BitcoinAddress],
     scriptPubKey: Option[ScriptPubKey],
     error_locations: Option[Vector[Int]],
-    ismine: Option[Boolean],
-    iswatchonly: Option[Boolean],
     isscript: Option[Boolean],
-    script: Option[String],
-    hex: Option[String],
-    sigsrequired: Option[Int],
-    pubkey: Option[ECPublicKey],
-    iscompressed: Option[Boolean],
-    account: Option[String],
-    hdkeypath: Option[String],
-    hdmasterkeyid: Option[Sha256Hash160Digest],
-    ischange: Option[Boolean],
-    solvable: Option[Boolean],
-    desc: Option[String]
+    sigsrequired: Option[Int]
 ) extends ValidateAddressResult
 
 case class EstimateSmartFeeResult(

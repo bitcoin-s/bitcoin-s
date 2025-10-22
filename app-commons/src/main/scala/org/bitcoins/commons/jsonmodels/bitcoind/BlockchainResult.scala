@@ -105,7 +105,7 @@ case class GetBlockResult(
     ] // once v29 is minimal supported version, remove Option
 ) extends BlockchainResult
 
-abstract trait GetBlockWithTransactionsResult extends BlockchainResult {
+sealed trait GetBlockWithTransactionsResult extends BlockchainResult {
   def hash: DoubleSha256DigestBE
   def confirmations: Int
   def strippedsize: Int
@@ -181,28 +181,6 @@ case class GetBlockChainInfoResultPostV27(
       String
     ] // once v29 is minimal supported version, remove Option
 ) extends GetBlockChainInfoResult
-
-case class SoftforkPreV19(
-    id: String,
-    version: Int,
-    enforce: Option[Map[String, SoftforkProgressPreV19]],
-    reject: SoftforkProgressPreV19
-) extends BlockchainResult
-
-case class SoftforkProgressPreV19(
-    status: Option[Boolean],
-    found: Option[Int],
-    required: Option[Int],
-    window: Option[Int]
-) extends BlockchainResult
-
-case class Bip9SoftforkPreV19(
-    status: String,
-    bit: Option[Int],
-    startTime: Int,
-    timeout: BigInt,
-    since: Int
-) extends BlockchainResult
 
 sealed trait SoftforkPostV19 extends BlockchainResult
 
@@ -327,23 +305,6 @@ sealed trait GetMemPoolResult extends BlockchainResult {
   def depends: Vector[DoubleSha256DigestBE]
 }
 
-case class GetMemPoolResultPreV19(
-    size: Int,
-    fee: Option[Bitcoins],
-    modifiedfee: Option[Bitcoins],
-    time: UInt32,
-    height: Int,
-    descendantcount: Int,
-    descendantsize: Int,
-    descendantfees: Option[Bitcoins],
-    ancestorcount: Int,
-    ancestorsize: Int,
-    ancestorfees: Option[Bitcoins],
-    wtxid: DoubleSha256DigestBE,
-    fees: FeeInfo,
-    depends: Vector[DoubleSha256DigestBE]
-) extends GetMemPoolResult
-
 // v23 removes 'fee', 'modifiedfee', 'descendantfees', 'ancestorfees'
 case class GetMemPoolResultPostV23(
     vsize: Int,
@@ -379,23 +340,6 @@ sealed trait GetMemPoolEntryResult extends BlockchainResult {
   def fees: FeeInfo
   def depends: Option[Vector[DoubleSha256DigestBE]]
 }
-
-case class GetMemPoolEntryResultPreV19(
-    size: Int,
-    fee: Bitcoins,
-    modifiedfee: Bitcoins,
-    time: UInt32,
-    height: Int,
-    descendantcount: Int,
-    descendantsize: Int,
-    descendantfees: BitcoinFeeUnit,
-    ancestorcount: Int,
-    ancestorsize: Int,
-    ancestorfees: BitcoinFeeUnit,
-    wtxid: DoubleSha256DigestBE,
-    fees: FeeInfo,
-    depends: Option[Vector[DoubleSha256DigestBE]]
-) extends GetMemPoolEntryResult
 
 case class GetMemPoolEntryResultPostV23(
     vsize: Int,
@@ -456,7 +400,7 @@ case class GetMemPoolInfoResultV30(
     total_fee: Bitcoins
 ) extends GetMemPoolInfoResult
 
-sealed abstract trait GetTxOutResult extends BlockchainResult {
+sealed abstract class GetTxOutResult extends BlockchainResult {
   def bestblock: DoubleSha256DigestBE
   def confirmations: Int
   def value: Bitcoins
