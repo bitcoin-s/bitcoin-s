@@ -256,23 +256,22 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   }
 
   it should "pay an invoice and monitor the payment" in {
+    val amt = MilliSatoshis.fromSatoshis(Satoshis(1000))
     val checkPayment = {
       (client: EclairRpcClient, otherClient: EclairRpcClient) =>
         for {
           bitcoind <- bitcoindRpcClientF
-          client1 <- clientF
-          client2 <- otherClientF
-          _ <- EclairRpcTestUtil.openAndConfirmChannel(client1, client2)
+          _ <- EclairRpcTestUtil.openAndConfirmChannel(client, otherClient)
           _ <- EclairRpcTestUtil.awaitEclairInSync(otherClient, bitcoind)
           _ <- EclairRpcTestUtil.awaitEclairInSync(client, bitcoind)
           invoice <- otherClient.createInvoice(description = "abc",
-                                               amountMsat = 50.msats)
+                                               amountMsat = amt)
           info <- otherClient.getInfo
           _ = assert(info.nodeId == invoice.nodeId)
           paymentResult <-
             client.payAndMonitorInvoice(invoice, Some("ext_id"), 3.second, 60)
         } yield {
-          assert(paymentResult.amount == 50.msats)
+          assert(paymentResult.amount == amt)
           assert(paymentResult.externalId.contains("ext_id"))
         }
     }
@@ -281,13 +280,12 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   }
 
   it should "check a payment" in {
+    val amt = MilliSatoshis.fromSatoshis(Satoshis(1000))
     val checkPayment = {
       (client: EclairRpcClient, otherClient: EclairRpcClient) =>
         for {
-          client1 <- clientF
-          client2 <- otherClientF
-          _ <- EclairRpcTestUtil.openAndConfirmChannel(client1, client2)
-          invoice <- otherClient.createInvoice("abc", 50.msats)
+          _ <- EclairRpcTestUtil.openAndConfirmChannel(client, otherClient)
+          invoice <- otherClient.createInvoice("abc", amt)
           info <- otherClient.getInfo
           _ = assert(info.nodeId == invoice.nodeId)
           infos <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
@@ -296,7 +294,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
           _ <- EclairRpcTestUtil.awaitUntilPaymentSucceeded(client, paymentId)
           sentInfo <- client.getSentInfo(invoice.lnTags.paymentHash.hash)
         } yield {
-          assert(sentInfo.head.amount == 50.msats)
+          assert(sentInfo.head.amount == amt)
         }
     }
 
@@ -467,7 +465,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
           (client: EclairRpcClient, otherClient: EclairRpcClient) => {
             otherClient.getInfo.flatMap { info =>
               val amt = Satoshis(10000000)
-              val openedChanF = clientF.flatMap(_.open(info.nodeId, amt))
+              val openedChanF = client.open(info.nodeId, amt)
 
               openedChanF.flatMap { channelId =>
                 val exists = hasChannel(client, channelId)
@@ -598,7 +596,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   }
 
   it should "be able to pay to a route" in {
-    val amt = 50.msats
+    val amt = MilliSatoshis.fromSatoshis(Satoshis(1000))
     val getPayment = {
       (client: EclairRpcClient, otherClient: EclairRpcClient) =>
         {
@@ -650,7 +648,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   }
 
   it should "be able to make a spontaneous payment (keysend)" in {
-    val amt = 50.msats
+    val amt = MilliSatoshis.fromSatoshis(Satoshis(1000))
     val getPayment = {
       (client: EclairRpcClient, otherClient: EclairRpcClient) =>
         {
@@ -665,7 +663,6 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
               channels.exists(_.state == ChannelState.NORMAL),
               "Nodes did not have open channel!"
             )
-            preimage = PaymentPreimage.random
             wsEventP = Promise[WebSocketEvent]()
             _ <- client.connectToWebSocket { event =>
               if (!wsEventP.isCompleted) {
@@ -711,16 +708,14 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   }
 
   it should "be able to generate an invoice with amount and pay it and close the channel" in {
-    val amt = 50.msats
+    val amt = MilliSatoshis.fromSatoshis(Satoshis(1000))
 
     val getPaymentWithAmount = {
       (client: EclairRpcClient, otherClient: EclairRpcClient) =>
         {
           for {
-            client1 <- clientF
-            client2 <- otherClientF
             channelId <-
-              EclairRpcTestUtil.openAndConfirmChannel(client1, client2)
+              EclairRpcTestUtil.openAndConfirmChannel(client, otherClient)
             preimage = PaymentPreimage.random
             invoice <- otherClient.createInvoice("test", amt, preimage)
             paymentId <- client.payInvoice(invoice)
@@ -730,6 +725,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
             bitcoind <- bitcoindRpcClientF
             addr <- bitcoind.getNewAddress
             _ <- closeHelper(client, channelId, addr)
+            _ <- EclairRpcTestUtil.awaitEclairInSync(otherClient, bitcoind)
             channel <- otherClient.channel(channelId)
           } yield {
             assert(succeeded.nonEmpty)
@@ -761,7 +757,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   }
 
   it should "be able to generate an invoice without amount and pay it" in {
-    val amt = 50.msats
+    val amt = MilliSatoshis.fromSatoshis(Satoshis(1000))
     val getPaymentNoAmount = {
       (client: EclairRpcClient, otherClient: EclairRpcClient) =>
         {
