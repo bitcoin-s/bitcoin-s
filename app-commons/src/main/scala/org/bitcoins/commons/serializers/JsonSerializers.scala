@@ -119,21 +119,8 @@ object JsonSerializers {
     override def writes(key: ExtPrivateKey): JsValue = JsString(key.toString)
   }
 
-  // Transaction Models
-  implicit val rpcScriptPubKeyPreV22Reads: Reads[RpcScriptPubKeyPreV22] =
-    ((__ \ "asm").read[String] and
-      (__ \ "hex").read[String] and
-      (__ \ "reqSigs").readNullable[Int] and
-      (__ \ "type").read[ScriptType] and
-      (__ \ "addresses")
-        .readNullable[Vector[BitcoinAddress]])(RpcScriptPubKeyPreV22.apply _)
-
   implicit val rpcScriptPubKeyPostV22Reads: Reads[RpcScriptPubKeyPostV22] =
     Json.reads[RpcScriptPubKeyPostV22]
-
-  implicit val rpcTransactionOutputPreV22Reads
-      : Reads[RpcTransactionOutputPreV22] =
-    Json.reads[RpcTransactionOutputPreV22]
 
   implicit val rpcTransactionOutputV22Reads: Reads[RpcTransactionOutputV22] =
     Json.reads[RpcTransactionOutputV22]
@@ -186,9 +173,6 @@ object JsonSerializers {
   implicit val getNetworkInfoV28Reads: Reads[GetNetworkInfoResultV28] =
     Json.reads[GetNetworkInfoResultV28]
 
-  implicit val getNetworkInfoPostV21Reads: Reads[GetNetworkInfoResultPostV21] =
-    Json.reads[GetNetworkInfoResultPostV21]
-
   implicit val getNetworkInfoReads: Reads[GetNetworkInfoResult] = {
     Json.reads[GetNetworkInfoResult]
   }
@@ -224,9 +208,6 @@ object JsonSerializers {
   implicit val OutputReferenceWrites: OWrites[OutputReference] =
     Json.writes[OutputReference]
 
-  implicit val peerNetworkInfoPreV21Reads: Reads[PeerNetworkInfoPreV21] =
-    Json.reads[PeerNetworkInfoPreV21]
-
   implicit val peerNetworkInfoPostV21Reads: Reads[PeerNetworkInfoPostV21] =
     Json.reads[PeerNetworkInfoPostV21]
 
@@ -253,9 +234,6 @@ object JsonSerializers {
   implicit val nodeBanPostV22Reads: Reads[NodeBanPostV22] =
     Json.reads[NodeBanPostV22]
 
-  implicit val nodeBanPreV20Reads: Reads[NodeBanPreV20] =
-    Json.reads[NodeBanPreV20]
-
   // Blockchain Models
   implicit val dumpTxOutSetResultReads: Reads[DumpTxOutSetResult] =
     Json.reads[DumpTxOutSetResult]
@@ -270,15 +248,6 @@ object JsonSerializers {
   implicit val getBlockWithTransactionsResultV22Reads
       : Reads[GetBlockWithTransactionsResultV22] =
     Json.reads[GetBlockWithTransactionsResultV22]
-
-  implicit val softforkProgressPreV19Reads: Reads[SoftforkProgressPreV19] =
-    Json.reads[SoftforkProgressPreV19]
-
-  implicit val softforkPreV19Reads: Reads[SoftforkPreV19] =
-    Json.reads[SoftforkPreV19]
-
-  implicit val bip9SoftforkPreV19Reads: Reads[Bip9SoftforkPreV19] =
-    Json.reads[Bip9SoftforkPreV19]
 
   implicit val bip9SoftforkDetailsReads: Reads[Bip9SoftforkDetails] =
     Json.reads[Bip9SoftforkDetails]
@@ -310,15 +279,8 @@ object JsonSerializers {
 
   implicit val feeInfoReads: Reads[FeeInfo] = Json.reads[FeeInfo]
 
-  implicit val getMemPoolResultPreV19Reads: Reads[GetMemPoolResultPreV19] =
-    Json.reads[GetMemPoolResultPreV19]
-
   implicit val getMemPoolResultPostV23Reads: Reads[GetMemPoolResultPostV23] =
     Json.reads[GetMemPoolResultPostV23]
-
-  implicit val getMemPoolEntryResultPreV19Reads
-      : Reads[GetMemPoolEntryResultPreV19] =
-    Json.reads[GetMemPoolEntryResultPreV19]
 
   implicit val getMemPoolEntryResultPostV23Reads
       : Reads[GetMemPoolEntryResultPostV23] =
@@ -913,21 +875,10 @@ object JsonSerializers {
   implicit val serializedPSBTWrites: Writes[SerializedPSBT] =
     Json.writes[SerializedPSBT]
 
-  // Map stuff
-  implicit def mapDoubleSha256DigestReadsPreV19
-      : Reads[Map[DoubleSha256Digest, GetMemPoolResultPreV19]] =
-    Reads.mapReads[DoubleSha256Digest, GetMemPoolResultPreV19](s =>
-      JsSuccess(DoubleSha256Digest.fromHex(s)))
-
   implicit def mapDoubleSha256DigestReadsPostV23
       : Reads[Map[DoubleSha256Digest, GetMemPoolResultPostV23]] =
     Reads.mapReads[DoubleSha256Digest, GetMemPoolResultPostV23](s =>
       JsSuccess(DoubleSha256Digest.fromHex(s)))
-
-  implicit def mapDoubleSha256DigestBEReadsPreV19
-      : Reads[Map[DoubleSha256DigestBE, GetMemPoolResultPreV19]] =
-    Reads.mapReads[DoubleSha256DigestBE, GetMemPoolResultPreV19](s =>
-      JsSuccess(DoubleSha256DigestBE.fromHex(s)))
 
   implicit def mapDoubleSha256DigestBEReadsPostV23
       : Reads[Map[DoubleSha256DigestBE, GetMemPoolResultPostV23]] =

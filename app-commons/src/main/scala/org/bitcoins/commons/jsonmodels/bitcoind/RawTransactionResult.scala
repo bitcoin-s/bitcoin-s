@@ -42,12 +42,6 @@ sealed trait RpcTransactionOutput extends RawTransactionResult {
   def scriptPubKey: RpcScriptPubKey
 }
 
-case class RpcTransactionOutputPreV22(
-    value: Bitcoins,
-    n: Int,
-    scriptPubKey: RpcScriptPubKeyPreV22
-) extends RpcTransactionOutput
-
 case class RpcTransactionOutputV22(
     value: Bitcoins,
     n: Int,
@@ -60,14 +54,6 @@ sealed trait RpcScriptPubKey extends RawTransactionResult {
   def `type`: ScriptType
   def addresses: Option[Vector[BitcoinAddress]]
 }
-
-case class RpcScriptPubKeyPreV22(
-    asm: String,
-    hex: String,
-    reqSigs: Option[Int],
-    `type`: ScriptType,
-    addresses: Option[Vector[BitcoinAddress]]
-) extends RpcScriptPubKey
 
 case class RpcScriptPubKeyPostV22(
     asm: String,

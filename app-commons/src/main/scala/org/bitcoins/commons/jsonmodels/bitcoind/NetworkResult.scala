@@ -71,25 +71,6 @@ case class GetNetworkInfoResultV28(
     warnings: Vector[String]
 ) extends GetNetworkInfoResult
 
-case class GetNetworkInfoResultPostV21(
-    version: Int,
-    subversion: String,
-    protocolversion: Int,
-    localservices: String,
-    localservicesnames: Option[Vector[ServiceIdentifier]],
-    localrelay: Boolean,
-    timeoffset: Int,
-    networkactive: Boolean,
-    connections: Int,
-    connections_in: Int,
-    connections_out: Int,
-    networks: Vector[Network],
-    relayfee: Bitcoins,
-    incrementalfee: Bitcoins,
-    localaddresses: Vector[NetworkAddress],
-    warnings: String
-) extends GetNetworkInfoResult
-
 case class Network(
     name: String,
     limited: Boolean,
@@ -141,7 +122,7 @@ case class PeerInfoResponseV25(
   override val addnode: Boolean = connection_type == "manual"
 }
 
-trait PeerNetworkInfo extends NetworkResult {
+sealed trait PeerNetworkInfo extends NetworkResult {
   def addr: URI
   def addrbind: URI
   def addrlocal: Option[URI]
@@ -158,24 +139,6 @@ trait PeerNetworkInfo extends NetworkResult {
   def minping: Option[BigDecimal]
   def pingwait: Option[BigDecimal]
 }
-
-case class PeerNetworkInfoPreV21(
-    addr: URI,
-    addrbind: URI,
-    addrlocal: Option[URI],
-    services: String,
-    servicesnames: Option[Vector[ServiceIdentifier]],
-    relaytxes: Boolean,
-    lastsend: UInt32,
-    lastrecv: UInt32,
-    bytessent: Int,
-    bytesrecv: Int,
-    conntime: UInt32,
-    timeoffset: Int,
-    pingtime: Option[BigDecimal],
-    minping: Option[BigDecimal],
-    pingwait: Option[BigDecimal]
-) extends PeerNetworkInfo
 
 case class PeerNetworkInfoPostV21(
     addr: URI,
@@ -204,13 +167,6 @@ trait NodeBan extends NetworkResult {
   def banned_until: UInt32
   def ban_created: UInt32
 }
-
-case class NodeBanPreV20(
-    address: URI,
-    banned_until: UInt32,
-    ban_created: UInt32,
-    ban_reason: String
-) extends NodeBan
 
 case class NodeBanPostV22(
     address: URI,
