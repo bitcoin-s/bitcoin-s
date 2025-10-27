@@ -1,12 +1,19 @@
 package org.bitcoins.node
 
 import org.bitcoins.asyncutil.AsyncUtil
+import org.bitcoins.chain.blockchain.ChainHandler
+import org.bitcoins.core.api.node.PeerWithServices
+import org.bitcoins.core.api.wallet.WalletApi
 import org.bitcoins.core.currency.*
+import org.bitcoins.core.p2p.BlockMessage
 import org.bitcoins.core.protocol.script.MultiSignatureScriptPubKey
 import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.core.wallet.rescan.RescanState.RescanStarted
+import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.crypto.ECPublicKey
+import org.bitcoins.node.NodeState.DoneSyncing
+import org.bitcoins.node.networking.peer.DataMessageHandler
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.async.TestAsyncUtil
@@ -323,6 +330,63 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
                                             maxTries = 100)
         balanceAfterRescan <- wallet.getBalance()
       } yield assert(balanceAfterRescan == initBalance)
+  }
+
+  it must "properly process a block when we are seeing the block for the first time" in {
+    param =>
+      val NeutrinoNodeFundedWalletBitcoind(node, wallet, bitcoind) = param
+      // for the case where we find out about a block header by seeing the block gossiped on the network
+      // previously we had a bug where we would process the header, but drop the actual block itself on the floor
+      for {
+        _ <- NodeTestUtil.awaitSyncAndIBD(node, bitcoind)
+        address <- wallet.getNewAddress()
+        _ <- bitcoind.sendToAddress(address, Bitcoins.one)
+        _ <- AsyncUtil.retryUntilSatisfiedF(
+          () => {
+            wallet.utxoHandling
+              .getUtxos(TxoState.BroadcastReceived)
+              .map(utxos =>
+                utxos.exists(_.output.scriptPubKey == address.scriptPubKey))
+          },
+          interval = 1.second
+        )
+
+        peer1 <- NodeTestUtil.getBitcoindPeer(bitcoind)
+        map = node.peerManager.peerWithServicesDataMap
+        _ <- node.peerManager.disconnectPeer(peer1)
+        _ <- NodeTestUtil.awaitConnectionCount(node, 0)
+        hashes <- bitcoind.generate(1)
+        block <- bitcoind.getBlockRaw(hashes.head)
+        dmh = buildDummyDmh(node, wallet, map)
+        peerData = map.filter(_._1.peer == peer1).values.head
+        _ <- dmh.handleDataPayload(BlockMessage(block), peerData)
+        pending <- wallet.utxoHandling
+          .getUtxos(TxoState.PendingConfirmationsReceived)
+      } yield {
+        assert(pending.exists(_.output.scriptPubKey == address.scriptPubKey))
+      }
+  }
+
+  private def buildDummyDmh(
+      node: NeutrinoNode,
+      wallet: WalletApi,
+      peerMap: Map[PeerWithServices, PersistentPeerData])
+      : DataMessageHandler = {
+    DataMessageHandler(
+      chainApi =
+        ChainHandler.fromDatabase()(node.executionContext, node.chainConfig),
+      walletCreationTimeOpt = Some(wallet.creationTime),
+      peerManager = node.peerManager,
+      state = DoneSyncing(
+        peerWithServicesDataMap = peerMap,
+        waitingForDisconnection = Set.empty,
+        peerFinder = PeerFinder(
+          peerManagerApi = node.peerManager,
+          paramPeers = Vector.empty,
+          queue = node.peerManager.queue
+        )(node.executionContext, node.system, node.nodeConfig, node.chainConfig)
+      )
+    )(node.executionContext, node.nodeConfig, node.chainConfig)
   }
 
 }
