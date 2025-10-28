@@ -319,11 +319,15 @@ case class DataMessageHandler(
                 )
                 val headersMessage =
                   HeadersMessage(CompactSizeUInt.one, Vector(block.blockHeader))
-                val newDmhF = handleDataPayload(
-                  payload = headersMessage,
-                  peerData = peerData
-                )
-                newDmhF
+                for {
+                  newDmh <- handleDataPayload(
+                    payload = headersMessage,
+                    peerData = peerData
+                  )
+                  _ <- appConfig.callBacks
+                    .executeOnBlockReceivedCallbacks(block)
+                    .map(_ => this)
+                } yield newDmh
               } else {
                 logger.info(
                   s"Received block=${block.blockHeader.hash.flip.hex} from peer=${peer} state=$state"
