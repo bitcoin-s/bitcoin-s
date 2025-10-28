@@ -331,10 +331,10 @@ abstract class NodeTestUtil extends P2PLogger {
   ): Future[NeutrinoNode] = {
     val stoppedConfigF = for {
       _ <- initNode.stop()
-      _ <- initNode.nodeConfig.stop()
+      _ <- initNode.nodeAppConfig.stop()
     } yield ()
     val newNodeAppConfigF =
-      stoppedConfigF.map(_ => initNode.nodeConfig.withOverrides(config))
+      stoppedConfigF.map(_ => initNode.nodeAppConfig.withOverrides(config))
     val nodeF = {
       for {
         newNodeAppConfig <- newNodeAppConfigF
@@ -342,11 +342,8 @@ abstract class NodeTestUtil extends P2PLogger {
       } yield {
         NeutrinoNode(
           walletCreationTimeOpt = initNode.walletCreationTimeOpt,
-          nodeConfig = newNodeAppConfig,
-          chainConfig = initNode.chainAppConfig,
-          actorSystem = initNode.system,
           paramPeers = initNode.paramPeers
-        )
+        )(newNodeAppConfig, initNode.chainAppConfig, initNode.system)
       }
     }
 

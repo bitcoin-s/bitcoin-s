@@ -36,23 +36,19 @@ import scala.concurrent.{Await, Future}
 
 case class NeutrinoNode(
     walletCreationTimeOpt: Option[Instant],
-    nodeConfig: NodeAppConfig,
-    chainConfig: ChainAppConfig,
-    actorSystem: ActorSystem,
     paramPeers: Vector[Peer]
-) extends Node
+)(
+    implicit override val nodeAppConfig: NodeAppConfig,
+    implicit override val chainAppConfig: ChainAppConfig,
+    implicit override val system: ActorSystem)
+    extends Node
     with SourceQueue[NodeStreamMessage] {
   require(
-    nodeConfig.nodeType == NodeType.NeutrinoNode,
-    s"We need our Neutrino mode enabled to be able to construct a Neutrino node, got=${nodeConfig.nodeType}!"
+    nodeAppConfig.nodeType == NodeType.NeutrinoNode,
+    s"We need our Neutrino mode enabled to be able to construct a Neutrino node, got=${nodeAppConfig.nodeType}!"
   )
 
   private val isStarted: AtomicBoolean = new AtomicBoolean(false)
-  implicit override def system: ActorSystem = actorSystem
-
-  implicit override def nodeAppConfig: NodeAppConfig = nodeConfig
-
-  implicit override def chainAppConfig: ChainAppConfig = chainConfig
 
   private val dataMessageStreamSource: Source[
     NodeStreamMessage,

@@ -143,7 +143,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
           HeadersMessage(headers = Vector(invalidHeader))
         val sendFs = {
           val count = 1
-            .to(node.nodeConfig.maxInvalidResponsesAllowed + 1)
+            .to(node.nodeAppConfig.maxInvalidResponsesAllowed + 1)
           FutureUtil.sequentially[Int, Unit](count) { _ =>
             val msg =
               NodeStreamMessage.DataMessageWrapper(invalidHeaderMessage, peer)

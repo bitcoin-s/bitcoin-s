@@ -37,8 +37,8 @@ trait NodeUnitTest extends BaseNodeTest {
         )
         // we aren't calling node.start(), but we need to call appConfig.start()
         // to make sure migrations are run
-        _ <- node.chainConfig.start()
-        _ <- node.nodeConfig.start()
+        _ <- node.chainAppConfig.start()
+        _ <- node.nodeAppConfig.start()
       } yield node
     }
 
@@ -152,7 +152,7 @@ object NodeUnitTest extends P2PLogger {
       chainConfStartedF.map(_ => buildNeutrinoNode(peer, walletCreationTimeOpt))
     for {
       node <- nodeF
-      _ <- node.nodeConfig.start()
+      _ <- node.nodeAppConfig.start()
       startedNode <- node.start()
     } yield {
       startedNode
@@ -169,9 +169,6 @@ object NodeUnitTest extends P2PLogger {
   ): NeutrinoNode = {
     NeutrinoNode(
       walletCreationTimeOpt,
-      nodeConf,
-      chainConf,
-      system,
       paramPeers = Vector(peer)
     )
   }
@@ -394,10 +391,7 @@ object NodeUnitTest extends P2PLogger {
     } yield {
       NeutrinoNode(
         walletCreationTimeOpt,
-        paramPeers = Vector(peer),
-        nodeConfig = nodeAppConfig,
-        chainConfig = chainAppConfig,
-        actorSystem = system
+        paramPeers = Vector(peer)
       )
     }
 
@@ -426,10 +420,7 @@ object NodeUnitTest extends P2PLogger {
     } yield {
       NeutrinoNode(
         walletCreationTimeOpt,
-        paramPeers = Vector(peer),
-        nodeConfig = nodeAppConfig,
-        chainConfig = chainAppConfig,
-        actorSystem = system
+        paramPeers = Vector(peer)
       )
     }
 
@@ -462,10 +453,7 @@ object NodeUnitTest extends P2PLogger {
     } yield {
       NeutrinoNode(
         walletCreationTimeOpt = creationTimeOpt,
-        paramPeers = peers,
-        nodeConfig = nodeAppConfig,
-        chainConfig = chainAppConfig,
-        actorSystem = system
+        paramPeers = peers
       )
     }
 

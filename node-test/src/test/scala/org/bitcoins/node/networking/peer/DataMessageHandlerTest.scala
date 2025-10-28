@@ -65,7 +65,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
           peerManagerApi = peerManager,
           paramPeers = Vector.empty,
           queue = node
-        )(system.dispatcher, system, node.nodeConfig, node.chainConfig)
+        )(system.dispatcher, system, node.nodeAppConfig, node.chainAppConfig)
         dataMessageHandler = DataMessageHandler(
           chainApi = chainApi,
           walletCreationTimeOpt = None,
@@ -77,7 +77,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
             peerFinder = peerFinder,
             sentQuery = Instant.now()
           )
-        )(node.executionContext, node.nodeAppConfig, node.chainConfig)
+        )(node.executionContext, node.nodeAppConfig, node.chainAppConfig)
 
         // Use signet genesis block header, this should be invalid for regtest
         invalidPayload =
@@ -211,14 +211,14 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         peer = peerManager.peers.head
         chainApi = ChainHandler.fromDatabase()(
           executionContext,
-          node.chainConfig
+          node.chainAppConfig
         )
         _ = require(peerManager.getPeerData(peer).isDefined)
         peerFinder = PeerFinder(
           peerManagerApi = peerManager,
           paramPeers = Vector.empty,
           queue = node
-        )(system.dispatcher, system, node.nodeConfig, node.chainConfig)
+        )(system.dispatcher, system, node.nodeAppConfig, node.chainAppConfig)
         dataMessageHandler = DataMessageHandler(
           chainApi = chainApi,
           walletCreationTimeOpt = None,
@@ -230,7 +230,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
             peerFinder = peerFinder,
             sentQuery = Instant.now()
           )
-        )(node.executionContext, node.nodeAppConfig, node.chainConfig)
+        )(node.executionContext, node.nodeAppConfig, node.chainAppConfig)
 
         // disconnect our node from bitcoind, then
         // use bitcoind to generate 2 blocks, and then try to send the headers
@@ -254,7 +254,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         newDmh1 <- newDmh0.handleDataPayload(payload1, peerData)
         blockCount <- chainApi.getBlockCount()
         _ <- node.stop()
-        _ <- node.nodeConfig.stop()
+        _ <- node.nodeAppConfig.stop()
       } yield {
         // we should have processed both headers
         assert(blockCount == initBlockCount + 2)
@@ -274,14 +274,14 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         peer = peerManager.peers.head
         chainApi = ChainHandler.fromDatabase()(
           executionContext,
-          node.chainConfig
+          node.chainAppConfig
         )
         _ = require(peerManager.getPeerData(peer).isDefined)
         peerFinder = PeerFinder(
           peerManagerApi = peerManager,
           paramPeers = Vector.empty,
           queue = node
-        )(system.dispatcher, system, node.nodeConfig, node.chainConfig)
+        )(system.dispatcher, system, node.nodeAppConfig, node.chainAppConfig)
         sentQuery0 = Instant.now()
         dataMessageHandler = DataMessageHandler(
           chainApi = chainApi,
@@ -294,7 +294,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
             peerFinder = peerFinder,
             sentQuery = sentQuery0
           )
-        )(node.executionContext, node.nodeAppConfig, node.chainConfig)
+        )(node.executionContext, node.nodeAppConfig, node.chainAppConfig)
 
         // disconnect our node from bitcoind, then
         // use bitcoind to generate 2,000 blocks, and then try to send the headers
@@ -304,7 +304,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         _ <- NodeTestUtil.disconnectNode(bitcoind, node)
         // fully functioning node no longer needed so shut it down
         _ <- node.stop()
-        _ <- node.nodeConfig.stop()
+        _ <- node.nodeAppConfig.stop()
         hashes <- bitcoind.generate(2000)
         blockHeaders <- Source(hashes)
           .mapAsync(FutureUtil.getParallelism)(bitcoind.getBlockHeaderRaw)
@@ -325,7 +325,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
   ): Future[NeutrinoNode] = {
 
     require(
-      initNode.nodeConfig.queryWaitTime != queryWaitTime,
+      initNode.nodeAppConfig.queryWaitTime != queryWaitTime,
       s"maxConnectedPeers must be different"
     )
     // make a custom config, set the inactivity timeout very low

@@ -237,9 +237,6 @@ object NodeAppConfig extends AppConfigFactoryActorSystem[NodeAppConfig] {
       case NodeType.NeutrinoNode =>
         val n = NeutrinoNode(
           walletCreationTimeOpt,
-          nodeConf,
-          chainConf,
-          system,
           paramPeers = peers
         )
         Future.successful(n)

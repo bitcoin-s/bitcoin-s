@@ -270,9 +270,10 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         _ <- NodeTestUtil.awaitSyncAndIBD(node, bitcoind)
         _ <- node.stop()
         // drop all compact filter headers / filters
-        _ <- CompactFilterHeaderDAO()(executionContext, node.chainConfig)
+        _ <- CompactFilterHeaderDAO()(executionContext, node.chainAppConfig)
           .deleteAll()
-        _ <- CompactFilterDAO()(executionContext, node.chainConfig).deleteAll()
+        _ <- CompactFilterDAO()(executionContext, node.chainAppConfig)
+          .deleteAll()
         _ <- bitcoind.generate(1)
         // restart the node
         _ <- node.start()
@@ -418,7 +419,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         _ <- AsyncUtil.nonBlockingSleep(5.second)
         connCount <- node.getConnectionCount
         _ <- node.stop()
-        _ <- node.nodeConfig.stop()
+        _ <- node.nodeAppConfig.stop()
       } yield {
         assert(connCount == max)
       }
@@ -441,7 +442,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
           HeadersMessage(headers = Vector(invalidHeader))
         val sendFs = {
           val count = 1
-            .to(node.nodeConfig.maxInvalidResponsesAllowed + 1)
+            .to(node.nodeAppConfig.maxInvalidResponsesAllowed + 1)
           FutureUtil.sequentially[Int, Unit](count) { _ =>
             val msg =
               NodeStreamMessage.DataMessageWrapper(invalidHeaderMessage, peer)
@@ -485,7 +486,7 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
   ): Future[NeutrinoNode] = {
 
     require(
-      initNode.nodeConfig.maxConnectedPeers != maxConnectedPeers,
+      initNode.nodeAppConfig.maxConnectedPeers != maxConnectedPeers,
       s"maxConnectedPeers must be different"
     )
     // make a custom config, set the inactivity timeout very low
