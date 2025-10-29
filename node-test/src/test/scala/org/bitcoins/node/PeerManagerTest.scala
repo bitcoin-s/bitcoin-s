@@ -97,7 +97,7 @@ class PeerManagerTest extends NodeTestWithCachedBitcoindNewest {
         timestamp = Instant.now()
         _ <- NodeTestUtil.disconnectNode(bitcoind, node)
         addrBytes = PeerDAOHelper.getAddrBytes(peer)
-        peerDb <- PeerDAO()(node.nodeConfig, system.dispatcher)
+        peerDb <- PeerDAO()(node.nodeAppConfig, system.dispatcher)
           .read((addrBytes, peer.port))
           .map(_.get)
       } yield {

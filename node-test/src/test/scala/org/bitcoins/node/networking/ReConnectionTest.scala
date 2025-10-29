@@ -60,7 +60,7 @@ class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
           expectedConnectionCount = 0
         )
         _ <- started.stop()
-        _ <- started.nodeConfig.stop()
+        _ <- started.nodeAppConfig.stop()
       } yield {
         succeed
       }
@@ -86,7 +86,7 @@ class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
         _ <- NodeTestUtil.awaitConnectionCount(started, 1)
         _ <- started.peerManager.isConnected(bitcoindPeer)
         _ <- started.stop()
-        _ <- started.nodeConfig.stop()
+        _ <- started.nodeAppConfig.stop()
       } yield {
         succeed
       }

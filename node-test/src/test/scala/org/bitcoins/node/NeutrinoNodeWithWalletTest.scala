@@ -374,7 +374,7 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
       : DataMessageHandler = {
     DataMessageHandler(
       chainApi =
-        ChainHandler.fromDatabase()(node.executionContext, node.chainConfig),
+        ChainHandler.fromDatabase()(node.executionContext, node.chainAppConfig),
       walletCreationTimeOpt = Some(wallet.creationTime),
       peerManager = node.peerManager,
       state = DoneSyncing(
@@ -384,9 +384,12 @@ class NeutrinoNodeWithWalletTest extends NodeTestWithCachedBitcoindNewest {
           peerManagerApi = node.peerManager,
           paramPeers = Vector.empty,
           queue = node.peerManager.queue
-        )(node.executionContext, node.system, node.nodeConfig, node.chainConfig)
+        )(node.executionContext,
+          node.system,
+          node.nodeAppConfig,
+          node.chainAppConfig)
       )
-    )(node.executionContext, node.nodeConfig, node.chainConfig)
+    )(node.executionContext, node.nodeAppConfig, node.chainAppConfig)
   }
 
 }
