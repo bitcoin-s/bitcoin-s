@@ -433,7 +433,13 @@ case class TaprootTxSigComponent(
     outputMap(outpoint)
   }
 
-  val fundingOutputs: Vector[TransactionOutput] = outputMap.values.toVector
+  // BIP-341 requires outputs to be ordered according to transaction inputs
+  // Cannot use outputMap.values.toVector because Map does not guarantee order
+  val fundingOutputs: Vector[TransactionOutput] = {
+    transaction.inputs.map { input =>
+      outputMap(input.previousOutput)
+    }.toVector
+  }
 
   override def scriptPubKey: TaprootScriptPubKey = {
     fundingOutput.scriptPubKey.asInstanceOf[TaprootScriptPubKey]
