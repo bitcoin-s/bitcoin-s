@@ -109,10 +109,7 @@ val nodeF = for {
 } yield {
     NeutrinoNode(
         walletCreationTimeOpt = None, //you can set this to only sync compact filters after the timestamp
-        paramPeers = Vector(peer),
-        nodeConfig = nodeConfig,
-        chainConfig = chainConfig,
-        actorSystem = system)
+        paramPeers = Vector(peer))
 }
 
 //let's start it
