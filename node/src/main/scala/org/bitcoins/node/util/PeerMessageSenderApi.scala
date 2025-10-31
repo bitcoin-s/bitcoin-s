@@ -1,5 +1,6 @@
 package org.bitcoins.node.util
 
+import org.apache.pekko.stream.QueueOfferResult
 import org.bitcoins.core.api.chain.{ChainApi, FilterSyncMarker}
 import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.api.node.constant.NodeConstants
@@ -30,48 +31,50 @@ trait PeerMessageSenderApi {
   def sendGetDataMessage(
       typeIdentifier: TypeIdentifier,
       hash: DoubleSha256DigestBE
-  ): Future[Unit] = {
+  ): Future[QueueOfferResult] = {
     sendGetDataMessages(typeIdentifier, Vector(hash))
   }
 
   def sendGetDataMessages(
       typeIdentifier: TypeIdentifier,
       hashes: Vector[DoubleSha256DigestBE]
-  ): Future[Unit]
+  ): Future[QueueOfferResult]
 
-  def sendGetHeadersMessage(hashes: Vector[DoubleSha256DigestBE]): Future[Unit]
+  def sendGetHeadersMessage(
+      hashes: Vector[DoubleSha256DigestBE]): Future[QueueOfferResult]
 
-  def sendGetHeadersMessage(lastHash: DoubleSha256DigestBE): Future[Unit] = {
+  def sendGetHeadersMessage(
+      lastHash: DoubleSha256DigestBE): Future[QueueOfferResult] = {
     sendGetHeadersMessage(Vector(lastHash))
   }
 
-  def sendMsg(msg: NetworkPayload): Future[Unit]
+  def sendMsg(msg: NetworkPayload): Future[QueueOfferResult]
 
   def sendGetCompactFilterHeadersMessage(
       filterSyncMarker: FilterSyncMarker
-  ): Future[Unit]
+  ): Future[QueueOfferResult]
 
-  def sendGetCompactFiltersMessage(filterSyncMarker: FilterSyncMarker)(implicit
-      ec: ExecutionContext
-  ): Future[Unit]
+  def sendGetCompactFiltersMessage(
+      filterSyncMarker: FilterSyncMarker): Future[QueueOfferResult]
 
-  def sendInventoryMessage(transactions: Vector[Transaction]): Future[Unit]
+  def sendInventoryMessage(
+      transactions: Vector[Transaction]): Future[QueueOfferResult]
 
-  def sendSendAddrV2Message(): Future[Unit] = {
+  def sendSendAddrV2Message(): Future[QueueOfferResult] = {
     sendMsg(SendAddrV2Message)
   }
 
-  def sendGetAddrMessage(): Future[Unit] = {
+  def sendGetAddrMessage(): Future[QueueOfferResult] = {
     sendMsg(GetAddrMessage)
   }
 
   /** Responds to a ping message */
-  def sendPong(ping: PingMessage): Future[Unit] = {
+  def sendPong(ping: PingMessage): Future[QueueOfferResult] = {
     val pong = PongMessage(ping.nonce)
     sendMsg(pong)
   }
 
-  def sendHeadersMessage(): Future[Unit] = {
+  def sendHeadersMessage(): Future[QueueOfferResult] = {
     val sendHeadersMsg = SendHeadersMessage
     sendMsg(sendHeadersMsg)
   }
@@ -79,11 +82,14 @@ trait PeerMessageSenderApi {
   /** Sends a [[org.bitcoins.core.p2p.VersionMessage VersionMessage]] to our
     * peer
     */
-  def sendVersionMessage()(implicit conf: NodeAppConfig): Future[Unit]
+  def sendVersionMessage()(implicit
+      conf: NodeAppConfig): Future[QueueOfferResult]
 
   def sendVersionMessage(
       chainApi: ChainApi
-  )(implicit ec: ExecutionContext, conf: NodeAppConfig): Future[Unit] = {
+  )(implicit
+      ec: ExecutionContext,
+      conf: NodeAppConfig): Future[QueueOfferResult] = {
     chainApi.getBestHashBlockHeight().flatMap { height =>
       val localhost = java.net.InetAddress.getLocalHost
       val versionMsg =
@@ -99,12 +105,13 @@ trait PeerMessageSenderApi {
     }
   }
 
-  def sendVerackMessage(): Future[Unit] = {
+  def sendVerackMessage(): Future[QueueOfferResult] = {
     val verackMsg = VerAckMessage
     sendMsg(verackMsg)
   }
 
-  def sendTransactionMessage(transaction: Transaction): Future[Unit] = {
+  def sendTransactionMessage(
+      transaction: Transaction): Future[QueueOfferResult] = {
     val message = TransactionMessage(transaction)
     sendMsg(message)
   }
