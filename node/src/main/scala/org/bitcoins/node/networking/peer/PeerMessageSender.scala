@@ -1,5 +1,6 @@
 package org.bitcoins.node.networking.peer
 
+import org.apache.pekko.stream.QueueOfferResult
 import org.bitcoins.core.api.chain.FilterSyncMarker
 import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.p2p.{
@@ -20,7 +21,7 @@ import org.bitcoins.node.P2PLogger
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.util.PeerMessageSenderApi
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 case class PeerMessageSender(peerConnection: PeerConnection)
     extends PeerMessageSenderApi
@@ -28,13 +29,13 @@ case class PeerMessageSender(peerConnection: PeerConnection)
 
   override val peer: Peer = peerConnection.peer
 
-  override def sendMsg(msg: NetworkPayload): Future[Unit] = {
+  override def sendMsg(msg: NetworkPayload): Future[QueueOfferResult] = {
     peerConnection.sendMsg(msg)
   }
 
   override def sendGetHeadersMessage(
       hashes: Vector[DoubleSha256DigestBE]
-  ): Future[Unit] = {
+  ): Future[QueueOfferResult] = {
     val headersMsg = GetHeadersMessage(hashes.distinct.take(101).map(_.flip))
     sendMsg(headersMsg)
   }
@@ -42,7 +43,7 @@ case class PeerMessageSender(peerConnection: PeerConnection)
   override def sendGetDataMessages(
       typeIdentifier: TypeIdentifier,
       hashes: Vector[DoubleSha256DigestBE]
-  ): Future[Unit] = {
+  ): Future[QueueOfferResult] = {
     val msg: NetworkPayload = {
       val inventories =
         hashes.map(hash => Inventory(typeIdentifier, hash.flip))
@@ -55,7 +56,7 @@ case class PeerMessageSender(peerConnection: PeerConnection)
 
   override def sendGetCompactFilterHeadersMessage(
       filterSyncMarker: FilterSyncMarker
-  ): Future[Unit] = {
+  ): Future[QueueOfferResult] = {
     val message =
       GetCompactFilterHeadersMessage(
         if (filterSyncMarker.startHeight < 0) 0
@@ -66,8 +67,7 @@ case class PeerMessageSender(peerConnection: PeerConnection)
   }
 
   override def sendGetCompactFiltersMessage(
-      filterSyncMarker: FilterSyncMarker
-  )(implicit ec: ExecutionContext): Future[Unit] = {
+      filterSyncMarker: FilterSyncMarker): Future[QueueOfferResult] = {
     val message =
       GetCompactFiltersMessage(
         if (filterSyncMarker.startHeight < 0) 0
@@ -75,12 +75,12 @@ case class PeerMessageSender(peerConnection: PeerConnection)
         filterSyncMarker.stopBlockHash
       )
     logger.debug(s"Sending getcfilters=$message to peer ${peer}")
-    sendMsg(message).map(_ => ())(ec)
+    sendMsg(message)
   }
 
   override def sendInventoryMessage(
       transactions: Vector[Transaction]
-  ): Future[Unit] = {
+  ): Future[QueueOfferResult] = {
     val inventories =
       transactions.map(tx => Inventory(TypeIdentifier.MsgTx, tx.txId))
     val message = InventoryMessage(inventories)
@@ -93,7 +93,7 @@ case class PeerMessageSender(peerConnection: PeerConnection)
     */
   override def sendVersionMessage()(implicit
       conf: NodeAppConfig
-  ): Future[Unit] = {
+  ): Future[QueueOfferResult] = {
     val local = java.net.InetAddress.getLocalHost
     val versionMsg = VersionMessage(
       conf.network,
