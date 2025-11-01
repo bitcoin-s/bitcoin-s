@@ -1,16 +1,17 @@
 package org.bitcoins.tor
 
+import org.apache.pekko.NotUsed
 import org.apache.pekko.actor.{Actor, ActorLogging, ActorRef, Props, Terminated}
 import org.apache.pekko.io.Tcp
 import org.apache.pekko.stream.Materializer
-import org.apache.pekko.stream.scaladsl.{Sink, Source, SourceQueue}
+import org.apache.pekko.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueue}
 import org.apache.pekko.util.ByteString
 import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.tor.Credentials
 import org.bitcoins.tor.Socks5Connection.Socks5Connect
 
 import java.net.{Inet4Address, Inet6Address, InetAddress, InetSocketAddress}
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 /** Simple socks 5 client. It should be given a new connection, and will
@@ -297,111 +298,123 @@ object Socks5Connection extends BitcoinSLogger {
         MatSink
     )
   ] = {
+    implicit val ec: ExecutionContext = mat.executionContext
+    val flowState: Flow[ByteString,
+                        Either[
+                          ByteString,
+                          Socks5ConnectionState
+                        ],
+                        NotUsed] = {
+      Flow[ByteString]
+        .statefulMap[Socks5ConnectionState,
+                     Either[
+                       ByteString,
+                       Socks5ConnectionState
+                     ]](() => Socks5ConnectionState.Disconnected)(
+          { case (state, bytes) =>
+            socks5InitLogic(state = state,
+                            bytes = bytes,
+                            socket = socket,
+                            sink = sink,
+                            outboundQueue = outboundQueue,
+                            credentialsOpt = credentialsOpt)
+          },
+          _ =>
+            None // don't care about the end state, we don't emit it downstream
+        )
+    }
 
-//    val flowState: Flow[ByteString,
-//                        Either[
-//                          ByteString,
-//                          Socks5ConnectionState
-//                        ],
-//                        NotUsed] = {
-//      Flow[ByteString]
-//        .statefulMap[Socks5ConnectionState,
-//                     Either[
-//                       ByteString,
-//                       Socks5ConnectionState
-//                     ]](() => Socks5ConnectionState.Disconnected)(
-//          { case (state, bytes) =>
-//            state match {
-//              case Socks5ConnectionState.Disconnected =>
-//                if (
-//                  parseGreetings(
-//                    bytes,
-//                    credentialsOpt.isDefined
-//                  ) == PasswordAuth
-//                ) {
-//
-//                  logger.debug(s"Authenticating socks5 proxy...")
-//                  credentialsOpt match {
-//                    case Some(c) =>
-//                      val authBytes =
-//                        socks5PasswordAuthenticationRequest(
-//                          c.username,
-//                          c.password
-//                        )
-//                      Source.single(authBytes).runWith(mergeHubSink)
-//                      val state = Socks5ConnectionState.Authenticating
-//                      (state, Right(state))
-//                    case None =>
-//                      sys.error(
-//                        s"Authentication required by socks5Proxy but we have no credentials"
-//                      )
-//                  }
-//
-//                } else {
-//
-//                  val connRequestBytes =
-//                    Socks5Connection.socks5ConnectionRequest(socket)
-//                  logger.debug(s"Writing socks5 connection request")
-//                  Source.single(connRequestBytes).runWith(mergeHubSink)
-//                  val state = Socks5ConnectionState.Greeted
-//                  (state, Right(state))
-//                }
-//              case Socks5ConnectionState.Authenticating =>
-//                tryParseAuth(bytes) match {
-//                  case Success(true) =>
-//                    val connRequestBytes =
-//                      Socks5Connection.socks5ConnectionRequest(socket)
-//                    logger.debug(
-//                      s"Writing socks5 connection request after auth"
-//                    )
-//                    Source.single(connRequestBytes).runWith(mergeHubSink)
-//                    val state = Socks5ConnectionState.Greeted
-//                    (state, Right(state))
-//                  case Success(false) =>
-//                    sys.error(s"Failed to authenticate with socks5 proxy")
-//                  case Failure(err) => throw err
-//                }
-//              case Socks5ConnectionState.Greeted =>
-//                val connectedAddressT =
-//                  Socks5Connection.tryParseConnectedAddress(bytes)
-//                connectedAddressT match {
-//                  case scala.util.Success(connectedAddress) =>
-//                    logger.info(
-//                      s"Tor connection request succeeded. target=${socket} connectedAddress=$connectedAddress"
-//                    )
-//                    val state = Socks5ConnectionState.Connected
-//                    (state, Right(state))
-//                  case scala.util.Failure(err) =>
-//                    sys.error(
-//                      s"Tor connection request failed to target=${socket} errMsg=${err.toString}"
-//                    )
-//                }
-//              case Socks5ConnectionState.Connected =>
-//                (Socks5ConnectionState.Connected, Left(bytes))
-//            }
-//          },
-//          _ =>
-//            None // don't care about the end state, we don't emit it downstream
-//        )
-//    }
-//
-//    val (tcpConnectionF, matSink) = source
-//      .viaMat(flowState)(Keep.left)
-//      .toMat(sink)(Keep.both)
-//      .run()
-//
-//    // send greeting to kick off stream
-//    tcpConnectionF.map { conn =>
-//      val passwordAuth = credentialsOpt.isDefined
-//      val greetingSource: Source[ByteString, NotUsed] = {
-//        Source.single(socks5Greeting(passwordAuth))
-//      }
-//
-//      greetingSource.to(mergeHubSink).run()
-//
-//      (conn, matSink)
-//    }(mat.executionContext)
-    ???
+    val (tcpConnectionF, matSink) = source
+      .viaMat(flowState)(Keep.left)
+      .toMat(sink)(Keep.both)
+      .run()
+
+    // send greeting to kick off stream
+    tcpConnectionF.flatMap { conn =>
+      val passwordAuth = credentialsOpt.isDefined
+      outboundQueue
+        .offer(socks5Greeting(passwordAuth))
+        .map(_ => (conn, matSink))
+
+    }
+  }
+
+  private def socks5InitLogic[MatSink](
+      state: Socks5ConnectionState,
+      bytes: ByteString,
+      socket: InetSocketAddress,
+      sink: Sink[Either[ByteString, Socks5ConnectionState], MatSink],
+      outboundQueue: SourceQueue[ByteString],
+      credentialsOpt: Option[Credentials])
+      : (Socks5ConnectionState, Either[ByteString, Socks5ConnectionState]) = {
+    state match {
+      case Socks5ConnectionState.Disconnected =>
+        if (
+          parseGreetings(
+            bytes,
+            credentialsOpt.isDefined
+          ) == PasswordAuth
+        ) {
+
+          logger.debug(s"Authenticating socks5 proxy...")
+          credentialsOpt match {
+            case Some(c) =>
+              val authBytes =
+                socks5PasswordAuthenticationRequest(
+                  c.username,
+                  c.password
+                )
+              outboundQueue.offer(authBytes)
+              val state = Socks5ConnectionState.Authenticating
+              (state, Right(state))
+            case None =>
+              sys.error(
+                s"Authentication required by socks5Proxy but we have no credentials"
+              )
+          }
+
+        } else {
+
+          val connRequestBytes =
+            Socks5Connection.socks5ConnectionRequest(socket)
+          logger.debug(s"Writing socks5 connection request")
+          outboundQueue.offer(connRequestBytes)
+          val state = Socks5ConnectionState.Greeted
+          (state, Right(state))
+        }
+      case Socks5ConnectionState.Authenticating =>
+        tryParseAuth(bytes) match {
+          case Success(true) =>
+            val connRequestBytes =
+              Socks5Connection.socks5ConnectionRequest(socket)
+            logger.debug(
+              s"Writing socks5 connection request after auth"
+            )
+            outboundQueue.offer(connRequestBytes)
+            val state = Socks5ConnectionState.Greeted
+            (state, Right(state))
+          case Success(false) =>
+            sys.error(s"Failed to authenticate with socks5 proxy")
+          case Failure(err) => throw err
+        }
+      case Socks5ConnectionState.Greeted =>
+        val connectedAddressT =
+          Socks5Connection.tryParseConnectedAddress(bytes)
+        connectedAddressT match {
+          case scala.util.Success(connectedAddress) =>
+            logger.info(
+              s"Tor connection request succeeded. target=${socket} connectedAddress=$connectedAddress"
+            )
+            val state = Socks5ConnectionState.Connected
+            (state, Right(state))
+          case scala.util.Failure(err) =>
+            sys.error(
+              s"Tor connection request failed to target=${socket} errMsg=${err.toString}"
+            )
+        }
+      case Socks5ConnectionState.Connected =>
+        (Socks5ConnectionState.Connected, Left(bytes))
+    }
   }
 
 }
