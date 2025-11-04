@@ -6,10 +6,12 @@ import org.apache.pekko.event.Logging
 import org.apache.pekko.io.Inet.SocketOption
 import org.apache.pekko.io.Tcp.SO.KeepAlive
 import org.apache.pekko.stream.{
+  ActorAttributes,
   Attributes,
   KillSwitches,
   OverflowStrategy,
   QueueOfferResult,
+  Supervision,
   UniqueKillSwitch
 }
 import org.apache.pekko.stream.scaladsl.{
@@ -33,8 +35,9 @@ import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.node.NodeStreamMessage.DisconnectedPeer
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.networking.peer.PeerConnection.ConnectionGraph
-import org.bitcoins.node.{NodeStreamMessage, P2PLogger}
+import org.bitcoins.node.{NodeStreamMessage}
 import org.bitcoins.tor.{Socks5Connection, Socks5ConnectionState}
+import org.slf4j.{Logger, LoggerFactory}
 import scodec.bits.ByteVector
 
 import java.net.InetSocketAddress
@@ -47,8 +50,8 @@ case class PeerConnection(
     nodeAppConfig: NodeAppConfig,
     chainAppConfig: ChainAppConfig,
     system: ActorSystem
-) extends P2PLogger {
-
+) /*extends P2PLogger */ {
+  private def logger: Logger = LoggerFactory.getLogger(getClass)
   import system.dispatcher
 
   private val socket: InetSocketAddress = {
@@ -129,7 +132,7 @@ case class PeerConnection(
           s"received msgs=${msgs.map(_.payload.commandName)} from peer=$peer"
         }
       )
-      .withAttributes(Attributes.logLevels(onFailure = Logging.DebugLevel))
+      .withAttributes(Attributes.logLevels(onFailure = Logging.ErrorLevel))
   }
 
   private val writeNetworkMsgFlow: Flow[ByteString, ByteString, NotUsed] = {
@@ -150,7 +153,7 @@ case class PeerConnection(
                outboundQueueSource: Source[ByteString, NotUsed]) =
     Source
       .queue[ByteString](
-        bufferSize = 1024,
+        bufferSize = 32,
         overflowStrategy = OverflowStrategy.backpressure
       )
       .preMaterialize()
@@ -178,6 +181,11 @@ case class PeerConnection(
     result.mapMaterializedValue(r => ((r._1, r._2._1), r._2._2))
   }
 
+  private val decider: Supervision.Decider = { case err: Throwable =>
+    logger.error(s"Peer connection failed with err", err)
+    Supervision.Resume
+  }
+
   private def buildConnectionGraph()
       : Future[((Tcp.OutgoingConnection, UniqueKillSwitch), Future[Done])] = {
 
@@ -194,6 +202,7 @@ case class PeerConnection(
           }
           inboundQueue.offer(wrapper)
         }
+        .withAttributes(ActorAttributes.supervisionStrategy(decider))
         .viaMat(KillSwitches.single)(Keep.right)
         .toMat(Sink.ignore)(Keep.both)
     }
@@ -397,12 +406,15 @@ case class PeerConnection(
   }
 
   private[node] def sendMsg(msg: NetworkMessage): Future[QueueOfferResult] = {
-    logger.debug(
-      s"Sending msg=${msg.header.commandName} to peer=${peer} socket=$socket"
-    )
+
     connectionGraphOpt match {
       case Some(g) =>
-        sendMsg(msg.bytes, g.outboundQueue)
+        sendMsg(msg.bytes, g.outboundQueue).map { offerResult =>
+          logger.debug(
+            s"Sending msg=${msg.header.commandName} to peer=${peer} socket=$socket offerResult=$offerResult"
+          )
+          offerResult
+        }
       case None =>
         val log =
           s"Could not send msg=${msg.payload.commandName} because we do not have an active connection to peer=${peer} socket=$socket"
