@@ -130,6 +130,13 @@ case class PeerConnection(
 
   private val writeNetworkMsgFlow: Flow[ByteString, ByteString, NotUsed] = {
     Flow.apply
+      .log(
+        "writeNetworkMsgFlow",
+        { (bytes: ByteString) =>
+          s"Writing bytes.length=${bytes.length} to peer=$peer"
+        }
+      )
+      .withAttributes(Attributes.logLevels(onFailure = Logging.ErrorLevel))
   }
 
   private val bidiFlow: BidiFlow[ByteString,
