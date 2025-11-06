@@ -136,6 +136,14 @@ case class PeerConnection(
           s"Writing bytes.length=${bytes.length} to peer=$peer"
         }
       )
+      .alsoTo(Sink.foreach(bs =>
+        logger.debug(s"Actually writing ${bs.length} bytes to ${peer}")))
+      .watchTermination() { (_, done) =>
+        done.onComplete(r =>
+          logger.warn(s"writeNetworkMsgFlow completed for $peer: $r"))(
+          system.dispatcher)
+        NotUsed
+      }
       .withAttributes(Attributes.logLevels(onFailure = Logging.ErrorLevel))
   }
 
@@ -153,7 +161,7 @@ case class PeerConnection(
                outboundQueueSource: Source[ByteString, NotUsed]) =
     Source
       .queue[ByteString](
-        bufferSize = 32,
+        bufferSize = 8,
         overflowStrategy = OverflowStrategy.backpressure
       )
       .preMaterialize()
