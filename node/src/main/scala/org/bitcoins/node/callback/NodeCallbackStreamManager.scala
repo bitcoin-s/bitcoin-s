@@ -12,6 +12,7 @@ import org.apache.pekko.stream.scaladsl.{
 import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.CallbackHandler
 import org.bitcoins.core.api.callback.{OnBlockReceived, OnTxReceived}
+import org.bitcoins.core.api.node.constant.NodeConstants
 import org.bitcoins.core.gcs.GolombFilter
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -26,7 +27,7 @@ import scala.concurrent.{ExecutionContext, Future}
 case class NodeCallbackStreamManager(
     callbacks: NodeCallbacks,
     overflowStrategy: OverflowStrategy = OverflowStrategy.backpressure,
-    maxBufferSize: Int = 16
+    maxBufferSize: Int = NodeConstants.bufferSize
 )(implicit system: ActorSystem)
     extends NodeCallbacks
     with StartStopAsync[Unit]

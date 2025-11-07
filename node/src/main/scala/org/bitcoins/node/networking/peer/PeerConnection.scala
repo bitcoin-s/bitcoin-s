@@ -161,7 +161,7 @@ case class PeerConnection(
                outboundQueueSource: Source[ByteString, NotUsed]) =
     Source
       .queue[ByteString](
-        bufferSize = 8,
+        bufferSize = NodeConstants.bufferSize,
         overflowStrategy = OverflowStrategy.backpressure
       )
       .preMaterialize()

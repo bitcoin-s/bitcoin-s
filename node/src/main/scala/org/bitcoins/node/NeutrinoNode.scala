@@ -18,6 +18,7 @@ import org.apache.pekko.stream.scaladsl.{
   SourceQueue,
   SourceQueueWithComplete
 }
+import org.bitcoins.core.api.node.constant.NodeConstants
 import org.bitcoins.core.api.node.{NodeType, Peer}
 import org.bitcoins.core.p2p.{
   GetDataMessage,
@@ -56,7 +57,7 @@ case class NeutrinoNode(
   ] = {
     Source
       .queue[NodeStreamMessage](
-        32 * nodeAppConfig.maxConnectedPeers,
+        NodeConstants.bufferSize,
         overflowStrategy = OverflowStrategy.backpressure,
         maxConcurrentOffers = Runtime.getRuntime.availableProcessors()
       )
