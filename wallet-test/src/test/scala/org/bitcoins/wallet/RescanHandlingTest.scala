@@ -606,4 +606,27 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
       rescanF
   }
 
+  it must "only signal complete processing of a block if its the specific block hash we've subscribed to" in {
+    fixture =>
+      val wallet = fixture.wallet
+      val bitcoind = fixture.bitcoind
+      for {
+        blockHashes <- bitcoind.generate(2)
+        blockHash1 = blockHashes.head
+        block1 <- bitcoind.getBlockRaw(blockHash1)
+        blockHash2 = blockHashes(1)
+        block2 <- bitcoind.getBlockRaw(blockHash2)
+        blockHashComplete2F = wallet.transactionProcessing
+          .subscribeForBlockProcessingCompletionSignal(blockHash2)
+        // now process block 1, we should not have the promise completed because its the incorrect block hash
+        _ <- wallet.transactionProcessing.processBlock(block1)
+        _ = assert(!blockHashComplete2F.isCompleted)
+        // now process block 2, that should complete the future
+        _ <- wallet.transactionProcessing.processBlock(block2)
+        _ <- blockHashComplete2F
+      } yield {
+        succeed
+      }
+  }
+
 }
