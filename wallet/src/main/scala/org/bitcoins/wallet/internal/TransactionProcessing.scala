@@ -338,13 +338,21 @@ case class TransactionProcessing(
     import walletConfig.materializer
 
     val p = Promise[DoubleSha256DigestBE]()
+    val sink = Sink.foreach { (event: DoubleSha256DigestBE) =>
+      if (event == blockHash) {
+        p.trySuccess(event)
+        ()
+      } else {
+        ()
+      }
+    }
     val actor: ActorRef = Source
       .actorRef[DoubleSha256DigestBE](completionMatcher = PartialFunction.empty,
                                       failureMatcher = PartialFunction.empty,
-                                      bufferSize = 1,
+                                      bufferSize = 8,
                                       overflowStrategy =
                                         OverflowStrategy.dropHead)
-      .to(Sink.foreach(event => p.trySuccess(event)))
+      .to(sink)
       .run()
 
     val _: Boolean = walletConfig.system.eventStream
