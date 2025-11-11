@@ -4,14 +4,16 @@ import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.node.{NodeType, Peer}
-import org.bitcoins.node._
+import org.bitcoins.node.*
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
+import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
-import org.bitcoins.testkit.node.fixture._
+import org.bitcoins.testkit.node.fixture.*
+import org.bitcoins.testkit.server.BitcoinSServerMainUtil
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletWithBitcoindRpc}
 import org.bitcoins.wallet.callback.WalletCallbacks
 import org.scalatest.FutureOutcome
@@ -127,6 +129,19 @@ trait NodeUnitTest extends BaseNodeTest {
       destroy = NodeUnitTest.destroyNodeFundedWalletBitcoind(
         _: NodeFundedWalletBitcoind
       )(system, appConfig)
+    )(test)
+  }
+
+  def withBitcoinSAppConfig(test: OneArgAsyncTest): FutureOutcome = {
+    makeDependentFixture(
+      build = () => {
+        val bitcoinSAppConfig = BitcoinSTestAppConfig.getNeutrinoTestConfig()
+        val startBitcoinSAppConfigF = bitcoinSAppConfig.start()
+        startBitcoinSAppConfigF.map(_ => bitcoinSAppConfig)
+      },
+      destroy = { (s: BitcoinSAppConfig) =>
+        BitcoinSServerMainUtil.destroyBitcoinSAppConfig(s)
+      }
     )(test)
   }
 }
