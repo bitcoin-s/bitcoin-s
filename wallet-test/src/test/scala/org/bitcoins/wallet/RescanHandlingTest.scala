@@ -570,9 +570,7 @@ class RescanHandlingTest extends BitcoinSWalletTestCachedBitcoindNewest {
         _ <- wallet.utxoHandling.clearAllUtxos()
         _ <- wallet.utxoHandling.clearAllAddresses()
         balanceAfterClear <- wallet.getBalance()
-        rescanState <- wallet.rescanHandling.fullRescanNeutrinoWallet(1,
-                                                                      force =
-                                                                        true)
+        rescanState <- wallet.rescanHandling.fullRescanNeutrinoWallet(1, true)
         _ <- RescanState.awaitRescanDone(rescanState)
         _ <- AsyncUtil.awaitConditionF(
           () => wallet.getBalance().map(_ == balanceAfterPayment1),
