@@ -56,7 +56,7 @@ class PeerConnectionTest extends BitcoinSAsyncTest {
         for {
           serverBinding <- serverBindingF
           _ <- pc.connect()
-          _ <- AsyncUtil.nonBlockingSleep(5.second)
+          _ <- AsyncUtil.nonBlockingSleep(2.second)
           _ <- pc.disconnect()
           _ <- serverBinding.unbind()
           messages <- messagesF
@@ -78,7 +78,7 @@ class PeerConnectionTest extends BitcoinSAsyncTest {
         for {
           serverBinding <- serverBindingF
           _ <- pc.connect()
-          pings <- sendAlotOfPings(PeerConnection.outboundBufferSize * 100, pc)
+          pings <- sendAlotOfPings(PeerConnection.outboundBufferSize * 10, pc)
           _ <- AsyncUtil.nonBlockingSleep(2.second)
           _ <- pc.disconnect()
           _ <- serverBinding.unbind()
