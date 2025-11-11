@@ -20,10 +20,11 @@ import org.apache.pekko.stream.scaladsl.{
 import org.apache.pekko.util.ByteString
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.api.node.constant.NodeConstants
 import org.bitcoins.core.number.Int32
-import org.bitcoins.core.p2p._
+import org.bitcoins.core.p2p.*
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.node.NodeStreamMessage.DisconnectedPeer
 import org.bitcoins.node.config.NodeAppConfig
@@ -36,8 +37,9 @@ import java.net.InetSocketAddress
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Future, Promise}
 
-case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
-    implicit
+case class PeerConnection(
+    peer: Peer,
+    inboundQueue: SourceQueue[NodeStreamMessage])(implicit
     nodeAppConfig: NodeAppConfig,
     chainAppConfig: ChainAppConfig,
     system: ActorSystem
@@ -98,54 +100,12 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
     }
   }
 
-  private def parseHelper(
-      unalignedBytes: ByteString,
-      byteVec: ByteString
-  ): (ByteString, Vector[NetworkMessage]) = {
-    val bytes: ByteVector = ByteVector(unalignedBytes ++ byteVec)
-    logger.trace(s"Bytes for message parsing: ${bytes.toHex}")
-    val (messages, newUnalignedBytes) =
-      NetworkUtil.parseIndividualMessages(bytes)
-
-    (ByteString.fromArray(newUnalignedBytes.toArray), messages)
-  }
-
-  private val parseToNetworkMsgFlow
-      : Flow[ByteString, Vector[NetworkMessage], NotUsed] = {
-    Flow[ByteString]
-      .statefulMap(() => ByteString.empty)(
-        parseHelper,
-        { (_: ByteString) => None }
-      )
-      .log(
-        "parseToNetworkMsgFlow",
-        { case msgs: Vector[NetworkMessage] =>
-          s"received msgs=${msgs.map(_.payload.commandName)} from peer=$peer"
-        }
-      )
-      .withAttributes(Attributes.logLevels(onFailure = Logging.DebugLevel))
-  }
-
-  private val writeNetworkMsgFlow: Flow[ByteString, ByteString, NotUsed] = {
-    Flow.apply
-  }
-
-  private val bidiFlow: BidiFlow[ByteString,
-                                 Vector[
-                                   NetworkMessage
-                                 ],
-                                 ByteString,
-                                 ByteString,
-                                 NotUsed] = {
-    BidiFlow.fromFlows(parseToNetworkMsgFlow, writeNetworkMsgFlow)
-  }
-
   private val (
     mergeHubSink: Sink[ByteString, NotUsed],
     mergeHubSource: Source[ByteString, NotUsed]
   ) = {
     MergeHub
-      .source[ByteString](1024)
+      .source[ByteString](PeerConnection.outboundBufferSize)
       .preMaterialize()
   }
 
@@ -156,7 +116,7 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
                                    Future[Tcp.OutgoingConnection]] =
     connection
       .idleTimeout(nodeAppConfig.peerTimeout)
-      .joinMat(bidiFlow)(Keep.left)
+      .joinMat(PeerConnection.bidiFlow)(Keep.left)
 
   private def connectionGraph(
       handleNetworkMsgSink: Sink[Vector[NetworkMessage],
@@ -185,7 +145,7 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
             case d: DataPayload =>
               NodeStreamMessage.DataMessageWrapper(d, peer)
           }
-          queue.offer(wrapper)
+          inboundQueue.offer(wrapper)
         }
         .viaMat(KillSwitches.single)(Keep.right)
         .toMat(Sink.ignore)(Keep.both)
@@ -211,7 +171,7 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
                       Future.successful(ByteString.empty)
                   }
               }
-              .viaMat(parseToNetworkMsgFlow)(Keep.left)
+              .viaMat(PeerConnection.parseToNetworkMsgFlow)(Keep.left)
               .toMat(handleNetworkMsgSink)(Keep.right)
 
           val source: Source[
@@ -271,7 +231,7 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
               s"Failed to connect to peer=$peer with errMsg=${err.getMessage}"
             )
             val offerF =
-              queue.offer(NodeStreamMessage.InitializationTimeout(peer))
+              inboundQueue.offer(NodeStreamMessage.InitializationTimeout(peer))
             offerF.failed.foreach(err =>
               logger.error(
                 s"Failed to offer initialize timeout for peer=$peer",
@@ -316,7 +276,7 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
 
   private def handleStreamComplete(): Future[Unit] = {
     val disconnectedPeer = DisconnectedPeer(peer, false)
-    val offerF = queue
+    val offerF = inboundQueue
       .offer(disconnectedPeer)
       .map(_ => ())
     offerF
@@ -422,8 +382,8 @@ case class PeerConnection(peer: Peer, queue: SourceQueue[NodeStreamMessage])(
   }
 }
 
-object PeerConnection {
-
+object PeerConnection extends BitcoinSLogger {
+  val outboundBufferSize: Int = 1024
   case class ConnectionGraph(
       mergeHubSink: Sink[ByteString, NotUsed],
       connectionF: Future[Tcp.OutgoingConnection],
@@ -437,4 +397,45 @@ object PeerConnection {
     }
   }
 
+  private def parseHelper(
+      unalignedBytes: ByteString,
+      byteVec: ByteString
+  ): (ByteString, Vector[NetworkMessage]) = {
+    val bytes: ByteVector = ByteVector(unalignedBytes ++ byteVec)
+    logger.trace(s"Bytes for message parsing: ${bytes.toHex}")
+    val (messages, newUnalignedBytes) =
+      NetworkUtil.parseIndividualMessages(bytes)
+
+    (ByteString.fromArray(newUnalignedBytes.toArray), messages)
+  }
+
+  val parseToNetworkMsgFlow
+      : Flow[ByteString, Vector[NetworkMessage], NotUsed] = {
+    Flow[ByteString]
+      .statefulMap(() => ByteString.empty)(
+        parseHelper,
+        { (_: ByteString) => None }
+      )
+      .log(
+        "parseToNetworkMsgFlow",
+        { case msgs: Vector[NetworkMessage] =>
+          s"received msgs=${msgs.map(_.payload.commandName)} from peer"
+        }
+      )
+      .withAttributes(Attributes.logLevels(onFailure = Logging.DebugLevel))
+  }
+
+  val writeNetworkMsgFlow: Flow[ByteString, ByteString, NotUsed] = {
+    Flow.apply
+  }
+
+  val bidiFlow: BidiFlow[ByteString,
+                         Vector[
+                           NetworkMessage
+                         ],
+                         ByteString,
+                         ByteString,
+                         NotUsed] = {
+    BidiFlow.fromFlows(parseToNetworkMsgFlow, writeNetworkMsgFlow)
+  }
 }
