@@ -19,34 +19,33 @@ import org.bitcoins.core.p2p.{NetworkMessage, PingMessage}
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.node.NodeStreamMessage
 import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig
-import org.bitcoins.testkit.util.BitcoinSAsyncTest
-import org.scalatest.Assertion
+import org.bitcoins.testkit.node.NodeUnitTest
+import org.scalatest.{Assertion, FutureOutcome}
 
 import java.net.InetSocketAddress
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class PeerConnectionTest extends BitcoinSAsyncTest {
+class PeerConnectionTest extends NodeUnitTest {
   case class TestHelper(
       peerConnection: PeerConnection,
       serverBindingF: Future[Tcp.ServerBinding],
       outboundMessagesF: Future[Seq[NetworkMessage]],
       aggregateInboundQueue: SourceQueueWithComplete[NodeStreamMessage])
+  override protected def getFreshConfig: BitcoinSAppConfig =
+    BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(
+      () => pgUrl(),
+      Vector.empty
+    )
+
+  override type FixtureParam = BitcoinSAppConfig
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome =
+    withBitcoinSAppConfig(test)
   behavior of "PeerConnection"
 
-  private def withBitcoinSAppConfig(
-      test: (ChainAppConfig, NodeAppConfig) => Future[Assertion])
-      : Future[Assertion] = {
-    val bitcoinSAppConfig = BitcoinSTestAppConfig.getNeutrinoTestConfig()
-    val startBitcoinSAppConfigF = bitcoinSAppConfig.start()
-    for {
-      _ <- startBitcoinSAppConfigF
-      assertion <- test(bitcoinSAppConfig.chainConf, bitcoinSAppConfig.nodeConf)
-      _ <- bitcoinSAppConfig.stop()
-    } yield assertion
-  }
-  it must "relay and consume information over a peer connection" in {
+  it must "relay and consume information over a peer connection" in { param =>
     val test: (ChainAppConfig, NodeAppConfig) => Future[Assertion] = {
       case (chainAppConfig: ChainAppConfig, nodeAppConfig: NodeAppConfig) =>
         val testHelper = setupPeerConnection()(chainAppConfig, nodeAppConfig)
@@ -65,10 +64,10 @@ class PeerConnectionTest extends BitcoinSAsyncTest {
         }
     }
 
-    withBitcoinSAppConfig(test)
+    test(param.chainConf, param.nodeConf)
   }
 
-  it must "send a lot of outbound messages" in {
+  it must "send a lot of outbound messages" in { param =>
     val test: (ChainAppConfig, NodeAppConfig) => Future[Assertion] = {
       case (chainAppConfig: ChainAppConfig, nodeAppConfig: NodeAppConfig) =>
         val testHelper = setupPeerConnection()(chainAppConfig, nodeAppConfig)
@@ -87,7 +86,7 @@ class PeerConnectionTest extends BitcoinSAsyncTest {
           assert(messages.size == pings.size + 1) // +1 for version message
         }
     }
-    withBitcoinSAppConfig(test)
+    test(param.chainConf, param.nodeConf)
   }
 
   private def setupPeerConnection()(implicit
