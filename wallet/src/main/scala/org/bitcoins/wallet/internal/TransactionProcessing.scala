@@ -194,15 +194,13 @@ case class TransactionProcessing(
     // fetch all outputs we may have received in this block in advance
     // as an optimization
     val relevantReceivedOutputsForBlockA = getRelevantOutputsForBlock(block)
-
-    val actionsF: Future[DBIOAction[Vector[ProcessTxResult],
-                                    NoStream,
-                                    Effect.Read & Effect.Write]] = {
+    val actionsF
+        : Future[DBIOAction[Vector[ProcessTxResult], NoStream, Effect.All]] = {
       blockHashWithConfsOptF.map { blockHashWithConfsOpt =>
         for {
           receivedSpendingInfoDbsOpt <- cachedReceivedOptA
-          nestedActions = {
-            block.transactions.map { transaction =>
+          actions <- {
+            DBIOAction.traverse(block.transactions) { transaction =>
               val relevantReceivedOutputsForTxA =
                 relevantReceivedOutputsForBlockA.map(
                   _.getOrElse(transaction.txIdBE, Vector.empty))
@@ -222,7 +220,6 @@ case class TransactionProcessing(
               }
             }
           }
-          actions <- DBIOAction.sequence(nestedActions)
         } yield {
           actions
         }
