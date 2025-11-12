@@ -178,12 +178,14 @@ case class TransactionProcessing(
     */
   private def processBlockCachedUtxos(block: Block): Future[Unit] = {
     // fetch all received spending info dbs relevant to txs in this block to improve performance
-    val receivedSpendingInfoDbsF =
+    val receivedSpendingInfoDbsA =
       spendingInfoDAO
-        .findTxs(block.transactions)
+        .findTxsAction(block.transactions)
 
-    val cachedReceivedOptF = receivedSpendingInfoDbsF
-      .map(Some(_)) // reduce allocations by creating Some here
+    val cachedReceivedOptA
+        : DBIOAction[Option[Vector[SpendingInfoDb]], NoStream, Effect.Read] =
+      receivedSpendingInfoDbsA
+        .map(Some(_)) // reduce allocations by creating Some here
 
     val blockHash = block.blockHeader.hashBE
     val blockHashWithConfsOptF: Future[Option[BlockHashWithConfs]] =
@@ -193,41 +195,42 @@ case class TransactionProcessing(
     // as an optimization
     val relevantReceivedOutputsForBlockA = getRelevantOutputsForBlock(block)
 
-    val actionsF: Future[Vector[
-      DBIOAction[ProcessTxResult, NoStream, Effect.Read & Effect.Write]]] =
-      for {
-        // map on these first so we don't have to call
-        // .map everytime we iterate through a tx
-        // which is costly (thread overhead)
-        receivedSpendingInfoDbsOpt <- cachedReceivedOptF
-        blockHashWithConfsOpt <- blockHashWithConfsOptF
-        actions = {
-          block.transactions.map { transaction =>
-            val relevantReceivedOutputsForTxA =
-              relevantReceivedOutputsForBlockA.map(
-                _.getOrElse(transaction.txIdBE, Vector.empty))
+    val actionsF: Future[DBIOAction[Vector[ProcessTxResult],
+                                    NoStream,
+                                    Effect.Read & Effect.Write]] = {
+      blockHashWithConfsOptF.map { blockHashWithConfsOpt =>
+        for {
+          receivedSpendingInfoDbsOpt <- cachedReceivedOptA
+          nestedActions = {
+            block.transactions.map { transaction =>
+              val relevantReceivedOutputsForTxA =
+                relevantReceivedOutputsForBlockA.map(
+                  _.getOrElse(transaction.txIdBE, Vector.empty))
 
-            for {
-              action <-
-                processTransactionImpl(
-                  transaction = transaction,
-                  blockHashWithConfsOpt = blockHashWithConfsOpt,
-                  newTags = Vector.empty,
-                  receivedSpendingInfoDbsOpt = receivedSpendingInfoDbsOpt,
-                  spentSpendingInfoDbsOpt = None,
-                  relevantReceivedOutputsA = relevantReceivedOutputsForTxA
-                )
-            } yield {
-              action
+              for {
+                action <-
+                  processTransactionImpl(
+                    transaction = transaction,
+                    blockHashWithConfsOpt = blockHashWithConfsOpt,
+                    newTags = Vector.empty,
+                    receivedSpendingInfoDbsOpt = receivedSpendingInfoDbsOpt,
+                    spentSpendingInfoDbsOpt = None,
+                    relevantReceivedOutputsA = relevantReceivedOutputsForTxA
+                  )
+              } yield {
+                action
+              }
             }
           }
+          actions <- DBIOAction.sequence(nestedActions)
+        } yield {
+          actions
         }
-      } yield {
-        actions
       }
+    }
 
     actionsF
-      .flatMap(actions => safeDatabase.run(DBIOAction.sequence(actions)))
+      .flatMap(safeDatabase.run)
       .map(_ => ())
   }
 
@@ -483,7 +486,7 @@ case class TransactionProcessing(
     * internal or public TX processing method, which logs and transforms the
     * output fittingly.
     */
-  private[internal] def pprocessTransactionImpl(
+  private[internal] def processTransactionImpl(
       transaction: Transaction,
       blockHashWithConfsOpt: Option[BlockHashWithConfs],
       newTags: Vector[AddressTag],
