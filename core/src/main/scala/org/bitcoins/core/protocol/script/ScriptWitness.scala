@@ -464,12 +464,16 @@ object TaprootScriptPath extends Factory[TaprootScriptPath] {
   def apply(
       controlBlock: TapscriptControlBlock,
       annexOpt: Option[Annex],
-      spk: RawScriptPubKey): TaprootScriptPath = {
+      spk: RawScriptPubKey,
+      witnessStack: Vector[ByteVector]): TaprootScriptPath = {
     annexOpt match {
       case Some(annexBytes) =>
-        fromStack(Vector(annexBytes.bytes, controlBlock.bytes, spk.asmBytes))
+        fromStack(
+          Vector(annexBytes.bytes,
+                 controlBlock.bytes,
+                 spk.asmBytes) ++ witnessStack)
       case None =>
-        fromStack(Vector(controlBlock.bytes, spk.asmBytes))
+        fromStack(Vector(controlBlock.bytes, spk.asmBytes) ++ witnessStack)
     }
   }
 

@@ -30,13 +30,13 @@ sealed abstract class ScriptParser
     */
   override def fromString(str: String): Vector[ScriptToken] = {
     if (
-      str.size > 1 && str.substring(0, 2) == "0x" && str
+      str.length > 1 && str.substring(0, 2) == "0x" && str
         .split(" ")
-        .size == 1
+        .length == 1
     ) {
       // parse this as a byte array that is led with a 0x for example
       // 0x4e03000000ffff
-      val hex = str.substring(2, str.size)
+      val hex = str.substring(2, str.length)
       fromBytes(BytesUtil.decodeHex(hex))
     } else {
       val scriptTokens: Vector[ScriptToken] = parse(str)
@@ -94,10 +94,10 @@ sealed abstract class ScriptParser
             loop(t, aggregation)
           }
         // if we see a byte constant in the form of "0x09adb"
-        case h +: t if h.size > 1 && h.substring(0, 2) == "0x" =>
+        case h +: t if h.length > 1 && h.substring(0, 2) == "0x" =>
           loop(t,
                BytesUtil
-                 .decodeHex(h.substring(2, h.size).toLowerCase)
+                 .decodeHex(h.substring(2, h.length).toLowerCase)
                  .reverse ++ accum)
         // skip the empty string
         case h +: t if h == ""  => loop(t, accum)
@@ -109,7 +109,7 @@ sealed abstract class ScriptParser
         case h +: t if tryParsingLong(h) =>
           val hexLong =
             BytesUtil.flipEndianness(ScriptNumberUtil.longToHex(h.toLong))
-          val bytesToPushOntoStack = BytesToPushOntoStack(hexLong.size / 2)
+          val bytesToPushOntoStack = BytesToPushOntoStack(hexLong.length / 2)
           // convert the string to int, then convert to hex
           loop(t,
                BytesUtil
@@ -117,7 +117,7 @@ sealed abstract class ScriptParser
         // means that it must be a BytesToPushOntoStack followed by a script constant
         case h +: t =>
           // find the size of the string in bytes
-          val bytesToPushOntoStack = BytesToPushOntoStack(h.size / 2)
+          val bytesToPushOntoStack = BytesToPushOntoStack(h.length / 2)
           loop(t,
                BytesUtil
                  .decodeHex(
@@ -127,12 +127,19 @@ sealed abstract class ScriptParser
           accum
       }
     }
-    if (tryParsingLong(str) && str.size > 1 && str.substring(0, 2) != "0x") {
+    if (tryParsingLong(str) && str.length > 1 && str.substring(0, 2) != "0x") {
       // for the case when there is just a single decimal constant
       // i.e. "8388607"
       val scriptNumber = ScriptNumber(parseLong(str))
-      val bytesToPushOntoStack = BytesToPushOntoStack(scriptNumber.bytes.size)
-      Vector(bytesToPushOntoStack, scriptNumber)
+      if (
+        scriptNumber >= ScriptNumber.negativeOne && scriptNumber <= ScriptNumber(
+          16)
+      ) {
+        Vector(ScriptNumberOperation.fromNumber(scriptNumber.toLong).get)
+      } else {
+        val bytesToPushOntoStack = BytesToPushOntoStack(scriptNumber.bytes.size)
+        Vector(bytesToPushOntoStack, scriptNumber)
+      }
     } else if (BytesUtil.isHex(str) && str.toLowerCase == str) {
       // if the given string is hex, it is pretty straight forward to parse it
       // convert the hex string to a byte array and parse it
@@ -143,9 +150,16 @@ sealed abstract class ScriptParser
       // take a look at https://github.com/bitcoin/bitcoin/blob/605c17844ea32b6d237db6d83871164dc7d59dab/src/core_read.cpp#L53-L88
       // for the offical parsing algorithm, for examples of weird formats look inside of
       // [[https://github.com/bitcoin/bitcoin/blob/master/src/test/data/script_valid.json]]
+      val split = if (str.startsWith("#SCRIPT#")) {
+        // drop #SCRIPT#
+        str.split(" ").drop(1)
+      } else {
+        str.split(" ")
+      }
       val parsedBytesFromString =
-        loop(str.split(" ").toVector, ByteVector.empty).reverse
-      parse(parsedBytesFromString)
+        loop(split.toVector, ByteVector.empty).reverse
+      val result = parse(parsedBytesFromString)
+      result
     }
   }
 
@@ -199,7 +213,7 @@ sealed abstract class ScriptParser
         // if it is not smaller than 16 hex characters it cannot
         // fit inside of a scala long
         // therefore store it as a script constant
-        if (g.group(1).size <= 16) {
+        if (g.group(1).length <= 16) {
           ScriptNumber(g.group(1))
         } else {
           ScriptConstant(g.group(1))
@@ -325,7 +339,7 @@ sealed abstract class ScriptParser
 
   private def parseLong(str: String) = {
     if (str.substring(0, 2) == "0x") {
-      val strRemoveHex = str.substring(2, str.size)
+      val strRemoveHex = str.substring(2, str.length)
       ScriptNumberUtil.toLong(strRemoveHex)
     } else str.toLong
   }
