@@ -53,7 +53,11 @@ sealed abstract class WitnessGenerators {
       controlBLock <- tapscriptControlBlock
       (rawSPK, _) <- ScriptGenerators.rawScriptPubKey
       annexOpt <- Gen.option(annex)
-    } yield TaprootScriptPath(controlBLock, annexOpt, rawSPK, Vector.empty)
+      witnessStack <- Gen.listOf(NumberGenerator.bytevector)
+    } yield TaprootScriptPath(controlBLock,
+                              annexOpt,
+                              rawSPK,
+                              witnessStack = witnessStack.toVector)
   }
 
   def tapscriptControlBlock: Gen[TapscriptControlBlock] = {
