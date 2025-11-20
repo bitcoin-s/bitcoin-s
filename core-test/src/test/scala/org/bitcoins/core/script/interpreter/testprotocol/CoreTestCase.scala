@@ -1,14 +1,15 @@
 package org.bitcoins.core.script.interpreter.testprotocol
 
-import org.bitcoins.core.currency._
+import org.bitcoins.core.currency.*
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.script.*
 import org.bitcoins.core.script.result.ScriptResult
 import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.core.util.{BitcoinScriptUtil, BytesUtil}
-import scodec.bits._
-import ujson._
-import upickle.default._
+import org.bitcoins.crypto.{ECPrivateKey, FieldElement}
+import scodec.bits.*
+import ujson.*
+import upickle.default.*
 
 /** Created by chris on 1/18/16. This represents a core test case for valid and
   * invalid scripts the scripts can be seen in the script_tests.json file files.
@@ -108,31 +109,37 @@ object CoreTestCase {
           )
         )
       } else if (elements.size == 6 && elements.head.arrOpt.isDefined) {
-        val witnessArray = elements.head.arr
-        val amount = Satoshis((witnessArray.value.last.num * 100000000L).toLong)
-        val stack = witnessArray.value.toVector
-          .slice(0, witnessArray.value.size - 1)
-          .map(c => BytesUtil.decodeHex(c.str))
-        val witness = ScriptWitness(stack.reverse)
-        val scriptPubKeyBytes: ByteVector = parseScriptPubKey(elements(2))
-        val scriptPubKey = ScriptPubKey(scriptPubKeyBytes)
-        val scriptSignatureBytes: ByteVector = parseScriptSignature(elements(1))
-        val scriptSignature: ScriptSignature =
-          ScriptSignature(scriptSignatureBytes)
-        val flags = elements(3).str
-        val expectedResult = ScriptResult(elements(4).str)
-        val comments = elements(5).str
-        Some(
-          CoreTestCase(
-            scriptSignature,
-            scriptPubKey,
-            flags,
-            expectedResult,
-            comments,
-            elements.toString,
-            Some((witness, amount))
+        if (isTapscriptTestCase(elements.head.arr)) {
+          parseTapscriptTestCase(elements)
+        } else {
+          val witnessArray = elements.head.arr
+          val amount =
+            Satoshis((witnessArray.value.last.num * 100000000L).toLong)
+          val stack = witnessArray.value.toVector
+            .slice(0, witnessArray.value.size - 1)
+            .map(c => BytesUtil.decodeHex(c.str))
+          val witness = ScriptWitness(stack.reverse)
+          val scriptPubKey = ScriptPubKey(parseScriptPubKey(elements(2)))
+          val scriptSignatureBytes: ByteVector =
+            parseScriptSignature(elements(1))
+          val scriptSignature: ScriptSignature =
+            ScriptSignature(scriptSignatureBytes)
+          val flags = elements(3).str
+          val expectedResult = ScriptResult(elements(4).str)
+          val comments = elements(5).str
+          Some(
+            CoreTestCase(
+              scriptSignature,
+              scriptPubKey,
+              flags,
+              expectedResult,
+              comments,
+              elements.toString,
+              Some((witness, amount))
+            )
           )
-        )
+        }
+
       } else None
   }
 
@@ -156,5 +163,61 @@ object CoreTestCase {
     val bytes = BitcoinScriptUtil.asmToBytes(asm)
     val compactSizeUInt = CompactSizeUInt.calculateCompactSizeUInt(bytes)
     compactSizeUInt.bytes ++ bytes
+  }
+
+  private def isTapscriptTestCase(values: Arr): Boolean = {
+    val rev = values.arr.toVector.reverse
+    if (
+      values.value.length >= 3 && rev(1).strOpt.isDefined && rev(
+        2).strOpt.isDefined
+    ) {
+
+      // check that the given witness
+      // 2nd to last element is control block, 3rd to last element is a tapscript
+      rev(1).str.contains("#CONTROLBLOCK#") || rev(2).str.contains("#SCRIPT")
+    } else false
+  }
+  private def parseTapscriptTestCase(elements: Arr): Option[CoreTestCase] = {
+    require(isTapscriptTestCase(elements.value.head.arr))
+    val witnessArr = elements.value.head.arr
+    val amount =
+      Bitcoins(witnessArr.last.num)
+
+    val witnessStack = witnessArr
+      .dropRight(3) // drop amount, control block, tapscript leaf
+      .map(c => BytesUtil.decodeHex(c.str))
+      .toVector
+    val leafSPK = ScriptPubKey(parseScriptPubKey(witnessArr.reverse(2)))
+      .asInstanceOf[RawScriptPubKey]
+    val internalKey = ECPrivateKey
+      .fromFieldElement(FieldElement.one)
+      .toXOnly
+    val leaf = TapLeaf(LeafVersion.Tapscript, leafSPK)
+    val (keyParity, taprootSPK) =
+      TaprootScriptPubKey.fromInternalKeyTapscriptTree(internal = internalKey,
+                                                       tree = leaf)
+    val controlBlock: TapscriptControlBlock =
+      TapscriptControlBlock.fromSingleLeaf(LeafVersion.Tapscript,
+                                           internalKey = internalKey,
+                                           parity = keyParity)
+    val witness: TaprootWitness =
+      TaprootScriptPath.apply(controlBlock,
+                              annexOpt = None,
+                              spk = leafSPK,
+                              witnessStack = witnessStack)
+    val flags = elements(3).str
+    val expectedResult = ScriptResult(elements(4).str)
+    val comments = elements(5).str
+    Some(
+      CoreTestCase(
+        scriptSig = ScriptSignature.empty,
+        taprootSPK,
+        flags,
+        expectedResult,
+        comments,
+        elements.toString,
+        Some((witness, amount))
+      ))
+
   }
 }
