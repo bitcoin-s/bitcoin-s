@@ -29,7 +29,7 @@ object Deps {
     val scalapb = "0.11.20"
     val akkav = "1.3.0"
     val playv = "3.0.6" // https://github.com/playframework/play-json/releases
-    val akkaStreamv = "1.2.1"
+    val akkaStreamv = "1.3.0"
     val pekkoGrpcV = "1.2.0"
     val jUnixSocketV = "2.10.1"
     val scodecV = "1.2.4"
