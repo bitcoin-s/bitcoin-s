@@ -6,7 +6,7 @@ original_id: testkit
 
 ## Philosophy of Testkit
 
-The high level of of the bitcoin-s testkit is to mimic and provide functionality to test 3rd party applications.
+The high level of the bitcoin-s testkit is to mimic and provide functionality to test 3rd party applications.
 
 There are other examples of these in the Scala ecosystem like the `akka-testkit` and `slick-testkit`.
 
