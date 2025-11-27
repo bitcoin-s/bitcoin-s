@@ -5,6 +5,7 @@ import org.bitcoins.testkitcore.gen.BlockchainElementsGenerator
 import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 
 import scala.io.Source
+import scala.util.Using
 
 /** Created by chris on 7/15/16.
   */
@@ -31,7 +32,9 @@ class BlockTest extends BitcoinSJvmTest {
 
     val fileName =
       "/00000000000000000008513c860373da0484f065983aeb063ebf81c172e81d48.txt"
-    val lines = Source.fromURL(getClass.getResource(fileName)).mkString
+    val lines = Using(Source.fromURL(getClass.getResource(fileName))) {
+      source => source.mkString
+    }.get
     val time = timeBlockParsing(Block.fromHex(lines))
     assert(time <= 15000)
   }
@@ -39,7 +42,9 @@ class BlockTest extends BitcoinSJvmTest {
   it must "parse a large block 000000000000000000050f70113ab1932c195442cb49bcc4ee4d7f426c8a3295" in {
     val fileName =
       "/000000000000000000050f70113ab1932c195442cb49bcc4ee4d7f426c8a3295.txt"
-    val lines = Source.fromURL(getClass.getResource(fileName)).mkString
+    val lines = Using(Source.fromURL(getClass.getResource(fileName))) {
+      source => source.mkString
+    }.get
     val time = timeBlockParsing(Block.fromHex(lines))
     assert(time <= 15000)
   }
@@ -47,7 +52,9 @@ class BlockTest extends BitcoinSJvmTest {
   it must "parse a large transaction 7393096d97bfee8660f4100ffd61874d62f9a65de9fb6acf740c4c386990ef73" in {
     val fileName =
       "/7393096d97bfee8660f4100ffd61874d62f9a65de9fb6acf740c4c386990ef73.txt"
-    val lines = Source.fromURL(getClass.getResource(fileName)).mkString.trim
+    val lines = Using(Source.fromURL(getClass.getResource(fileName))) {
+      source => source.mkString.trim
+    }.get
     val tx = Transaction.fromHex(lines)
     assert(tx.hex == lines)
   }
@@ -55,7 +62,9 @@ class BlockTest extends BitcoinSJvmTest {
   it must "parse a large transaction 73be398c4bdc43709db7398106609eea2a7841aaf3a4fa2000dc18184faa2a7e" in {
     val fileName =
       "/73be398c4bdc43709db7398106609eea2a7841aaf3a4fa2000dc18184faa2a7e.txt"
-    val lines = Source.fromURL(getClass.getResource(fileName)).mkString.trim
+    val lines = Using(Source.fromURL(getClass.getResource(fileName))) {
+      source => source.mkString.trim
+    }.get
     val tx = Transaction.fromHex(lines)
     assert(tx.hex == lines)
   }

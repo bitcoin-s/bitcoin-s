@@ -24,7 +24,7 @@ import scala.collection.mutable
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.Source
-import scala.util.{Failure, Random, Success}
+import scala.util.{Failure, Random, Success, Using}
 
 case class PeerFinder(
     peerManagerApi: PeerManagerApi,
@@ -74,14 +74,20 @@ case class PeerFinder(
   private def getPeersFromResources: Vector[Peer] = {
     nodeAppConfig.network match {
       case MainNet =>
-        val source =
-          Source.fromURL(getClass.getResource("/hardcoded-peers.txt"))
-        val addresses = source
-          .getLines()
-          .toVector
-          .filter(nodeAppConfig.torConf.enabled || !_.contains(".onion"))
-        val peers = BitcoinSNodeUtil.stringsToPeers(addresses)
-        Random.shuffle(peers)
+        Using(Source.fromURL(getClass.getResource("/hardcoded-peers.txt"))) {
+          source =>
+            val addresses = source
+              .getLines()
+              .toVector
+              .filter(nodeAppConfig.torConf.enabled || !_.contains(".onion"))
+            val peers = BitcoinSNodeUtil.stringsToPeers(addresses)
+            Random.shuffle(peers)
+        } match {
+          case Success(peers) => peers
+          case Failure(e) =>
+            logger.error("Failed to read hardcoded peers resource", e)
+            Vector.empty
+        }
       case TestNet3 | RegTest | SigNet | TestNet4 =>
         Vector.empty
 

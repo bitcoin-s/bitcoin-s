@@ -11,7 +11,8 @@ import org.scalatest.time.Span
 import scodec.bits.ByteVector
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent._
+import scala.concurrent.*
+import scala.util.Using
 
 class TaprootTxTests extends BitcoinSAsyncTest {
 
@@ -28,7 +29,9 @@ class TaprootTxTests extends BitcoinSAsyncTest {
   lazy val url = getClass.getResource("/script_assets_test_cp.json")
 
   lazy val lines = {
-    scala.io.Source.fromURL(url).getLines().mkString
+    Using(scala.io.Source.fromURL(url)) { source =>
+      source.getLines().mkString
+    }.get
   }
 
   lazy val testCases: Seq[TaprootTestCase] = {

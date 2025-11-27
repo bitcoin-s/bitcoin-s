@@ -3,6 +3,7 @@ package org.bitcoins.core.protocol.transaction
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 
 import scala.io.Source
+import scala.util.Using
 
 class LargeTransactionTest extends BitcoinSUnitTest {
 
@@ -13,7 +14,9 @@ class LargeTransactionTest extends BitcoinSUnitTest {
     val fileName =
       "/a536e7f60a493a258d9adc77d913f7798baf60c808c16898b04579d8c0652681.txt"
     val lines =
-      Source.fromURL(getClass.getResource(fileName)).mkString
+      Using(Source.fromURL(getClass.getResource(fileName))) { source =>
+        source.mkString
+      }.get
     val tx = Transaction.fromHex(lines)
     assert(tx.hex == lines)
   }
