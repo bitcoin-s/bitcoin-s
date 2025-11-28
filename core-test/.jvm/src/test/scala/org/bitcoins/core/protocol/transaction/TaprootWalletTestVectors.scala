@@ -6,6 +6,8 @@ import org.bitcoins.core.protocol.script.TaprootScriptPubKey
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import org.scalatest.Assertion
 
+import scala.util.Using
+
 class TaprootWalletTestVectors extends BitcoinSUnitTest {
   behavior of "TaprootWalletTestVectors"
 
@@ -13,7 +15,9 @@ class TaprootWalletTestVectors extends BitcoinSUnitTest {
   lazy val url = getClass.getResource("/wallet-test-vectors.json")
 
   lazy val lines = {
-    scala.io.Source.fromURL(url).getLines().mkString
+    Using(scala.io.Source.fromURL(url)) { source =>
+      source.getLines().mkString
+    }.get
   }
 
   lazy val testCase: TaprootWalletTestCases = {
