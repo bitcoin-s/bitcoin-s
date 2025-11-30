@@ -97,7 +97,6 @@ sealed abstract class Policy {
       .map(o => countSigOps(o.scriptPubKey))
       .sum
     val scriptSigCount = transaction.inputs.map { i =>
-      println(i.scriptSignature.getClass.getSimpleName)
       i.scriptSignature match {
         case p: P2SHScriptSignature =>
           countSigOps(p.redeemScript) + countSigOps(

@@ -2,6 +2,7 @@ package org.bitcoins.core.protocol.blockchain
 import org.bitcoins.commons.serializers.SerializerUtil
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 import play.api.libs.json.{JsResult, JsValue, Json, Reads}
 
@@ -21,7 +22,14 @@ class Bip54SigopsTest extends BitcoinSJvmTest {
       spent_outputs: Vector[TransactionOutput],
       tx: Transaction,
       valid: Boolean,
-      comment: String)
+      comment: String) {
+    val outputMap: PreviousOutputMap = {
+      val m = tx.inputs.map(_.previousOutput).zip(spent_outputs).toMap
+      PreviousOutputMap(m)
+    }
+    val spendingTx: Transaction =
+      Transaction.fromSpentOutputs(initTx = tx, spentOutputs = outputMap)
+  }
   implicit val bip54SigOpsTestCaseReader: Reads[Bip54SigOpsTestCase] =
     Json.reads[Bip54SigOpsTestCase]
   it must "pass all bip54 sigops test vectors" in {
@@ -36,10 +44,12 @@ class Bip54SigopsTest extends BitcoinSJvmTest {
       withClue(testCase.comment) {
         if (testCase.valid) {
           assert(
-            Policy.checkBip54SigOpLimit(testCase.tx, testCase.spent_outputs))
+            Policy.checkBip54SigOpLimit(testCase.spendingTx,
+                                        testCase.spent_outputs))
         } else {
           assert(
-            !Policy.checkBip54SigOpLimit(testCase.tx, testCase.spent_outputs))
+            !Policy.checkBip54SigOpLimit(testCase.spendingTx,
+                                         testCase.spent_outputs))
         }
       }
     }
