@@ -2,7 +2,11 @@ package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.{Int32, UInt32}
-import org.bitcoins.core.protocol.script.{EmptyScriptWitness, ScriptSignature, ScriptWitness}
+import org.bitcoins.core.protocol.script.{
+  EmptyScriptWitness,
+  ScriptSignature,
+  ScriptWitness
+}
 import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.core.wallet.builder.RawTxBuilder
@@ -139,10 +143,10 @@ object Transaction extends Factory[Transaction] {
     tx
   }
 
-  /** This allows us to accurately type
-    * transaction input's [[org.bitcoins.core.protocol.script.ScriptSignature]] as
-    * we have the corresponding
-    * [[org.bitcoins.core.protocol.script.ScriptPubKey]] the input is spending.
+  /** This allows us to accurately type transaction input's
+    * [[org.bitcoins.core.protocol.script.ScriptSignature]] as we have the
+    * corresponding [[org.bitcoins.core.protocol.script.ScriptPubKey]] the input
+    * is spending.
     */
   def fromSpentOutputs(
       initTx: Transaction,
