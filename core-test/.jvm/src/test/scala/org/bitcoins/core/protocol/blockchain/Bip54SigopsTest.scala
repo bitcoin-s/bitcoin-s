@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol.blockchain
 import org.bitcoins.commons.serializers.SerializerUtil
+import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 import play.api.libs.json.{JsResult, JsValue, Json, Reads}
@@ -30,10 +31,18 @@ class Bip54SigopsTest extends BitcoinSJvmTest {
       source => source.mkString
     }.get
     val json = Json.parse(lines)
-    val testCases = json.validate[Vector[Bip54SigOpsTestCase]]
-
+    val testCases = json.validate[Vector[Bip54SigOpsTestCase]].get
+    testCases.foreach { testCase =>
+      withClue(testCase.comment) {
+        if (testCase.valid) {
+          assert(
+            Policy.checkBip54SigOpLimit(testCase.tx, testCase.spent_outputs))
+        } else {
+          assert(
+            !Policy.checkBip54SigOpLimit(testCase.tx, testCase.spent_outputs))
+        }
+      }
+    }
     succeed
-
   }
-
 }
