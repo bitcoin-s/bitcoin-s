@@ -1334,7 +1334,7 @@ class EclairRpcClientTest extends BitcoinSAsyncTest {
   /** Closing a channel became much more difficult in v0.12. The problem is
     * giving an illusion of a synchronous API when in reality the closing API is
     * highly asynchronous in Eclair This method's Future completes when the
-    * closing transaciton is fully confirmed on chain
+    * closing transaction is fully confirmed on chain
     * @return
     *   the closing transactions transaction id
     */

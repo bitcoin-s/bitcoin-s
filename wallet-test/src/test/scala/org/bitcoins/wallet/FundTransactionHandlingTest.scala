@@ -162,7 +162,7 @@ class FundTransactionHandlingTest
 
   it must "fund from a specific account" in {
     (fundedWallet: WalletWithBitcoindRpc) =>
-      // we want to fund from account 1, not hte default account
+      // we want to fund from account 1, not the default account
       // account 1 has 1 btc in it
       val amt = Bitcoins(0.1)
       val newDestination = destination.copy(value = amt)
