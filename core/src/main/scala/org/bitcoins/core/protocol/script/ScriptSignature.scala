@@ -665,9 +665,7 @@ object ScriptSignature extends ScriptFactory[ScriptSignature] {
         ScriptSignature.empty
       case _: WitnessCommitment =>
         ScriptSignature.empty
-      case EmptyScriptPubKey =>
-        ScriptSignature.empty
-      case _: NonStandardScriptPubKey =>
+      case _: NonStandardScriptPubKey | EmptyScriptPubKey =>
         NonStandardScriptSignature.fromAsm(asm)
     }
   }

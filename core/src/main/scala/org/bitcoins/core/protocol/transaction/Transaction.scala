@@ -153,18 +153,22 @@ object Transaction extends Factory[Transaction] {
       spentOutputs: PreviousOutputMap): Transaction = {
     require(initTx.inputs.size == spentOutputs.size)
     require(initTx.inputs.exists(i => spentOutputs.contains(i.previousOutput)))
-    initTx.inputs.zipWithIndex.foldLeft(initTx) { case (tx, (input, idx)) =>
-      val prevOutput = spentOutputs(input.previousOutput)
-      val updatedScriptSig =
-        ScriptSignature.fromScriptPubKey(prevOutput.scriptPubKey,
-                                         input.scriptSignature.asm.toVector)
-      val updatedInput = TransactionInput(
-        input.previousOutput,
-        updatedScriptSig,
-        input.sequence
-      )
-      tx.updateInput(idx, updatedInput)
+    val typedTx = initTx.inputs.zipWithIndex.foldLeft(initTx) {
+      case (tx, (input, idx)) =>
+        val prevOutput = spentOutputs(input.previousOutput)
+        val updatedScriptSig =
+          ScriptSignature.fromScriptPubKey(prevOutput.scriptPubKey,
+                                           input.scriptSignature.asm.toVector)
+        val updatedInput = TransactionInput(
+          input.previousOutput,
+          updatedScriptSig,
+          input.sequence
+        )
+        tx.updateInput(idx, updatedInput)
     }
+    require(typedTx.hex == initTx.hex,
+            "Re-typing inputs should not change transaction serialization")
+    typedTx
   }
 }
 
