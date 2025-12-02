@@ -11,12 +11,11 @@ import org.bitcoins.core.protocol.script.{
   P2PKHScriptSignature,
   P2PKScriptSignature,
   P2SHScriptSignature,
-  Script,
   TrivialTrueScriptSignature
 }
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
-import org.bitcoins.core.script.crypto.CryptoSignatureEvaluation
 import org.bitcoins.core.script.flag.*
+import org.bitcoins.core.util.BitcoinScriptUtil
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 
 /** Created by chris on 4/6/16. Mimics the policy files found in
@@ -94,28 +93,24 @@ sealed abstract class Policy {
       transaction: Transaction,
       spentOutputs: Vector[TransactionOutput]): Boolean = {
     val spkCount = spentOutputs
-      .map(o => countSigOps(o.scriptPubKey))
+      .map(o =>
+        BitcoinScriptUtil.countSigOps(o.scriptPubKey.asm, fAccurate = false))
       .sum
     val scriptSigCount = transaction.inputs.map { i =>
       i.scriptSignature match {
         case p: P2SHScriptSignature =>
-          countSigOps(p.redeemScript) + countSigOps(
-            p.scriptSignatureNoRedeemScript)
+          BitcoinScriptUtil.countSigOps(p.redeemScript.asm,
+                                        fAccurate = false) + BitcoinScriptUtil
+            .countSigOps(p.scriptSignatureNoRedeemScript.asm, fAccurate = false)
         case s @ (_: MultiSignatureScriptSignature | _: P2PKScriptSignature |
             _: NonStandardScriptSignature | _: LockTimeScriptSignature |
             _: ConditionalScriptSignature | EmptyScriptSignature |
             _: P2PKHScriptSignature | TrivialTrueScriptSignature) =>
-          countSigOps(s)
+          BitcoinScriptUtil.countSigOps(s.asm, fAccurate = false)
       }
     }.sum
-    val result = (spkCount + scriptSigCount)
-    println(
-      s"result=$result inputCount=${transaction.inputs.size} outputCount=${spentOutputs.size}")
+    val result = spkCount + scriptSigCount
     result <= sigOps
-  }
-
-  private def countSigOps(script: Script): Int = {
-    script.asm.count(_.isInstanceOf[CryptoSignatureEvaluation])
   }
 }
 
