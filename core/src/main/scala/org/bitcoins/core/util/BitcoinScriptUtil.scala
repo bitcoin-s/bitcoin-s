@@ -122,7 +122,7 @@ trait BitcoinScriptUtil {
     * @return
     *   the number of signature operations in the script
     */
-  def countSigOps(script: Seq[ScriptToken]): Long = {
+  def countSigOps(script: Seq[ScriptToken], fAccurate: Boolean): Long = {
     val checkSigCount =
       script.count(token => token == OP_CHECKSIG || token == OP_CHECKSIGVERIFY)
     val multiSigOps = Seq(OP_CHECKMULTISIG, OP_CHECKMULTISIGVERIFY)
@@ -132,9 +132,16 @@ trait BitcoinScriptUtil {
           script(index - 1) match {
             case scriptNum: ScriptNumber => scriptNum.toLong
             case scriptConstant: ScriptConstant =>
-              ScriptNumberUtil.toLong(scriptConstant.hex)
+              if (fAccurate) {
+                ScriptNumberUtil.toLong(scriptConstant.hex)
+              } else {
+                Consensus.maxPublicKeysPerMultiSig
+              }
             case _: ScriptToken => Consensus.maxPublicKeysPerMultiSig
           }
+        } else if (multiSigOps.contains(token)) {
+          // for the case where OP_CHECKMULTISIG is the very first opcode in the Script
+          Consensus.maxPublicKeysPerMultiSig
         } else 0
       }
       .sum

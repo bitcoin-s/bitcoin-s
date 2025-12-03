@@ -117,17 +117,19 @@ class BitcoinScriptUtilTest extends BitcoinSUnitTest {
 
   it must "count 0 sigops where there are none in a script" in {
     val script = Seq()
-    BitcoinScriptUtil.countSigOps(script) must be(0)
-    BitcoinScriptUtil.countSigOps(Seq(OP_1, OP_2, ScriptConstant("1234")))
+    BitcoinScriptUtil.countSigOps(script, fAccurate = true) must be(0)
+    BitcoinScriptUtil.countSigOps(Seq(OP_1, OP_2, ScriptConstant("1234")),
+                                  fAccurate = true)
   }
 
   it must "count n sigops when we have n occurrences OP_CHECKSIG or OP_CHECKSIGVERIFY in a script" in {
-    BitcoinScriptUtil.countSigOps(Seq(OP_CHECKSIG)) must be(1)
-    BitcoinScriptUtil.countSigOps(Seq(OP_CHECKSIGVERIFY)) must be(1)
+    BitcoinScriptUtil.countSigOps(Seq(OP_CHECKSIG), fAccurate = true) must be(1)
+    BitcoinScriptUtil.countSigOps(Seq(OP_CHECKSIGVERIFY),
+                                  fAccurate = true) must be(1)
 
     BitcoinScriptUtil.countSigOps(
-      Seq(OP_CHECKSIG, OP_CHECKSIG, OP_CHECKSIG, OP_CHECKSIG, OP_CHECKSIG)
-    ) must be(5)
+      Seq(OP_CHECKSIG, OP_CHECKSIG, OP_CHECKSIG, OP_CHECKSIG, OP_CHECKSIG),
+      fAccurate = true) must be(5)
     BitcoinScriptUtil.countSigOps(
       Seq(
         OP_CHECKSIGVERIFY,
@@ -135,43 +137,56 @@ class BitcoinScriptUtilTest extends BitcoinSUnitTest {
         OP_CHECKSIGVERIFY,
         OP_CHECKSIGVERIFY,
         OP_CHECKSIGVERIFY
-      )
+      ),
+      fAccurate = true
     ) must be(5)
   }
 
   it must "count n sigops when have n possible signatures in a OP_CHECKMULTISIG or OP_CHECKMULTISIGVERIFY" in {
-    BitcoinScriptUtil.countSigOps(Seq(OP_0, OP_CHECKMULTISIG)) must be(0)
-    BitcoinScriptUtil.countSigOps(Seq(OP_0, OP_CHECKMULTISIGVERIFY)) must be(0)
+    BitcoinScriptUtil.countSigOps(Seq(OP_0, OP_CHECKMULTISIG),
+                                  fAccurate = true) must be(0)
+    BitcoinScriptUtil.countSigOps(Seq(OP_0, OP_CHECKMULTISIGVERIFY),
+                                  fAccurate = true) must be(0)
 
-    BitcoinScriptUtil.countSigOps(Seq(OP_1, OP_CHECKMULTISIG)) must be(1)
-    BitcoinScriptUtil.countSigOps(Seq(OP_1, OP_CHECKMULTISIGVERIFY)) must be(1)
+    BitcoinScriptUtil.countSigOps(Seq(OP_1, OP_CHECKMULTISIG),
+                                  fAccurate = true) must be(1)
+    BitcoinScriptUtil.countSigOps(Seq(OP_1, OP_CHECKMULTISIGVERIFY),
+                                  fAccurate = true) must be(1)
 
-    BitcoinScriptUtil.countSigOps(Seq(OP_16, OP_CHECKMULTISIG)) must be(16)
-    BitcoinScriptUtil.countSigOps(Seq(OP_16, OP_CHECKMULTISIGVERIFY)) must be(
+    BitcoinScriptUtil.countSigOps(Seq(OP_16, OP_CHECKMULTISIG),
+                                  fAccurate = true) must be(16)
+    BitcoinScriptUtil.countSigOps(Seq(OP_16, OP_CHECKMULTISIGVERIFY),
+                                  fAccurate = true) must be(
       16
     )
   }
 
   it must "count n sigops when have n possible signatures with multiple occurrences OP_CHECKMULTISIG or OP_CHECKMULTISIGVERIFY in a script" in {
     BitcoinScriptUtil.countSigOps(
-      Seq(OP_0, OP_CHECKMULTISIG, OP_0, OP_CHECKMULTISIG)
+      Seq(OP_0, OP_CHECKMULTISIG, OP_0, OP_CHECKMULTISIG),
+      fAccurate = true
     ) must be(0)
     BitcoinScriptUtil.countSigOps(
-      Seq(OP_0, OP_CHECKMULTISIGVERIFY, OP_0, OP_CHECKMULTISIGVERIFY)
+      Seq(OP_0, OP_CHECKMULTISIGVERIFY, OP_0, OP_CHECKMULTISIGVERIFY),
+      fAccurate = true
     ) must be(0)
 
     BitcoinScriptUtil.countSigOps(
-      Seq(OP_1, OP_CHECKMULTISIG, OP_1, OP_CHECKMULTISIG)
+      Seq(OP_1, OP_CHECKMULTISIG, OP_1, OP_CHECKMULTISIG),
+      fAccurate = true
     ) must be(2)
     BitcoinScriptUtil.countSigOps(
-      Seq(OP_1, OP_CHECKMULTISIGVERIFY, OP_1, OP_CHECKMULTISIGVERIFY)
+      Seq(OP_1, OP_CHECKMULTISIGVERIFY, OP_1, OP_CHECKMULTISIGVERIFY),
+      fAccurate = true
     ) must be(2)
 
     BitcoinScriptUtil.countSigOps(
-      Seq(OP_16, OP_CHECKMULTISIG, OP_16, OP_CHECKMULTISIG)
+      Seq(OP_16, OP_CHECKMULTISIG, OP_16, OP_CHECKMULTISIG),
+      fAccurate = true
     ) must be(32)
     BitcoinScriptUtil.countSigOps(
-      Seq(OP_16, OP_CHECKMULTISIGVERIFY, OP_16, OP_CHECKMULTISIG)
+      Seq(OP_16, OP_CHECKMULTISIGVERIFY, OP_16, OP_CHECKMULTISIG),
+      fAccurate = true
     ) must be(32)
   }
 
