@@ -9,7 +9,7 @@ import play.api.libs.json.{JsResult, JsValue, Json, Reads}
 import scala.io.Source
 import scala.util.Using
 
-class Bip54SigopsTest extends BitcoinSJvmTest {
+class Bip54Test extends BitcoinSJvmTest {
 
   behavior of "BIP54 sigops"
 
@@ -18,7 +18,7 @@ class Bip54SigopsTest extends BitcoinSJvmTest {
     override def reads(json: JsValue): JsResult[TransactionOutput] =
       SerializerUtil.processJsString(TransactionOutput.fromHex)(json)
   }
-  case class Bip54SigOpsTestCase(
+  case class SigOpsTestCase(
       spent_outputs: Vector[TransactionOutput],
       tx: Transaction,
       valid: Boolean,
@@ -30,8 +30,13 @@ class Bip54SigopsTest extends BitcoinSJvmTest {
     val spendingTx: Transaction =
       Transaction.fromSpentOutputs(initTx = tx, spentOutputs = outputMap)
   }
-  implicit val bip54SigOpsTestCaseReader: Reads[Bip54SigOpsTestCase] =
-    Json.reads[Bip54SigOpsTestCase]
+  implicit val sigOpsTestCaseReader: Reads[SigOpsTestCase] =
+    Json.reads[SigOpsTestCase]
+
+  case class TxSizeTestCase(tx: Transaction, valid: Boolean, comment: String)
+  implicit val txSizeTestCasereader: Reads[TxSizeTestCase] =
+    Json.reads[TxSizeTestCase]
+
   it must "pass all bip54 sigops test vectors" in {
     val fileName =
       "/sigops.json"
@@ -39,7 +44,7 @@ class Bip54SigopsTest extends BitcoinSJvmTest {
       source => source.mkString
     }.get
     val json = Json.parse(lines)
-    val testCases = json.validate[Vector[Bip54SigOpsTestCase]].get
+    val testCases = json.validate[Vector[SigOpsTestCase]].get
     testCases.foreach { testCase =>
       withClue(testCase.comment) {
         if (testCase.valid) {
@@ -50,6 +55,30 @@ class Bip54SigopsTest extends BitcoinSJvmTest {
           assert(
             !Policy.checkBip54SigOpLimit(testCase.spendingTx,
                                          testCase.spent_outputs))
+        }
+      }
+    }
+    succeed
+  }
+
+  it must "pass all txsize test vectors" in {
+    val fileName =
+      "/txsize.json"
+    val lines = Using(Source.fromURL(getClass.getResource(fileName))) {
+      source => source.mkString
+    }.get
+    val json = Json.parse(lines)
+    val testCases = json.validate[Vector[TxSizeTestCase]].get
+    testCases.foreach { testCase =>
+      withClue(testCase.comment) {
+        if (testCase.valid) {
+          assert(
+            Policy.checkTransactionSizeLimit(testCase.tx)
+          )
+        } else {
+          assert(
+            !Policy.checkTransactionSizeLimit(testCase.tx)
+          )
         }
       }
     }

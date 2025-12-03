@@ -112,6 +112,10 @@ sealed abstract class Policy {
     val result = spkCount + scriptSigCount
     result <= sigOps
   }
+
+  def checkTransactionSizeLimit(tx: Transaction): Boolean = {
+    tx.toBaseTx.byteSize != 64
+  }
 }
 
 object Policy extends Policy
