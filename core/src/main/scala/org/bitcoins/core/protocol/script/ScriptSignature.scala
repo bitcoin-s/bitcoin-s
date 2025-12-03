@@ -637,4 +637,36 @@ object ScriptSignature extends ScriptFactory[ScriptSignature] {
     }
 
   override def isValidAsm(asm: Seq[ScriptToken]): Boolean = true
+
+  def fromScriptPubKey(
+      scriptPubKey: ScriptPubKey,
+      asm: Vector[ScriptToken]): ScriptSignature = {
+    scriptPubKey match {
+      case _: P2PKHScriptPubKey =>
+        P2PKHScriptSignature.fromAsm(asm)
+      case _: P2SHScriptPubKey =>
+        P2SHScriptSignature.fromAsm(asm)
+      case _: MultiSignatureScriptPubKey =>
+        MultiSignatureScriptSignature.fromAsm(asm)
+      case _: P2PKScriptPubKey =>
+        P2PKScriptSignature.fromAsm(asm)
+      case _: P2PKWithTimeoutScriptPubKey =>
+        P2PKWithTimeoutScriptSignature.fromAsm(asm)
+      case lockTime: LockTimeScriptPubKey =>
+        lockTime match {
+          case _: CLTVScriptPubKey =>
+            CLTVScriptSignature.fromAsm(asm)
+          case _: CSVScriptPubKey =>
+            CSVScriptSignature.fromAsm(asm)
+        }
+      case _: ConditionalScriptPubKey =>
+        ConditionalScriptSignature.fromAsm(asm)
+      case _: WitnessScriptPubKey =>
+        ScriptSignature.empty
+      case _: WitnessCommitment =>
+        ScriptSignature.empty
+      case _: NonStandardScriptPubKey | EmptyScriptPubKey =>
+        NonStandardScriptSignature.fromAsm(asm)
+    }
+  }
 }

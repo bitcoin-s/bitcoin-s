@@ -2,10 +2,15 @@ package org.bitcoins.core.protocol.transaction
 
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.{Int32, UInt32}
-import org.bitcoins.core.protocol.script.{EmptyScriptWitness, ScriptWitness}
+import org.bitcoins.core.protocol.script.{
+  EmptyScriptWitness,
+  ScriptSignature,
+  ScriptWitness
+}
+import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.util.BytesUtil
 import org.bitcoins.core.wallet.builder.RawTxBuilder
-import org.bitcoins.crypto._
+import org.bitcoins.crypto.*
 import scodec.bits.ByteVector
 
 /** Created by chris on 7/14/15.
@@ -136,6 +141,34 @@ object Transaction extends Factory[Transaction] {
       }
     }
     tx
+  }
+
+  /** This allows us to accurately type transaction input's
+    * [[org.bitcoins.core.protocol.script.ScriptSignature]] as we have the
+    * corresponding [[org.bitcoins.core.protocol.script.ScriptPubKey]] the input
+    * is spending.
+    */
+  def fromSpentOutputs(
+      initTx: Transaction,
+      spentOutputs: PreviousOutputMap): Transaction = {
+    require(initTx.inputs.size == spentOutputs.size)
+    require(initTx.inputs.exists(i => spentOutputs.contains(i.previousOutput)))
+    val typedTx = initTx.inputs.zipWithIndex.foldLeft(initTx) {
+      case (tx, (input, idx)) =>
+        val prevOutput = spentOutputs(input.previousOutput)
+        val updatedScriptSig =
+          ScriptSignature.fromScriptPubKey(prevOutput.scriptPubKey,
+                                           input.scriptSignature.asm.toVector)
+        val updatedInput = TransactionInput(
+          input.previousOutput,
+          updatedScriptSig,
+          input.sequence
+        )
+        tx.updateInput(idx, updatedInput)
+    }
+    require(typedTx.hex == initTx.hex,
+            "Re-typing inputs should not change transaction serialization")
+    typedTx
   }
 }
 
