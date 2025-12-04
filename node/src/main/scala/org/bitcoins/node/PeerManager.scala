@@ -865,7 +865,7 @@ case class PeerManager(
     } yield headerSync
   }
 
-  /** Starts a filter header or filter sync is necesssary. Returns None if no
+  /** Starts a filter header or filter sync is necessary. Returns None if no
     * sync is started
     */
   def startFilterSync(
@@ -1191,7 +1191,7 @@ case class PeerManager(
       case running: NodeRunningState =>
         if (running.waitingForDisconnection.contains(peer)) {
           logger.debug(
-            s"Attempting to intialize disconnect of peer=${peer} we are already waitingForDisconnection, state=$running"
+            s"Attempting to initialize disconnect of peer=${peer} we are already waitingForDisconnection, state=$running"
           )
           Future.successful(running)
         } else {
