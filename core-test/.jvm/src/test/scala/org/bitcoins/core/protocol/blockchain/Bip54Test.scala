@@ -37,6 +37,13 @@ class Bip54Test extends BitcoinSJvmTest {
   implicit val txSizeTestCasereader: Reads[TxSizeTestCase] =
     Json.reads[TxSizeTestCase]
 
+  case class CoinbaseTestCase(
+      block_chain: Vector[Block],
+      valid: Boolean,
+      comment: String)
+  implicit val coinbaseTestCasereader: Reads[CoinbaseTestCase] =
+    Json.reads[CoinbaseTestCase]
+
   it must "pass all bip54 sigops test vectors" in {
     val fileName =
       "/sigops.json"
@@ -78,6 +85,30 @@ class Bip54Test extends BitcoinSJvmTest {
         } else {
           assert(
             !Policy.checkTransactionSizeLimit(testCase.tx)
+          )
+        }
+      }
+    }
+    succeed
+  }
+
+  it must "pass all coinbases test vectors" in {
+    val fileName =
+      "/coinbases.json"
+    val lines = Using(Source.fromURL(getClass.getResource(fileName))) {
+      source => source.mkString
+    }.get
+    val json = Json.parse(lines)
+    val testCases = json.validate[Vector[CoinbaseTestCase]].get
+    testCases.foreach { testCase =>
+      withClue(testCase.comment) {
+        if (testCase.valid) {
+          assert(
+            Policy.checkTransactionSizeLimit(testCase.block_chain)
+          )
+        } else {
+          assert(
+            !Policy.checkTransactionSizeLimit(testCase.block_chain)
           )
         }
       }
