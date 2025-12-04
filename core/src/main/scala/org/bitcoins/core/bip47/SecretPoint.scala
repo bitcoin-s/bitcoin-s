@@ -1,6 +1,5 @@
 package org.bitcoins.core.bip47
 
-import org.bitcoin.{NativeSecp256k1, Secp256k1Context}
 import org.bitcoins.crypto.{ECPrivateKey, ECPublicKey, FieldElement}
 import scodec.bits.ByteVector
 
@@ -23,28 +22,11 @@ object SecretPoint {
     * result is the x-coordinate of privKey * pubKey.
     */
   def apply(privKey: ECPrivateKey, pubKey: ECPublicKey): SecretPoint = {
-    val secret =
-      if (Secp256k1Context.isEnabled) {
-        computeECDHNative(privKey, pubKey)
-      } else {
-        computeECDHPure(privKey, pubKey)
-      }
-    SecretPointImpl(secret)
-  }
-
-  private def computeECDHNative(
-      privKey: ECPrivateKey,
-      pubKey: ECPublicKey): ByteVector = {
-    val result = NativeSecp256k1.createECDHSecret(privKey.bytes.toArray,
-                                                  pubKey.bytes.toArray)
-    ByteVector(result)
-  }
-
-  private def computeECDHPure(
-      privKey: ECPrivateKey,
-      pubKey: ECPublicKey): ByteVector = {
     val tweak = FieldElement(privKey.bytes)
     val resultPoint = pubKey.multiply(tweak)
-    resultPoint.bytes.tail.take(32)
+    // The result is the x-coordinate of the shared point (32 bytes)
+    // For compressed public keys, skip the prefix byte and take 32 bytes
+    val secret = resultPoint.bytes.tail.take(32)
+    SecretPointImpl(secret)
   }
 }
