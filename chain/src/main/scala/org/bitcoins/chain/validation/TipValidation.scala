@@ -5,7 +5,11 @@ import org.bitcoins.chain.blockchain.Blockchain
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.api.chain.db.{BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.blockchain.{BitcoinChainParams, BlockHeader}
+import org.bitcoins.core.protocol.blockchain.{
+  BitcoinChainParams,
+  Block,
+  BlockHeader
+}
 import org.bitcoins.core.util.NumberUtil
 
 /** Responsible for checking if we can connect two block headers together on the
@@ -112,6 +116,17 @@ sealed abstract class TipValidation extends ChainVerificationLogger {
       chainParams = chainParams
     )
 
+  }
+
+  def contextualCheckBlock(block: Block, tip: BlockHeaderDb, blockchain: Blockchain, chainParams: BitcoinChainParams): Boolean = {
+    require(block.blockHeader.previousBlockHashBE == tip.hashBE)
+    val nHeight = tip.height + 1
+    val expectedBits = Pow.getNetworkWorkRequired(block.blockHeader,
+                                                  blockchain = blockchain,
+                                                  chainParams = chainParams
+    )
+
+    ???
   }
 }
 

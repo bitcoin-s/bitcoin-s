@@ -1,6 +1,10 @@
-package org.bitcoins.core.protocol.blockchain
+package org.bitcoins.chain.validation
+
+import org.bitcoins.chain.pow.Pow
 import org.bitcoins.commons.serializers.SerializerUtil
+import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
 import org.bitcoins.core.policy.Policy
+import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.testkitcore.util.BitcoinSJvmTest
@@ -12,8 +16,10 @@ import scala.util.Using
 class Bip54Test extends BitcoinSJvmTest {
 
   behavior of "BIP54 sigops"
-
-  import org.bitcoins.commons.serializers.JsonSerializers.transactionReads
+  import org.bitcoins.commons.serializers.JsonSerializers.{
+    transactionReads,
+    blockReads
+  }
   implicit object TransactionOutputReads extends Reads[TransactionOutput] {
     override def reads(json: JsValue): JsResult[TransactionOutput] =
       SerializerUtil.processJsString(TransactionOutput.fromHex)(json)
@@ -102,13 +108,23 @@ class Bip54Test extends BitcoinSJvmTest {
     val testCases = json.validate[Vector[CoinbaseTestCase]].get
     testCases.foreach { testCase =>
       withClue(testCase.comment) {
+        val height = testCase.block_chain.length - 1
+        val tip = testCase.block_chain(height - 1).blockHeader
+        val tipDb = BlockHeaderDbHelper.fromBlockHeader(
+          height = height - 1,
+          chainWork = Pow.getBlockProof(tip),
+          bh = tip
+        )
         if (testCase.valid) {
+
           assert(
-            Policy.checkTransactionSizeLimit(testCase.block_chain)
+            TipValidation.contextualCheckBlock(testCase.block_chain(height),
+                                               tipDb)
           )
         } else {
           assert(
-            !Policy.checkTransactionSizeLimit(testCase.block_chain)
+            !TipValidation.contextualCheckBlock(testCase.block_chain(height),
+                                                tipDb)
           )
         }
       }
