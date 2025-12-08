@@ -15,30 +15,32 @@ class ChainHandlerCachedTest extends ChainDbUnitTest {
 
   behavior of "ChainHandlerCached"
 
-//  it must "throw an error when we have no chains" in {
-//    (chainHandlerCached: ChainHandlerCached) =>
-//      val handler = chainHandlerCached.copy(blockchains = Vector.empty)(
-//        chainHandlerCached.chainConfig,
-//        executionContext)
-//
-//      recoverToSucceededIf[RuntimeException] {
-//        handler
-//          .getBestBlockHeader()
-//      }
-//  }
+  it must "throw an error when we have no chains" in {
+    (chainHandlerCached: ChainHandlerCached) =>
+      val handler = chainHandlerCached.copy(blockchains = Vector.empty)(
+        chainHandlerCached.chainConfig,
+        executionContext)
 
-//  it must "get best filter header with zero blockchains in memory" in {
-//    (chainHandlerCached: ChainHandlerCached) =>
-//      val noChainsChainHandler =
-//        chainHandlerCached.copy(blockchains = Vector.empty)
-//
-//      for {
-//        filterHeaderOpt <- noChainsChainHandler.getBestFilterHeader()
-//      } yield {
-//        assert(filterHeaderOpt.isDefined)
-//        assert(filterHeaderOpt.get == ChainTestUtil.genesisFilterHeaderDb)
-//      }
-//  }
+      recoverToSucceededIf[RuntimeException] {
+        handler
+          .getBestBlockHeader()
+      }
+  }
+
+  it must "get best filter header with zero blockchains in memory" in {
+    (chainHandlerCached: ChainHandlerCached) =>
+      val noChainsChainHandler =
+        chainHandlerCached.copy(blockchains = Vector.empty)(
+          chainHandlerCached.chainConfig,
+          executionContext)
+
+      for {
+        filterHeaderOpt <- noChainsChainHandler.getBestFilterHeader()
+      } yield {
+        assert(filterHeaderOpt.isDefined)
+        assert(filterHeaderOpt.get == ChainTestUtil.genesisFilterHeaderDb)
+      }
+  }
 
   it must "generate a range for a block filter query for the genesis block" in {
     (chainHandler: ChainHandlerCached) =>
