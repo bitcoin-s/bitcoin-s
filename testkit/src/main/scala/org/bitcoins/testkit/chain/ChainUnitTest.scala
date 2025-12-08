@@ -1,8 +1,8 @@
 package org.bitcoins.testkit.chain
 
 import org.apache.pekko.actor.ActorSystem
-import org.apache.pekko.stream.Materializer
-import org.apache.pekko.stream.scaladsl.{Sink, Source}
+import org.apache.pekko.stream.{Materializer, OverflowStrategy}
+import org.apache.pekko.stream.scaladsl.{Sink, Source, SourceQueueWithComplete}
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.chain.ChainVerificationLogger
@@ -235,13 +235,38 @@ trait ChainUnitTest extends BitcoinSFixture {
     startedF.flatMap { _ =>
       val zmqRawBlockUriOpt: Option[InetSocketAddress] =
         bitcoind.instance.zmqConfig.rawBlock
-      val chainApi =
-        ChainHandler.fromDatabase()(executionContext, chainAppConfig)
-      val handleRawBlock: Block => Unit = { (block: Block) =>
-        val processF = chainApi.processHeader(block.blockHeader)
+      val sink = Sink.foreachAsync(1) { (blocks: Vector[Block]) =>
+        val chainApi =
+          ChainHandler.fromDatabase()(executionContext, chainAppConfig)
+        val processF = chainApi.processHeaders(blocks.map(_.blockHeader))
         processF.failed.foreach { err =>
-          logger.error(s"Failed to parse handleRawBlock callback", err)
+          logger.error(
+            s"Failed to parse handleRawBlock callback for block=${blocks.map(_.blockHeader.hashBE)}",
+            err)
         }
+        processF.map(_ => ())
+      }
+      val queue: SourceQueueWithComplete[Block] = Source
+        .queue[Block](10, OverflowStrategy.backpressure)
+        .batch(100, { t => Vector(t) }) { (vec, t) => vec.appended(t) }
+        .to(sink)
+        .run()(Materializer.matFromSystem(system))
+      val handleRawBlock: Block => Unit = { (block: Block) =>
+        queue
+          .offer(block)
+          .foreach {
+            case org.apache.pekko.stream.QueueOfferResult.Enqueued => // all good
+            case org.apache.pekko.stream.QueueOfferResult.Dropped =>
+              logger.warn(
+                s"Block offer dropped for block ${block.blockHeader.hashBE}")
+            case org.apache.pekko.stream.QueueOfferResult.Failure(ex) =>
+              logger.error(
+                s"Block offer failed for block ${block.blockHeader.hashBE}",
+                ex)
+            case org.apache.pekko.stream.QueueOfferResult.QueueClosed =>
+              logger.error(
+                s"Block offer failed: queue closed for block ${block.blockHeader.hashBE}")
+          }(executionContext)
         ()
       }
 
@@ -267,6 +292,7 @@ trait ChainUnitTest extends BitcoinSFixture {
       // generate a block and make sure we see it so we know the subscription is complete
       val subscribedF = for {
         chainHandler <- chainHandlerF
+        _ <- ChainUnitTest.isSynced(chainHandler, bitcoind)
         addr <- bitcoind.getNewAddress
         hash <- bitcoind.generateToAddress(1, addr).map(_.head)
         // wait until we see the hash, to make sure the subscription is started
@@ -277,7 +303,8 @@ trait ChainUnitTest extends BitcoinSFixture {
           1.second
         )
       } yield {
-        (chainApi, zmqSubscriber)
+        (ChainHandler.fromDatabase()(executionContext, chainAppConfig),
+         zmqSubscriber)
       }
       subscribedF
     }
@@ -764,5 +791,13 @@ object ChainUnitTest extends ChainVerificationLogger {
       builtHeaderDbs <- builtHeaderDbsF
       _ <- chainHandler.processHeaders(builtHeaderDbs.map(_.blockHeader))
     } yield ()
+  }
+
+  def isSynced(chainApi: ChainApi, bitcoind: BitcoindRpcClient)(implicit
+      ec: ExecutionContext): Future[Boolean] = {
+    for {
+      bitcoinSBestBlockHash <- chainApi.getBestBlockHash()
+      bitcoindBestBlockHash <- bitcoind.getBestBlockHash()
+    } yield bitcoinSBestBlockHash == bitcoindBestBlockHash
   }
 }
