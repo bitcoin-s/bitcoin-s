@@ -9,11 +9,10 @@ import org.bitcoins.chain.ChainVerificationLogger
 import org.bitcoins.chain.blockchain.sync.ChainSync
 import org.bitcoins.chain.blockchain.{ChainHandler, ChainHandlerCached}
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models._
+import org.bitcoins.chain.models.*
 import org.bitcoins.chain.pow.Pow
-import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.core.api.chain.ChainApi
-import org.bitcoins.core.api.chain.db._
+import org.bitcoins.core.api.chain.db.*
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
@@ -22,30 +21,30 @@ import org.bitcoins.testkit.chain.ChainUnitTest.{
   createChainHandler,
   createChainHandlerCached
 }
-import org.bitcoins.testkit.chain.fixture._
+import org.bitcoins.testkit.chain.fixture.*
 import org.bitcoins.testkit.chain.models.{
   ReorgFixtureBlockHeaderDAO,
   ReorgFixtureChainApi
 }
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
-import org.bitcoins.testkit.node.CachedChainAppConfig
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkit.util.ScalaTestUtil
-import org.bitcoins.testkit.{chain, BitcoinSTestAppConfig}
+import org.bitcoins.testkit.{BitcoinSTestAppConfig, chain}
 import org.bitcoins.testkitcore.chain.ChainTestUtil
 import org.bitcoins.zmq.ZMQSubscriber
-import org.scalatest._
+import org.scalatest.*
 import play.api.libs.json.{JsError, JsSuccess, Json}
 
 import java.net.InetSocketAddress
+import java.nio.file.Files
 import scala.annotation.tailrec
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 
-trait ChainUnitTest
-    extends BitcoinSFixture
-    with ChainFixtureHelper
-    with CachedChainAppConfig {
+trait ChainUnitTest extends BitcoinSFixture {
+
+  def chainAppConfig: ChainAppConfig =
+    BitcoinSTestAppConfig.getNeutrinoTestConfig().chainConf
 
   /** Behaves exactly like the default conf, execpt network is set to mainnet
     */
@@ -54,30 +53,8 @@ trait ChainUnitTest
     BitcoinSTestAppConfig.getNeutrinoTestConfig(mainnetConf).chainConf
   }
 
-  override def beforeAll(): Unit = {
-    AppConfig.throwIfDefaultDatadir(cachedChainConf)
-  }
-
   override def afterAll(): Unit = {
-    super[CachedChainAppConfig].afterAll()
     super[BitcoinSFixture].afterAll()
-  }
-
-  /** All untagged tests will be given this tag. Override this if you are using
-    * ChainFixture and the plurality of tests use some fixture other than Empty.
-    */
-  val defaultTag: ChainFixtureTag = ChainFixtureTag.Empty
-
-  def withChainFixture(test: OneArgAsyncTest): FutureOutcome = {
-    val stringTag =
-      test.tags.headOption.getOrElse(ChainFixtureTag.defaultTag.name)
-
-    val fixtureTag: ChainFixtureTag = ChainFixtureTag.from(stringTag)
-
-    makeDependentFixture(
-      build = () => createFixture(fixtureTag),
-      destroy = destroyFixture
-    )(test)
   }
 
   /** Fixture that creates a block header table with one row inserted into it,
@@ -85,75 +62,110 @@ trait ChainUnitTest
     * genesis block
     */
   def withBlockHeaderDAO(test: OneArgAsyncTest): FutureOutcome = {
-    makeFixture(
-      build = () => ChainUnitTest.createBlockHeaderDAO(),
-      destroy = () => ChainUnitTest.destroyChainApi()
+    makeDependentFixture(
+      build = () =>
+        ChainUnitTest.createBlockHeaderDAO()(executionContext, chainAppConfig),
+      destroy = (blockHeaderDAO: BlockHeaderDAO) => {
+        ChainUnitTest.destroyChainApi()(
+          system,
+          blockHeaderDAO.appConfig
+        )
+      }
+    )(test)
+  }
+
+  def withChainAppConfig(test: OneArgAsyncTest): FutureOutcome = {
+    makeDependentFixture(
+      build = () => {
+        Future.successful(
+          BitcoinSTestAppConfig.getNeutrinoTestConfig().chainConf)
+      },
+      destroy = (chainAppConfig: ChainAppConfig) =>
+        ChainUnitTest.destroyChainApi()(system, chainAppConfig)
     )(test)
   }
 
   /** Creates a compact filter DAO with zero rows in it */
   def withCompactFilterHeaderDAO(test: OneArgAsyncTest): FutureOutcome = {
-    makeFixture(
-      build = () => ChainUnitTest.createFilterHeaderDAO(),
-      destroy = () => ChainUnitTest.destroyChainApi()
+    makeDependentFixture(
+      build = () =>
+        ChainUnitTest.createFilterHeaderDAO()(chainAppConfig, executionContext),
+      destroy = (fhDAO: CompactFilterHeaderDAO) =>
+        ChainUnitTest.destroyChainApi()(system, fhDAO.appConfig)
     )(test)
   }
 
   /** Creates a compact filter DAO with zero rows in it */
   def withCompactFilterDAO(test: OneArgAsyncTest): FutureOutcome = {
-    makeFixture(
-      build = () => ChainUnitTest.createFilterDAO(),
-      destroy = () => ChainUnitTest.destroyChainApi()
+    makeDependentFixture(
+      build =
+        () => ChainUnitTest.createFilterDAO()(chainAppConfig, executionContext),
+      destroy = (cfDAO: CompactFilterDAO) =>
+        ChainUnitTest.destroyChainApi()(system, cfDAO.appConfig)
     )(test)
   }
 
   def withPopulatedBlockHeaderDAO(test: OneArgAsyncTest): FutureOutcome = {
-    makeFixture(
-      build = () => ChainUnitTest.createPopulatedBlockHeaderDAO(),
-      destroy = () => ChainUnitTest.destroyChainApi()
+    makeDependentFixture(
+      build = () =>
+        ChainUnitTest.createPopulatedBlockHeaderDAO()(chainAppConfig,
+                                                      executionContext),
+      destroy = (bhDAO: BlockHeaderDAO) =>
+        ChainUnitTest.destroyChainApi()(system, bhDAO.appConfig)
     )(test)
   }
 
   def withChainStateDescriptorDAO(test: OneArgAsyncTest): FutureOutcome = {
-    makeFixture(
-      build = () => ChainUnitTest.createChainStateDescriptorDAO(),
-      destroy = () => ChainUnitTest.destroyChainApi()
+    makeDependentFixture(
+      build = () =>
+        ChainUnitTest.createChainStateDescriptorDAO()(executionContext,
+                                                      chainAppConfig),
+      destroy = (csDAO: ChainStateDescriptorDAO) =>
+        ChainUnitTest.destroyChainApi()(system, csDAO.appConfig)
     )(test)
   }
 
   def withChainHandler(test: OneArgAsyncTest): FutureOutcome = {
-    makeFixture(
-      () => ChainUnitTest.createChainHandler(),
-      () => ChainUnitTest.destroyChainApi()
+    makeDependentFixture(
+      () =>
+        ChainUnitTest.createChainHandler()(executionContext, chainAppConfig),
+      (ch: ChainHandler) =>
+        ChainUnitTest.destroyChainApi()(system, chainAppConfig = ch.chainConfig)
     )(test)
   }
 
   def withChainHandlerCached(test: OneArgAsyncTest): FutureOutcome = {
-    makeFixture(
-      () => ChainUnitTest.createChainHandlerCached(),
-      () => ChainUnitTest.destroyChainApi()
+    makeDependentFixture(
+      () =>
+        ChainUnitTest.createChainHandlerCached()(executionContext,
+                                                 chainAppConfig),
+      (chc: ChainHandler) =>
+        ChainUnitTest.destroyChainApi()(system, chc.chainConfig)
     )(test)
   }
 
   def withChainHandlerGenesisFilter(test: OneArgAsyncTest): FutureOutcome = {
-    makeFixture(
+    makeDependentFixture(
       () => createChainHandlerWithGenesisFilter(),
-      () => ChainUnitTest.destroyChainApi()
+      (chgf: ChainHandler) =>
+        ChainUnitTest.destroyChainApi()(system, chgf.chainConfig)
     )(test)
   }
 
   def withChainHandlerCachedGenesisFilter(
       test: OneArgAsyncTest
   ): FutureOutcome = {
-    makeFixture(
+    makeDependentFixture(
       build = () => createChainHandlerCachedWithGenesisFilter(),
-      destroy = () => ChainUnitTest.destroyChainApi()
+      destroy = (chcgf: ChainHandler) =>
+        ChainUnitTest.destroyChainApi()(system, chcgf.chainConfig)
     )(test)
   }
 
   /** Creates and populates BlockHeaderTable with block headers 562375 to 571375
     */
   def createPopulatedChainHandler(): Future[ChainHandler] = {
+    implicit val chainAppConfig: ChainAppConfig = this.chainAppConfig
     for {
       blockHeaderDAO <- ChainUnitTest.createPopulatedBlockHeaderDAO()
       filterHeaderDAO <- ChainUnitTest.createPopulatedFilterHeaderDAO()
@@ -169,6 +181,7 @@ trait ChainUnitTest
   }
 
   def createChainHandlerWithGenesisFilter(): Future[ChainHandler] = {
+    implicit val chainAppConfig: ChainAppConfig = this.chainAppConfig
     for {
       chainHandler <- createChainHandler()
       filterHeaderChainApi <- chainHandler.processFilterHeader(
@@ -182,6 +195,7 @@ trait ChainUnitTest
 
   def createChainHandlerCachedWithGenesisFilter()
       : Future[ChainHandlerCached] = {
+    implicit val chainAppConfig: ChainAppConfig = this.chainAppConfig
     for {
       chainHandler <- createChainHandlerCached()
       filterHeaderChainApi <- chainHandler.processFilterHeader(
@@ -193,68 +207,72 @@ trait ChainUnitTest
     } yield filterChainApi.asInstanceOf[ChainHandlerCached]
   }
 
-  def withPopulatedChainHandler(test: OneArgAsyncTest): FutureOutcome = {
-    makeFixture(
-      () => createPopulatedChainHandler(),
-      () => ChainUnitTest.destroyAllTables()
-    )(test)
-  }
-
   def createChainHandlerWithBitcoindZmq(bitcoind: BitcoindRpcClient)(implicit
       chainAppConfig: ChainAppConfig
   ): Future[(ChainHandler, ZMQSubscriber)] = {
-    val zmqRawBlockUriOpt: Option[InetSocketAddress] =
-      bitcoind.instance.zmqConfig.rawBlock
-    val handleRawBlock: Block => Unit = { (block: Block) =>
-      val chainApiF =
-        ChainHandler.fromDatabase()(executionContext, chainAppConfig)
-
-      val processF = chainApiF.processHeader(block.blockHeader)
-      processF.failed.foreach { err =>
-        logger.error(s"Failed to parse handleRawBlock callback", err)
+    val startedF = chainAppConfig.isStarted().flatMap { isStarted =>
+      if (isStarted) {
+        Future.unit
+      } else {
+        chainAppConfig.start()
       }
-      ()
+    }
+    startedF.flatMap { _ =>
+      val zmqRawBlockUriOpt: Option[InetSocketAddress] =
+        bitcoind.instance.zmqConfig.rawBlock
+      val chainApi =
+        ChainHandler.fromDatabase()(executionContext, chainAppConfig)
+      val handleRawBlock: Block => Unit = { (block: Block) =>
+        val processF = chainApi.processHeader(block.blockHeader)
+        processF.failed.foreach { err =>
+          logger.error(s"Failed to parse handleRawBlock callback", err)
+        }
+        ()
+      }
+
+      val socket = zmqRawBlockUriOpt.get
+      val zmqSubscriber =
+        new ZMQSubscriber(
+          socket = socket,
+          hashTxListener = None,
+          hashBlockListener = None,
+          rawTxListener = None,
+          rawBlockListener = Some(handleRawBlock)
+        )
+      zmqSubscriber.start()
+
+      val handlerWithGenesisHeaderF =
+        ChainUnitTest.setupHeaderTableWithGenesisHeader()(
+          executionContext,
+          chainAppConfig
+        )
+
+      val chainHandlerF = handlerWithGenesisHeaderF.map(_._1)
+
+      // generate a block and make sure we see it so we know the subscription is complete
+      val subscribedF = for {
+        chainHandler <- chainHandlerF
+        addr <- bitcoind.getNewAddress
+        hash <- bitcoind.generateToAddress(1, addr).map(_.head)
+        // wait until we see the hash, to make sure the subscription is started
+        _ <- AsyncUtil.retryUntilSatisfiedF(
+          () => {
+            chainHandler.getHeader(hash).map(_.isDefined)
+          },
+          1.second
+        )
+      } yield {
+        (chainApi, zmqSubscriber)
+      }
+      subscribedF
     }
 
-    val socket = zmqRawBlockUriOpt.get
-    val zmqSubscriber =
-      new ZMQSubscriber(
-        socket = socket,
-        hashTxListener = None,
-        hashBlockListener = None,
-        rawTxListener = None,
-        rawBlockListener = Some(handleRawBlock)
-      )
-    zmqSubscriber.start()
-
-    val handlerWithGenesisHeaderF =
-      ChainUnitTest.setupHeaderTableWithGenesisHeader()(
-        executionContext,
-        chainAppConfig
-      )
-
-    val chainHandlerF = handlerWithGenesisHeaderF.map(_._1)
-
-    // generate a block and make sure we see it so we know the subscription is complete
-    val subscribedF = for {
-      chainHandler <- chainHandlerF
-      addr <- bitcoind.getNewAddress
-      hash <- bitcoind.generateToAddress(1, addr).map(_.head)
-      // wait until we see the hash, to make sure the subscription is started
-      _ <- AsyncUtil.retryUntilSatisfiedF(
-        () => {
-          chainHandler.getHeader(hash).map(_.isDefined)
-        },
-        1.second
-      )
-    } yield (chainHandler, zmqSubscriber)
-    subscribedF
   }
 
   def createBitcoindChainHandlerViaZmq(): Future[BitcoindChainHandlerViaZmq] = {
     BitcoinSFixture.composeBuildersAndWrap(
       () => BitcoinSFixture.createBitcoind(),
-      createChainHandlerWithBitcoindZmq,
+      createChainHandlerWithBitcoindZmq(_: BitcoindRpcClient)(chainAppConfig),
       BitcoindChainHandlerViaZmq.apply
     )(executionContext)()
   }
@@ -269,9 +287,13 @@ trait ChainUnitTest
       bitcoindChainHandler.chainHandler
     )
 
-    ChainUnitTest.destroyBitcoindChainApiViaRpc(rpc).map { _ =>
-      bitcoindChainHandler.zmqSubscriber.stop()
-    }
+    ChainUnitTest
+      .destroyBitcoindChainApiViaRpc(rpc)(
+        system,
+        bitcoindChainHandler.chainHandler.chainConfig)
+      .map { _ =>
+        bitcoindChainHandler.zmqSubscriber.stop()
+      }
   }
 
   /** Creates a
@@ -299,20 +321,6 @@ trait ChainUnitTest
       )
 
     makeDependentFixture(builder, destroyBitcoindChainHandlerViaZmq)(test)
-  }
-
-  def withBitcoindChainHandlerViaRpc(
-      test: OneArgAsyncTest
-  )(implicit system: ActorSystem): FutureOutcome = {
-    val builder: () => Future[BitcoindBaseVersionChainHandlerViaRpc] = { () =>
-      BitcoinSFixture
-        .createBitcoind()
-        .flatMap(ChainUnitTest.createChainApiWithBitcoindRpc)
-    }
-
-    makeDependentFixture(builder, ChainUnitTest.destroyBitcoindChainApiViaRpc)(
-      test
-    )
   }
 
   final def processHeaders(
@@ -412,6 +420,7 @@ trait ChainUnitTest
   def buildBlockHeaderDAOCompetingHeaders(
       blockHeaderDAO: BlockHeaderDAO
   ): Future[ReorgFixtureBlockHeaderDAO] = {
+    implicit val chainAppConfig: ChainAppConfig = blockHeaderDAO.appConfig
     val handler = ChainHandler.fromDatabase(
       blockHeaderDAO,
       CompactFilterHeaderDAO(),
@@ -711,10 +720,17 @@ object ChainUnitTest extends ChainVerificationLogger {
       chainAppConfig: ChainAppConfig
   ): Future[Unit] = {
     import system.dispatcher
-    for {
-      _ <- ChainUnitTest.destroyAllTables()
-      _ = chainAppConfig.clearCallbacks()
-    } yield ()
+    if (Files.exists(chainAppConfig.datadir)) {
+      // check if we even created the database
+      // in some test cases - such as ChainAppConfigTest -
+      // we don't create the databse for the test case
+      for {
+        _ <- ChainUnitTest.destroyAllTables()
+        _ = chainAppConfig.clearCallbacks()
+      } yield ()
+    } else {
+      Future.unit
+    }
 
   }
 

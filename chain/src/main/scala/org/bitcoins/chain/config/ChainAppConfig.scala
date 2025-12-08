@@ -8,9 +8,10 @@ import org.bitcoins.chain.pow.Pow
 import org.bitcoins.commons.config.AppConfigFactory
 import org.bitcoins.core.api.CallbackConfig
 import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
-import org.bitcoins.db._
+import org.bitcoins.db.*
 
 import java.nio.file.Path
+import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.{ExecutionContext, Future}
 
 /** Configuration for the Bitcoin-S chain verification module
@@ -38,21 +39,35 @@ case class ChainAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
   override lazy val appConfig: ChainAppConfig = this
 
   override lazy val callbackFactory: ChainCallbacks.type = ChainCallbacks
+  private val startedFlag = new AtomicBoolean(false)
 
   /** Checks whether or not the chain project is initialized by trying to read
     * the genesis block header from our block header table
     */
   def isStarted(): Future[Boolean] = {
-    val bhDAO = BlockHeaderDAO()(ec, appConfig)
-    val isDefinedOptF = {
-      bhDAO.read(chain.genesisBlock.blockHeader.hashBE).map(_.isDefined)
-    }
-    isDefinedOptF.foreach { _ =>
-      logger.debug(s"Chain project is initialized")
-    }
-    isDefinedOptF.recover { case _: Throwable =>
-      logger.info(s"Chain project is not initialized")
-      false
+    Future.successful(startedFlag.get)
+  }
+
+  private def isInit: Future[Boolean] = {
+    val blockHeaderDAO = BlockHeaderDAO()(ec, appConfig)
+    blockHeaderDAO
+      .findByHash(chain.genesisBlock.blockHeader.hashBE)
+      .map(_.isDefined)
+  }
+
+  private def initialize(): Future[Unit] = {
+    val genesisHeader =
+      BlockHeaderDbHelper.fromBlockHeader(
+        height = 0,
+        chainWork = Pow.getBlockProof(chain.genesisBlock.blockHeader),
+        bh = chain.genesisBlock.blockHeader
+      )
+
+    val blockHeaderDAO = BlockHeaderDAO()(ec, appConfig)
+    val bhCreatedF = blockHeaderDAO.create(genesisHeader)
+    bhCreatedF.flatMap { _ =>
+      logger.info(s"Inserted genesis block header into DB")
+      Future.unit
     }
   }
 
@@ -61,45 +76,42 @@ case class ChainAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     * block header
     */
   override def start(): Future[Unit] = {
-    for {
-      _ <- super.start()
-      numMigrations = migrate()
-      isInit <- isStarted()
-      _ <- {
-        if (isInit) {
-          Future.unit
-        } else {
-          val genesisHeader =
-            BlockHeaderDbHelper.fromBlockHeader(
-              height = 0,
-              chainWork = Pow.getBlockProof(chain.genesisBlock.blockHeader),
-              bh = chain.genesisBlock.blockHeader
-            )
-
-          val blockHeaderDAO = BlockHeaderDAO()(ec, appConfig)
-          val bhCreatedF = blockHeaderDAO.create(genesisHeader)
-          bhCreatedF.flatMap { _ =>
-            logger.info(s"Inserted genesis block header into DB")
+    if (!startedFlag.get()) {
+      for {
+        _ <- super.start()
+        numMigrations = migrate()
+        isInit <- isInit
+        _ <- {
+          if (isInit) {
             Future.unit
+          } else {
+            initialize()
           }
         }
-      }
-    } yield {
-      if (isHikariLoggingEnabled) {
-        // .get is safe because hikari logging is enabled
-        startHikariLogger(hikariLoggingInterval.get)
+      } yield {
+        startedFlag.set(true)
+        if (isHikariLoggingEnabled) {
+          // .get is safe because hikari logging is enabled
+          startHikariLogger(hikariLoggingInterval.get)
+          ()
+        }
+
+        logger.info(s"Applied ${numMigrations} to chain project")
         ()
       }
-
-      logger.info(s"Applied ${numMigrations} to chain project")
-      ()
+    } else {
+      Future.unit
     }
+
   }
 
   override def stop(): Future[Unit] = {
     val _ = stopHikariLogger()
     clearCallbacks()
-    super.stop()
+    super.stop().map { _ =>
+      startedFlag.set(false)
+      ()
+    }
   }
 
   lazy val filterHeaderBatchSize: Int = {

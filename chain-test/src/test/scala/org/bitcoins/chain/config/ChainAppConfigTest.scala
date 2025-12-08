@@ -6,28 +6,24 @@ import org.bitcoins.chain.{ChainCallbacks, OnBlockHeaderConnected}
 import org.bitcoins.core.config.{MainNet, RegTest, TestNet3}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.testkit.chain.ChainUnitTest
-import org.bitcoins.testkit.util.FileUtil
 import org.scalatest.FutureOutcome
-
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 
 class ChainAppConfigTest extends ChainUnitTest {
-  val tempDir = Files.createTempDirectory("bitcoin-s")
-  val config = ChainAppConfig(baseDatadir = tempDir, Vector.empty)
-
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    withChainAppConfig(test)
+  }
   // if we don't turn off logging here, isInitF a few lines down will
   // produce some nasty error logs since we are testing initialization
   // of the chain project
-  val chainAppConfig = cachedChainConf.withOverrides(
-    ConfigFactory.parseString("bitcoin-s.logging.level=OFF")
-  )
+  override type FixtureParam = ChainAppConfig
 
   behavior of "ChainAppConfig"
 
-  override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withChainFixture(test)
-
-  it must "initialize our chain project" in { _ =>
+  it must "initialize our chain project" in { c =>
+    val chainAppConfig = c.withOverrides(
+      ConfigFactory.parseString("bitcoin-s.logging.level=OFF")
+    )
     val isInitF = chainAppConfig.isStarted()
 
     for {
@@ -38,11 +34,11 @@ class ChainAppConfigTest extends ChainUnitTest {
     } yield assert(isInitAgain)
   }
 
-  it must "be overridable" in { _ =>
-    assert(config.network == RegTest)
+  it must "be overridable" in { c =>
+    assert(c.network == RegTest)
 
     val otherConf = ConfigFactory.parseString("bitcoin-s.network = testnet3")
-    val withOther: ChainAppConfig = config.withOverrides(otherConf)
+    val withOther: ChainAppConfig = c.withOverrides(otherConf)
     assert(withOther.network == TestNet3)
 
     val mainnetConf = ConfigFactory.parseString("bitcoin-s.network = mainnet")
@@ -50,11 +46,11 @@ class ChainAppConfigTest extends ChainUnitTest {
     assert(mainnet.network == MainNet)
   }
 
-  it must "be overridable with multiple levels" in { _ =>
+  it must "be overridable with multiple levels" in { c =>
     val testnet = ConfigFactory.parseString("bitcoin-s.network = testnet3")
     val mainnet = ConfigFactory.parseString("bitcoin-s.network = mainnet")
     val overriden: ChainAppConfig =
-      config.withOverrides(Vector(testnet, mainnet))
+      c.withOverrides(Vector(testnet, mainnet))
     assert(overriden.network == MainNet)
 
   }
@@ -65,7 +61,7 @@ class ChainAppConfigTest extends ChainUnitTest {
     val confStr = """
                     | bitcoin-s {
                     |   network = testnet3
-                    |   
+                    |
                     |   logging {
                     |     level = off
                     |
@@ -81,10 +77,8 @@ class ChainAppConfigTest extends ChainUnitTest {
     assert(appConfig.network == TestNet3)
   }
 
-  it must "add a callback and then remove the callback" in { _ =>
-    val tempDir = Files.createTempDirectory("bitcoin-s")
-    val appConfig = ChainAppConfig(baseDatadir = tempDir, Vector.empty)
-    assert(appConfig.isCallbackEmpty)
+  it must "add a callback and then remove the callback" in { c =>
+    assert(c.isCallbackEmpty)
 
     val dummyCallback: OnBlockHeaderConnected = {
       case _: Vector[(Int, BlockHeader)] =>
@@ -92,21 +86,11 @@ class ChainAppConfigTest extends ChainUnitTest {
     }
     val printlnCallback = ChainCallbacks.onBlockHeaderConnected(dummyCallback)
 
-    appConfig.addCallbacks(printlnCallback)
-    assert(!appConfig.isCallbackEmpty)
+    c.addCallbacks(printlnCallback)
+    assert(!c.isCallbackEmpty)
 
     // clear the callback
-    appConfig.clearCallbacks()
-    assert(appConfig.isCallbackEmpty)
-  }
-
-  override def afterAll(): Unit = {
-    FileUtil.deleteTmpDir(chainAppConfig.baseDatadir)
-    val stopF = for {
-      _ <- config.stop()
-      _ <- chainAppConfig.stop()
-    } yield ()
-    Await.result(stopF, akkaTimeout.duration)
-    super.afterAll()
+    c.clearCallbacks()
+    assert(c.isCallbackEmpty)
   }
 }

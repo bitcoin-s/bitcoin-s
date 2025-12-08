@@ -7,16 +7,16 @@ import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
 
 trait ChainDbUnitTest extends ChainUnitTest with EmbeddedPg {
 
-  implicit override lazy val cachedChainConf: ChainAppConfig = {
-    val memoryDb =
-      BitcoinSTestAppConfig.configWithEmbeddedDb(
-        Some(ProjectType.Chain),
-        () => pgUrl()
-      )
-    val chainConfig: ChainAppConfig =
-      BitcoinSTestAppConfig.getNeutrinoTestConfig().chainConf
-    chainConfig.withOverrides(memoryDb)
-  }
+//  implicit override lazy val cachedChainConf: ChainAppConfig = {
+//    val memoryDb =
+//      BitcoinSTestAppConfig.configWithEmbeddedDb(
+//        Some(ProjectType.Chain),
+//        () => pgUrl()
+//      )
+//    val chainConfig: ChainAppConfig =
+//      BitcoinSTestAppConfig.getNeutrinoTestConfig().chainConf
+//    chainConfig.withOverrides(memoryDb)
+//  }
 
   override lazy val mainnetAppConfig: ChainAppConfig = {
     val memoryDb =

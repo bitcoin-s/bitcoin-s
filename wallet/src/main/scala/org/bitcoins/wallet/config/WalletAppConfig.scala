@@ -210,10 +210,6 @@ case class WalletAppConfig(
   private val masterXPubDAO: MasterXPubDAO = MasterXPubDAO()(ec, this)
 
   override def start(): Future[Unit] = {
-    if (Files.notExists(datadir)) {
-      Files.createDirectories(datadir)
-    }
-
     startFeeRateCallbackScheduler()
 
     for {

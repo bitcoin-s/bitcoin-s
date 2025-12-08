@@ -134,7 +134,7 @@ class FilterSyncTest extends ChainWithBitcoindNewestCachedUnitTest {
       SyncUtil.getFilterFunc(bitcoind, filterType)
 
     // first sync the chain
-    val syncedHeadersF: Future[ChainApi] = ChainSync.sync(
+    val syncedHeadersF = ChainSync.sync(
       chainHandler = chainHandler,
       getBlockHeaderFunc = getBlockHeaderFunc,
       getBestBlockHashFunc = getBestBlockHashFunc
@@ -145,7 +145,7 @@ class FilterSyncTest extends ChainWithBitcoindNewestCachedUnitTest {
       FilterSync.syncFilters(
         chainApi = syncedChainHandler,
         getFilterFunc = getFilterFunc
-      )
+      )(executionContext, bitcoindChainHandler.chainHandler.chainConfig)
     }
   }
 }

@@ -28,6 +28,9 @@ abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
     * needed later or something else entirely.
     */
   override def start(): Future[Unit] = {
+    if (Files.notExists(datadir)) {
+      Files.createDirectories(datadir)
+    }
     Future.unit
   }
 
