@@ -104,16 +104,16 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
     (tempHandler: ChainHandlerCached) =>
       val dummyHeader =
         BlockHeaderDbHelper.fromBlockHeader(
-          1,
-          BigInt(0),
-          ChainTestUtil.blockHeader562462
+          height = 1,
+          chainWork = BigInt(0),
+          bh = ChainTestUtil.blockHeader562462
         )
 
       val highestHeader =
         BlockHeaderDbHelper.fromBlockHeader(
-          2,
-          BigInt(0),
-          ChainTestUtil.blockHeader562463
+          height = 2,
+          chainWork = BigInt(0),
+          bh = ChainTestUtil.blockHeader562463
         )
 
       val headerWithMostWork =

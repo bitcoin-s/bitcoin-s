@@ -28,7 +28,6 @@ import org.bitcoins.testkit.chain.models.{
 }
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.testkit.util.ScalaTestUtil
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, chain}
 import org.bitcoins.testkitcore.chain.ChainTestUtil
 import org.bitcoins.zmq.ZMQSubscriber
@@ -127,8 +126,11 @@ trait ChainUnitTest extends BitcoinSFixture {
 
   def withChainHandler(test: OneArgAsyncTest): FutureOutcome = {
     makeDependentFixture(
-      () =>
-        ChainUnitTest.createChainHandler()(executionContext, chainAppConfig),
+      () => {
+        val c = chainAppConfig
+        c.start()
+          .flatMap(_ => ChainUnitTest.createChainHandler()(executionContext, c))
+      },
       (ch: ChainHandler) =>
         ChainUnitTest.destroyChainApi()(system, chainAppConfig = ch.chainConfig)
     )(test)
@@ -136,9 +138,13 @@ trait ChainUnitTest extends BitcoinSFixture {
 
   def withChainHandlerCached(test: OneArgAsyncTest): FutureOutcome = {
     makeDependentFixture(
-      () =>
-        ChainUnitTest.createChainHandlerCached()(executionContext,
-                                                 chainAppConfig),
+      () => {
+        val c = chainAppConfig
+        c.start().flatMap { _ =>
+          ChainUnitTest.createChainHandlerCached()(executionContext,
+                                                   chainAppConfig)
+        }
+      },
       (chc: ChainHandler) =>
         ChainUnitTest.destroyChainApi()(system, chc.chainConfig)
     )(test)
@@ -146,7 +152,10 @@ trait ChainUnitTest extends BitcoinSFixture {
 
   def withChainHandlerGenesisFilter(test: OneArgAsyncTest): FutureOutcome = {
     makeDependentFixture(
-      () => createChainHandlerWithGenesisFilter(),
+      () => {
+        val c = chainAppConfig
+        c.start().flatMap(_ => createChainHandlerWithGenesisFilter()(c))
+      },
       (chgf: ChainHandler) =>
         ChainUnitTest.destroyChainApi()(system, chgf.chainConfig)
     )(test)
@@ -156,7 +165,11 @@ trait ChainUnitTest extends BitcoinSFixture {
       test: OneArgAsyncTest
   ): FutureOutcome = {
     makeDependentFixture(
-      build = () => createChainHandlerCachedWithGenesisFilter(),
+      build = () => {
+        val c = chainAppConfig
+        c.start().flatMap(_ => createChainHandlerCachedWithGenesisFilter()(c))
+
+      },
       destroy = (chcgf: ChainHandler) =>
         ChainUnitTest.destroyChainApi()(system, chcgf.chainConfig)
     )(test)
@@ -180,8 +193,8 @@ trait ChainUnitTest extends BitcoinSFixture {
     } yield chainHandler
   }
 
-  def createChainHandlerWithGenesisFilter(): Future[ChainHandler] = {
-    implicit val chainAppConfig: ChainAppConfig = this.chainAppConfig
+  def createChainHandlerWithGenesisFilter()(implicit
+      chainAppConfig: ChainAppConfig): Future[ChainHandler] = {
     for {
       chainHandler <- createChainHandler()
       filterHeaderChainApi <- chainHandler.processFilterHeader(
@@ -193,9 +206,8 @@ trait ChainUnitTest extends BitcoinSFixture {
     } yield filterChainApi.asInstanceOf[ChainHandler]
   }
 
-  def createChainHandlerCachedWithGenesisFilter()
-      : Future[ChainHandlerCached] = {
-    implicit val chainAppConfig: ChainAppConfig = this.chainAppConfig
+  def createChainHandlerCachedWithGenesisFilter()(implicit
+      chainAppConfig: ChainAppConfig): Future[ChainHandlerCached] = {
     for {
       chainHandler <- createChainHandlerCached()
       filterHeaderChainApi <- chainHandler.processFilterHeader(
@@ -269,14 +281,6 @@ trait ChainUnitTest extends BitcoinSFixture {
 
   }
 
-  def createBitcoindChainHandlerViaZmq(): Future[BitcoindChainHandlerViaZmq] = {
-    BitcoinSFixture.composeBuildersAndWrap(
-      () => BitcoinSFixture.createBitcoind(),
-      createChainHandlerWithBitcoindZmq(_: BitcoindRpcClient)(chainAppConfig),
-      BitcoindChainHandlerViaZmq.apply
-    )(executionContext)()
-  }
-
   def destroyBitcoindChainHandlerViaZmq(
       bitcoindChainHandler: BitcoindChainHandlerViaZmq
   ): Future[Unit] = {
@@ -329,18 +333,17 @@ trait ChainUnitTest extends BitcoinSFixture {
       height: Int
   ): Future[Assertion] = {
 
-    def processedHeadersF =
+    def processedHeadersF = {
       for {
         chainApi <- processorF
         chainApiWithHeaders <-
           FutureUtil.foldLeftAsync(chainApi, headers.grouped(2000).toVector)(
             (chainApi, headers) => chainApi.processHeaders(headers))
-      } yield {
-        FutureUtil.foldLeftAsync(
+        res <- FutureUtil.foldLeftAsync(
           (
             Option.empty[BlockHeaderDb],
             height,
-            Vector.empty[Future[Assertion]]
+            Vector.empty[Assertion]
           ),
           headers
         ) { case ((prevHeaderDbOpt, height, assertions), header) =>
@@ -358,23 +361,17 @@ trait ChainUnitTest extends BitcoinSFixture {
 
             val newHeight = height + 1
 
-            val newAssertions = assertions :+ Future(
-              assert(headerOpt.contains(expectedBlockHeaderDb))
-            )
+            val newAssertions =
+              assertions :+ assert(headerOpt.contains(expectedBlockHeaderDb))
 
             (Some(expectedBlockHeaderDb), newHeight, newAssertions)
           }
         }
+      } yield {
+        res
       }
-
-    for {
-      processedHeaders <- processedHeadersF
-      (_, _, vecFutAssert) <- processedHeaders
-      assertion <- ScalaTestUtil.toAssertF(vecFutAssert)
-    } yield {
-      assertion
     }
-
+    processedHeadersF.map(_ => succeed)
   }
 
   /** Builds two competing headers that are built from the same parent */
