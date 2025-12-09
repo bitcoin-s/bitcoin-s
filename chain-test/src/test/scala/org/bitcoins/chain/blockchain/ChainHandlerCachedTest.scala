@@ -4,15 +4,11 @@ import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainDbUnitTest}
-import org.bitcoins.testkit.chain.fixture.ChainFixtureTag
 import org.bitcoins.testkitcore.chain.ChainTestUtil
 import org.scalatest.FutureOutcome
 
 class ChainHandlerCachedTest extends ChainDbUnitTest {
   override type FixtureParam = ChainHandlerCached
-
-  override val defaultTag: ChainFixtureTag =
-    ChainFixtureTag.GenesisChainHandlerCachedWithFilter
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withChainHandlerCachedGenesisFilter(test)
@@ -21,7 +17,9 @@ class ChainHandlerCachedTest extends ChainDbUnitTest {
 
   it must "throw an error when we have no chains" in {
     (chainHandlerCached: ChainHandlerCached) =>
-      val handler = chainHandlerCached.copy(blockchains = Vector.empty)
+      val handler = chainHandlerCached.copy(blockchains = Vector.empty)(
+        chainHandlerCached.chainConfig,
+        executionContext)
 
       recoverToSucceededIf[RuntimeException] {
         handler
@@ -32,7 +30,9 @@ class ChainHandlerCachedTest extends ChainDbUnitTest {
   it must "get best filter header with zero blockchains in memory" in {
     (chainHandlerCached: ChainHandlerCached) =>
       val noChainsChainHandler =
-        chainHandlerCached.copy(blockchains = Vector.empty)
+        chainHandlerCached.copy(blockchains = Vector.empty)(
+          chainHandlerCached.chainConfig,
+          executionContext)
 
       for {
         filterHeaderOpt <- noChainsChainHandler.getBestFilterHeader()

@@ -21,7 +21,6 @@ import org.bitcoins.crypto.{
   DoubleSha256DigestBE,
   ECPrivateKey
 }
-import org.bitcoins.testkit.chain.fixture.ChainFixtureTag
 import org.bitcoins.testkit.chain.{
   BlockHeaderHelper,
   ChainDbUnitTest,
@@ -37,9 +36,6 @@ import scala.concurrent.Future
 class ChainHandlerTest extends ChainDbUnitTest {
 
   override type FixtureParam = ChainHandler
-
-  override val defaultTag: ChainFixtureTag =
-    ChainFixtureTag.GenesisChainHandlerWithFilter
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withChainHandler(test)

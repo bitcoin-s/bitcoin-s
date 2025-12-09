@@ -33,11 +33,13 @@ trait ChainWithBitcoindNewestCachedUnitTest
       bitcoindRpcClient: BitcoindRpcClient
   ): FutureOutcome = {
     val builder: () => Future[BitcoindBaseVersionChainHandlerViaRpc] = { () =>
-      ChainUnitTest.createChainApiWithBitcoindRpc(bitcoindRpcClient)
+      ChainUnitTest.createChainApiWithBitcoindRpc(bitcoindRpcClient)(
+        executionContext,
+        chainAppConfig)
     }
     val destroy: BitcoindBaseVersionChainHandlerViaRpc => Future[Unit] = {
-      case _: BitcoindBaseVersionChainHandlerViaRpc =>
-        ChainUnitTest.destroyChainApi()
+      case b: BitcoindBaseVersionChainHandlerViaRpc =>
+        ChainUnitTest.destroyChainApi()(system, b.chainHandler.chainConfig)
     }
     makeDependentFixture(builder, destroy)(test)
   }

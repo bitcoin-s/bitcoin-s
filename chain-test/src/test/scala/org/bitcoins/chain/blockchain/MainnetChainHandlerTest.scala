@@ -5,7 +5,6 @@ import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.api.chain.db.{BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.testkit.chain.{ChainDbUnitTest, ChainUnitTest}
-import org.bitcoins.testkit.chain.fixture.ChainFixtureTag
 import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkitcore.chain.ChainTestUtil
 import org.scalatest.FutureOutcome
@@ -18,9 +17,7 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
 
   override type FixtureParam = ChainHandlerCached
 
-  override val defaultTag: ChainFixtureTag = ChainFixtureTag.GenisisChainHandler
-
-  implicit override lazy val cachedChainConf: ChainAppConfig = mainnetAppConfig
+  implicit override lazy val chainAppConfig: ChainAppConfig = mainnetAppConfig
 
   val source: BufferedSource = FileUtil.getFileAsSource("block_headers.json")
   val arrStr: String = source.getLines().next()
@@ -107,16 +104,16 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
     (tempHandler: ChainHandlerCached) =>
       val dummyHeader =
         BlockHeaderDbHelper.fromBlockHeader(
-          1,
-          BigInt(0),
-          ChainTestUtil.blockHeader562462
+          height = 1,
+          chainWork = BigInt(0),
+          bh = ChainTestUtil.blockHeader562462
         )
 
       val highestHeader =
         BlockHeaderDbHelper.fromBlockHeader(
-          2,
-          BigInt(0),
-          ChainTestUtil.blockHeader562463
+          height = 2,
+          chainWork = BigInt(0),
+          bh = ChainTestUtil.blockHeader562463
         )
 
       val headerWithMostWork =
