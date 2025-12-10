@@ -69,8 +69,9 @@ class GenP2SH()(implicit
       .runWith(batchedSink)
 
     x.map { _ =>
-      logger.info(
-        s"Done generating p2sh addresses, took=${Duration.between(startTime, Instant.now()).toMinutes} minutes")
+      logger.info(s"Done generating p2sh addresses, took=${Duration
+          .between(startTime, Instant.now())
+          .toMinutes} minutes")
       ()
     }
 
