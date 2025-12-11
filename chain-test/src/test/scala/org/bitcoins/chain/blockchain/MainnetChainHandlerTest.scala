@@ -17,7 +17,7 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
 
   override type FixtureParam = ChainHandlerCached
 
-  implicit override lazy val chainAppConfig: ChainAppConfig = mainnetAppConfig
+  override def chainAppConfig: ChainAppConfig = mainnetAppConfig
 
   val source: BufferedSource = FileUtil.getFileAsSource("block_headers.json")
   val arrStr: String = source.getLines().next()
@@ -83,7 +83,9 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
 
       createdF.flatMap { _ =>
         val blockchain = Blockchain.fromHeaders(firstThreeBlocks.reverse)
-        val handler = chainHandler.copy(blockchains = Vector(blockchain))
+        val handler = chainHandler.copy(blockchains = Vector(blockchain))(
+          chainHandler.chainConfig,
+          executionContext)
 
         // Takes way too long to do all blocks
         val blockHeadersToTest = blockHeaders.tail
@@ -128,7 +130,9 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
       val mostWorkChain = Blockchain(Vector(headerWithMostWork, genesis))
 
       val chainHandler =
-        tempHandler.copy(blockchains = Vector(tallestBlockchain, mostWorkChain))
+        tempHandler.copy(blockchains =
+          Vector(tallestBlockchain, mostWorkChain))(tempHandler.chainConfig,
+                                                    executionContext)
 
       for {
         hash <- chainHandler.getBestBlockHash()
@@ -184,7 +188,7 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
           chainHandler.stateDAO,
           Vector(blockchain),
           Map.empty
-        )
+        )(chainHandler.chainConfig, executionContext)
         val processorF = Future.successful(handler)
         // Takes way too long to do all blocks
         val blockHeadersToTest = blockHeaders.tail
@@ -219,7 +223,9 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
       val blockchain =
         Blockchain(headersWithNoWork :+ noWorkGenesis)
 
-      val chainHandler = tempHandler.copy(blockchains = Vector(blockchain))
+      val chainHandler = tempHandler.copy(blockchains = Vector(blockchain))(
+        tempHandler.chainConfig,
+        executionContext)
 
       for {
         _ <- chainHandler.blockHeaderDAO.update(noWorkGenesis)
