@@ -17,7 +17,7 @@ class BlockchainTest extends BitcoinSAsyncTest {
   behavior of "Blockchain"
 
   it must "have the correct toString" in {
-    val genesis = ChainTestUtil.genesisHeaderDb
+    val genesis = ChainTestUtil.regTestGenesisHeaderDb
     val headerDb =
       BlockHeaderHelper.buildNextHeader(genesis)
     val chain = Blockchain(Vector(headerDb, genesis))
@@ -27,11 +27,11 @@ class BlockchainTest extends BitcoinSAsyncTest {
 
   it must "connect a new header to the current tip of a blockchain" in {
     val blockchain = Blockchain.fromHeaders(
-      headers = Vector(ChainTestUtil.genesisHeaderDb)
+      headers = Vector(ChainTestUtil.regTestGenesisHeaderDb)
     )
 
     val newHeader =
-      BlockHeaderHelper.buildNextHeader(ChainTestUtil.genesisHeaderDb)
+      BlockHeaderHelper.buildNextHeader(ChainTestUtil.regTestGenesisHeaderDb)
 
     val connectTip =
       Blockchain.connectTip(header = newHeader.blockHeader,
@@ -49,7 +49,7 @@ class BlockchainTest extends BitcoinSAsyncTest {
 
   it must "reconstruct a blockchain given a child header correctly" in {
     val accum = new mutable.ArrayBuffer[BlockHeaderDb](5)
-    accum.+=(ChainTestUtil.genesisHeaderDb)
+    accum.+=(ChainTestUtil.regTestGenesisHeaderDb)
     // generate 4 headers
     0.until(4).foreach { _ =>
       val newHeader = BlockHeaderHelper.buildNextHeader(accum.last)
@@ -70,20 +70,20 @@ class BlockchainTest extends BitcoinSAsyncTest {
     val chain = reconstructed.head
     assert(chain.toVector.length == 5)
     assert(chain.tip == accum.last)
-    assert(chain.last == ChainTestUtil.genesisHeaderDb)
+    assert(chain.last == ChainTestUtil.regTestGenesisHeaderDb)
     assert(chain.toVector == accum.reverse.toVector)
   }
 
   it must "fail to reconstruct a blockchain if we do not have validly connected headers" in {
     val missingHeader =
-      BlockHeaderHelper.buildNextHeader(ChainTestUtil.genesisHeaderDb)
+      BlockHeaderHelper.buildNextHeader(ChainTestUtil.regTestGenesisHeaderDb)
 
     val thirdHeader = BlockHeaderHelper.buildNextHeader(missingHeader)
 
     val reconstructed =
       Blockchain.reconstructFromHeaders(
         thirdHeader,
-        Vector(ChainTestUtil.genesisHeaderDb),
+        Vector(ChainTestUtil.regTestGenesisHeaderDb),
         chainParams = RegTestNetChainParams
       )
 
@@ -91,7 +91,7 @@ class BlockchainTest extends BitcoinSAsyncTest {
   }
 
   it must "fail to create a BlockchainUpdate.Failed with incompatible successful headers" in {
-    val genesis = ChainTestUtil.genesisHeaderDb
+    val genesis = ChainTestUtil.regTestGenesisHeaderDb
     val second = BlockHeaderHelper.buildNextHeader(genesis)
     val chain = Blockchain(Vector(second, genesis))
 
@@ -106,7 +106,7 @@ class BlockchainTest extends BitcoinSAsyncTest {
   }
 
   it must "correctly calculate a BlockchainUpdate.Success's height" in {
-    val genesis = ChainTestUtil.genesisHeaderDb
+    val genesis = ChainTestUtil.regTestGenesisHeaderDb
     val second = BlockHeaderHelper.buildNextHeader(genesis)
     val chain = Blockchain(Vector(second, genesis))
 
@@ -116,7 +116,7 @@ class BlockchainTest extends BitcoinSAsyncTest {
   }
 
   it must "correctly identify a bad tip" in {
-    val genesis = ChainTestUtil.genesisHeaderDb
+    val genesis = ChainTestUtil.regTestGenesisHeaderDb
     val chain = Blockchain(Vector(genesis))
 
     val goodHeader = BlockHeaderHelper.buildNextHeader(genesis).blockHeader

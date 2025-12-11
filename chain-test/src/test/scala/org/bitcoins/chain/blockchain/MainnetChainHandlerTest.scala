@@ -28,7 +28,7 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
   val headersResult: Vector[BlockHeader] =
     Json.parse(arrStr).validate[Vector[BlockHeader]].get
 
-  val genesis: BlockHeaderDb = ChainTestUtil.genesisHeaderDb
+  val genesis: BlockHeaderDb = ChainTestUtil.mainnetGenesisHeaderDb
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withChainHandlerCached(test)
@@ -45,29 +45,29 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
       val firstBlockHeaderDb =
         BlockHeaderDbHelper.fromBlockHeader(
           ChainUnitTest.FIRST_POW_CHANGE - 2,
-          Pow.getBlockProof(ChainTestUtil.blockHeader562462),
-          ChainTestUtil.blockHeader562462
+          Pow.getBlockProof(ChainTestUtil.mainnetBlockHeader87),
+          ChainTestUtil.mainnetBlockHeader87
         )
 
       val secondBlockHeaderDb = {
         val chainWork = firstBlockHeaderDb.chainWork + Pow.getBlockProof(
-          ChainTestUtil.blockHeader562463
+          ChainTestUtil.mainnetBlockHeader88
         )
         BlockHeaderDbHelper.fromBlockHeader(
           ChainUnitTest.FIRST_POW_CHANGE - 1,
           chainWork,
-          ChainTestUtil.blockHeader562463
+          ChainTestUtil.mainnetBlockHeader88
         )
       }
 
       val thirdBlockHeaderDb = {
         val chainWork = secondBlockHeaderDb.chainWork + Pow.getBlockProof(
-          ChainTestUtil.blockHeader562464
+          ChainTestUtil.mainnetBlockHeader89
         )
         BlockHeaderDbHelper.fromBlockHeader(
           ChainUnitTest.FIRST_POW_CHANGE,
           chainWork,
-          ChainTestUtil.blockHeader562464
+          ChainTestUtil.mainnetBlockHeader89
         )
       }
 
@@ -106,21 +106,21 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
         BlockHeaderDbHelper.fromBlockHeader(
           height = 1,
           chainWork = BigInt(0),
-          bh = ChainTestUtil.blockHeader562462
+          bh = ChainTestUtil.mainnetBlockHeader87
         )
 
       val highestHeader =
         BlockHeaderDbHelper.fromBlockHeader(
           height = 2,
           chainWork = BigInt(0),
-          bh = ChainTestUtil.blockHeader562463
+          bh = ChainTestUtil.mainnetBlockHeader88
         )
 
       val headerWithMostWork =
         BlockHeaderDbHelper.fromBlockHeader(
           1,
           BigInt(1000),
-          ChainTestUtil.blockHeader562464
+          ChainTestUtil.mainnetBlockHeader89
         )
 
       val tallestBlockchain =
@@ -148,21 +148,21 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
         BlockHeaderDbHelper.fromBlockHeader(
           ChainUnitTest.FIRST_POW_CHANGE - 2,
           BigInt(0),
-          ChainTestUtil.blockHeader562462
+          ChainTestUtil.mainnetBlockHeader87
         )
 
       val secondBlockHeaderDb =
         BlockHeaderDbHelper.fromBlockHeader(
           ChainUnitTest.FIRST_POW_CHANGE - 1,
           BigInt(0),
-          ChainTestUtil.blockHeader562463
+          ChainTestUtil.mainnetBlockHeader88
         )
 
       val thirdBlockHeaderDb =
         BlockHeaderDbHelper.fromBlockHeader(
           ChainUnitTest.FIRST_POW_CHANGE,
           BigInt(0),
-          ChainTestUtil.blockHeader562464
+          ChainTestUtil.mainnetBlockHeader89
         )
 
       /*
@@ -204,13 +204,13 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
     (tempHandler: ChainHandlerCached) =>
       val headersWithNoWork = Vector(
         BlockHeaderDbHelper
-          .fromBlockHeader(3, BigInt(0), ChainTestUtil.blockHeader562464),
+          .fromBlockHeader(3, BigInt(0), ChainTestUtil.mainnetBlockHeader89),
         BlockHeaderDbHelper
-          .fromBlockHeader(2, BigInt(0), ChainTestUtil.blockHeader562463),
+          .fromBlockHeader(2, BigInt(0), ChainTestUtil.mainnetBlockHeader88),
         BlockHeaderDbHelper.fromBlockHeader(
           1,
           BigInt(0),
-          ChainTestUtil.blockHeader562462
+          ChainTestUtil.mainnetBlockHeader87
         )
       )
 
@@ -239,7 +239,7 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
             .forall(_._2.size == 1)
         )
         assert(headerDb.hashBE == headersWithNoWork.head.hashBE)
-        assert(headerDb.chainWork == BigInt(12885098501L))
+        assert(headerDb.chainWork == BigInt(17180131332L))
       }
   }
 

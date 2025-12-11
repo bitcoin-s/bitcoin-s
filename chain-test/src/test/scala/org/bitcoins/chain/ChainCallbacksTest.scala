@@ -36,7 +36,7 @@ class ChainCallbacksTest extends ChainDbUnitTest {
       chainHandler.chainConfig.addCallbacks(callbacks)
 
       val newValidHeader =
-        BlockHeaderHelper.buildNextHeader(ChainTestUtil.genesisHeaderDb)
+        BlockHeaderHelper.buildNextHeader(ChainTestUtil.regTestGenesisHeaderDb)
 
       for {
         _ <- chainHandler.processHeader(newValidHeader.blockHeader)
@@ -61,13 +61,14 @@ class ChainCallbacksTest extends ChainDbUnitTest {
       chainHandler.chainConfig.addCallbacks(callbacks)
 
       val newValidHeader =
-        BlockHeaderHelper.buildNextHeader(ChainTestUtil.genesisHeaderDb)
+        BlockHeaderHelper.buildNextHeader(ChainTestUtil.regTestGenesisHeaderDb)
       val nextCompactFilterHeaderDb =
         CompactFilterHeaderDb(
           hashBE = DoubleSha256DigestBE.fromHex(
             "000102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f"
           ),
-          previousFilterHeaderBE = ChainTestUtil.genesisFilterHeaderDb.hashBE,
+          previousFilterHeaderBE =
+            ChainTestUtil.regTestGenesisHeaderCompactFilterHeaderDb.hashBE,
           height = 1,
           filterHashBE = DoubleSha256DigestBE.fromHex(
             "555152535455565758595a5b5c5d5e5f555152535455565758595a5b5c5d5e5f"
@@ -102,7 +103,7 @@ class ChainCallbacksTest extends ChainDbUnitTest {
       chainHandler.chainConfig.addCallbacks(callbacks)
 
       val newValidHeader =
-        BlockHeaderHelper.buildNextHeader(ChainTestUtil.genesisHeaderDb)
+        BlockHeaderHelper.buildNextHeader(ChainTestUtil.regTestGenesisHeaderDb)
 
       val bytes = ByteVector(scala.util.Random.nextBytes(32))
       val hashBE = CryptoUtil.doubleSHA256(bytes)
@@ -111,7 +112,8 @@ class ChainCallbacksTest extends ChainDbUnitTest {
           hashBE = DoubleSha256DigestBE.fromHex(
             "000102030405060708090a0b0c0d0e0f000102030405060708090a0b0c0d0e0f"
           ),
-          previousFilterHeaderBE = ChainTestUtil.genesisFilterHeaderDb.hashBE,
+          previousFilterHeaderBE =
+            ChainTestUtil.regTestGenesisHeaderCompactFilterHeaderDb.hashBE,
           height = 1,
           filterHashBE = hashBE.flip,
           blockHashBE = newValidHeader.hashBE

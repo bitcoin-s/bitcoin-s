@@ -24,7 +24,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
 
   behavior of "BlockHeaderDAO"
 
-  private val genesisHeaderDb = ChainTestUtil.genesisHeaderDb
+  private val genesisHeaderDb = ChainTestUtil.regTestGenesisHeaderDb
   it should "insert and read the genesis block header back" in {
     (blockHeaderDAO: BlockHeaderDAO) =>
       val readF = blockHeaderDAO.read(genesisHeaderDb.hashBE)
@@ -325,10 +325,11 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
         foundGenesis <- foundGenesisF
       } yield {
         assert(noGenesisAncestors.length == 1)
-        assert(noGenesisAncestors == Vector(ChainTestUtil.genesisHeaderDb))
+        assert(
+          noGenesisAncestors == Vector(ChainTestUtil.regTestGenesisHeaderDb))
 
         assert(foundGenesis.length == 1)
-        assert(foundGenesis == Vector(ChainTestUtil.genesisHeaderDb))
+        assert(foundGenesis == Vector(ChainTestUtil.regTestGenesisHeaderDb))
       }
 
       val oneChildF = for {
@@ -361,14 +362,14 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
       BlockHeaderDbHelper.fromBlockHeader(
         1,
         BigInt(1, hex"fffef2bf0566ab".toArray),
-        ChainTestUtil.blockHeader562462
+        ChainTestUtil.mainnetBlockHeader87
       )
 
     val db2 =
       BlockHeaderDbHelper.fromBlockHeader(
         2,
         BigInt(1, hex"01253721228459eac00c".toArray),
-        ChainTestUtil.blockHeader562463
+        ChainTestUtil.mainnetBlockHeader88
       )
 
     for {
@@ -386,7 +387,7 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
         BlockHeaderDbHelper.fromBlockHeader(
           1,
           chainWork,
-          ChainTestUtil.blockHeader562462
+          ChainTestUtil.mainnetBlockHeader87
         )
 
       for {
@@ -411,19 +412,19 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
     (blockerHeaderDAO: BlockHeaderDAO) =>
       val duplicate3 = BlockHeader(
         version = Int32.one,
-        previousBlockHash = ChainTestUtil.blockHeader562463.hash,
+        previousBlockHash = ChainTestUtil.mainnetBlockHeader88.hash,
         merkleRootHash = DoubleSha256Digest.empty,
         time = UInt32.zero,
-        nBits = ChainTestUtil.blockHeader562464.nBits,
+        nBits = ChainTestUtil.mainnetBlockHeader89.nBits,
         nonce = UInt32.zero
       )
 
       val duplicate2 = BlockHeader(
         version = Int32.one,
-        previousBlockHash = ChainTestUtil.blockHeader562462.hash,
+        previousBlockHash = ChainTestUtil.mainnetBlockHeader87.hash,
         merkleRootHash = DoubleSha256Digest.empty,
         time = UInt32.zero,
-        nBits = ChainTestUtil.blockHeader562463.nBits,
+        nBits = ChainTestUtil.mainnetBlockHeader88.nBits,
         nonce = UInt32.zero
       )
 
@@ -432,19 +433,19 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
         previousBlockHash = genesisHeaderDb.hashBE.flip,
         merkleRootHash = DoubleSha256Digest.empty,
         time = UInt32.zero,
-        nBits = ChainTestUtil.blockHeader562462.nBits,
+        nBits = ChainTestUtil.mainnetBlockHeader87.nBits,
         nonce = UInt32.zero
       )
 
       val chain1 = Vector(
         BlockHeaderDbHelper
-          .fromBlockHeader(3, BigInt(2), ChainTestUtil.blockHeader562464),
+          .fromBlockHeader(3, BigInt(2), ChainTestUtil.mainnetBlockHeader89),
         BlockHeaderDbHelper
-          .fromBlockHeader(2, BigInt(1), ChainTestUtil.blockHeader562463),
+          .fromBlockHeader(2, BigInt(1), ChainTestUtil.mainnetBlockHeader88),
         BlockHeaderDbHelper.fromBlockHeader(
           1,
           BigInt(0),
-          ChainTestUtil.blockHeader562462
+          ChainTestUtil.mainnetBlockHeader87
         )
       )
 
@@ -453,18 +454,18 @@ class BlockHeaderDAOTest extends ChainDbUnitTest {
         BlockHeaderDbHelper.fromBlockHeader(
           1,
           BigInt(0),
-          ChainTestUtil.blockHeader562462
+          ChainTestUtil.mainnetBlockHeader87
         )
       )
 
       val chain3 = Vector(
         BlockHeaderDbHelper.fromBlockHeader(3, BigInt(2), duplicate3),
         BlockHeaderDbHelper
-          .fromBlockHeader(2, BigInt(1), ChainTestUtil.blockHeader562463),
+          .fromBlockHeader(2, BigInt(1), ChainTestUtil.mainnetBlockHeader88),
         BlockHeaderDbHelper.fromBlockHeader(
           1,
           BigInt(0),
-          ChainTestUtil.blockHeader562462
+          ChainTestUtil.mainnetBlockHeader87
         )
       )
 

@@ -1190,7 +1190,8 @@ class ChainHandler(
         if (startHeight == 0) {
           val genesisHeaderF = blockHeaderDAO.getAtHeight(0)
           genesisHeaderF.flatMap { h =>
-            require(h.length == 1, s"Should only have one genesis header!")
+            require(h.length == 1,
+                    s"Should have exactly 1 genesis header!, got=${h.length}")
             calculateChainWorkGenesisBlock(h.head)
               .map(Vector(_))
           }
