@@ -1,15 +1,12 @@
 package org.bitcoins.core.bip47
 
-import org.bitcoins.core.config.{MainNet, NetworkParameters}
+import org.bitcoins.core.config._
 import org.bitcoins.core.crypto._
-import org.bitcoins.core.crypto.ExtKeyVersion.LegacyMainNetPriv
-import org.bitcoins.core.crypto.ExtKeyVersion.LegacyTestNet3Priv
-import org.bitcoins.core.crypto.ExtKeyPubVersion.LegacyMainNetPub
-import org.bitcoins.core.crypto.ExtKeyPubVersion.LegacyTestNet3Pub
+import org.bitcoins.core.hd.HDCoinType
 import org.bitcoins.core.number.{UInt32, UInt8}
 import org.bitcoins.core.protocol.{Bech32Address, P2PKHAddress}
 import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
-import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, ECPublicKey}
+import org.bitcoins.crypto.{ECPrivateKey, ECPublicKey}
 import scodec.bits.ByteVector
 
 import scala.util.Try
@@ -34,9 +31,7 @@ sealed abstract class BIP47Account {
   def notificationKey: ExtPrivateKey = deriveKey(0)
 
   def notificationAddress: P2PKHAddress = {
-    val pubKey = notificationKey.key.publicKey
-    val hash = CryptoUtil.sha256Hash160(pubKey.bytes)
-    P2PKHAddress(hash, network)
+    P2PKHAddress(notificationKey.key.publicKey, network)
   }
 
   def notificationSegwitAddress: Bech32Address = {
@@ -87,7 +82,6 @@ sealed abstract class BIP47Account {
 
 object BIP47Account {
   val Purpose: Int = 47
-  val HardenedOffset: Long = 0x80000000L
 
   private case class BIP47AccountImpl(
       extPrivKey: ExtPrivateKey,
@@ -107,19 +101,18 @@ object BIP47Account {
       seed: ByteVector,
       network: NetworkParameters,
       accountIndex: Int = 0): BIP47Account = {
-    val version = network match {
-      case _: MainNet => LegacyMainNetPriv
-      case _          => LegacyTestNet3Priv
-    }
-
+    val version = ExtKeyPrivVersion.legacyFromNetwork(network)
     val master = ExtPrivateKey(version, Some(seed))
+    val hardenedIdx = ExtKey.hardenedIdx
+
+    val coinType = HDCoinType.fromNetwork(network).toInt
 
     val purposeKey =
-      master.deriveChildPrivKey(UInt32(Purpose + HardenedOffset))
+      master.deriveChildPrivKey(hardenedIdx + UInt32(Purpose))
     val coinTypeKey =
-      purposeKey.deriveChildPrivKey(UInt32(coinType(network) + HardenedOffset))
+      purposeKey.deriveChildPrivKey(hardenedIdx + UInt32(coinType))
     val accountKey =
-      coinTypeKey.deriveChildPrivKey(UInt32(accountIndex + HardenedOffset))
+      coinTypeKey.deriveChildPrivKey(hardenedIdx + UInt32(accountIndex))
 
     BIP47AccountImpl(accountKey, network, accountIndex)
   }
@@ -136,11 +129,6 @@ object BIP47Account {
       network: NetworkParameters): WatchOnlyBIP47Account = {
     WatchOnlyBIP47Account(paymentCode, network)
   }
-
-  private def coinType(network: NetworkParameters): Long = network match {
-    case _: MainNet => 0L
-    case _          => 1L
-  }
 }
 
 /** Watch-only BIP47 account created from a payment code (no private keys). */
@@ -152,7 +140,7 @@ sealed abstract class WatchOnlyBIP47Account {
 
   def publicKeyAt(index: Int): ECPublicKey = {
     val masterKey = ExtPublicKey(
-      extKeyVersion(network),
+      ExtKeyPubVersion.legacyFromNetwork(network),
       UInt8.zero,
       ByteVector.fill(4)(0),
       UInt32.zero,
@@ -169,16 +157,8 @@ sealed abstract class WatchOnlyBIP47Account {
   }
 
   def notificationAddress: P2PKHAddress = {
-    val pubKey = publicKeyAt(0)
-    val hash = CryptoUtil.sha256Hash160(pubKey.bytes)
-    P2PKHAddress(hash, network)
+    P2PKHAddress(publicKeyAt(0), network)
   }
-
-  private def extKeyVersion(network: NetworkParameters): ExtKeyPubVersion =
-    network match {
-      case _: MainNet => LegacyMainNetPub
-      case _          => LegacyTestNet3Pub
-    }
 }
 
 object WatchOnlyBIP47Account {

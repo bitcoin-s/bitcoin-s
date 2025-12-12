@@ -6,13 +6,7 @@ import org.bitcoins.core.crypto.ExtKeyPubVersion.LegacyMainNetPub
 import org.bitcoins.core.number.{UInt32, UInt8}
 import org.bitcoins.core.protocol.Bech32Address
 import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
-import org.bitcoins.crypto.{
-  CryptoParams,
-  CryptoUtil,
-  ECPrivateKey,
-  ECPublicKey,
-  FieldElement
-}
+import org.bitcoins.crypto.{CryptoUtil, ECPrivateKey, ECPublicKey, FieldElement}
 import scodec.bits.ByteVector
 
 import java.math.BigInteger
@@ -39,9 +33,8 @@ sealed abstract class PaymentAddress {
 
   def tweakFieldElement: FieldElement = {
     val s = new BigInteger(1, sharedSecretHash.toArray)
-    val n = CryptoParams.getN
-    if (s.compareTo(BigInteger.ONE) <= 0 || s.compareTo(n) >= 0) {
-      throw new IllegalStateException("Secret point not on secp256k1 curve")
+    if (s.compareTo(BigInteger.ONE) <= 0) {
+      throw new IllegalStateException("Invalid scalar for EC operations")
     }
     FieldElement(sharedSecretHash)
   }

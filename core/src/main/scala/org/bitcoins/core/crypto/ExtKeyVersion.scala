@@ -1,6 +1,6 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.config._
 import org.bitcoins.core.hd.{HDCoinType, HDPurpose}
 import org.bitcoins.crypto.{Factory, NetworkElement}
 import scodec.bits.*
@@ -100,6 +100,13 @@ object ExtKeyPrivVersion {
     ExtKeyVersion.NestedSegWitTestNet3Priv
   )
 
+  def legacyFromNetwork(network: NetworkParameters): ExtKeyPrivVersion =
+    network match {
+      case MainNet => ExtKeyVersion.LegacyMainNetPriv
+      case TestNet3 | TestNet4 | RegTest | SigNet =>
+        ExtKeyVersion.LegacyTestNet3Priv
+    }
+
   private val purposeMap: Map[HDPurpose, Vector[ExtKeyPrivVersion]] = Map(
     HDPurpose.Legacy -> Vector(ExtKeyVersion.LegacyMainNetPriv,
                                ExtKeyVersion.LegacyTestNet3Priv),
@@ -134,6 +141,12 @@ object ExtKeyPubVersion extends Factory[ExtKeyPubVersion] {
     NestedSegWitMainNetPub,
     NestedSegWitTestNet3Pub
   )
+
+  def legacyFromNetwork(network: NetworkParameters): ExtKeyPubVersion =
+    network match {
+      case MainNet                                => LegacyMainNetPub
+      case TestNet3 | TestNet4 | RegTest | SigNet => LegacyTestNet3Pub
+    }
 
   /** Generating a [[org.bitcoins.core.crypto.ExtPublicKey ExtPublicKey]] with
     * this version makes keys start with `xpub`

@@ -41,8 +41,8 @@ sealed abstract class PaymentCode extends NetworkElement {
 
   def isValid: Boolean = {
     pubKey.bytes.size == 33 &&
-    (pubKey.bytes.head == 0x02 || pubKey.bytes.head == 0x03) &&
-    chainCode.bytes.size == 32
+    (pubKey.bytes.head == 0x02 || pubKey.bytes.head == 0x03)
+    // chainCode size is already enforced by ChainCode constructor
   }
 }
 
