@@ -29,7 +29,7 @@ class NetworkUtilTest extends BitcoinSUtilTest {
   }
 
   it must "determine if a block header is stale" in {
-    val staleHeader = ChainTestUtil.genesisHeaderDb
+    val staleHeader = ChainTestUtil.regTestGenesisHeaderDb
     assert(
       NetworkUtil.isBlockHeaderStale(
         staleHeader.blockHeader,
@@ -38,12 +38,12 @@ class NetworkUtilTest extends BitcoinSUtilTest {
     )
 
     val nonStale = BlockHeader(
-      ChainTestUtil.genesisHeaderDb.version,
-      ChainTestUtil.genesisHeaderDb.previousBlockHashBE.flip,
-      ChainTestUtil.genesisHeaderDb.merkleRootHashBE.flip,
+      staleHeader.version,
+      staleHeader.previousBlockHashBE.flip,
+      staleHeader.merkleRootHashBE.flip,
       time = UInt32(Instant.now.getEpochSecond),
-      nBits = ChainTestUtil.genesisHeaderDb.nBits,
-      nonce = ChainTestUtil.genesisHeaderDb.nonce
+      nBits = staleHeader.nBits,
+      nonce = staleHeader.nonce
     )
 
     assert(!NetworkUtil.isBlockHeaderStale(nonStale, MainNetChainParams))
@@ -51,12 +51,12 @@ class NetworkUtilTest extends BitcoinSUtilTest {
     val barleyStaleHeader = {
       val timestamp = Instant.now.minus(31, ChronoUnit.MINUTES).getEpochSecond
       BlockHeader(
-        ChainTestUtil.genesisHeaderDb.version,
-        ChainTestUtil.genesisHeaderDb.previousBlockHashBE.flip,
-        ChainTestUtil.genesisHeaderDb.merkleRootHashBE.flip,
+        staleHeader.version,
+        staleHeader.previousBlockHashBE.flip,
+        staleHeader.merkleRootHashBE.flip,
         time = UInt32(timestamp),
-        nBits = ChainTestUtil.genesisHeaderDb.nBits,
-        nonce = ChainTestUtil.genesisHeaderDb.nonce
+        nBits = staleHeader.nBits,
+        nonce = staleHeader.nonce
       )
     }
 
@@ -67,12 +67,12 @@ class NetworkUtilTest extends BitcoinSUtilTest {
     val barleyNotStaleHeader = {
       val timestamp = Instant.now.minus(29, ChronoUnit.MINUTES).getEpochSecond
       BlockHeader(
-        ChainTestUtil.genesisHeaderDb.version,
-        ChainTestUtil.genesisHeaderDb.previousBlockHashBE.flip,
-        ChainTestUtil.genesisHeaderDb.merkleRootHashBE.flip,
+        staleHeader.version,
+        staleHeader.previousBlockHashBE.flip,
+        staleHeader.merkleRootHashBE.flip,
         time = UInt32(timestamp),
-        nBits = ChainTestUtil.genesisHeaderDb.nBits,
-        nonce = ChainTestUtil.genesisHeaderDb.nonce
+        nBits = staleHeader.nBits,
+        nonce = staleHeader.nonce
       )
     }
 

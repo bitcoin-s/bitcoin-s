@@ -38,7 +38,8 @@ class ChainHandlerCachedTest extends ChainDbUnitTest {
         filterHeaderOpt <- noChainsChainHandler.getBestFilterHeader()
       } yield {
         assert(filterHeaderOpt.isDefined)
-        assert(filterHeaderOpt.get == ChainTestUtil.genesisFilterHeaderDb)
+        assert(
+          filterHeaderOpt.get == ChainTestUtil.regTestGenesisHeaderCompactFilterHeaderDb)
       }
   }
 

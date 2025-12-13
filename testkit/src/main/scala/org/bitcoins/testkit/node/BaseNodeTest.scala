@@ -98,7 +98,7 @@ trait BaseNodeTest extends BitcoinSFixture with EmbeddedPg {
     override def getBlockCount(): Future[Int] = Future.successful(0)
 
     override def getBestBlockHeader(): Future[BlockHeaderDb] =
-      Future.successful(ChainTestUtil.genesisHeaderDb)
+      Future.successful(ChainTestUtil.regTestGenesisHeaderDb)
 
     override def processFilterHeaders(
         filterHeaders: Vector[FilterHeader],

@@ -13,6 +13,7 @@ import org.bitcoins.chain.models.*
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.db.*
+import org.bitcoins.core.config.{MainNet, RegTest, SigNet, TestNet3, TestNet4}
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
@@ -198,11 +199,12 @@ trait ChainUnitTest extends BitcoinSFixture {
     for {
       chainHandler <- createChainHandler()
       filterHeaderChainApi <- chainHandler.processFilterHeader(
-        ChainTestUtil.genesisFilterHeaderDb.filterHeader,
-        ChainTestUtil.genesisHeaderDb.hashBE
+        ChainTestUtil.regTestGenesisHeaderCompactFilterHeaderDb.filterHeader,
+        ChainTestUtil.regTestGenesisHeaderDb.hashBE
       )
       filterChainApi <-
-        filterHeaderChainApi.processFilter(ChainTestUtil.genesisFilterMessage)
+        filterHeaderChainApi.processFilter(
+          ChainTestUtil.regtestGenesisFilterMessage)
     } yield filterChainApi.asInstanceOf[ChainHandler]
   }
 
@@ -211,11 +213,12 @@ trait ChainUnitTest extends BitcoinSFixture {
     for {
       chainHandler <- createChainHandlerCached()
       filterHeaderChainApi <- chainHandler.processFilterHeader(
-        ChainTestUtil.genesisFilterHeaderDb.filterHeader,
-        ChainTestUtil.genesisHeaderDb.hashBE
+        ChainTestUtil.regTestGenesisHeaderCompactFilterHeaderDb.filterHeader,
+        ChainTestUtil.regTestGenesisHeaderDb.hashBE
       )
       filterChainApi <-
-        filterHeaderChainApi.processFilter(ChainTestUtil.genesisFilterMessage)
+        filterHeaderChainApi.processFilter(
+          ChainTestUtil.regtestGenesisFilterMessage)
     } yield filterChainApi.asInstanceOf[ChainHandlerCached]
   }
 
@@ -662,8 +665,15 @@ object ChainUnitTest extends ChainVerificationLogger {
       val chainHandlerF = makeChainHandler()
       for {
         chainHandler <- chainHandlerF
+        header = appConfig.network match {
+          case MainNet  => ChainTestUtil.mainnetGenesisHeaderDb
+          case TestNet3 => ChainTestUtil.testnet3GenesisHeaderDb
+          case TestNet4 => ChainTestUtil.testnet4GenesisHeaderDb
+          case RegTest  => ChainTestUtil.regTestGenesisHeaderDb
+          case SigNet   => ChainTestUtil.signetGenesisHeaderDb
+        }
         genHeader <- chainHandler.blockHeaderDAO.upsert(
-          ChainTestUtil.genesisHeaderDb
+          header
         )
       } yield genHeader
     }
