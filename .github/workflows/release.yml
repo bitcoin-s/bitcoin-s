@@ -38,15 +38,15 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-13, ubuntu-22.04, windows-latest] #
+        os: [macos-latest, ubuntu-latest, windows-latest] #
         # If os values you don't include the matrix os list above are set here, they will be included
         # If you want multiple variables per os see https://github.community/t/create-matrix-with-multiple-os-and-env-for-each-one/16895
         # Can run conditional steps below with https://github.community/t/what-is-the-correct-if-condition-syntax-for-checking-matrix-os-version/16221
         # This is here to get friendly labels for output filenames
         include:
-        - os: macos-13
+        - os: macos-latest
           TARGET: mac
-        - os: ubuntu-22.04
+        - os: ubuntu-latest
           TARGET: linux
         - os: windows-latest
         # TODO : Do we want to use 'win' or 'windows'?
@@ -55,12 +55,16 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Setup Scala
+      - name: Setup JDK
         uses: actions/setup-java@v3
         with:
-          distribution: 'temurin'
-          java-version: '21.0.4'
+          # for some reason there seems to be a bug in the temurin runtime with jlink/jdeps
+          # this can likely be reverted back to temurin in the future
+          distribution: 'zulu'
+          java-version: '25'
           cache: 'sbt'
+      - name: Install sbt
+        uses: sbt/setup-sbt@v1
       - name: Get Previous tag
         id: previoustag
         uses: WyriHaximus/github-action-get-previous-tag@v1
@@ -138,14 +142,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-13, ubuntu-22.04] # windows-latest
+        os: [macos-latest, ubuntu-latest] # windows-latest
         # If os values you don't include the matrix os list above are set here, they will be included
         # This is here to get friendly labels for output filenames
         include:
-        - os: macos-13
+        - os: macos-latest
           TARGET: mac
           FORMAT: zip # dmg
-        - os: ubuntu-22.04
+        - os: ubuntu-latest
           TARGET: linux
           FORMAT: deb
         # - os: windows-latest
@@ -298,7 +302,7 @@ jobs:
       # Platform specific values here for folder depth
       - name: (macos) Move .zip into /make
         if: startsWith(matrix.os,'macos')
-        run: mv ${{env.KB_MAKE}}/zip/darwin/x64/*.zip $KB_MAKE
+        run: mv ${{env.KB_MAKE}}/zip/darwin/arm64/*.zip $KB_MAKE
       - name: (linux) Move .deb into /make
         if: startsWith(matrix.os,'ubuntu')
         run: mv ${{env.KB_MAKE}}/deb/x64/*.deb $KB_MAKE
@@ -390,7 +394,7 @@ jobs:
       # Platform specific values here for folder depth
       - name: (macos) Move .zip into /make
         if: startsWith(matrix.os,'macos')
-        run: mv ${{env.W_MAKE}}/zip/darwin/x64/*.zip $W_MAKE
+        run: mv ${{env.W_MAKE}}/zip/darwin/arm64/*.zip $W_MAKE
       - name: (linux) Move .deb into /make
         if: startsWith(matrix.os,'ubuntu')
         run: mv ${{env.W_MAKE}}/deb/x64/*.deb $W_MAKE
