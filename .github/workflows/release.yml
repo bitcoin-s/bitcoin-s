@@ -55,12 +55,16 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Setup Scala
+      - name: Setup JDK
         uses: actions/setup-java@v3
         with:
-          distribution: 'temurin'
+          # for some reason there seems to be a bug in the temurin runtime with jlink/jdeps
+          # this can likely be reverted back to temurin in the future
+          distribution: 'zulu'
           java-version: '25'
           cache: 'sbt'
+      - name: Install sbt
+        uses: sbt/setup-sbt@v1
       - name: Get Previous tag
         id: previoustag
         uses: WyriHaximus/github-action-get-previous-tag@v1
