@@ -48,7 +48,7 @@ trait ChainUnitTest extends BitcoinSFixture {
 
   /** Behaves exactly like the default conf, execpt network is set to mainnet
     */
-  lazy val mainnetAppConfig: ChainAppConfig = {
+  def mainnetAppConfig: ChainAppConfig = {
     val mainnetConf = ConfigFactory.parseString("bitcoin-s.network = mainnet")
     BitcoinSTestAppConfig.getNeutrinoTestConfig(mainnetConf).chainConf
   }
@@ -63,8 +63,12 @@ trait ChainUnitTest extends BitcoinSFixture {
     */
   def withBlockHeaderDAO(test: OneArgAsyncTest): FutureOutcome = {
     makeDependentFixture(
-      build = () =>
-        ChainUnitTest.createBlockHeaderDAO()(executionContext, chainAppConfig),
+      build = () => {
+        val c = chainAppConfig
+        c.start().flatMap { _ =>
+          ChainUnitTest.createBlockHeaderDAO()(executionContext, c)
+        }
+      },
       destroy = (blockHeaderDAO: BlockHeaderDAO) => {
         ChainUnitTest.destroyChainApi()(
           system,
@@ -88,8 +92,12 @@ trait ChainUnitTest extends BitcoinSFixture {
   /** Creates a compact filter DAO with zero rows in it */
   def withCompactFilterHeaderDAO(test: OneArgAsyncTest): FutureOutcome = {
     makeDependentFixture(
-      build = () =>
-        ChainUnitTest.createFilterHeaderDAO()(chainAppConfig, executionContext),
+      build = () => {
+        val c = chainAppConfig
+        c.start().flatMap { _ =>
+          ChainUnitTest.createFilterHeaderDAO()(c, executionContext)
+        }
+      },
       destroy = (fhDAO: CompactFilterHeaderDAO) =>
         ChainUnitTest.destroyChainApi()(system, fhDAO.appConfig)
     )(test)
@@ -98,8 +106,12 @@ trait ChainUnitTest extends BitcoinSFixture {
   /** Creates a compact filter DAO with zero rows in it */
   def withCompactFilterDAO(test: OneArgAsyncTest): FutureOutcome = {
     makeDependentFixture(
-      build =
-        () => ChainUnitTest.createFilterDAO()(chainAppConfig, executionContext),
+      build = () => {
+        val c = chainAppConfig
+        c.start().flatMap { _ =>
+          ChainUnitTest.createFilterDAO()(c, executionContext)
+        }
+      },
       destroy = (cfDAO: CompactFilterDAO) =>
         ChainUnitTest.destroyChainApi()(system, cfDAO.appConfig)
     )(test)
@@ -107,9 +119,12 @@ trait ChainUnitTest extends BitcoinSFixture {
 
   def withPopulatedBlockHeaderDAO(test: OneArgAsyncTest): FutureOutcome = {
     makeDependentFixture(
-      build = () =>
-        ChainUnitTest.createPopulatedBlockHeaderDAO()(chainAppConfig,
-                                                      executionContext),
+      build = () => {
+        val c = chainAppConfig
+        c.start().flatMap { _ =>
+          ChainUnitTest.createPopulatedBlockHeaderDAO()(c, executionContext)
+        }
+      },
       destroy = (bhDAO: BlockHeaderDAO) =>
         ChainUnitTest.destroyChainApi()(system, bhDAO.appConfig)
     )(test)
@@ -117,9 +132,13 @@ trait ChainUnitTest extends BitcoinSFixture {
 
   def withChainStateDescriptorDAO(test: OneArgAsyncTest): FutureOutcome = {
     makeDependentFixture(
-      build = () =>
-        ChainUnitTest.createChainStateDescriptorDAO()(executionContext,
-                                                      chainAppConfig),
+      build = () => {
+        val c = chainAppConfig
+        c.start()
+          .flatMap(_ =>
+            ChainUnitTest.createChainStateDescriptorDAO()(executionContext, c))
+
+      },
       destroy = (csDAO: ChainStateDescriptorDAO) =>
         ChainUnitTest.destroyChainApi()(system, csDAO.appConfig)
     )(test)
@@ -142,8 +161,7 @@ trait ChainUnitTest extends BitcoinSFixture {
       () => {
         val c = chainAppConfig
         c.start().flatMap { _ =>
-          ChainUnitTest.createChainHandlerCached()(executionContext,
-                                                   chainAppConfig)
+          ChainUnitTest.createChainHandlerCached()(executionContext, c)
         }
       },
       (chc: ChainHandler) =>
@@ -174,24 +192,6 @@ trait ChainUnitTest extends BitcoinSFixture {
       destroy = (chcgf: ChainHandler) =>
         ChainUnitTest.destroyChainApi()(system, chcgf.chainConfig)
     )(test)
-  }
-
-  /** Creates and populates BlockHeaderTable with block headers 562375 to 571375
-    */
-  def createPopulatedChainHandler(): Future[ChainHandler] = {
-    implicit val chainAppConfig: ChainAppConfig = this.chainAppConfig
-    for {
-      blockHeaderDAO <- ChainUnitTest.createPopulatedBlockHeaderDAO()
-      filterHeaderDAO <- ChainUnitTest.createPopulatedFilterHeaderDAO()
-      filterDAO <- ChainUnitTest.createPopulatedFilterDAO()
-      stateDAO = ChainStateDescriptorDAO()
-      chainHandler = ChainHandler.fromDatabase(
-        blockHeaderDAO = blockHeaderDAO,
-        filterHeaderDAO = filterHeaderDAO,
-        filterDAO = filterDAO,
-        stateDAO = stateDAO
-      )
-    } yield chainHandler
   }
 
   def createChainHandlerWithGenesisFilter()(implicit
@@ -730,10 +730,10 @@ object ChainUnitTest extends ChainVerificationLogger {
     if (Files.exists(chainAppConfig.datadir)) {
       // check if we even created the database
       // in some test cases - such as ChainAppConfigTest -
-      // we don't create the databse for the test case
+      // we don't create the database for the test case
       for {
         _ <- ChainUnitTest.destroyAllTables()
-        _ = chainAppConfig.clearCallbacks()
+        _ <- chainAppConfig.stop()
       } yield ()
     } else {
       Future.unit

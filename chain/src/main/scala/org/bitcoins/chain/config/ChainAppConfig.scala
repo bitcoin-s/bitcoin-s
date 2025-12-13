@@ -62,7 +62,6 @@ case class ChainAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
         chainWork = Pow.getBlockProof(chain.genesisBlock.blockHeader),
         bh = chain.genesisBlock.blockHeader
       )
-
     val blockHeaderDAO = BlockHeaderDAO()(ec, appConfig)
     val bhCreatedF = blockHeaderDAO.create(genesisHeader)
     bhCreatedF.flatMap { _ =>
