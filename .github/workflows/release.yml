@@ -302,7 +302,7 @@ jobs:
       # Platform specific values here for folder depth
       - name: (macos) Move .zip into /make
         if: startsWith(matrix.os,'macos')
-        run: mv ${{env.KB_MAKE}}/zip/darwin/x64/*.zip $KB_MAKE
+        run: mv ${{env.KB_MAKE}}/zip/darwin/arm64/*.zip $KB_MAKE
       - name: (linux) Move .deb into /make
         if: startsWith(matrix.os,'ubuntu')
         run: mv ${{env.KB_MAKE}}/deb/x64/*.deb $KB_MAKE
