@@ -1,7 +1,7 @@
 name: Release
 on:
   push:
-    branches: [master, main]
+    branches: [master, main, 2025-12-13-release-yml-dynamic-os]
     tags: ["*"]
   release:
     types: [ published ]
@@ -38,15 +38,15 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-13, ubuntu-22.04, windows-latest] #
+        os: [macos-latest, ubuntu-latest, windows-latest] #
         # If os values you don't include the matrix os list above are set here, they will be included
         # If you want multiple variables per os see https://github.community/t/create-matrix-with-multiple-os-and-env-for-each-one/16895
         # Can run conditional steps below with https://github.community/t/what-is-the-correct-if-condition-syntax-for-checking-matrix-os-version/16221
         # This is here to get friendly labels for output filenames
         include:
-        - os: macos-13
+        - os: macos-latest
           TARGET: mac
-        - os: ubuntu-22.04
+        - os: ubuntu-latest
           TARGET: linux
         - os: windows-latest
         # TODO : Do we want to use 'win' or 'windows'?
@@ -59,7 +59,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '21.0.4'
+          java-version: '25'
           cache: 'sbt'
       - name: Get Previous tag
         id: previoustag
@@ -138,14 +138,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-13, ubuntu-22.04] # windows-latest
+        os: [macos-latest, ubuntu-latest] # windows-latest
         # If os values you don't include the matrix os list above are set here, they will be included
         # This is here to get friendly labels for output filenames
         include:
-        - os: macos-13
+        - os: macos-latest
           TARGET: mac
           FORMAT: zip # dmg
-        - os: ubuntu-22.04
+        - os: ubuntu-latest
           TARGET: linux
           FORMAT: deb
         # - os: windows-latest
