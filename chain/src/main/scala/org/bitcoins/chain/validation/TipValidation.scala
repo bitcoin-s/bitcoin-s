@@ -10,6 +10,10 @@ import org.bitcoins.core.protocol.blockchain.{
   Block,
   BlockHeader
 }
+import org.bitcoins.core.protocol.transaction.{
+  Transaction,
+  TransactionConstants
+}
 import org.bitcoins.core.util.NumberUtil
 
 /** Responsible for checking if we can connect two block headers together on the
@@ -118,15 +122,52 @@ sealed abstract class TipValidation extends ChainVerificationLogger {
 
   }
 
-  def contextualCheckBlock(block: Block, tip: BlockHeaderDb, blockchain: Blockchain, chainParams: BitcoinChainParams): Boolean = {
-    require(block.blockHeader.previousBlockHashBE == tip.hashBE)
-    val nHeight = tip.height + 1
-    val expectedBits = Pow.getNetworkWorkRequired(block.blockHeader,
-                                                  blockchain = blockchain,
-                                                  chainParams = chainParams
+  def contextualCheckBlock(block: Block, blockchain: Blockchain): Boolean = {
+    val tip = blockchain.tip
+    require(
+      block.blockHeader.previousBlockHashBE == tip.hashBE,
+      s"Block ${block.blockHeader.hashBE} previous hash ${block.blockHeader.previousBlockHashBE.hex} did not match tip hash ${tip.hashBE.hex}"
     )
+    val nHeight = tip.height + 1
+    val locktimeCutOff = blockchain.getMedianTimePast
+    val allTxsFinal =
+      block.transactions.forall(isFinalTx(_, nHeight, locktimeCutOff))
+    val cbTx = block.transactions.head
+    val cbInput = cbTx.inputs.head
+    val cbLockTime = cbTx.lockTime
+    val cbHeight = cbInput.scriptSignature.asm.head.toLong
+    val cbSequence = cbInput.sequence
+    println(s"cbheight, expected=$nHeight got=$cbHeight")
+    if (!allTxsFinal) {
+      println(s"All txs not final")
+      false
+    } else if (cbLockTime.toLong != (nHeight - 1)) {
+      println(s"bad cb locktime, expected=${nHeight - 1} got=$cbLockTime")
+      false
+    } else if (cbHeight != nHeight) {
+      println(s"bad height, expected=$nHeight got=$cbHeight")
+      false
+    } else if (cbSequence == UInt32.max) {
+      println(s"bad cb sequence, got=${UInt32.max}")
+      false
+    } else {
+      true
+    }
+  }
 
-    ???
+  def isFinalTx(tx: Transaction, blockHeight: Int, blockTime: Long): Boolean = {
+    val t = TransactionConstants
+    val isBlockHeight = tx.lockTime < t.locktimeThreshold
+    if (tx.lockTime == UInt32.zero) {
+      return true
+    }
+    if (isBlockHeight && tx.lockTime.toLong < blockHeight) {
+      return true
+    }
+    if (!isBlockHeight && tx.lockTime.toLong < blockTime) {
+      return true
+    }
+    tx.inputs.forall(_.sequence == UInt32.max)
   }
 }
 

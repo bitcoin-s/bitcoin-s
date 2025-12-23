@@ -1,12 +1,19 @@
 package org.bitcoins.chain.validation
 
+import org.bitcoins.chain.blockchain.Blockchain
+import org.bitcoins.chain.blockchain.ConnectTipResult.{
+  BadTip,
+  ExtendChain,
+  Reorg
+}
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.commons.serializers.SerializerUtil
-import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
+import org.bitcoins.core.api.chain.db.{BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.blockchain.Block
+import org.bitcoins.core.protocol.blockchain.{Block, MainNetChainParams}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.core.script.util.PreviousOutputMap
+import org.bitcoins.testkitcore.chain.ChainTestUtil
 import org.bitcoins.testkitcore.util.BitcoinSJvmTest
 import play.api.libs.json.{JsResult, JsValue, Json, Reads}
 
@@ -46,7 +53,17 @@ class Bip54Test extends BitcoinSJvmTest {
   case class CoinbaseTestCase(
       block_chain: Vector[Block],
       valid: Boolean,
-      comment: String)
+      comment: String) {
+    val blockHeaderDbs: Vector[BlockHeaderDb] = {
+      block_chain.zipWithIndex.map { case (block, height) =>
+        BlockHeaderDbHelper.fromBlockHeader(
+          height = height,
+          chainWork = Pow.getBlockProof(block.blockHeader),
+          bh = block.blockHeader
+        )
+      }
+    }
+  }
   implicit val coinbaseTestCasereader: Reads[CoinbaseTestCase] =
     Json.reads[CoinbaseTestCase]
 
@@ -108,27 +125,66 @@ class Bip54Test extends BitcoinSJvmTest {
     val testCases = json.validate[Vector[CoinbaseTestCase]].get
     testCases.foreach { testCase =>
       withClue(testCase.comment) {
-        val height = testCase.block_chain.length - 1
-        val tip = testCase.block_chain(height - 1).blockHeader
-        val tipDb = BlockHeaderDbHelper.fromBlockHeader(
-          height = height - 1,
-          chainWork = Pow.getBlockProof(tip),
-          bh = tip
-        )
+        // val height = testCase.block_chain.length - 1
+        val genesisChain =
+          Blockchain.fromHeaders(Vector(ChainTestUtil.mainnetGenesisHeaderDb))
         if (testCase.valid) {
-
-          assert(
-            TipValidation.contextualCheckBlock(testCase.block_chain(height),
-                                               tipDb)
-          )
+          handleValidCoinbaseTests(testCase, genesisChain)
+          succeed
         } else {
-          assert(
-            !TipValidation.contextualCheckBlock(testCase.block_chain(height),
-                                                tipDb)
-          )
+          val isValid = handleInvalidCoinbaseTests(testCase, genesisChain)
+          assert(!isValid)
         }
       }
     }
     succeed
+  }
+
+  private def handleValidCoinbaseTests(
+      testCase: CoinbaseTestCase,
+      genesisChain: Blockchain): Unit = {
+    testCase.block_chain.tail.foldLeft(genesisChain) { case (chain, block) =>
+      val blockCheck =
+        TipValidation.contextualCheckBlock(block = block, blockchain = chain)
+      assert(blockCheck)
+      val connTipResult = Blockchain.connectTip(header = block.blockHeader,
+                                                blockchain = chain,
+                                                chainParams =
+                                                  MainNetChainParams)
+      connTipResult match {
+        case _: BadTip | _: Reorg => fail(s"Could not connect block: $block")
+        case ExtendChain(_, newChain) => newChain
+      }
+    }
+  }
+
+  private def handleInvalidCoinbaseTests(
+      testCase: CoinbaseTestCase,
+      genesisChain: Blockchain): Boolean = {
+    testCase.block_chain.tail
+      .foldLeft((genesisChain, true)) { case ((chain, valid), block) =>
+        println(
+          s"block=${block.blockHeader.hashBE} prev=${block.blockHeader.previousBlockHashBE}")
+        println(
+          s"cb.tx=${block.transactions.head} hex=${block.transactions.head.hex}")
+        if (valid) {
+          // means previous block was valid, so check this one
+          val blockCheck =
+            TipValidation.contextualCheckBlock(block = block,
+                                               blockchain = chain)
+          val connTipResult = Blockchain.connectTip(header = block.blockHeader,
+                                                    blockchain = chain,
+                                                    chainParams =
+                                                      MainNetChainParams)
+          connTipResult match {
+            case _: BadTip | _: Reorg =>
+              fail(s"Could not connect block: $block")
+            case ExtendChain(_, newChain) => (newChain, blockCheck)
+          }
+        } else {
+          (chain, valid)
+        }
+      }
+      ._2
   }
 }
