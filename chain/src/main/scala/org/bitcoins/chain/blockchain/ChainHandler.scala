@@ -1297,12 +1297,9 @@ class ChainHandler(
 
     Future
       .sequence(top11)
-      .map(_.collect { case Some(header) =>
-        header.time.toLong
-      })
-      .map { times =>
-        times.sorted.apply(times.size / 2)
-      }
+      .map(_.flatten) // is this safe / right?
+      .map(Blockchain.apply)
+      .map(_.getMedianTimePast)
   }
 
   override def isSyncing(): Future[Boolean] = {
