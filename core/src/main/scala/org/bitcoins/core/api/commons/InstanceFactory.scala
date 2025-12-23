@@ -7,7 +7,7 @@ import java.nio.file.Path
   * @tparam the
   *   type of the instance (i.e. BitcoindInstance)
   * @tparam the
-  *   type of hte implicit parameter, this can be an execution context or
+  *   type of the implicit parameter, this can be an execution context or
   *   ActorSystem
   */
 trait InstanceFactory[+T, I] {
