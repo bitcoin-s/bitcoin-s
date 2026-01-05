@@ -1,11 +1,15 @@
 package org.bitcoins.chain.blockchain
 
 import org.bitcoins.asyncutil.AsyncUtil
-import org.bitcoins.testkit.chain.ChainDbUnitTest
+import org.bitcoins.core.api.chain.ChainApi
+import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.testkit.chain.{ChainDbUnitTest, ChainUnitTest}
 import org.bitcoins.testkit.chain.fixture.BitcoindChainHandlerViaZmq
-import org.scalatest.FutureOutcome
+import org.scalatest.{Assertion, FutureOutcome}
 
+import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+import scala.util.Random
 
 class BitcoindChainHandlerViaZmqTest extends ChainDbUnitTest {
 
@@ -45,4 +49,32 @@ class BitcoindChainHandlerViaZmqTest extends ChainDbUnitTest {
       } yield assert(header.get.hashBE == hash)
   }
 
+  it must "correctly calculate the mediantimepast the same as bitcoind" in {
+    (bitcoindChainHandler: BitcoindChainHandlerViaZmq) =>
+      val bitcoind = bitcoindChainHandler.bitcoindRpc
+
+      val chainHandler = bitcoindChainHandler.chainHandler
+      for {
+        blockCount <- bitcoind.getBlockCount()
+        _ <- ChainUnitTest.isSynced(chainHandler, bitcoind)
+        numBlocks = Random.nextInt(100)
+        _ <- genNBlocksCheckMTP(bitcoind, chainHandler, numBlocks)
+        newBlockCount <- chainHandler.getBlockCount()
+      } yield {
+        assert(blockCount + numBlocks == newBlockCount)
+      }
+  }
+
+  def genNBlocksCheckMTP(
+      bitcoind: BitcoindRpcClient,
+      chainHandler: ChainApi,
+      n: Int): Future[Assertion] = {
+    for {
+      _ <- bitcoind.generate(n)
+      _ <- AsyncUtil.awaitConditionF(() =>
+        ChainUnitTest.isSynced(chainHandler, bitcoind))
+      bitcoindMTP <- bitcoind.getMedianTimePast()
+      bitcoinSMTP <- chainHandler.getMedianTimePast()
+    } yield assert(bitcoinSMTP == bitcoindMTP)
+  }
 }
