@@ -8,7 +8,12 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.{
   BitcoinChainParams,
   Block,
-  BlockHeader
+  BlockHeader,
+  MainNetChainParams,
+  RegTestNetChainParams,
+  SigNetChainParams,
+  TestNet4ChainParams,
+  TestNetChainParams
 }
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
@@ -137,22 +142,88 @@ sealed abstract class TipValidation extends ChainVerificationLogger {
     val cbLockTime = cbTx.lockTime
     val cbHeight = cbInput.scriptSignature.asm.head.toLong
     val cbSequence = cbInput.sequence
-    println(s"cbheight, expected=$nHeight got=$cbHeight")
     if (!allTxsFinal) {
-      println(s"All txs not final")
       false
     } else if (cbLockTime.toLong != (nHeight - 1)) {
-      println(s"bad cb locktime, expected=${nHeight - 1} got=$cbLockTime")
       false
     } else if (cbHeight != nHeight) {
-      println(s"bad height, expected=$nHeight got=$cbHeight")
       false
     } else if (cbSequence == UInt32.max) {
-      println(s"bad cb sequence, got=${UInt32.max}")
       false
     } else {
       true
     }
+  }
+
+  /** See
+    * [[https://github.com/bitcoin/bitcoin/blob/ab233255d444ccf6ffe4a45cb02bfc3e5fb71bdb/src/validation.cpp#L4147]]
+    */
+  def contextualCheckBlockHeader(
+      header: BlockHeader,
+      blockchain: Blockchain,
+      chainParams: BitcoinChainParams): Boolean = {
+    val tip = blockchain.tip
+    require(
+      header.previousBlockHashBE == tip.hashBE,
+      s"BlockHeader ${header.hashBE} previous hash ${header.previousBlockHashBE.hex} did not match tip hash ${tip.hashBE.hex}"
+    )
+
+    // Defines how many seconds earlier the timestamp of the first block in a difficulty adjustment
+    // period can be compared to the last block of the previous period (BIP54).
+    val maxTimeWarpOpt: Option[Int] = chainParams match {
+      case MainNetChainParams  => Some(600 * 12)
+      case TestNet4ChainParams => Some(60 * 12)
+      case TestNetChainParams | SigNetChainParams(_) | RegTestNetChainParams =>
+        None
+    }
+
+    if (
+      header.nBits != isBadPow(header, blockchain, chainParams = chainParams)
+    ) {
+      false
+    } else if (header.time.toLong <= blockchain.getMedianTimePast) {
+      false
+    } else if (checkTimeWarp(maxTimeWarpOpt, header, tip, chainParams)) {
+      false
+    } else if (checkMurchZawyAttack(header, tip, blockchain, chainParams)) {
+      false
+    } else {
+      true
+    }
+  }
+
+  /** see
+    * [[https://github.com/darosior/bitcoin/blob/f24256fbe610fd61bbede8376a1fe3d34f29bec5/src/validation.cpp#L4236]]
+    */
+  private def checkMurchZawyAttack(
+      header: BlockHeader,
+      tip: BlockHeaderDb,
+      blockchain: Blockchain,
+      params: BitcoinChainParams): Boolean = {
+    val nHeight = tip.height + 1
+    val diffInterval = params.difficultyChangeInterval
+    if (nHeight % diffInterval == diffInterval - 1) {
+      val startHeight = nHeight - diffInterval + 1
+      val startBlockOpt = blockchain.findAtHeight(startHeight)
+      require(startBlockOpt.isDefined,
+              s"Could not find block at height=$startHeight")
+      header.time < startBlockOpt.get.blockHeader.time
+    } else {
+      false
+    }
+  }
+
+  /** See
+    * [[https://github.com/darosior/bitcoin/blob/f24256fbe610fd61bbede8376a1fe3d34f29bec5/src/validation.cpp#L4226]]
+    */
+  private def checkTimeWarp(
+      maxTimeWarpOpt: Option[Int],
+      header: BlockHeader,
+      tip: BlockHeaderDb,
+      chainParams: BitcoinChainParams): Boolean = {
+    val newHeight = tip.height + 1
+    maxTimeWarpOpt.isDefined && (newHeight % chainParams.difficultyChangeInterval == 0) &&
+    (header.time.toLong < (tip.blockHeader.time.toLong - maxTimeWarpOpt.get))
   }
 
   def isFinalTx(tx: Transaction, blockHeight: Int, blockTime: Long): Boolean = {

@@ -10,7 +10,11 @@ import org.bitcoins.chain.pow.Pow
 import org.bitcoins.commons.serializers.SerializerUtil
 import org.bitcoins.core.api.chain.db.{BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.blockchain.{Block, MainNetChainParams}
+import org.bitcoins.core.protocol.blockchain.{
+  Block,
+  BlockHeader,
+  MainNetChainParams
+}
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
 import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.testkitcore.chain.ChainTestUtil
@@ -25,17 +29,23 @@ class Bip54Test extends BitcoinSJvmTest {
   behavior of "BIP54 sigops"
   import org.bitcoins.commons.serializers.JsonSerializers.{
     transactionReads,
-    blockReads
+    blockReads,
+    blockHeaderReads
   }
   implicit object TransactionOutputReads extends Reads[TransactionOutput] {
     override def reads(json: JsValue): JsResult[TransactionOutput] =
       SerializerUtil.processJsString(TransactionOutput.fromHex)(json)
   }
+  sealed trait Bip54TestCase {
+    def valid: Boolean
+    def comment: String
+  }
   case class SigOpsTestCase(
       spent_outputs: Vector[TransactionOutput],
       tx: Transaction,
       valid: Boolean,
-      comment: String) {
+      comment: String)
+      extends Bip54TestCase {
     val outputMap: PreviousOutputMap = {
       val m = tx.inputs.map(_.previousOutput).zip(spent_outputs).toMap
       PreviousOutputMap(m)
@@ -47,13 +57,15 @@ class Bip54Test extends BitcoinSJvmTest {
     Json.reads[SigOpsTestCase]
 
   case class TxSizeTestCase(tx: Transaction, valid: Boolean, comment: String)
+      extends Bip54TestCase
   implicit val txSizeTestCasereader: Reads[TxSizeTestCase] =
     Json.reads[TxSizeTestCase]
 
   case class CoinbaseTestCase(
       block_chain: Vector[Block],
       valid: Boolean,
-      comment: String) {
+      comment: String)
+      extends Bip54TestCase {
     val blockHeaderDbs: Vector[BlockHeaderDb] = {
       block_chain.zipWithIndex.map { case (block, height) =>
         BlockHeaderDbHelper.fromBlockHeader(
@@ -66,6 +78,14 @@ class Bip54Test extends BitcoinSJvmTest {
   }
   implicit val coinbaseTestCasereader: Reads[CoinbaseTestCase] =
     Json.reads[CoinbaseTestCase]
+
+  case class TimestampTestCase(
+      header_chain: Vector[BlockHeader],
+      valid: Boolean,
+      comment: String)
+      extends Bip54TestCase
+  implicit val timestampTestCasereader: Reads[TimestampTestCase] =
+    Json.reads[TimestampTestCase]
 
   it must "pass all bip54 sigops test vectors" in {
     val fileName =
@@ -140,6 +160,31 @@ class Bip54Test extends BitcoinSJvmTest {
     succeed
   }
 
+  it must "pass all timestamp test vectors" in {
+    val fileName =
+      "/timestamps.json"
+    val lines = Using(Source.fromURL(getClass.getResource(fileName))) {
+      source => source.mkString
+    }.get
+    val json = Json.parse(lines)
+    val testCases = json.validate[Vector[TimestampTestCase]].get
+    testCases.foreach { testCase =>
+      withClue(testCase.comment) {
+        val genesisChain =
+          Blockchain.fromHeaders(Vector(ChainTestUtil.mainnetGenesisHeaderDb))
+        if (testCase.valid) {
+          handleValidTimestampTests(testCase, genesisChain)
+          ()
+        } else {
+          val isValid = handleInvalidTimestampTests(testCase, genesisChain)
+          assert(!isValid)
+          ()
+        }
+      }
+    }
+    succeed
+  }
+
   private def handleValidCoinbaseTests(
       testCase: CoinbaseTestCase,
       genesisChain: Blockchain): Unit = {
@@ -163,10 +208,6 @@ class Bip54Test extends BitcoinSJvmTest {
       genesisChain: Blockchain): Boolean = {
     testCase.block_chain.tail
       .foldLeft((genesisChain, true)) { case ((chain, valid), block) =>
-        println(
-          s"block=${block.blockHeader.hashBE} prev=${block.blockHeader.previousBlockHashBE}")
-        println(
-          s"cb.tx=${block.transactions.head} hex=${block.transactions.head.hex}")
         if (valid) {
           // means previous block was valid, so check this one
           val blockCheck =
@@ -180,6 +221,55 @@ class Bip54Test extends BitcoinSJvmTest {
             case _: BadTip | _: Reorg =>
               fail(s"Could not connect block: $block")
             case ExtendChain(_, newChain) => (newChain, blockCheck)
+          }
+        } else {
+          (chain, valid)
+        }
+      }
+      ._2
+  }
+
+  private def handleValidTimestampTests(
+      testCase: TimestampTestCase,
+      genesisChain: Blockchain): Unit = {
+    testCase.header_chain.tail.foldLeft(genesisChain) { case (chain, header) =>
+      val headerCheck =
+        TipValidation.contextualCheckBlockHeader(header = header,
+                                                 blockchain = chain,
+                                                 chainParams =
+                                                   MainNetChainParams)
+      assert(headerCheck)
+      val connTipResult = Blockchain.connectTip(header = header,
+                                                blockchain = chain,
+                                                chainParams =
+                                                  MainNetChainParams)
+      connTipResult match {
+        case _: BadTip | _: Reorg => fail(s"Could not connect header: $header")
+        case ExtendChain(_, newChain) => newChain
+      }
+    }
+  }
+
+  private def handleInvalidTimestampTests(
+      testCase: TimestampTestCase,
+      genesisChain: Blockchain): Boolean = {
+    testCase.header_chain.tail
+      .foldLeft((genesisChain, true)) { case ((chain, valid), header) =>
+        if (valid) {
+          // means previous header was valid, so check this one
+          val headerCheck =
+            TipValidation.contextualCheckBlockHeader(header = header,
+                                                     blockchain = chain,
+                                                     chainParams =
+                                                       MainNetChainParams)
+          val connTipResult = Blockchain.connectTip(header = header,
+                                                    blockchain = chain,
+                                                    chainParams =
+                                                      MainNetChainParams)
+          connTipResult match {
+            case _: BadTip | _: Reorg =>
+              fail(s"Could not connect header: $header")
+            case ExtendChain(_, newChain) => (newChain, headerCheck)
           }
         } else {
           (chain, valid)
