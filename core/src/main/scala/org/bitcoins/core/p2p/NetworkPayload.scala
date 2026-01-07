@@ -451,9 +451,28 @@ object MerkleBlockMessage extends Factory[MerkleBlockMessage] {
   * @see
   *   [[https://bitcoin.org/en/developer-reference#notfound]]
   */
-sealed trait NotFoundMessage extends DataPayload with InventoryMessage {
+sealed trait NotFoundMessage extends DataPayload {
   override def commandName: String = NetworkPayload.notFoundCommandName
   override def bytes: ByteVector = RawNotFoundMessageSerializer.write(this)
+
+  /** The number of inventory enteries
+    */
+  def inventoryCount: CompactSizeUInt
+
+  /** One or more inventory entries up to a maximum of 50,000 entries.
+    */
+  def inventories: Vector[Inventory]
+
+  override def toString: String = {
+    if (inventories.length > 5) {
+      s"NotFoundMessage(inventoryCount=${inventoryCount.toInt}, inventories=[${inventories
+          .take(5)
+          .mkString(", ")}, ...])"
+    } else {
+      s"NotFoundMessage(inventoryCount=${inventoryCount.toInt}, inventories=${inventories
+          .mkString(", ")})"
+    }
+  }
 }
 
 /** The companion object factory used to create NotFoundMessages on the p2p

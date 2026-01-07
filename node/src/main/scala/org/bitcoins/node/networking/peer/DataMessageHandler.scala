@@ -255,6 +255,11 @@ case class DataMessageHandler(
             s"Received ${notHandling.commandName} message, skipping "
           )
           Future.successful(this)
+
+        case notFoundMessage: NotFoundMessage =>
+          logger.debug(
+            s"Received notfound message: $notFoundMessage from $peer")
+          Future.successful(this)
         case getData: GetDataMessage =>
           logger.info(
             s"Received a getdata message for inventories=${getData.inventories}"
