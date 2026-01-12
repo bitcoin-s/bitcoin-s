@@ -210,7 +210,7 @@ object ServiceIdentifier
         NODE_COMPACT_FILTERS
       case _: GetHeadersMessage | _: HeadersMessage | SendHeadersMessage =>
         NODE_NETWORK
-      case _: InventoryMessage => NODE_NETWORK
+      case _: InventoryMessage | _: NotFoundMessage => NODE_NETWORK
       case _: MerkleBlockMessage | _: FilterAddMessage | FilterClearMessage |
           _: FilterLoadMessage =>
         NODE_BLOOM
