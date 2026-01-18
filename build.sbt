@@ -333,6 +333,7 @@ lazy val cryptoTest = crossProject(JVMPlatform, JSPlatform)
 
 lazy val cryptoTestJVM = cryptoTest.jvm
   .settings(libraryDependencies ++= Deps.cryptoTestJVM)
+  .dependsOn(appCommons)
 
 lazy val cryptoTestJS = cryptoTest.js
   .enablePlugins(ScalaJSBundlerPlugin)
