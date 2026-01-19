@@ -20,6 +20,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
 
     testCases.test_cases.foreach { test =>
       val (secnonce, pubnonce) = FrostUtil.nonceGen(
+        rand = test.rand,
         secshare = test.secshare
           .getOrElse(ByteVector.empty),
         pubshare = test.pubshare
