@@ -2,7 +2,6 @@ package org.bitcoins.crypto.frost
 import org.bitcoins.crypto.BitcoinSCryptoTest
 import org.bitcoins.crypto.frost.FrostJson.*
 import play.api.libs.json.Json
-import scodec.bits.ByteVector
 
 import scala.io.Source
 import scala.util.Using
@@ -21,22 +20,19 @@ class FrostTestVectors extends BitcoinSCryptoTest {
     testCases.test_cases.foreach { test =>
       val (secnonce, pubnonce) = FrostUtil.nonceGen(
         rand = test.rand,
-        secshare = test.secshare
-          .getOrElse(ByteVector.empty),
-        pubshare = test.pubshare
-          .getOrElse(ByteVector.empty),
-        threshold_pk = test.threshold_pubkey
-          .getOrElse(ByteVector.empty),
-        message = test.msg.getOrElse(ByteVector.empty),
+        secshare = test.secshare,
+        pubshare = test.pubshare,
+        threshold_pk = test.threshold_pubkey,
+        message = test.msg,
         extra_in = test.extra_in
       )
 
       assert(
         secnonce == test.expected_secnonce,
-        s"Failed test: ${test.comment} expected=${test.expected_secnonce.toHex} got=${secnonce.toHex}")
+        s"\nFailed test: ${test.comment} expected=${test.expected_secnonce.toHex} got=${secnonce.toHex}")
       assert(
         pubnonce == test.expected_pubnonce,
-        s"Failed test: ${test.comment} expected=${test.expected_pubnonce.toHex} got=${pubnonce.toHex}")
+        s"\nFailed test: ${test.comment} expected=${test.expected_pubnonce.toHex} got=${pubnonce.toHex}")
 
     }
   }
