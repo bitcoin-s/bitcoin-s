@@ -15,27 +15,35 @@ object FrostUtil {
 
   def nonceGen(
       rand: ByteVector,
-      secshare: ByteVector,
-      pubshare: ByteVector,
-      threshold_pk: ByteVector,
-      message: ByteVector,
+      secshare: Option[ByteVector],
+      pubshare: Option[ByteVector],
+      threshold_pk: Option[ByteVector],
+      message: Option[ByteVector],
       extra_in: Option[ByteVector]): (ByteVector, ByteVector) = {
-    val randPrime = secshare.xor(hashFrostAux(rand))
-    val mPrefix = if (message.isEmpty) {
-      ByteVector.fromByte(0)
-    } else {
-      ByteVector.fromByte(1) ++ ByteVector.fromLong(message.length,
-                                                    8) ++ message
+    val randPrime = secshare match {
+      case Some(sec) => sec.xor(hashFrostAux(rand))
+      case None      => rand
+    }
+
+    // Match the Python reference: None -> 0x00, Some(msg) -> 0x01 || len(msg,8) || msg
+    // Note: an explicit empty message (Some(ByteVector.empty)) must be encoded as
+    // 0x01 followed by 8 zero bytes (length 0), which differs from None.
+    val mPrefix = message match {
+      case Some(m) =>
+        ByteVector.fromByte(1) ++ ByteVector.fromLong(m.length, 8) ++ m
+      case None => ByteVector.fromByte(0)
     }
 
     val preimages: Vector[FieldElement] = 0
       .until(2)
       .map { i =>
         val b = randPrime ++
-          ByteVector.fromLong(pubshare.length, 1) ++
-          pubshare ++
-          ByteVector.fromLong(threshold_pk.length, 1) ++ threshold_pk ++
+          ByteVector.fromLong(pubshare.map(_.length).getOrElse(0), 1) ++
+          pubshare.getOrElse(ByteVector.empty) ++
+          ByteVector.fromLong(threshold_pk.map(_.length).getOrElse(0), 1) ++
+          threshold_pk.getOrElse(ByteVector.empty) ++
           mPrefix ++
+          ByteVector.fromLong(extra_in.map(_.length).getOrElse(0), 4) ++
           extra_in.getOrElse(ByteVector.empty) ++
           ByteVector.fromByte(i.toByte)
         val hash = hashFrostNonce(b)
