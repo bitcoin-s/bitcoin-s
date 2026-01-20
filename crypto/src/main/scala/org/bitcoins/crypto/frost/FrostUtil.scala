@@ -5,6 +5,9 @@ import org.bitcoins.crypto.{
   CryptoUtil,
   ECPublicKey,
   FieldElement,
+  SecpPoint,
+  SecpPointFinite,
+  SecpPointInfinity,
   XOnlyPubKey
 }
 import scodec.bits.ByteVector
@@ -56,10 +59,48 @@ object FrostUtil {
         FieldElement.fromBytes(hash)
       }
       .toVector
+    require(!preimages.contains(FieldElement.zero),
+            "Derived nonce preimage cannot be zero")
     val r1: ECPublicKey = CryptoParams.getG.multiply(preimages.head)
     val r2: ECPublicKey = CryptoParams.getG.multiply(preimages(1))
+    require(CryptoUtil.decodePoint(r1) != SecpPointInfinity)
+    require(CryptoUtil.decodePoint(r2) != SecpPointInfinity)
     val pubnonce = r1.bytes ++ r2.bytes
     val secnonce = preimages.head.bytes ++ preimages(1).bytes
     (secnonce, pubnonce)
+  }
+
+  def aggregateNonces(
+      pubnonces: Vector[ByteVector],
+      participantIdentifiers: Vector[Int]): ByteVector = {
+    require(
+      pubnonces.length == participantIdentifiers.length,
+      s"Number of pubnonces (${pubnonces.length}) must match number of participant identifiers (${participantIdentifiers.length})"
+    )
+    val zip = pubnonces.zip(participantIdentifiers)
+    val aggPoints = 0.until(2).map { j =>
+      val points: Vector[SecpPointFinite] = zip.map { z =>
+        val nonce = if (j == 0) {
+          z._1.take(33)
+        } else {
+          z._1.takeRight(33)
+        }
+        val pubkey = ECPublicKey.fromBytes(nonce)
+        val point = SecpPoint.fromPublicKey(pubkey)
+        point
+      }
+      val agg = points.reduce { (a, b) =>
+        val r = a.add(b)
+        r match {
+          case SecpPointInfinity =>
+            throw new IllegalArgumentException(
+              s"Aggregated nonce point is at infinity for nonce index $j. This likely indicates a duplicate nonce from participants: ${participantIdentifiers
+                  .mkString(", ")}")
+          case p: SecpPointFinite => p
+        }
+      }
+      agg
+    }
+    aggPoints(0).bytes ++ aggPoints(1).bytes
   }
 }

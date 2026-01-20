@@ -35,4 +35,59 @@ object FrostJson {
   )(NonceGenTestVector.apply _)
   implicit val nonceGenTestVectorsReads: Reads[NonceGenTestVectors] =
     Json.reads[NonceGenTestVectors]
+
+  // --- Nonce aggregation vectors ---
+  case class NonceAggTestVectors(
+      pubnonces: Vector[ByteVector],
+      valid_test_cases: Vector[NonceAggValidTestCase],
+      error_test_cases: Vector[NonceAggErrorTestCase]
+  )
+
+  case class NonceAggValidTestCase(
+      pubnonce_indices: Vector[Int],
+      participant_identifiers: Vector[Int],
+      expected_aggnonce: ByteVector,
+      comment: Option[String]
+  )
+
+  case class NonceAggError(
+      `type`: String,
+      id: Int,
+      contrib: String
+  )
+
+  case class NonceAggErrorTestCase(
+      pubnonce_indices: Vector[Int],
+      participant_identifiers: Vector[Int],
+      error: NonceAggError,
+      comment: Option[String]
+  )
+
+  implicit val nonceAggValidReads: Reads[NonceAggValidTestCase] = (
+    (__ \ "pubnonce_indices").read[Seq[Int]].map(_.toVector) and
+      (__ \ "participant_identifiers").read[Seq[Int]].map(_.toVector) and
+      (__ \ "expected_aggnonce").read[ByteVector] and
+      (__ \ "comment").readNullable[String]
+  )(NonceAggValidTestCase.apply _)
+
+  implicit val nonceAggErrorReads: Reads[NonceAggError] = (
+    (__ \ "type").read[String] and
+      (__ \ "id").read[Int] and
+      (__ \ "contrib").read[String]
+  )(NonceAggError.apply _)
+
+  implicit val nonceAggErrorTestCaseReads: Reads[NonceAggErrorTestCase] = (
+    (__ \ "pubnonce_indices").read[Seq[Int]].map(_.toVector) and
+      (__ \ "participant_identifiers").read[Seq[Int]].map(_.toVector) and
+      (__ \ "error").read[NonceAggError] and
+      (__ \ "comment").readNullable[String]
+  )(NonceAggErrorTestCase.apply _)
+
+  implicit val nonceAggTestVectorsReads: Reads[NonceAggTestVectors] = (
+    (__ \ "pubnonces").read[Seq[ByteVector]].map(_.toVector) and
+      (__ \ "valid_test_cases")
+        .read[Seq[NonceAggValidTestCase]]
+        .map(_.toVector) and
+      (__ \ "error_test_cases").read[Seq[NonceAggErrorTestCase]].map(_.toVector)
+  )(NonceAggTestVectors.apply _)
 }
