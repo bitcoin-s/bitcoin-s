@@ -36,4 +36,46 @@ class FrostTestVectors extends BitcoinSCryptoTest {
 
     }
   }
+
+  it must "pass nonce_agg_vectors.json" in {
+    val fileName = "/nonce_agg_vectors.json"
+    val lines = Using(Source.fromURL(getClass.getResource(fileName))) {
+      source => source.mkString
+    }.get
+    val json = Json.parse(lines)
+    val testCases = json.validate[NonceAggTestVectors].get
+
+    // Valid test cases
+    testCases.valid_test_cases.foreach { test =>
+      val pubnoncesToAgg = test.pubnonce_indices.map { idx =>
+        testCases.pubnonces(idx)
+      }
+      val aggNonce = FrostUtil.aggregateNonces(
+        pubnonces = pubnoncesToAgg,
+        participantIdentifiers = test.participant_identifiers
+      )
+      assert(
+        aggNonce == test.expected_aggnonce,
+        s"\nFailed test: ${test.comment.getOrElse(
+            "")} expected=${test.expected_aggnonce.toHex} got=${aggNonce.toHex}"
+      )
+    }
+
+    // Error test cases
+    testCases.error_test_cases.foreach { test =>
+      val pubnoncesToAgg = test.pubnonce_indices.map { idx =>
+        testCases.pubnonces(idx)
+      }
+      val thrown = intercept[IllegalArgumentException] {
+        FrostUtil.aggregateNonces(
+          pubnonces = pubnoncesToAgg,
+          participantIdentifiers = test.participant_identifiers
+        )
+      }
+      assert(
+        thrown.getMessage.contains(test.error.contrib),
+        s"\nFailed error test: expected error to contain='${test.error.contrib}' got='${thrown.getMessage}'"
+      )
+    }
+  }
 }
