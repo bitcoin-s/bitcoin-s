@@ -1,6 +1,12 @@
 package org.bitcoins.crypto.frost
 
-import org.bitcoins.crypto.{CryptoParams, CryptoUtil, ECPublicKey, FieldElement}
+import org.bitcoins.crypto.{
+  CryptoParams,
+  CryptoUtil,
+  ECPublicKey,
+  FieldElement,
+  XOnlyPubKey
+}
 import scodec.bits.ByteVector
 
 object FrostUtil {
@@ -16,8 +22,8 @@ object FrostUtil {
   def nonceGen(
       rand: ByteVector,
       secshare: Option[ByteVector],
-      pubshare: Option[ByteVector],
-      threshold_pk: Option[ByteVector],
+      pubshare: Option[ECPublicKey],
+      threshold_pk: Option[XOnlyPubKey],
       message: Option[ByteVector],
       extra_in: Option[ByteVector]): (ByteVector, ByteVector) = {
     val randPrime = secshare match {
@@ -38,10 +44,10 @@ object FrostUtil {
       .until(2)
       .map { i =>
         val b = randPrime ++
-          ByteVector.fromLong(pubshare.map(_.length).getOrElse(0), 1) ++
-          pubshare.getOrElse(ByteVector.empty) ++
-          ByteVector.fromLong(threshold_pk.map(_.length).getOrElse(0), 1) ++
-          threshold_pk.getOrElse(ByteVector.empty) ++
+          ByteVector.fromLong(pubshare.map(_.bytes.size).getOrElse(0), 1) ++
+          pubshare.map(_.bytes).getOrElse(ByteVector.empty) ++
+          ByteVector.fromLong(threshold_pk.map(_.bytes.size).getOrElse(0), 1) ++
+          threshold_pk.map(_.bytes).getOrElse(ByteVector.empty) ++
           mPrefix ++
           ByteVector.fromLong(extra_in.map(_.length).getOrElse(0), 4) ++
           extra_in.getOrElse(ByteVector.empty) ++

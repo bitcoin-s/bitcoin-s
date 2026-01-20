@@ -397,6 +397,12 @@ object JsonReaders {
       )(json)
   }
 
+  implicit object XOnlyPubKeyReads extends Reads[XOnlyPubKey] {
+    override def reads(json: JsValue): JsResult[XOnlyPubKey] = {
+      SerializerUtil.processJsString(XOnlyPubKey.fromHex)(json)
+    }
+  }
+
   implicit object SchnorrNonceReads extends Reads[SchnorrNonce] {
 
     override def reads(json: JsValue): JsResult[SchnorrNonce] =
