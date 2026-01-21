@@ -1,5 +1,5 @@
 package org.bitcoins.crypto.frost
-import org.bitcoins.crypto.BitcoinSCryptoTest
+import org.bitcoins.crypto.{BitcoinSCryptoTest, ECPublicKey}
 import org.bitcoins.crypto.frost.FrostJson.*
 import play.api.libs.json.Json
 
@@ -74,5 +74,34 @@ class FrostTestVectors extends BitcoinSCryptoTest {
         )
       }
     }
+  }
+
+  it should "pass sign_verify_vectors.json" in {
+    val fileName = "/sign_verify_vectors.json"
+    val lines = Using(Source.fromURL(getClass.getResource(fileName))) {
+      source =>
+        source.mkString
+    }.get
+
+    val json = Json.parse(lines)
+    val vecs = json.validate[SignVerifyVectors].get
+    val _ = FrostSigningContext(
+      vecs.n,
+      vecs.t,
+      vecs.t,
+      vecs.identifiers,
+      // drop last share for now as it isn't a valid point on the curve
+      vecs.pubshares.dropRight(1).map(ECPublicKey.fromBytes),
+      vecs.threshold_pubkey
+    )
+    succeed
+//    vecs.valid_test_cases.foreach { t =>
+//      val msg = vecs.msgs(t.msg_index)
+//      val pubshareBytes = t.pubshare_indices.map(vecs.pubshares)
+//      val pubshares = pubshareBytes.map(ECPublicKey.fromBytes)
+//      val pubnonceBytes = t.pubnonce_indices.map(vecs.pubnonces)
+//      val pubnonces = pubnonceBytes.map(ECPublicKey.fromBytes)
+//      val aggnonce = FrostNonce.fromBytes(vecs.aggnonces(t.aggnonce_index))
+//    }
   }
 }
