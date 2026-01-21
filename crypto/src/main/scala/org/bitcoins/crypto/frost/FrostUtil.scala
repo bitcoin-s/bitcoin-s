@@ -6,7 +6,6 @@ import org.bitcoins.crypto.{
   ECPublicKey,
   FieldElement,
   SecpPoint,
-  SecpPointFinite,
   SecpPointInfinity,
   XOnlyPubKey
 }
@@ -79,7 +78,7 @@ object FrostUtil {
     )
     val zip = pubnonces.zip(participantIdentifiers)
     val aggPoints = 0.until(2).map { j =>
-      val points: Vector[SecpPointFinite] = zip.map { z =>
+      val points = zip.map { z =>
         val nonce = if (j == 0) {
           z._1.take(33)
         } else {
@@ -89,15 +88,8 @@ object FrostUtil {
         val point = SecpPoint.fromPublicKey(pubkey)
         point
       }
-      val agg = points.reduce { (a, b) =>
-        val r = a.add(b)
-        r match {
-          case SecpPointInfinity =>
-            throw new IllegalArgumentException(
-              s"Aggregated nonce point is at infinity for nonce index $j. This likely indicates a duplicate nonce from participants: ${participantIdentifiers
-                  .mkString(", ")}")
-          case p: SecpPointFinite => p
-        }
+      val agg: SecpPoint = points.reduce[SecpPoint] { (a, b) =>
+        a.add(b)
       }
       agg
     }

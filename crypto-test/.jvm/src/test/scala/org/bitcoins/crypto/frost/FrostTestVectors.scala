@@ -46,7 +46,9 @@ class FrostTestVectors extends BitcoinSCryptoTest {
     val testCases = json.validate[NonceAggTestVectors].get
 
     // Valid test cases
+    var i = 0
     testCases.valid_test_cases.foreach { test =>
+      i += 1
       val pubnoncesToAgg = test.pubnonce_indices.map { idx =>
         testCases.pubnonces(idx)
       }
