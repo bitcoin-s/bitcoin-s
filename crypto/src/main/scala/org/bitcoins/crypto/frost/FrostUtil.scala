@@ -27,7 +27,7 @@ object FrostUtil {
       pubshare: Option[ECPublicKey],
       threshold_pk: Option[XOnlyPubKey],
       message: Option[ByteVector],
-      extra_in: Option[ByteVector]): (ByteVector, ByteVector) = {
+      extra_in: Option[ByteVector]): (ByteVector, FrostNonce) = {
     val randPrime = secshare match {
       case Some(sec) => sec.xor(hashFrostAux(rand))
       case None      => rand
@@ -66,12 +66,12 @@ object FrostUtil {
     require(CryptoUtil.decodePoint(r2) != SecpPointInfinity)
     val pubnonce = r1.bytes ++ r2.bytes
     val secnonce = preimages.head.bytes ++ preimages(1).bytes
-    (secnonce, pubnonce)
+    (secnonce, FrostNonce(pubnonce))
   }
 
   def aggregateNonces(
       pubnonces: Vector[ByteVector],
-      participantIdentifiers: Vector[Int]): ByteVector = {
+      participantIdentifiers: Vector[Int]): FrostNonce = {
     require(
       pubnonces.length == participantIdentifiers.length,
       s"Number of pubnonces (${pubnonces.length}) must match number of participant identifiers (${participantIdentifiers.length})"
@@ -99,6 +99,6 @@ object FrostUtil {
       }
       agg
     }
-    aggPoints(0).bytes ++ aggPoints(1).bytes
+    FrostNonce(aggPoints(0).bytes ++ aggPoints(1).bytes)
   }
 }

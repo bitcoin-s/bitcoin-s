@@ -32,7 +32,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
         s"\nFailed test: ${test.comment} expected=${test.expected_secnonce.toHex} got=${secnonce.toHex}")
       assert(
         pubnonce == test.expected_pubnonce,
-        s"\nFailed test: ${test.comment} expected=${test.expected_pubnonce.toHex} got=${pubnonce.toHex}")
+        s"\nFailed test: ${test.comment} expected=${test.expected_pubnonce.hex} got=${pubnonce.hex}")
 
     }
   }
@@ -46,9 +46,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
     val testCases = json.validate[NonceAggTestVectors].get
 
     // Valid test cases
-    var i = 0
     testCases.valid_test_cases.foreach { test =>
-      i += 1
       val pubnoncesToAgg = test.pubnonce_indices.map { idx =>
         testCases.pubnonces(idx)
       }
@@ -59,7 +57,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
       assert(
         aggNonce == test.expected_aggnonce,
         s"\nFailed test: ${test.comment.getOrElse(
-            "")} expected=${test.expected_aggnonce.toHex} got=${aggNonce.toHex}"
+            "")} expected=${test.expected_aggnonce.hex} got=${aggNonce.hex}"
       )
     }
 

@@ -5,7 +5,8 @@ import scodec.bits.ByteVector
 import org.bitcoins.commons.serializers.JsonReaders.{
   byteVectorReads,
   ECPublicKeyReads,
-  XOnlyPubKeyReads
+  XOnlyPubKeyReads,
+  FrostNonceReads
 }
 import org.bitcoins.crypto.{ECPublicKey, XOnlyPubKey}
 object FrostJson {
@@ -19,7 +20,7 @@ object FrostJson {
       msg: Option[ByteVector],
       extra_in: Option[ByteVector],
       expected_secnonce: ByteVector,
-      expected_pubnonce: ByteVector,
+      expected_pubnonce: FrostNonce,
       comment: String
   )
   implicit val nonceGenTestVectorReads: Reads[NonceGenTestVector] = (
@@ -30,7 +31,7 @@ object FrostJson {
       (__ \ "msg").readNullable[ByteVector] and
       (__ \ "extra_in").readNullable[ByteVector] and
       (__ \ "expected_secnonce").read[ByteVector] and
-      (__ \ "expected_pubnonce").read[ByteVector] and
+      (__ \ "expected_pubnonce").read[FrostNonce] and
       (__ \ "comment").read[String]
   )(NonceGenTestVector.apply _)
   implicit val nonceGenTestVectorsReads: Reads[NonceGenTestVectors] =
@@ -46,7 +47,7 @@ object FrostJson {
   case class NonceAggValidTestCase(
       pubnonce_indices: Vector[Int],
       participant_identifiers: Vector[Int],
-      expected_aggnonce: ByteVector,
+      expected_aggnonce: FrostNonce,
       comment: Option[String]
   )
 
@@ -66,7 +67,7 @@ object FrostJson {
   implicit val nonceAggValidReads: Reads[NonceAggValidTestCase] = (
     (__ \ "pubnonce_indices").read[Seq[Int]].map(_.toVector) and
       (__ \ "participant_identifiers").read[Seq[Int]].map(_.toVector) and
-      (__ \ "expected_aggnonce").read[ByteVector] and
+      (__ \ "expected_aggnonce").read[FrostNonce] and
       (__ \ "comment").readNullable[String]
   )(NonceAggValidTestCase.apply _)
 
