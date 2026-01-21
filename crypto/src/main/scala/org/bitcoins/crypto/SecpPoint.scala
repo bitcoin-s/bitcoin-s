@@ -79,4 +79,8 @@ object SecpPoint {
 
   def apply(x: String, y: String): SecpPointFinite =
     SecpPointFinite(CurveCoordinate.fromHex(x), CurveCoordinate.fromHex(y))
+
+  def sum(points: Vector[SecpPoint]): SecpPoint = {
+    points.reduce(_.add(_))
+  }
 }
