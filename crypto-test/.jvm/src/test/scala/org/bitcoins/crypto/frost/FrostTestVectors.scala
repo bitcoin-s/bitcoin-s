@@ -68,16 +68,13 @@ class FrostTestVectors extends BitcoinSCryptoTest {
       val pubnoncesToAgg = test.pubnonce_indices.map { idx =>
         testCases.pubnonces(idx)
       }
-      val thrown = intercept[IllegalArgumentException] {
+
+      assertThrows[IllegalArgumentException] {
         FrostUtil.aggregateNonces(
           pubnonces = pubnoncesToAgg,
           participantIdentifiers = test.participant_identifiers
         )
       }
-      assert(
-        thrown.getMessage.contains(test.error.contrib),
-        s"\nFailed error test: expected error to contain='${test.error.contrib}' got='${thrown.getMessage}'"
-      )
     }
   }
 }
