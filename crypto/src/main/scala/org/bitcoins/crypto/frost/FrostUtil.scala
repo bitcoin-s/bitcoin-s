@@ -78,15 +78,21 @@ object FrostUtil {
     )
     val zip = pubnonces.zip(participantIdentifiers)
     val aggPoints = 0.until(2).map { j =>
-      val points = zip.map { z =>
+      val points = zip.zipWithIndex.map { case (z, idx) =>
         val nonce = if (j == 0) {
           z._1.take(33)
         } else {
           z._1.takeRight(33)
         }
-        val pubkey = ECPublicKey.fromBytes(nonce)
-        val point = SecpPoint.fromPublicKey(pubkey)
-        point
+        try {
+          val pubkey = ECPublicKey.fromBytes(nonce)
+          val point = SecpPoint.fromPublicKey(pubkey)
+          point
+        } catch {
+          case _: Throwable =>
+            throw new IllegalArgumentException(
+              s"Invalid nonce for participant identifier ${z._2} at index $idx: ${nonce.toHex}")
+        }
       }
       val agg: SecpPoint = points.reduce[SecpPoint] { (a, b) =>
         a.add(b)
