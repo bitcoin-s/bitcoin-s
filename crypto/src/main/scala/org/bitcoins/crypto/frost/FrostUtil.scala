@@ -105,8 +105,8 @@ object FrostUtil {
   /** Computes the FROST Lagrange coefficient \(\lambda_{myId}\) for combining
     * secret shares.
     *
-   * The coefficient computed is:
-   *   `lambda_myId = product_{j != myId} (id_j + 1) / (id_j - myId)`
+    * The coefficient computed is: `lambda_myId = product_{j != myId} (id_j + 1)
+    * / (id_j - myId)`
     *
     * All arithmetic is performed in the prime field represented by
     * `FieldElement`.
@@ -131,7 +131,7 @@ object FrostUtil {
     require(ids.contains(myId),
             s"My id $myId must be in the list of participant ids: $ids")
     require(ids.distinct.length == ids.length,
-            "ids must not contain duplicates")
+            s"ids must not contain duplicates, ids=$ids")
     require(0 <= myId && myId < 4294967296L,
             s"myId must be in the range [2, 2^32 - 1], got: $myId")
     var num: FieldElement = FieldElement.one
