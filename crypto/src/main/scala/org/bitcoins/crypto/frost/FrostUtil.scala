@@ -101,4 +101,49 @@ object FrostUtil {
     }
     FrostNonce(aggPoints(0).bytes ++ aggPoints(1).bytes)
   }
+
+  /** Computes the FROST Lagrange coefficient \(\lambda_{myId}\) for combining
+    * secret shares.
+    *
+   * The coefficient computed is:
+   *   `lambda_myId = product_{j != myId} (id_j + 1) / (id_j - myId)`
+    *
+    * All arithmetic is performed in the prime field represented by
+    * `FieldElement`.
+    *
+    * Preconditions:
+    *   - `ids` contains `myId`.
+    *   - `ids` contains no duplicates.
+    *   - all identifiers in `ids` and `myId` are non\-negative.
+    *
+    * Throws an IllegalArgumentException if any precondition fails or if the
+    * denominator evaluates to zero (so the multiplicative inverse does not
+    * exist in the field).
+    *
+    * @param ids
+    *   Vector of participant identifiers (distinct, non\-negative).
+    * @param myId
+    *   Identifier for which to compute the Lagrange coefficient.
+    * @return
+    *   The Lagrange coefficient as a `FieldElement`.
+    */
+  def deriveInterpolatingValue(ids: Vector[Int], myId: Int): FieldElement = {
+    require(ids.contains(myId),
+            s"My id $myId must be in the list of participant ids: $ids")
+    require(ids.distinct.length == ids.length,
+            "ids must not contain duplicates")
+    require(0 <= myId && myId < 4294967296L,
+            s"myId must be in the range [2, 2^32 - 1], got: $myId")
+    var num: FieldElement = FieldElement.one
+    var denom: FieldElement = FieldElement.one
+    ids.foreach { id =>
+      if (id == myId) {
+        () // skip
+      } else {
+        num = num.multiply(FieldElement(id + 1))
+        denom = denom.multiply(FieldElement(id - myId))
+      }
+    }
+    num.multiply(denom.inverse)
+  }
 }

@@ -85,23 +85,24 @@ class FrostTestVectors extends BitcoinSCryptoTest {
 
     val json = Json.parse(lines)
     val vecs = json.validate[SignVerifyVectors].get
-    val _ = FrostSigningContext(
-      vecs.n,
-      vecs.t,
-      vecs.t,
-      vecs.identifiers,
-      // drop last share for now as it isn't a valid point on the curve
-      vecs.pubshares.dropRight(1).map(ECPublicKey.fromBytes),
-      vecs.threshold_pubkey
-    )
-    succeed
-//    vecs.valid_test_cases.foreach { t =>
-//      val msg = vecs.msgs(t.msg_index)
-//      val pubshareBytes = t.pubshare_indices.map(vecs.pubshares)
-//      val pubshares = pubshareBytes.map(ECPublicKey.fromBytes)
-//      val pubnonceBytes = t.pubnonce_indices.map(vecs.pubnonces)
-//      val pubnonces = pubnonceBytes.map(ECPublicKey.fromBytes)
-//      val aggnonce = FrostNonce.fromBytes(vecs.aggnonces(t.aggnonce_index))
-//    }
+
+    vecs.valid_test_cases.foreach { t =>
+      // val msg = vecs.msgs(t.msg_index)
+      val pubshareBytes = t.pubshare_indices.map(vecs.pubshares)
+      val pubshares = pubshareBytes.map(ECPublicKey.fromBytes)
+      // val pubnonceBytes = t.pubnonce_indices.map(vecs.pubnonces)
+      // val pubnonces = pubnonceBytes.map(ECPublicKey.fromBytes)
+      // val aggnonce = FrostNonce.fromBytes(vecs.aggnonces(t.aggnonce_index))
+
+      val _ = FrostSigningContext(
+        n = vecs.n,
+        t = vecs.t,
+        u = vecs.t,
+        ids = t.id_indices.map(vecs.identifiers(_)),
+        // drop last share for now as it isn't a valid point on the curve
+        pubshares = pubshares,
+        thresholdPubKey = vecs.threshold_pubkey
+      )
+    }
   }
 }

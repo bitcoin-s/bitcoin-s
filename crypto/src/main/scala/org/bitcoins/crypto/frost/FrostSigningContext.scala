@@ -21,10 +21,10 @@ case class FrostSigningContext(
   require(u >= t && u <= n,
           s"u must be in the range [t, n], got: $u with t: $t and n: $n")
   require(
-    n == ids.length,
-    s"ids length must be equal to u, got ids length: ${ids.length} with n: $n")
+    u == ids.length,
+    s"ids length must be equal to u, got ids length: ${ids.length} with n: $u")
   require(
-    n == pubshares.length,
+    u == pubshares.length,
     s"pubshare length must be equal to u, got pubshare length: ${pubshares.length} with n: $u")
   require(ids.toSet.size == ids.length, s"All ids must be unique, got: $ids")
 
