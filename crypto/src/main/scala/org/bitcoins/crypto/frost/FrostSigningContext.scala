@@ -29,12 +29,19 @@ case class FrostSigningContext(
   require(ids.toSet.size == ids.length, s"All ids must be unique, got: $ids")
 
   private def pk: ECPublicKey = {
-    val pointSum = SecpPoint.sum(pubshares.map(_.toPoint))
-    pointSum match {
-      case s: SecpPointFinite => s.toPublicKey
+    var q: SecpPoint = SecpPointInfinity
+    pubshares.zipWithIndex.foreach { case (p, idx) =>
+      val myId = ids(idx)
+      val interpolation =
+        FrostUtil.deriveInterpolatingValue(ids = ids, myId = myId)
+      val x = p.toPoint.multiply(interpolation)
+      q = q.add(x)
+    }
+    q match {
       case SecpPointInfinity =>
         throw new IllegalArgumentException(
-          s"Computed aggregate public key is point at infinity, invalid pubshares: $pubshares")
+          s"Computed threshold pubkey is point at infinity")
+      case p: SecpPointFinite => p.toPublicKey
     }
   }
   require(
