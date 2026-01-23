@@ -250,4 +250,89 @@ object FrostJson {
         .read[Seq[VerifyErrorTestCase]]
         .map(_.toVector)
   )(SignVerifyVectors.apply _)
+
+  // --- Tweak vectors ---
+  case class TweakValidTestCase(
+      id_indices: Vector[Int],
+      pubshare_indices: Vector[Int],
+      pubnonce_indices: Vector[Int],
+      tweak_indices: Vector[Int],
+      aggnonce_index: Int,
+      is_xonly: Vector[Boolean],
+      signer_index: Int,
+      expected: ByteVector,
+      comment: Option[String]
+  )
+
+  case class TweakErrorTestCase(
+      id_indices: Vector[Int],
+      pubshare_indices: Vector[Int],
+      pubnonce_indices: Option[Vector[Int]],
+      tweak_indices: Vector[Int],
+      aggnonce_index: Int,
+      is_xonly: Vector[Boolean],
+      signer_index: Int,
+      error: SignError,
+      comment: Option[String]
+  )
+
+  case class TweakVectors(
+      n: Int,
+      t: Int,
+      threshold_pubkey: ECPublicKey,
+      secshare_p0: ByteVector,
+      identifiers: Vector[Int],
+      pubshares: Vector[ByteVector],
+      secnonce_p0: ByteVector,
+      pubnonces: Vector[ByteVector],
+      aggnonces: Vector[ByteVector],
+      tweaks: Vector[ByteVector],
+      msg: ByteVector,
+      valid_test_cases: Vector[TweakValidTestCase],
+      error_test_cases: Vector[TweakErrorTestCase]
+  )
+
+  implicit val tweakValidReads: Reads[TweakValidTestCase] = (
+    (__ \ "id_indices").read[Seq[Int]].map(_.toVector) and
+      (__ \ "pubshare_indices").read[Seq[Int]].map(_.toVector) and
+      (__ \ "pubnonce_indices").read[Seq[Int]].map(_.toVector) and
+      (__ \ "tweak_indices").read[Seq[Int]].map(_.toVector) and
+      (__ \ "aggnonce_index").read[Int] and
+      (__ \ "is_xonly").read[Seq[Boolean]].map(_.toVector) and
+      (__ \ "signer_index").read[Int] and
+      (__ \ "expected").read[ByteVector] and
+      (__ \ "comment").readNullable[String]
+  )(TweakValidTestCase.apply _)
+
+  implicit val tweakErrorReads: Reads[TweakErrorTestCase] = (
+    (__ \ "id_indices").read[Seq[Int]].map(_.toVector) and
+      (__ \ "pubshare_indices").read[Seq[Int]].map(_.toVector) and
+      (__ \ "pubnonce_indices")
+        .readNullable[Seq[Int]]
+        .map(_.map(_.toVector)) and
+      (__ \ "tweak_indices").read[Seq[Int]].map(_.toVector) and
+      (__ \ "aggnonce_index").read[Int] and
+      (__ \ "is_xonly").read[Seq[Boolean]].map(_.toVector) and
+      (__ \ "signer_index").read[Int] and
+      (__ \ "error").read[SignError] and
+      (__ \ "comment").readNullable[String]
+  )(TweakErrorTestCase.apply _)
+
+  implicit val tweakVectorsReads: Reads[TweakVectors] = (
+    (__ \ "n").read[Int] and
+      (__ \ "t").read[Int] and
+      (__ \ "threshold_pubkey").read[ECPublicKey] and
+      (__ \ "secshare_p0").read[ByteVector] and
+      (__ \ "identifiers").read[Seq[Int]].map(_.toVector) and
+      (__ \ "pubshares").read[Seq[ByteVector]].map(_.toVector) and
+      (__ \ "secnonce_p0").read[ByteVector] and
+      (__ \ "pubnonces").read[Seq[ByteVector]].map(_.toVector) and
+      (__ \ "aggnonces").read[Seq[ByteVector]].map(_.toVector) and
+      (__ \ "tweaks").read[Seq[ByteVector]].map(_.toVector) and
+      (__ \ "msg").read[ByteVector] and
+      (__ \ "valid_test_cases")
+        .read[Seq[TweakValidTestCase]]
+        .map(_.toVector) and
+      (__ \ "error_test_cases").read[Seq[TweakErrorTestCase]].map(_.toVector)
+  )(TweakVectors.apply _)
 }
