@@ -93,7 +93,6 @@ class FrostTestVectors extends BitcoinSCryptoTest {
       // val pubnonceBytes = t.pubnonce_indices.map(vecs.pubnonces)
       // val pubnonces = pubnonceBytes.map(ECPublicKey.fromBytes)
       // val aggnonce = FrostNonce.fromBytes(vecs.aggnonces(t.aggnonce_index))
-
       val _ = FrostSigningContext(
         n = vecs.n,
         t = vecs.t,

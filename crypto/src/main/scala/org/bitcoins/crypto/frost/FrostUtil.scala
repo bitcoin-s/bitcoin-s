@@ -134,15 +134,17 @@ object FrostUtil {
             s"ids must not contain duplicates, ids=$ids")
     require(0 <= myId && myId < 4294967296L,
             s"myId must be in the range [2, 2^32 - 1], got: $myId")
-    var num: FieldElement = FieldElement.one
-    var denom: FieldElement = FieldElement.one
-    ids.foreach { id =>
-      if (id == myId) {
-        () // skip
-      } else {
-        num = num.multiply(FieldElement(id + 1))
-        denom = denom.multiply(FieldElement(id - myId))
-      }
+    val initNum: FieldElement = FieldElement.one
+    val initDenom: FieldElement = FieldElement.one
+    val (num, denom) = ids.foldLeft((initNum, initDenom)) {
+      case ((num, denom), id) =>
+        if (id == myId) {
+          (num, denom) // skip
+        } else {
+          val n = num.multiply(FieldElement(id + 1))
+          val d = denom.multiply(FieldElement(id - myId))
+          (n, d)
+        }
     }
     num.multiply(denom.inverse)
   }
