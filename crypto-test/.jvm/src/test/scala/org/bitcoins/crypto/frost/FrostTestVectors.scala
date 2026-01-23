@@ -104,4 +104,21 @@ class FrostTestVectors extends BitcoinSCryptoTest {
       )
     }
   }
+
+  it should "parse tweak_vectors.json" in {
+    val fileName = "/tweak_vectors.json"
+    val lines = Using(Source.fromURL(getClass.getResource(fileName))) {
+      source =>
+        source.mkString
+    }.get
+
+    val json = Json.parse(lines)
+    val vecs = json.validate[TweakVectors].get
+
+    // Basic assertions to ensure parsing succeeded
+    assert(vecs.n == 3)
+    assert(vecs.t == 2)
+    assert(vecs.valid_test_cases.nonEmpty)
+    assert(vecs.error_test_cases.nonEmpty)
+  }
 }
