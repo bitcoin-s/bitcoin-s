@@ -96,7 +96,6 @@ class FrostTestVectors extends BitcoinSCryptoTest {
       val _ = FrostSigningContext(
         n = vecs.n,
         t = vecs.t,
-        u = vecs.t,
         ids = t.id_indices.map(vecs.identifiers(_)),
         // drop last share for now as it isn't a valid point on the curve
         pubshares = pubshares,
