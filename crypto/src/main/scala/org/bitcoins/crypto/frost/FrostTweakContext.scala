@@ -1,9 +1,8 @@
 package org.bitcoins.crypto.frost
-import org.bitcoins.crypto.musig.{Neg, ParityMultiplier, Pos}
+import org.bitcoins.crypto.musig.{MuSigTweakContext, ParityMultiplier, Pos}
 import org.bitcoins.crypto.{
   ECPublicKey,
   FieldElement,
-  OddParity,
   SecpPointFinite,
   XOnlyPubKey
 }
@@ -42,11 +41,20 @@ object FrostTweakContext {
       tweakCtx: FrostTweakContext,
       tweak: FieldElement,
       isXOnlyTweak: Boolean): FrostTweakContext = {
-    @scala.annotation.nowarn
-    val parityMult =
-      if (isXOnlyTweak && tweakCtx.getPlainPubKey.parity == OddParity) Neg
-      else Pos
-
-    ???
+    // piggy back of musig implementation as they are the same
+    val (aggKey, musigTweak) = MuSigTweakContext
+      .apply(parityAcc = tweakCtx.gacc, tweakAcc = tweakCtx.tacc)
+      .applyTweak(
+        tweak = org.bitcoins.crypto.musig.MuSigTweak(
+          tweak = tweak,
+          isXOnlyT = isXOnlyTweak
+        ),
+        aggPubKey = tweakCtx.getPlainPubKey
+      )
+    FrostTweakContext(
+      q = aggKey.toPoint,
+      tacc = musigTweak.tweakAcc,
+      gacc = musigTweak.parityAcc
+    )
   }
 }

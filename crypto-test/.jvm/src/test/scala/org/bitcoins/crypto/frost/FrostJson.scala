@@ -4,10 +4,12 @@ import play.api.libs.functional.syntax.*
 import scodec.bits.ByteVector
 import org.bitcoins.commons.serializers.JsonReaders.{
   ECPublicKeyReads,
+  FrostNoncePrivReads,
+  FrostNoncePubReads,
   XOnlyPubKeyReads,
-  FrostNonceReads
+  FieldElementReads
 }
-import org.bitcoins.crypto.{ECPublicKey, XOnlyPubKey}
+import org.bitcoins.crypto.{ECPublicKey, FieldElement, XOnlyPubKey}
 object FrostJson {
 
   // Local ByteVector reader (accepts empty string as empty ByteVector).
@@ -36,8 +38,8 @@ object FrostJson {
       threshold_pubkey: Option[XOnlyPubKey],
       msg: Option[ByteVector],
       extra_in: Option[ByteVector],
-      expected_secnonce: ByteVector,
-      expected_pubnonce: FrostNonce,
+      expected_secnonce: FrostNoncePriv,
+      expected_pubnonce: FrostNoncePub,
       comment: String
   )
   implicit val nonceGenTestVectorReads: Reads[NonceGenTestVector] = (
@@ -47,8 +49,8 @@ object FrostJson {
       (__ \ "threshold_pubkey").readNullable[XOnlyPubKey] and
       (__ \ "msg").readNullable[ByteVector] and
       (__ \ "extra_in").readNullable[ByteVector] and
-      (__ \ "expected_secnonce").read[ByteVector] and
-      (__ \ "expected_pubnonce").read[FrostNonce] and
+      (__ \ "expected_secnonce").read[FrostNoncePriv] and
+      (__ \ "expected_pubnonce").read[FrostNoncePub] and
       (__ \ "comment").read[String]
   )(NonceGenTestVector.apply _)
   implicit val nonceGenTestVectorsReads: Reads[NonceGenTestVectors] =
@@ -64,7 +66,7 @@ object FrostJson {
   case class NonceAggValidTestCase(
       pubnonce_indices: Vector[Int],
       participant_identifiers: Vector[Int],
-      expected_aggnonce: FrostNonce,
+      expected_aggnonce: FrostNoncePub,
       comment: Option[String]
   )
 
@@ -84,7 +86,7 @@ object FrostJson {
   implicit val nonceAggValidReads: Reads[NonceAggValidTestCase] = (
     (__ \ "pubnonce_indices").read[Seq[Int]].map(_.toVector) and
       (__ \ "participant_identifiers").read[Seq[Int]].map(_.toVector) and
-      (__ \ "expected_aggnonce").read[FrostNonce] and
+      (__ \ "expected_aggnonce").read[FrostNoncePub] and
       (__ \ "comment").readNullable[String]
   )(NonceAggValidTestCase.apply _)
 
@@ -117,7 +119,7 @@ object FrostJson {
       secshare_p0: ByteVector,
       identifiers: Vector[Int],
       pubshares: Vector[ByteVector],
-      secnonces_p0: Vector[ByteVector],
+      secnonces_p0: Vector[FrostNoncePriv],
       pubnonces: Vector[ByteVector],
       aggnonces: Vector[ByteVector],
       msgs: Vector[ByteVector],
@@ -235,7 +237,7 @@ object FrostJson {
       (__ \ "secshare_p0").read[ByteVector] and
       (__ \ "identifiers").read[Seq[Int]].map(_.toVector) and
       (__ \ "pubshares").read[Seq[ByteVector]].map(_.toVector) and
-      (__ \ "secnonces_p0").read[Seq[ByteVector]].map(_.toVector) and
+      (__ \ "secnonces_p0").read[Seq[FrostNoncePriv]].map(_.toVector) and
       (__ \ "pubnonces").read[Seq[ByteVector]].map(_.toVector) and
       (__ \ "aggnonces").read[Seq[ByteVector]].map(_.toVector) and
       (__ \ "msgs").read[Seq[ByteVector]].map(_.toVector) and
@@ -280,10 +282,10 @@ object FrostJson {
       n: Int,
       t: Int,
       threshold_pubkey: ECPublicKey,
-      secshare_p0: ByteVector,
+      secshare_p0: FieldElement,
       identifiers: Vector[Int],
       pubshares: Vector[ByteVector],
-      secnonce_p0: ByteVector,
+      secnonce_p0: FrostNoncePriv,
       pubnonces: Vector[ByteVector],
       aggnonces: Vector[ByteVector],
       tweaks: Vector[ByteVector],
@@ -322,10 +324,10 @@ object FrostJson {
     (__ \ "n").read[Int] and
       (__ \ "t").read[Int] and
       (__ \ "threshold_pubkey").read[ECPublicKey] and
-      (__ \ "secshare_p0").read[ByteVector] and
+      (__ \ "secshare_p0").read[FieldElement] and
       (__ \ "identifiers").read[Seq[Int]].map(_.toVector) and
       (__ \ "pubshares").read[Seq[ByteVector]].map(_.toVector) and
-      (__ \ "secnonce_p0").read[ByteVector] and
+      (__ \ "secnonce_p0").read[FrostNoncePriv] and
       (__ \ "pubnonces").read[Seq[ByteVector]].map(_.toVector) and
       (__ \ "aggnonces").read[Seq[ByteVector]].map(_.toVector) and
       (__ \ "tweaks").read[Seq[ByteVector]].map(_.toVector) and

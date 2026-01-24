@@ -44,7 +44,7 @@ import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.wallet.fee.*
 import org.bitcoins.crypto.*
-import org.bitcoins.crypto.frost.FrostNonce
+import org.bitcoins.crypto.frost.{FrostNoncePriv, FrostNoncePub}
 import play.api.libs.json.*
 import ujson.{Num, Str, Value}
 import scodec.bits.ByteVector
@@ -404,10 +404,17 @@ object JsonReaders {
     }
   }
 
-  implicit object FrostNonceReads extends Reads[FrostNonce] {
+  implicit object FrostNoncePrivReads extends Reads[FrostNoncePriv] {
 
-    override def reads(json: JsValue): JsResult[FrostNonce] =
-      SerializerUtil.processJsString[FrostNonce](FrostNonce.fromHex)(json)
+    override def reads(json: JsValue): JsResult[FrostNoncePriv] =
+      SerializerUtil.processJsString[FrostNoncePriv](FrostNoncePriv.fromHex)(
+        json
+      )
+  }
+  implicit object FrostNoncePubReads extends Reads[FrostNoncePub] {
+
+    override def reads(json: JsValue): JsResult[FrostNoncePub] =
+      SerializerUtil.processJsString[FrostNoncePub](FrostNoncePub.fromHex)(json)
   }
 
   implicit object SchnorrNonceReads extends Reads[SchnorrNonce] {
