@@ -1,6 +1,11 @@
 package org.bitcoins.crypto.frost
 
-import org.bitcoins.crypto.{Factory, NetworkElement}
+import org.bitcoins.crypto.{
+  ECPublicKey,
+  Factory,
+  NetworkElement,
+  SecpPointFinite
+}
 import scodec.bits.ByteVector
 
 /** FROST nonce (public) representation.
@@ -27,13 +32,22 @@ import scodec.bits.ByteVector
   * @param bytes
   *   the 66-byte concatenation of two SEC-compressed curve points
   */
-case class FrostNonce(bytes: ByteVector) extends NetworkElement {
+case class FrostNoncePub(bytes: ByteVector) extends NetworkElement {
   require(bytes.length == 66,
           s"FrostNonceAgg must be 66 bytes, got: ${bytes.length}")
 }
 
-object FrostNonce extends Factory[FrostNonce] {
-  override def fromBytes(bytes: ByteVector): FrostNonce = {
-    new FrostNonce(bytes)
+object FrostNoncePub extends Factory[FrostNoncePub] {
+  override def fromBytes(bytes: ByteVector): FrostNoncePub = {
+    new FrostNoncePub(bytes)
+  }
+
+  def apply(r1: SecpPointFinite, r2: SecpPointFinite): FrostNoncePub = {
+    FrostNoncePub(r1.toPublicKey.bytes ++ r2.toPublicKey.bytes)
+  }
+
+  def apply(key1: ECPublicKey, key2: ECPublicKey): FrostNoncePub = {
+    require(key1.isCompressed && key2.isCompressed)
+    FrostNoncePub(key1.bytes ++ key2.bytes)
   }
 }

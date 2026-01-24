@@ -4,7 +4,7 @@ import scodec.bits.ByteVector
 
 case class FrostSessionContext(
     signingContext: FrostSigningContext,
-    aggNonce: FrostNonce,
+    aggNonce: FrostNoncePub,
     v: Long,
     tweaks: Vector[FieldElement],
     isXOnly: Vector[Boolean],

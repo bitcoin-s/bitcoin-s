@@ -27,7 +27,7 @@ object FrostUtil {
       pubshare: Option[ECPublicKey],
       threshold_pk: Option[XOnlyPubKey],
       message: Option[ByteVector],
-      extra_in: Option[ByteVector]): (ByteVector, FrostNonce) = {
+      extra_in: Option[ByteVector]): (FrostNoncePriv, FrostNoncePub) = {
     val randPrime = secshare match {
       case Some(sec) => sec.xor(hashFrostAux(rand))
       case None      => rand
@@ -66,12 +66,12 @@ object FrostUtil {
     require(CryptoUtil.decodePoint(r2) != SecpPointInfinity)
     val pubnonce = r1.bytes ++ r2.bytes
     val secnonce = preimages.head.bytes ++ preimages(1).bytes
-    (secnonce, FrostNonce(pubnonce))
+    (FrostNoncePriv(secnonce), FrostNoncePub(pubnonce))
   }
 
   def aggregateNonces(
       pubnonces: Vector[ByteVector],
-      participantIdentifiers: Vector[Int]): FrostNonce = {
+      participantIdentifiers: Vector[Int]): FrostNoncePub = {
     require(
       pubnonces.length == participantIdentifiers.length,
       s"Number of pubnonces (${pubnonces.length}) must match number of participant identifiers (${participantIdentifiers.length})"
@@ -99,7 +99,7 @@ object FrostUtil {
       }
       agg
     }
-    FrostNonce(aggPoints(0).bytes ++ aggPoints(1).bytes)
+    FrostNoncePub(aggPoints(0).bytes ++ aggPoints(1).bytes)
   }
 
   /** Computes the FROST Lagrange coefficient \(\lambda_{myId}\) for combining
@@ -147,5 +147,13 @@ object FrostUtil {
         }
     }
     num.multiply(denom.inverse)
+  }
+
+  def sign(
+      secNonce: ByteVector,
+      secShare: FieldElement,
+      myId: Long,
+      sessionContext: FrostSessionContext): FieldElement = {
+    ???
   }
 }
