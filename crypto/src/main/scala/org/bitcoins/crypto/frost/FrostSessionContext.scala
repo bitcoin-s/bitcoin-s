@@ -14,4 +14,13 @@ case class FrostSessionContext(
   require(tweaks.length == v.toInt,
           s"Number of tweaks ${tweaks.length} must equal v $v")
 
+  def getSessionValues: FrostSessionValues = {
+    val thresholdPk = signingContext.thresholdPubKey
+    val initTweakCtx = FrostTweakContext(thresholdPk)
+    val _ = 1.to(v.toInt).foldLeft(initTweakCtx) { case (tweakCtx, i) =>
+      tweakCtx.applyTweak(tweaks((i - 1).toInt), isXOnly((i - 1).toInt))
+    }
+
+    ???
+  }
 }
