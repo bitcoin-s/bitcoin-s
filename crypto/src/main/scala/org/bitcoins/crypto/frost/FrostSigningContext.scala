@@ -10,7 +10,6 @@ import org.bitcoins.crypto.{
 case class FrostSigningContext(
     n: Long,
     t: Long,
-    u: Long,
     ids: Vector[Int],
     pubshares: Vector[ECPublicKey],
     thresholdPubKey: ECPublicKey) {
@@ -18,14 +17,16 @@ case class FrostSigningContext(
           s"n must be in the range [2, 2^32 - 1], got: $n")
   require(1 <= t && t <= n,
           s"t must be in the range [1, n], got: $t with n: $n")
+
+  def u: Int = pubshares.length
   require(u >= t && u <= n,
           s"u must be in the range [t, n], got: $u with t: $t and n: $n")
   // TODO: Come back and look at these invariants, shouldn't they be equal?
   require(
-    u <= ids.length,
+    u == ids.length,
     s"Must have enough ids to satisfy u, ids length: ${ids.length} with u: $u")
   require(
-    u <= pubshares.length,
+    u == pubshares.length,
     s"Must have enough pubshares to satisfy u, pubshares length: ${pubshares.length} with u: $u")
   require(ids.toSet.size == ids.length, s"All ids must be unique, got: $ids")
 
