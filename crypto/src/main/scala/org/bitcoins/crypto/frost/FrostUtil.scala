@@ -21,6 +21,10 @@ object FrostUtil {
     CryptoUtil.taggedSha256(bytes, "FROST/nonce").bytes
   }
 
+  def hashFrostNonceCoef(bytes: ByteVector): ByteVector = {
+    CryptoUtil.taggedSha256(bytes, "FROST/noncecoef").bytes
+  }
+
   def nonceGen(
       rand: ByteVector,
       secshare: Option[ByteVector],

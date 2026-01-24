@@ -4,6 +4,7 @@ import org.bitcoins.crypto.{
   ECPublicKey,
   Factory,
   NetworkElement,
+  SecpPoint,
   SecpPointFinite
 }
 import scodec.bits.ByteVector
@@ -35,6 +36,14 @@ import scodec.bits.ByteVector
 case class FrostNoncePub(bytes: ByteVector) extends NetworkElement {
   require(bytes.length == 66,
           s"FrostNonceAgg must be 66 bytes, got: ${bytes.length}")
+
+  def r1: SecpPoint = {
+    ECPublicKey.fromBytes(bytes.slice(0, 33)).toPoint
+  }
+
+  def r2: SecpPoint = {
+    ECPublicKey.fromBytes(bytes.slice(33, 66)).toPoint
+  }
 }
 
 object FrostNoncePub extends Factory[FrostNoncePub] {
