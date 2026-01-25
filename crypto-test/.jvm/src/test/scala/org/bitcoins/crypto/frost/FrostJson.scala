@@ -65,7 +65,7 @@ object FrostJson {
 
   case class NonceAggValidTestCase(
       pubnonce_indices: Vector[Int],
-      participant_identifiers: Vector[Int],
+      participant_identifiers: Vector[Long],
       expected_aggnonce: FrostNoncePub,
       comment: Option[String]
   )
@@ -78,14 +78,14 @@ object FrostJson {
 
   case class NonceAggErrorTestCase(
       pubnonce_indices: Vector[Int],
-      participant_identifiers: Vector[Int],
+      participant_identifiers: Vector[Long],
       error: NonceAggError,
       comment: Option[String]
   )
 
   implicit val nonceAggValidReads: Reads[NonceAggValidTestCase] = (
     (__ \ "pubnonce_indices").read[Seq[Int]].map(_.toVector) and
-      (__ \ "participant_identifiers").read[Seq[Int]].map(_.toVector) and
+      (__ \ "participant_identifiers").read[Seq[Long]].map(_.toVector) and
       (__ \ "expected_aggnonce").read[FrostNoncePub] and
       (__ \ "comment").readNullable[String]
   )(NonceAggValidTestCase.apply _)
@@ -98,7 +98,7 @@ object FrostJson {
 
   implicit val nonceAggErrorTestCaseReads: Reads[NonceAggErrorTestCase] = (
     (__ \ "pubnonce_indices").read[Seq[Int]].map(_.toVector) and
-      (__ \ "participant_identifiers").read[Seq[Int]].map(_.toVector) and
+      (__ \ "participant_identifiers").read[Seq[Long]].map(_.toVector) and
       (__ \ "error").read[NonceAggError] and
       (__ \ "comment").readNullable[String]
   )(NonceAggErrorTestCase.apply _)
@@ -283,7 +283,7 @@ object FrostJson {
       t: Int,
       threshold_pubkey: ECPublicKey,
       secshare_p0: FieldElement,
-      identifiers: Vector[Int],
+      identifiers: Vector[Long],
       pubshares: Vector[ByteVector],
       secnonce_p0: FrostNoncePriv,
       pubnonces: Vector[ByteVector],
@@ -325,7 +325,7 @@ object FrostJson {
       (__ \ "t").read[Int] and
       (__ \ "threshold_pubkey").read[ECPublicKey] and
       (__ \ "secshare_p0").read[FieldElement] and
-      (__ \ "identifiers").read[Seq[Int]].map(_.toVector) and
+      (__ \ "identifiers").read[Seq[Long]].map(_.toVector) and
       (__ \ "pubshares").read[Seq[ByteVector]].map(_.toVector) and
       (__ \ "secnonce_p0").read[FrostNoncePriv] and
       (__ \ "pubnonces").read[Seq[ByteVector]].map(_.toVector) and

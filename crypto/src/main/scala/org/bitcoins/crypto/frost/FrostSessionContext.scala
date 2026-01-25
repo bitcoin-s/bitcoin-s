@@ -12,14 +12,13 @@ import scodec.bits.ByteVector
 case class FrostSessionContext(
     signingContext: FrostSigningContext,
     aggNonce: FrostNoncePub,
-    v: Long,
     tweaks: Vector[FieldElement],
     isXOnly: Vector[Boolean],
     message: ByteVector) {
+  def v: Long = tweaks.length
+
   require(v >= 0 && v < 4294967296L,
           s"v must be in the range [0, 2^32 - 1], got: $v")
-  require(tweaks.length == v.toInt,
-          s"Number of tweaks ${tweaks.length} must equal v $v")
 
   def r1: SecpPoint = aggNonce.r1
   def r2: SecpPoint = aggNonce.r2
@@ -33,7 +32,7 @@ case class FrostSessionContext(
       }
     val serializedIds = signingContext.ids.foldLeft(ByteVector.empty) {
       case (acc, id) =>
-        acc ++ ByteVector.fromInt(id, 4)
+        acc ++ ByteVector.fromLong(id, 4)
     }
     val bHash = FrostUtil.hashFrostNonceCoef(
       serializedIds ++
