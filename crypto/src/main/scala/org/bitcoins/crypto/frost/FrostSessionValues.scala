@@ -29,7 +29,7 @@ import org.bitcoins.crypto.musig.ParityMultiplier
   */
 case class FrostSessionValues(
     tweakCtx: FrostTweakContext,
-    ids: Vector[Int],
+    ids: Vector[Long],
     pubshares: Vector[ECPublicKey],
     b: FieldElement,
     r: SecpPointFinite,

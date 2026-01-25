@@ -1,5 +1,5 @@
 package org.bitcoins.crypto.frost
-import org.bitcoins.crypto.{BitcoinSCryptoTest, ECPublicKey}
+import org.bitcoins.crypto.{BitcoinSCryptoTest, ECPublicKey, FieldElement}
 import org.bitcoins.crypto.frost.FrostJson.*
 import play.api.libs.json.Json
 
@@ -116,11 +116,35 @@ class FrostTestVectors extends BitcoinSCryptoTest {
 
     // Basic assertions to ensure parsing succeeded
     vecs.valid_test_cases.foreach { t =>
-//      val participantIds = t.id_indices.map(vecs.identifiers(_))
-//      val pubshares = t.pubshare_indices.map(vecs.pubshares(_))
-//      val pubnonces = t.pubnonce_indices.map(vecs.pubnonces(_))
-//      val tweaks = t.tweak_indices.map(vecs.tweaks(_))
-      // ???
+      val participantIds = t.id_indices.map(vecs.identifiers(_))
+      val pubshares = t.pubshare_indices.map(vecs.pubshares(_))
+      val pubnonces = t.pubnonce_indices.map(vecs.pubnonces(_))
+      val tweaks =
+        t.tweak_indices.map(vecs.tweaks(_)).map(FieldElement.fromBytes)
+      val signingContext = FrostSigningContext(
+        n = vecs.n,
+        t = vecs.t,
+        ids = participantIds,
+        pubshares = pubshares.map(ECPublicKey.fromBytes),
+        thresholdPubKey = vecs.threshold_pubkey
+      )
+      val sessionCtx = FrostSessionContext(
+        signingContext = signingContext,
+        aggNonce = FrostUtil.aggregateNonces(
+          pubnonces = pubnonces,
+          participantIdentifiers = participantIds
+        ),
+        tweaks = tweaks,
+        isXOnly = t.is_xonly,
+        message = vecs.msg
+      )
+      val result = FrostUtil.sign(secNonce = vecs.secnonce_p0,
+                                  secShare = vecs.secshare_p0,
+                                  myId = vecs.identifiers(t.signer_index),
+                                  sessionContext = sessionCtx)
+      assert(
+        result.bytes == t.expected,
+        s"\nFailed test: ${t.comment.getOrElse("")} expected=${t.expected} got=${result.hex}")
     }
     succeed
   }

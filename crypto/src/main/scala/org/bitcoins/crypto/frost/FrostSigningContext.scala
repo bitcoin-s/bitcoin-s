@@ -10,7 +10,7 @@ import org.bitcoins.crypto.{
 case class FrostSigningContext(
     n: Long,
     t: Long,
-    ids: Vector[Int],
+    ids: Vector[Long],
     pubshares: Vector[ECPublicKey],
     thresholdPubKey: ECPublicKey) {
   require(n >= 2 && n < 4294967296L,

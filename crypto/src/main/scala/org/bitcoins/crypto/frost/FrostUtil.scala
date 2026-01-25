@@ -4,7 +4,9 @@ import org.bitcoins.crypto.{
   CryptoParams,
   CryptoUtil,
   ECPublicKey,
+  EvenParity,
   FieldElement,
+  OddParity,
   SecpPoint,
   SecpPointInfinity,
   XOnlyPubKey
@@ -75,7 +77,7 @@ object FrostUtil {
 
   def aggregateNonces(
       pubnonces: Vector[ByteVector],
-      participantIdentifiers: Vector[Int]): FrostNoncePub = {
+      participantIdentifiers: Vector[Long]): FrostNoncePub = {
     require(
       pubnonces.length == participantIdentifiers.length,
       s"Number of pubnonces (${pubnonces.length}) must match number of participant identifiers (${participantIdentifiers.length})"
@@ -131,7 +133,7 @@ object FrostUtil {
     * @return
     *   The Lagrange coefficient as a `FieldElement`.
     */
-  def deriveInterpolatingValue(ids: Vector[Int], myId: Int): FieldElement = {
+  def deriveInterpolatingValue(ids: Vector[Long], myId: Long): FieldElement = {
     require(ids.contains(myId),
             s"My id $myId must be in the list of participant ids: $ids")
     require(ids.distinct.length == ids.length,
@@ -154,10 +156,64 @@ object FrostUtil {
   }
 
   def sign(
-      secNonce: ByteVector,
+      secNonce: FrostNoncePriv,
       secShare: FieldElement,
       myId: Long,
       sessionContext: FrostSessionContext): FieldElement = {
+    require(
+      sessionContext.signingContext.ids.contains(myId),
+      s"My id $myId must be in the signing context ids: ${sessionContext.signingContext.ids}")
+    val values = sessionContext.getSessionValues
+    val (k1, k2) = values.r.toPublicKey.parity match {
+      case EvenParity => (secNonce.k1, secNonce.k2)
+      case OddParity  => (secNonce.k1.negate, secNonce.k2.negate)
+    }
+    require(secShare != FieldElement.zero,
+            s"Secret share for participant id $myId cannot be zero")
+    val pubshare = CryptoParams.getG.multiply(secShare)
+    require(
+      values.pubshares.contains(pubshare),
+      s"Public share $pubshare derived from secret share does not exist in the session context pubshares: ${values.pubshares}"
+    )
+    val lambda =
+      deriveInterpolatingValue(sessionContext.signingContext.ids, myId)
+    val g = values.q.toPublicKey.parity match {
+      case EvenParity => FieldElement.one
+      case OddParity  => FieldElement(-1)
+    }
+    val d = values.gacc
+      .modify(g)
+      .multiply(secShare)
+    val s = k1.fieldElement
+      .add(k2.fieldElement.multiply(values.b))
+      .add(d)
+      .add(values.e.multiply(lambda))
+    require(
+      partialSigVerify(
+        partialSig = s,
+        pubnonces = Vector(sessionContext.aggNonce),
+        signersContext = sessionContext.signingContext,
+        tweaks = sessionContext.tweaks,
+        isXonlyT = sessionContext.isXOnly,
+        message = sessionContext.message,
+        i = myId
+      ),
+      s"Computed partial signature $s failed verification"
+    )
+    s
+  }
+
+  def partialSigVerify(
+      partialSig: FieldElement,
+      pubnonces: Vector[FrostNoncePub],
+      signersContext: FrostSigningContext,
+      tweaks: Vector[FieldElement],
+      isXonlyT: Vector[Boolean],
+      message: ByteVector,
+      i: Long): Boolean = {
+    require(
+      signersContext.ids.contains(i),
+      s"Signer id $i must be in the signing context ids: ${signersContext.ids}")
     ???
   }
 }
