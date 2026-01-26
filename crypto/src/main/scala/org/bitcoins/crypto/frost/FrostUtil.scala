@@ -171,26 +171,26 @@ object FrostUtil {
     val lambda =
       deriveInterpolatingValue(sessionContext.signingContext.ids, myId)
     val g = values.q.toPublicKey.parity match {
-      case EvenParity => FieldElement.one
-      case OddParity  => FieldElement(-1)
+      case EvenParity => Pos
+      case OddParity  => Neg
     }
     val d = values.gacc
-      .modify(g)
-      .multiply(secShare)
+      .multiply(g)
+      .modify(secShare)
     val s = k1.fieldElement
       .add(k2.fieldElement.multiply(values.b))
       .add(d)
       .add(values.e.multiply(lambda))
+    val pubnonce = secNonce.toNoncePub
+    val verified = partialSigVerifyInternal(
+      partialSig = s,
+      myId = myId,
+      pubNonce = pubnonce,
+      pubshare = pubshare,
+      sessionCtx = sessionContext
+    )
     require(
-      partialSigVerify(
-        partialSig = s,
-        pubnonces = Vector(sessionContext.aggNonce),
-        signersContext = sessionContext.signingContext,
-        tweaks = sessionContext.tweaks,
-        isXonlyT = sessionContext.isXOnly,
-        message = sessionContext.message,
-        i = myId
-      ),
+      verified,
       s"Computed partial signature $s failed verification"
     )
     s
