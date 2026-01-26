@@ -1,5 +1,10 @@
 package org.bitcoins.crypto.frost
-import org.bitcoins.crypto.musig.{MuSigTweakContext, ParityMultiplier, Pos}
+import org.bitcoins.crypto.musig.{
+  MuSigTweak,
+  MuSigTweakContext,
+  ParityMultiplier,
+  Pos
+}
 import org.bitcoins.crypto.{
   ECPublicKey,
   FieldElement,
@@ -88,13 +93,14 @@ object FrostTweakContext {
       tweak: FieldElement,
       isXOnlyTweak: Boolean): FrostTweakContext = {
     // piggy back of musig implementation as they are the same
+    val initTweak = MuSigTweak(
+      tweak = tweak,
+      isXOnlyT = isXOnlyTweak
+    )
     val (aggKey, musigTweak) = MuSigTweakContext
       .apply(parityAcc = tweakCtx.gacc, tweakAcc = tweakCtx.tacc)
       .applyTweak(
-        tweak = org.bitcoins.crypto.musig.MuSigTweak(
-          tweak = tweak,
-          isXOnlyT = isXOnlyTweak
-        ),
+        tweak = initTweak,
         aggPubKey = tweakCtx.getPlainPubKey
       )
     FrostTweakContext(

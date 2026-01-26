@@ -149,6 +149,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
       assert(
         result.bytes == t.expected,
         s"\nFailed test: ${t.comment.getOrElse("")} expected=${t.expected} got=${result.hex}")
+      println(s"Done test: ${t.comment}\n")
     }
     succeed
   }

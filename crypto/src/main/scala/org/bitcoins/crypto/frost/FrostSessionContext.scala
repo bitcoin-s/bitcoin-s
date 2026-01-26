@@ -30,11 +30,12 @@ case class FrostSessionContext(
     val thresholdPk = signingContext.thresholdPubKey
     val initTweakCtx = FrostTweakContext(thresholdPk)
     val tweakCtx =
-      1.until(v.toInt).foldLeft(initTweakCtx) { case (tweakCtx, i) =>
+      1.to(v.toInt).foldLeft(initTweakCtx) { case (tweakCtx, i) =>
         println(
           s"Tweaking with tweak: ${tweaks(i - 1)} isXOnly: ${isXOnly(i - 1)}")
         tweakCtx.applyTweak(tweaks(i - 1), isXOnly(i - 1))
       }
+    println(s"tweakCtx after tweaks: $tweakCtx")
     val serializedIds = signingContext.ids.foldLeft(ByteVector.empty) {
       case (acc, id) =>
         acc ++ ByteVector.fromLong(id, 4)
