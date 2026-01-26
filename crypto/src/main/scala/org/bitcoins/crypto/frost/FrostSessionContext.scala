@@ -20,6 +20,9 @@ case class FrostSessionContext(
   require(v >= 0 && v < 4294967296L,
           s"v must be in the range [0, 2^32 - 1], got: $v")
 
+  require(isXOnly.length == v.toInt,
+          s"isXOnly must have the same length as tweaks (v=$v)")
+
   def r1: SecpPoint = aggNonce.r1
   def r2: SecpPoint = aggNonce.r2
 
@@ -28,6 +31,8 @@ case class FrostSessionContext(
     val initTweakCtx = FrostTweakContext(thresholdPk)
     val tweakCtx =
       1.until(v.toInt).foldLeft(initTweakCtx) { case (tweakCtx, i) =>
+        println(
+          s"Tweaking with tweak: ${tweaks(i - 1)} isXOnly: ${isXOnly(i - 1)}")
         tweakCtx.applyTweak(tweaks(i - 1), isXOnly(i - 1))
       }
     val serializedIds = signingContext.ids.foldLeft(ByteVector.empty) {
@@ -63,7 +68,7 @@ case class FrostSessionContext(
                        ids = signingContext.ids,
                        pubshares = signingContext.pubshares,
                        b = b,
-                       r = r.toPoint,
+                       R = r.toPoint,
                        e = e)
   }
 }

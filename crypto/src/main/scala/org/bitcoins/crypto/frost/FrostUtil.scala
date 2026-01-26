@@ -157,7 +157,7 @@ object FrostUtil {
       sessionContext.signingContext.ids.contains(myId),
       s"My id $myId must be in the signing context ids: ${sessionContext.signingContext.ids}")
     val values = sessionContext.getSessionValues
-    val (k1, k2) = values.r.toPublicKey.parity match {
+    val (k1, k2) = values.R.toPublicKey.parity match {
       case EvenParity => (secNonce.k1, secNonce.k2)
       case OddParity  => (secNonce.k1.negate, secNonce.k2.negate)
     }
@@ -170,17 +170,20 @@ object FrostUtil {
     )
     val lambda =
       deriveInterpolatingValue(sessionContext.signingContext.ids, myId)
-    val g = values.q.toPublicKey.parity match {
+    val g = values.Q.toPublicKey.parity match {
       case EvenParity => Pos
       case OddParity  => Neg
     }
+
     val d = values.gacc
       .multiply(g)
       .modify(secShare)
+    println(
+      s"g=$g gacc=${values.gacc} secshare=$secShare d=$d \nb=${values.b} e=${values.e} lambda=$lambda")
+    // s = k1 + b · k2 + e · λ · d
     val s = k1.fieldElement
       .add(k2.fieldElement.multiply(values.b))
-      .add(d)
-      .add(values.e.multiply(lambda))
+      .add(values.e.multiply(lambda).multiply(d))
     val pubnonce = secNonce.toNoncePub
     val verified = partialSigVerifyInternal(
       partialSig = s,
@@ -247,12 +250,12 @@ object FrostUtil {
     val values = sessionCtx.getSessionValues
     val rePrime = pubNonce.r1
       .add(pubNonce.r2.multiply(values.b))
-    val re = values.r.toPublicKey.parity match {
+    val re = values.R.toPublicKey.parity match {
       case EvenParity => rePrime
       case OddParity  => rePrime.negate
     }
     val lambda = deriveInterpolatingValue(ids, myId)
-    val g = values.q.toPublicKey.parity match {
+    val g = values.Q.toPublicKey.parity match {
       case EvenParity => Pos
       case OddParity  => Neg
     }
