@@ -141,6 +141,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
         isXOnly = t.is_xonly,
         message = vecs.msg
       )
+      println(s"threshold parity=${signingContext.thresholdPubKey.parity}")
       val result = FrostUtil.sign(secNonce = vecs.secnonce_p0,
                                   secShare = vecs.secshare_p0,
                                   myId = vecs.identifiers(t.signer_index),

@@ -16,7 +16,7 @@ import org.bitcoins.crypto.{
   * implementation is compatible with MuSig2 tweak semantics so the MuSig tweak
   * logic can be reused.
   *
-  * @param q
+  * @param Q
   *   aggregate public key point (finite curve point)
   * @param tacc
   *   scalar tweak accumulator (field element)
@@ -24,16 +24,16 @@ import org.bitcoins.crypto.{
   *   parity accumulator used for x-only parity tracking
   */
 case class FrostTweakContext(
-    q: SecpPointFinite,
+    Q: SecpPointFinite,
     tacc: FieldElement,
     gacc: ParityMultiplier) {
 
   def getXOnlyPubKey: XOnlyPubKey = {
-    q.toPublicKey.toXOnly
+    Q.toPublicKey.toXOnly
   }
 
   def getPlainPubKey: ECPublicKey = {
-    q.toPublicKey
+    Q.toPublicKey
   }
 
   /** Apply a tweak to this context and return the updated context.
@@ -62,12 +62,7 @@ object FrostTweakContext {
 
   /** Initializes a tweak context from the given public key */
   def apply(key: ECPublicKey): FrostTweakContext = {
-    val point = key.toPoint match {
-      case p: SecpPointFinite => p
-      case _ =>
-        throw new IllegalArgumentException(
-          s"Public key must not be point at infinity")
-    }
+    val point = key.toPoint
     FrostTweakContext(point, tacc = FieldElement.zero, gacc = Pos)
   }
 
@@ -103,7 +98,7 @@ object FrostTweakContext {
         aggPubKey = tweakCtx.getPlainPubKey
       )
     FrostTweakContext(
-      q = aggKey.toPoint,
+      Q = aggKey.toPoint,
       tacc = musigTweak.tweakAcc,
       gacc = musigTweak.parityAcc
     )

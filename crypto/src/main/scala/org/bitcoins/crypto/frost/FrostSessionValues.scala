@@ -32,12 +32,12 @@ case class FrostSessionValues(
     ids: Vector[Long],
     pubshares: Vector[ECPublicKey],
     b: FieldElement,
-    r: SecpPointFinite,
+    R: SecpPointFinite,
     e: FieldElement) {
   require(
     ids.length == pubshares.length,
     s"Number of ids ${ids.length} must equal number of pubshares ${pubshares.length}")
-  def q: SecpPointFinite = tweakCtx.q
+  def Q: SecpPointFinite = tweakCtx.Q
 
   def gacc: ParityMultiplier = tweakCtx.gacc
 
