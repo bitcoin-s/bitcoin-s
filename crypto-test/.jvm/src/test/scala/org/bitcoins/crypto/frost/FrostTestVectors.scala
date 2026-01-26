@@ -47,9 +47,11 @@ class FrostTestVectors extends BitcoinSCryptoTest {
 
     // Valid test cases
     testCases.valid_test_cases.foreach { test =>
-      val pubnoncesToAgg = test.pubnonce_indices.map { idx =>
-        testCases.pubnonces(idx)
-      }
+      val pubnoncesToAgg = test.pubnonce_indices
+        .map { idx =>
+          testCases.pubnonces(idx)
+        }
+        .map(FrostNoncePub.fromBytes)
       val aggNonce = FrostUtil.aggregateNonces(
         pubnonces = pubnoncesToAgg,
         participantIdentifiers = test.participant_identifiers
@@ -69,7 +71,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
 
       assertThrows[IllegalArgumentException] {
         FrostUtil.aggregateNonces(
-          pubnonces = pubnoncesToAgg,
+          pubnonces = pubnoncesToAgg.map(FrostNoncePub.fromBytes),
           participantIdentifiers = test.participant_identifiers
         )
       }
@@ -131,7 +133,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
       val sessionCtx = FrostSessionContext(
         signingContext = signingContext,
         aggNonce = FrostUtil.aggregateNonces(
-          pubnonces = pubnonces,
+          pubnonces = pubnonces.map(FrostNoncePub.fromBytes),
           participantIdentifiers = participantIds
         ),
         tweaks = tweaks,

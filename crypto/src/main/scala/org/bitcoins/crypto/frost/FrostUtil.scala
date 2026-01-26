@@ -1,5 +1,6 @@
 package org.bitcoins.crypto.frost
 
+import org.bitcoins.crypto.musig.{Neg, Pos}
 import org.bitcoins.crypto.{
   CryptoParams,
   CryptoUtil,
@@ -76,7 +77,7 @@ object FrostUtil {
   }
 
   def aggregateNonces(
-      pubnonces: Vector[ByteVector],
+      pubnonces: Vector[FrostNoncePub],
       participantIdentifiers: Vector[Long]): FrostNoncePub = {
     require(
       pubnonces.length == participantIdentifiers.length,
@@ -86,19 +87,11 @@ object FrostUtil {
     val aggPoints = 0.until(2).map { j =>
       val points = zip.zipWithIndex.map { case (z, idx) =>
         val nonce = if (j == 0) {
-          z._1.take(33)
+          z._1.r1
         } else {
-          z._1.takeRight(33)
+          z._1.r2
         }
-        try {
-          val pubkey = ECPublicKey.fromBytes(nonce)
-          val point = SecpPoint.fromPublicKey(pubkey)
-          point
-        } catch {
-          case _: Throwable =>
-            throw new IllegalArgumentException(
-              s"Invalid nonce for participant identifier ${z._2} at index $idx: ${nonce.toHex}")
-        }
+        nonce
       }
       val agg: SecpPoint = points.reduce[SecpPoint] { (a, b) =>
         a.add(b)
@@ -214,6 +207,62 @@ object FrostUtil {
     require(
       signersContext.ids.contains(i),
       s"Signer id $i must be in the signing context ids: ${signersContext.ids}")
-    ???
+    // val u = signersContext.u
+    val ids = signersContext.ids
+    val pubshares = signersContext.pubshares
+    // val thresholdPubKey = signersContext.thresholdPubKey
+    val aggNonce = FrostUtil.aggregateNonces(
+      pubnonces,
+      ids
+    )
+    val sessionCtx = FrostSessionContext(
+      signingContext = signersContext,
+      aggNonce = aggNonce,
+      tweaks = tweaks,
+      isXOnly = isXonlyT,
+      message = message
+    )
+    partialSigVerifyInternal(
+      partialSig,
+      i,
+      aggNonce,
+      pubshares(ids.indexOf(i)),
+      sessionCtx
+    )
+  }
+
+  def partialSigVerifyInternal(
+      partialSig: FieldElement,
+      myId: Long,
+      pubNonce: FrostNoncePub,
+      pubshare: ECPublicKey,
+      sessionCtx: FrostSessionContext): Boolean = {
+    val ids = sessionCtx.signingContext.ids
+    val pubshares = sessionCtx.signingContext.pubshares
+    require(ids.contains(myId),
+            s"My id $myId must be in the signing context ids: $ids")
+    require(
+      pubshares.contains(pubshare),
+      s"Public share $pubshare must be in the signing context pubshares: $pubshares")
+    val values = sessionCtx.getSessionValues
+    val rePrime = pubNonce.r1
+      .add(pubNonce.r2.multiply(values.b))
+    val re = values.r.toPublicKey.parity match {
+      case EvenParity => rePrime
+      case OddParity  => rePrime.negate
+    }
+    val lambda = deriveInterpolatingValue(ids, myId)
+    val g = values.q.toPublicKey.parity match {
+      case EvenParity => Pos
+      case OddParity  => Neg
+    }
+    val gPrime = values.gacc
+      .multiply(g)
+    val actualS = CryptoParams.getG.multiply(partialSig).toPoint
+    val inner = pubshare
+      .multiply(values.e.multiply(lambda))
+    val expectedS: SecpPoint = re
+      .add(gPrime.modify(inner).toPoint)
+    expectedS == actualS
   }
 }
