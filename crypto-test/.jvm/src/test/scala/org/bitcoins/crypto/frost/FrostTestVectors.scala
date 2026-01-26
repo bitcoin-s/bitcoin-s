@@ -106,7 +106,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
     }
   }
 
-  it should "parse tweak_vectors.json" in {
+  it should "pass tweak_vectors.json" in {
     val fileName = "/tweak_vectors.json"
     val lines = Using(Source.fromURL(getClass.getResource(fileName))) {
       source =>
@@ -118,6 +118,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
 
     // Basic assertions to ensure parsing succeeded
     vecs.valid_test_cases.foreach { t =>
+      println(s"t.comment=${t.comment}")
       val participantIds = t.id_indices.map(vecs.identifiers(_))
       val pubshares = t.pubshare_indices.map(vecs.pubshares(_))
       val pubnonces = t.pubnonce_indices.map(vecs.pubnonces(_))
