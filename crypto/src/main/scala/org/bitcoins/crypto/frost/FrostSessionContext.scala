@@ -33,10 +33,11 @@ case class FrostSessionContext(
       1.to(v.toInt).foldLeft(initTweakCtx) { case (tweakCtx, i) =>
         tweakCtx.applyTweak(tweaks(i - 1), isXOnly(i - 1))
       }
-    val serializedIds = signingContext.ids.foldLeft(ByteVector.empty) {
+    val serializedIds = signingContext.ids.sorted.foldLeft(ByteVector.empty) {
       case (acc, id) =>
         acc ++ ByteVector.fromLong(id, 4)
     }
+
     val bHash = FrostUtil.hashFrostNonceCoef(
       serializedIds ++
         aggNonce.bytes ++
@@ -63,7 +64,7 @@ case class FrostSessionContext(
     require(e != FieldElement.zero,
             s"Computed challenge 'e' cannot be zero in FROST signing session")
     FrostSessionValues(tweakCtx = tweakCtx,
-                       ids = signingContext.ids,
+                       ids = signingContext.ids.sorted,
                        pubshares = signingContext.pubshares,
                        b = b,
                        R = r.toPoint,
