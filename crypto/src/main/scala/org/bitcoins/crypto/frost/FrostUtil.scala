@@ -178,8 +178,6 @@ object FrostUtil {
     val d = values.gacc
       .multiply(g)
       .modify(secShare)
-    println(
-      s"g=$g gacc=${values.gacc} secshare=$secShare d=$d \nb=${values.b} e=${values.e} lambda=$lambda")
     // s = k1 + b · k2 + e · λ · d
     val s = k1.fieldElement
       .add(k2.fieldElement.multiply(values.b))

@@ -118,7 +118,6 @@ class FrostTestVectors extends BitcoinSCryptoTest {
 
     // Basic assertions to ensure parsing succeeded
     vecs.valid_test_cases.foreach { t =>
-      println(s"t.comment=${t.comment}")
       val participantIds = t.id_indices.map(vecs.identifiers(_))
       val pubshares = t.pubshare_indices.map(vecs.pubshares(_))
       val pubnonces = t.pubnonce_indices.map(vecs.pubnonces(_))
@@ -141,7 +140,6 @@ class FrostTestVectors extends BitcoinSCryptoTest {
         isXOnly = t.is_xonly,
         message = vecs.msg
       )
-      println(s"threshold parity=${signingContext.thresholdPubKey.parity}")
       val result = FrostUtil.sign(secNonce = vecs.secnonce_p0,
                                   secShare = vecs.secshare_p0,
                                   myId = vecs.identifiers(t.signer_index),
@@ -149,7 +147,6 @@ class FrostTestVectors extends BitcoinSCryptoTest {
       assert(
         result.bytes == t.expected,
         s"\nFailed test: ${t.comment.getOrElse("")} expected=${t.expected} got=${result.hex}")
-      println(s"Done test: ${t.comment}\n")
     }
     succeed
   }
