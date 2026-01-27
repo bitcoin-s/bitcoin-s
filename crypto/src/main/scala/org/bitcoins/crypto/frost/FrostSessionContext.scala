@@ -31,11 +31,8 @@ case class FrostSessionContext(
     val initTweakCtx = FrostTweakContext(thresholdPk)
     val tweakCtx =
       1.to(v.toInt).foldLeft(initTweakCtx) { case (tweakCtx, i) =>
-        println(
-          s"Tweaking with tweak: ${tweaks(i - 1)} isXOnly: ${isXOnly(i - 1)}")
         tweakCtx.applyTweak(tweaks(i - 1), isXOnly(i - 1))
       }
-    println(s"tweakCtx after tweaks: $tweakCtx")
     val serializedIds = signingContext.ids.foldLeft(ByteVector.empty) {
       case (acc, id) =>
         acc ++ ByteVector.fromLong(id, 4)
@@ -43,7 +40,7 @@ case class FrostSessionContext(
     val bHash = FrostUtil.hashFrostNonceCoef(
       serializedIds ++
         aggNonce.bytes ++
-        thresholdPk.toXOnly.bytes ++
+        tweakCtx.getXOnlyPubKey.bytes ++
         message
     )
     val b = FieldElement.fromBytes(bHash)
@@ -59,7 +56,7 @@ case class FrostSessionContext(
     }
     val eHash = CryptoUtil.sha256SchnorrChallenge(
       r.toXOnly.bytes ++
-        thresholdPk.toXOnly.bytes ++
+        tweakCtx.getXOnlyPubKey.bytes ++
         message
     )
     val e = FieldElement.fromBytes(eHash.bytes)

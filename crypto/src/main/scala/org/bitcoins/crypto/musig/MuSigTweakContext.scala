@@ -13,7 +13,6 @@ case class MuSigTweakContext(
   def applyTweak(
       tweak: MuSigTweak,
       aggPubKey: ECPublicKey): (ECPublicKey, MuSigTweakContext) = {
-    println(s"Applying tweak: $tweak to aggPubKey: $aggPubKey")
     val parityMult =
       if (tweak.isXOnlyT && aggPubKey.parity == OddParity) Neg
       else Pos
@@ -24,7 +23,6 @@ case class MuSigTweakContext(
         .add(CryptoParams.getG.multiply(tweak.tweak))
     val newParityAcc = parityAcc.multiply(parityMult)
     val newTweakAcc = parityMult.modify(tweakAcc).add(tweak.tweak)
-    println(s"newAggPubKey=$newAggPubKey")
     (newAggPubKey, MuSigTweakContext(newParityAcc, newTweakAcc))
   }
 }
