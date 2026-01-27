@@ -148,6 +148,39 @@ class FrostTestVectors extends BitcoinSCryptoTest {
         result.bytes == t.expected,
         s"\nFailed test: ${t.comment.getOrElse("")} expected=${t.expected} got=${result.hex}")
     }
+
+    // Error test cases: ensure expected errors are raised
+    vecs.error_test_cases.foreach { err =>
+      val participantIds = err.id_indices.map(vecs.identifiers(_))
+      val pubshares = err.pubshare_indices.map(vecs.pubshares(_))
+      assertThrows[IllegalArgumentException] {
+        val pubnoncesOpt = err.pubnonce_indices.map(_.map(vecs.pubnonces(_)).map(FrostNoncePub.fromBytes))
+        val tweaks = err.tweak_indices.map(vecs.tweaks(_)).map(FieldElement.fromBytes)
+        val signingContext = FrostSigningContext(
+          n = vecs.n,
+          t = vecs.t,
+          ids = participantIds,
+          pubshares = pubshares.map(ECPublicKey.fromBytes),
+          thresholdPubKey = vecs.threshold_pubkey
+        )
+        val aggNonce = FrostUtil.aggregateNonces(
+          pubnonces = pubnoncesOpt.getOrElse(Vector.empty),
+          participantIdentifiers = participantIds
+        )
+        val sessionCtx = FrostSessionContext(
+          signingContext = signingContext,
+          aggNonce = aggNonce,
+          tweaks = tweaks,
+          isXOnly = err.is_xonly,
+          message = vecs.msg
+        )
+        // Attempt to sign; any of the above steps may throw for malformed inputs
+        FrostUtil.sign(secNonce = vecs.secnonce_p0,
+                       secShare = vecs.secshare_p0,
+                       myId = vecs.identifiers(err.signer_index),
+                       sessionContext = sessionCtx)
+      }
+    }
     succeed
   }
 }
