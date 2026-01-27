@@ -135,7 +135,7 @@ object FrostUtil {
             s"myId must be in the range [2, 2^32 - 1], got: $myId")
     val initNum: FieldElement = FieldElement.one
     val initDenom: FieldElement = FieldElement.one
-    val (num, denom) = ids.foldLeft((initNum, initDenom)) {
+    val (num, denom) = ids.sorted.foldLeft((initNum, initDenom)) {
       case ((num, denom), id) =>
         if (id == myId) {
           (num, denom) // skip
@@ -169,7 +169,7 @@ object FrostUtil {
       s"Public share $pubshare derived from secret share does not exist in the session context pubshares: ${values.pubshares}"
     )
     val lambda =
-      deriveInterpolatingValue(sessionContext.signingContext.ids, myId)
+      deriveInterpolatingValue(sessionContext.signingContext.ids.sorted, myId)
     val g = values.Q.toPublicKey.parity match {
       case EvenParity => Pos
       case OddParity  => Neg
@@ -178,6 +178,7 @@ object FrostUtil {
     val d = values.gacc
       .multiply(g)
       .modify(secShare)
+
     // s = k1 + b · k2 + e · λ · d
     val s = k1.fieldElement
       .add(k2.fieldElement.multiply(values.b))
@@ -252,7 +253,7 @@ object FrostUtil {
       case EvenParity => rePrime
       case OddParity  => rePrime.negate
     }
-    val lambda = deriveInterpolatingValue(ids, myId)
+    val lambda = deriveInterpolatingValue(ids.sorted, myId)
     val g = values.Q.toPublicKey.parity match {
       case EvenParity => Pos
       case OddParity  => Neg
