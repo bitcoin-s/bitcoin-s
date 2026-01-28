@@ -59,10 +59,8 @@ class FrostTestVectors extends BitcoinSCryptoTest {
       )
       assert(
         aggNonce == test.expected_aggnonce,
-        s"\nFailed test: ${
-          test.comment.getOrElse(
-            "")
-        } expected=${test.expected_aggnonce.hex} got=${aggNonce.hex}"
+        s"\nFailed test: ${test.comment.getOrElse(
+            "")} expected=${test.expected_aggnonce.hex} got=${aggNonce.hex}"
       )
     }
 
@@ -116,9 +114,9 @@ class FrostTestVectors extends BitcoinSCryptoTest {
         message = vecs.msg
       )
       val result = FrostUtil.sign(secNonce = vecs.secnonce_p0,
-        secShare = vecs.secshare_p0,
-        myId = t.id_indices(t.signer_index),
-        sessionContext = sessionCtx)
+                                  secShare = vecs.secshare_p0,
+                                  myId = t.id_indices(t.signer_index),
+                                  sessionContext = sessionCtx)
       assert(
         result.bytes == t.expected,
         s"\nFailed test: ${t.comment.getOrElse("")} expected=${t.expected} got=${result.hex}")
@@ -153,9 +151,9 @@ class FrostTestVectors extends BitcoinSCryptoTest {
         )
         // Attempt to sign; any of the above steps may throw for malformed inputs
         FrostUtil.sign(secNonce = vecs.secnonce_p0,
-          secShare = vecs.secshare_p0,
-          myId = err.id_indices(err.signer_index),
-          sessionContext = sessionCtx)
+                       secShare = vecs.secshare_p0,
+                       myId = err.id_indices(err.signer_index),
+                       sessionContext = sessionCtx)
       }
     }
     succeed
@@ -359,42 +357,44 @@ class FrostTestVectors extends BitcoinSCryptoTest {
       )
 
       assert(signature == tc.expected,
-        s"\nFailed test: ${
-          tc.comment.getOrElse(
-            "")
-        } expected=${tc.expected} got=${signature.hex}")
+             s"\nFailed test: ${tc.comment.getOrElse(
+                 "")} expected=${tc.expected} got=${signature.hex}")
     }
 
     // Error test cases: ensure appropriate exceptions are raised when aggregating
-    //    vecs.error_test_cases.foreach { etc =>
-    //      assertThrows[Exception] {
-    //        val participantIds = etc.id_indices.map(vecs.identifiers(_).toLong)
-    //        val pubshares =
-    //          etc.pubshare_indices.map(vecs.pubshares(_)).map(ECPublicKey.fromBytes)
-    //        val pubnonces = etc.pubnonce_indices
-    //          .map(vecs.pubnonces(_))
-    //          .map(FrostNoncePub.fromBytes)
-    //
-    //        // construct session to validate that computing values will throw for invalid psigs
-    //        val signingContext = FrostSigningContext(
-    //          n = vecs.n,
-    //          t = vecs.t,
-    //          ids = participantIds,
-    //          pubshares = pubshares,
-    //          thresholdPubKey = vecs.threshold_pubkey
-    //        )
-    //
-    //        val sessionCtx = FrostSessionContext(
-    //          signingContext = signingContext,
-    //          aggNonce = FrostUtil.aggregateNonces(pubnonces, participantIds),
-    //          tweaks =
-    //            etc.tweak_indices.map(vecs.tweaks(_)).map(FieldElement.fromBytes),
-    //          isXOnly = etc.is_xonly,
-    //          message = vecs.msg
-    //        )
-    //        ???
-    //      }
-    //    }
+    vecs.error_test_cases.foreach { etc =>
+      assertThrows[IllegalArgumentException] {
+        val participantIds = etc.id_indices.map(vecs.identifiers(_).toLong)
+        val pubshares =
+          etc.pubshare_indices.map(vecs.pubshares(_)).map(ECPublicKey.fromBytes)
+        val pubnonces = etc.pubnonce_indices
+          .map(vecs.pubnonces(_))
+          .map(FrostNoncePub.fromBytes)
+
+        // construct session to validate that computing values will throw for invalid psigs
+        val signingContext = FrostSigningContext(
+          n = vecs.n,
+          t = vecs.t,
+          ids = participantIds,
+          pubshares = pubshares,
+          thresholdPubKey = vecs.threshold_pubkey
+        )
+
+        val sessionCtx = FrostSessionContext(
+          signingContext = signingContext,
+          aggNonce = FrostUtil.aggregateNonces(pubnonces, participantIds),
+          tweaks =
+            etc.tweak_indices.map(vecs.tweaks(_)).map(FieldElement.fromBytes),
+          isXOnly = etc.is_xonly,
+          message = vecs.msg
+        )
+        FrostUtil.partialSigAgg(
+          partialSigs = etc.psigs.map(FieldElement.fromBytes),
+          ids = participantIds,
+          sessionContext = sessionCtx
+        )
+      }
+    }
 
     succeed
   }
