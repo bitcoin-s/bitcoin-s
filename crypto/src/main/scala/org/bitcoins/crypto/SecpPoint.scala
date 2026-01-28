@@ -57,7 +57,7 @@ case class SecpPointFinite(x: CurveCoordinate, y: CurveCoordinate)
   }
 }
 
-object SecpPoint {
+object SecpPoint extends Factory[SecpPoint] {
 
   def fromPublicKey(key: ECPublicKey): SecpPointFinite = {
     val (x, y) = key.decompressedBytes.tail.splitAt(32)
@@ -82,5 +82,9 @@ object SecpPoint {
 
   def sum(points: Vector[SecpPoint]): SecpPoint = {
     points.reduce(_.add(_))
+  }
+
+  override def fromBytes(bytes: ByteVector): SecpPoint = {
+    CryptoUtil.decodePoint(bytes)
   }
 }
