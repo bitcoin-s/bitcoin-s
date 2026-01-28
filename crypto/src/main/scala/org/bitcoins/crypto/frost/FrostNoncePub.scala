@@ -37,12 +37,18 @@ case class FrostNoncePub(bytes: ByteVector) extends NetworkElement {
   require(bytes.length == 66,
           s"FrostNonceAgg must be 66 bytes, got: ${bytes.length}")
 
+  /** Helper function to parse [[SecpPointInfinity]] case as that is not a valid
+    * public key
+    */
+  private def parse(bytes: ByteVector): SecpPoint = {
+    SecpPoint.fromBytes(bytes)
+  }
   def r1: SecpPoint = {
-    ECPublicKey.fromBytes(bytes.slice(0, 33)).toPoint
+    parse(bytes.take(33))
   }
 
   def r2: SecpPoint = {
-    ECPublicKey.fromBytes(bytes.slice(33, 66)).toPoint
+    parse(bytes.takeRight(33))
   }
 }
 

@@ -69,7 +69,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
         testCases.pubnonces(idx)
       }
 
-      assertThrows[IllegalArgumentException] {
+      assertThrows[Exception] {
         FrostUtil.aggregateNonces(
           pubnonces = pubnoncesToAgg.map(FrostNoncePub.fromBytes),
           participantIdentifiers = test.participant_identifiers
@@ -170,7 +170,6 @@ class FrostTestVectors extends BitcoinSCryptoTest {
 
     // Valid sign test cases
     vecs.valid_test_cases.foreach { t =>
-      println(s"running test: ${t.comment.getOrElse("")}")
       val participantIds = t.id_indices.map(vecs.identifiers(_).toLong)
       val pubshares =
         t.pubshare_indices.map(vecs.pubshares(_)).map(ECPublicKey.fromBytes)
