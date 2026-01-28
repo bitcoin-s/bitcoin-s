@@ -1,10 +1,11 @@
 package org.bitcoins.crypto.frost
-import org.bitcoins.crypto.{BitcoinSCryptoTest, ECPublicKey, FieldElement}
+
 import org.bitcoins.crypto.frost.FrostJson.*
+import org.bitcoins.crypto.{BitcoinSCryptoTest, ECPublicKey, FieldElement}
 import play.api.libs.json.Json
 
 import scala.io.Source
-import scala.util.Using
+import scala.util.{Try, Using}
 
 class FrostTestVectors extends BitcoinSCryptoTest {
   behavior of "FrostTestVectors"
@@ -210,94 +211,106 @@ class FrostTestVectors extends BitcoinSCryptoTest {
     }
 
     // Sign error test cases: ensure expected errors are raised
-//    vecs.sign_error_test_cases.foreach { err =>
-//      assertThrows[IllegalArgumentException] {
-//        val participantIds = err.id_indices.map(vecs.identifiers(_).toLong)
-//        val pubshares = err.pubshare_indices.map(vecs.pubshares(_)).map(ECPublicKey.fromBytes)
-//        val aggNonce = FrostNoncePub.fromBytes(vecs.aggnonces(err.aggnonce_index))
-//        val secnonceOpt = err.secnonce_index.flatMap(idx => vecs.secnonces_p0.lift(idx))
-//        val signingContext = FrostSigningContext(
-//          n = vecs.n,
-//          t = vecs.t,
-//          ids = participantIds,
-//          pubshares = pubshares,
-//          thresholdPubKey = vecs.threshold_pubkey
-//        )
-//        val sessionCtx = FrostSessionContext(
-//          signingContext = signingContext,
-//          aggNonce = aggNonce,
-//          tweaks = Vector.empty,
-//          isXOnly = Vector.empty,
-//          message = vecs.msgs(err.msg_index)
-//        )
-//        // Attempt to sign (may throw earlier during construction)
-//        FrostUtil.sign(
-//          secNonce = secnonceOpt.getOrElse(vecs.secnonces_p0.head),
-//          secShare = FieldElement.fromBytes(vecs.secshare_p0),
-//          myId = err.signer_id.map(_.toLong).getOrElse(vecs.identifiers(err.signer_index).toLong),
-//          sessionContext = sessionCtx
-//        )
-//      }
-//    }
-//
-//    // Verify-fail test cases: partialSigVerify should return false
-//    vecs.verify_fail_test_cases.foreach { vtc =>
-//      val participantIds = vtc.id_indices.map(vecs.identifiers(_).toLong)
-//      val pubshares = vtc.pubshare_indices.map(vecs.pubshares(_)).map(ECPublicKey.fromBytes)
-//      val pubnonces = vtc.pubnonce_indices.map(vecs.pubnonces(_)).map(FrostNoncePub.fromBytes)
-//      val msg = vecs.msgs(vtc.msg_index)
-//      val psig = FieldElement.fromBytes(vtc.psig)
-//
-//      val signingContext = FrostSigningContext(
-//        n = vecs.n,
-//        t = vecs.t,
-//        ids = participantIds,
-//        pubshares = pubshares,
-//        thresholdPubKey = vecs.threshold_pubkey
-//      )
-//
-//      val result = FrostUtil.partialSigVerify(
-//        partialSig = psig,
-//        pubnonces = pubnonces,
-//        signersContext = signingContext,
-//        tweaks = Vector.empty,
-//        isXonlyT = Vector.empty,
-//        message = msg,
-//        i = participantIds.head
-//      )
-//
-//      assert(!result, s"Expected verification to fail for test: ${vtc.comment}")
-//    }
-//
-//    // Verify error test cases: ensure expected errors are raised
-//    vecs.verify_error_test_cases.foreach { etc =>
-//      assertThrows[IllegalArgumentException] {
-//        val participantIds = etc.id_indices.map(vecs.identifiers(_).toLong)
-//        val pubshares = etc.pubshare_indices.map(vecs.pubshares(_)).map(ECPublicKey.fromBytes)
-//        val pubnonces = etc.pubnonce_indices.map(vecs.pubnonces(_)).map(FrostNoncePub.fromBytes)
-//        val msg = vecs.msgs(etc.msg_index)
-//        val psig = FieldElement.fromBytes(etc.psig)
-//
-//        val signingContext = FrostSigningContext(
-//          n = vecs.n,
-//          t = vecs.t,
-//          ids = participantIds,
-//          pubshares = pubshares,
-//          thresholdPubKey = vecs.threshold_pubkey
-//        )
-//
-//        // Attempt to verify - underlying functions should throw for malformed inputs
-//        FrostUtil.partialSigVerify(
-//          partialSig = psig,
-//          pubnonces = pubnonces,
-//          signersContext = signingContext,
-//          tweaks = Vector.empty,
-//          isXonlyT = Vector.empty,
-//          message = msg,
-//          i = participantIds.head
-//        )
-//      }
-//    }
+    vecs.sign_error_test_cases.foreach { err =>
+      assertThrows[Exception] {
+        val participantIds = err.id_indices.map(vecs.identifiers(_).toLong)
+        val pubshares =
+          err.pubshare_indices.map(vecs.pubshares(_)).map(ECPublicKey.fromBytes)
+        val aggNonce =
+          FrostNoncePub.fromBytes(vecs.aggnonces(err.aggnonce_index))
+        val secnonceOpt =
+          err.secnonce_index.flatMap(idx => vecs.secnonces_p0.lift(idx))
+        val signingContext = FrostSigningContext(
+          n = vecs.n,
+          t = vecs.t,
+          ids = participantIds,
+          pubshares = pubshares,
+          thresholdPubKey = vecs.threshold_pubkey
+        )
+        val sessionCtx = FrostSessionContext(
+          signingContext = signingContext,
+          aggNonce = aggNonce,
+          tweaks = Vector.empty,
+          isXOnly = Vector.empty,
+          message = vecs.msgs(err.msg_index)
+        )
+        // Attempt to sign (may throw earlier during construction)
+        FrostUtil.sign(
+          secNonce = secnonceOpt.getOrElse(vecs.secnonces_p0.head),
+          secShare = FieldElement.fromBytes(vecs.secshare_p0),
+          myId = err.signer_id
+            .map(_.toLong)
+            .getOrElse(vecs.identifiers(err.signer_index.getOrElse(-1)).toLong),
+          sessionContext = sessionCtx
+        )
+      }
+    }
+
+    // Verify-fail test cases: partialSigVerify should return false
+    vecs.verify_fail_test_cases.foreach { vtc =>
+      val participantIds = vtc.id_indices.map(vecs.identifiers(_).toLong)
+      val pubshares =
+        vtc.pubshare_indices.map(vecs.pubshares(_)).map(ECPublicKey.fromBytes)
+      val pubnonces =
+        vtc.pubnonce_indices.map(vecs.pubnonces(_)).map(FrostNoncePub.fromBytes)
+      val msg = vecs.msgs(vtc.msg_index)
+      val result = Try {
+        val psig = FieldElement.fromBytes(vtc.psig)
+
+        val signingContext = FrostSigningContext(
+          n = vecs.n,
+          t = vecs.t,
+          ids = participantIds,
+          pubshares = pubshares,
+          thresholdPubKey = vecs.threshold_pubkey
+        )
+
+        FrostUtil.partialSigVerify(
+          partialSig = psig,
+          pubnonces = pubnonces,
+          signersContext = signingContext,
+          tweaks = Vector.empty,
+          isXonlyT = Vector.empty,
+          message = msg,
+          i = participantIds(vtc.signer_index)
+        )
+      }.getOrElse(false)
+
+      assert(!result, s"Expected verification to fail for test: ${vtc.comment}")
+    }
+
+    // Verify error test cases: ensure expected errors are raised
+    vecs.verify_error_test_cases.foreach { etc =>
+      assertThrows[Exception] {
+        val participantIds = etc.id_indices.map(vecs.identifiers(_).toLong)
+        val pubshares =
+          etc.pubshare_indices.map(vecs.pubshares(_)).map(ECPublicKey.fromBytes)
+        val pubnonces = etc.pubnonce_indices
+          .map(vecs.pubnonces(_))
+          .map(FrostNoncePub.fromBytes)
+        val msg = vecs.msgs(etc.msg_index)
+        val psig = FieldElement.fromBytes(etc.psig)
+
+        val signingContext = FrostSigningContext(
+          n = vecs.n,
+          t = vecs.t,
+          ids = participantIds,
+          pubshares = pubshares,
+          thresholdPubKey = vecs.threshold_pubkey
+        )
+
+        // Attempt to verify - underlying functions should throw for malformed inputs
+        FrostUtil.partialSigVerify(
+          partialSig = psig,
+          pubnonces = pubnonces,
+          signersContext = signingContext,
+          tweaks = Vector.empty,
+          isXonlyT = Vector.empty,
+          message = msg,
+          i = participantIds.head
+        )
+      }
+    }
 
     succeed
   }
