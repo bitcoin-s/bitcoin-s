@@ -1,15 +1,23 @@
 package org.bitcoins.crypto.frost
-import play.api.libs.json.*
-import play.api.libs.functional.syntax.*
-import scodec.bits.ByteVector
+
 import org.bitcoins.commons.serializers.JsonReaders.{
   ECPublicKeyReads,
+  FieldElementReads,
   FrostNoncePrivReads,
   FrostNoncePubReads,
-  XOnlyPubKeyReads,
-  FieldElementReads
+  SchnorrDigitalSignatureReads,
+  XOnlyPubKeyReads
 }
-import org.bitcoins.crypto.{ECPublicKey, FieldElement, XOnlyPubKey}
+import org.bitcoins.crypto.{
+  ECPublicKey,
+  FieldElement,
+  SchnorrDigitalSignature,
+  XOnlyPubKey
+}
+import play.api.libs.functional.syntax.*
+import play.api.libs.json.*
+import scodec.bits.ByteVector
+
 object FrostJson {
 
   // Local ByteVector reader (accepts empty string as empty ByteVector).
@@ -31,6 +39,7 @@ object FrostJson {
   }
 
   case class NonceGenTestVectors(test_cases: Vector[NonceGenTestVector])
+
   case class NonceGenTestVector(
       rand: ByteVector,
       secshare: Option[ByteVector],
@@ -42,6 +51,7 @@ object FrostJson {
       expected_pubnonce: FrostNoncePub,
       comment: String
   )
+
   implicit val nonceGenTestVectorReads: Reads[NonceGenTestVector] = (
     (__ \ "rand_").read[ByteVector] and
       (__ \ "secshare").readNullable[ByteVector] and
@@ -337,4 +347,95 @@ object FrostJson {
         .map(_.toVector) and
       (__ \ "error_test_cases").read[Seq[TweakErrorTestCase]].map(_.toVector)
   )(TweakVectors.apply _)
+
+  // --- Sig aggregation vectors ---
+  case class SigAggValidTestCase(
+      id_indices: Vector[Int],
+      pubshare_indices: Vector[Int],
+      pubnonce_indices: Vector[Int],
+      aggnonce: ByteVector,
+      tweak_indices: Vector[Int],
+      is_xonly: Vector[Boolean],
+      psigs: Vector[ByteVector],
+      expected: SchnorrDigitalSignature,
+      comment: Option[String]
+  )
+
+  case class SigAggError(
+      `type`: String,
+      message: Option[String],
+      id: Option[Int],
+      contrib: Option[String]
+  )
+
+  case class SigAggErrorTestCase(
+      id_indices: Vector[Int],
+      pubshare_indices: Vector[Int],
+      pubnonce_indices: Vector[Int],
+      aggnonce: ByteVector,
+      tweak_indices: Vector[Int],
+      is_xonly: Vector[Boolean],
+      psigs: Vector[ByteVector],
+      error: SigAggError,
+      comment: Option[String]
+  )
+
+  implicit val sigAggValidReads: Reads[SigAggValidTestCase] = (
+    (__ \ "id_indices").read[Seq[Int]].map(_.toVector) and
+      (__ \ "pubshare_indices").read[Seq[Int]].map(_.toVector) and
+      (__ \ "pubnonce_indices").read[Seq[Int]].map(_.toVector) and
+      (__ \ "aggnonce").read[ByteVector] and
+      (__ \ "tweak_indices").read[Seq[Int]].map(_.toVector) and
+      (__ \ "is_xonly").read[Seq[Boolean]].map(_.toVector) and
+      (__ \ "psigs").read[Seq[ByteVector]].map(_.toVector) and
+      (__ \ "expected").read[SchnorrDigitalSignature] and
+      (__ \ "comment").readNullable[String]
+  )(SigAggValidTestCase.apply _)
+
+  implicit val sigAggErrorReads: Reads[SigAggError] = (
+    (__ \ "type").read[String] and
+      (__ \ "message").readNullable[String] and
+      (__ \ "id").readNullable[Int] and
+      (__ \ "contrib").readNullable[String]
+  )(SigAggError.apply _)
+
+  implicit val sigAggErrorTestCaseReads: Reads[SigAggErrorTestCase] = (
+    (__ \ "id_indices").read[Seq[Int]].map(_.toVector) and
+      (__ \ "pubshare_indices").read[Seq[Int]].map(_.toVector) and
+      (__ \ "pubnonce_indices").read[Seq[Int]].map(_.toVector) and
+      (__ \ "aggnonce").read[ByteVector] and
+      (__ \ "tweak_indices").read[Seq[Int]].map(_.toVector) and
+      (__ \ "is_xonly").read[Seq[Boolean]].map(_.toVector) and
+      (__ \ "psigs").read[Seq[ByteVector]].map(_.toVector) and
+      (__ \ "error").read[SigAggError] and
+      (__ \ "comment").readNullable[String]
+  )(SigAggErrorTestCase.apply _)
+
+  case class SigAggVectors(
+      n: Int,
+      t: Int,
+      threshold_pubkey: ECPublicKey,
+      identifiers: Vector[Int],
+      pubshares: Vector[ByteVector],
+      pubnonces: Vector[ByteVector],
+      tweaks: Vector[ByteVector],
+      msg: ByteVector,
+      valid_test_cases: Vector[SigAggValidTestCase],
+      error_test_cases: Vector[SigAggErrorTestCase]
+  )
+
+  implicit val sigAggVectorsReads: Reads[SigAggVectors] = (
+    (__ \ "n").read[Int] and
+      (__ \ "t").read[Int] and
+      (__ \ "threshold_pubkey").read[ECPublicKey] and
+      (__ \ "identifiers").read[Seq[Int]].map(_.toVector) and
+      (__ \ "pubshares").read[Seq[ByteVector]].map(_.toVector) and
+      (__ \ "pubnonces").read[Seq[ByteVector]].map(_.toVector) and
+      (__ \ "tweaks").read[Seq[ByteVector]].map(_.toVector) and
+      (__ \ "msg").read[ByteVector] and
+      (__ \ "valid_test_cases")
+        .read[Seq[SigAggValidTestCase]]
+        .map(_.toVector) and
+      (__ \ "error_test_cases").read[Seq[SigAggErrorTestCase]].map(_.toVector)
+  )(SigAggVectors.apply _)
 }

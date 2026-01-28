@@ -1,17 +1,7 @@
 package org.bitcoins.crypto.frost
 
+import org.bitcoins.crypto.*
 import org.bitcoins.crypto.musig.{Neg, Pos}
-import org.bitcoins.crypto.{
-  CryptoParams,
-  CryptoUtil,
-  ECPublicKey,
-  EvenParity,
-  FieldElement,
-  OddParity,
-  SecpPoint,
-  SecpPointInfinity,
-  XOnlyPubKey
-}
 import scodec.bits.ByteVector
 
 object FrostUtil {
@@ -266,5 +256,31 @@ object FrostUtil {
     val expectedS: SecpPoint = re
       .add(gPrime.modify(inner).toPoint)
     expectedS == actualS
+  }
+
+  def partialSigAgg(
+      partialSigs: Vector[FieldElement],
+      ids: Vector[Long],
+      sessionContext: FrostSessionContext): SchnorrDigitalSignature = {
+    require(
+      partialSigs.length == ids.length,
+      s"Number of partial signatures (${partialSigs.length}) must match number of participant identifiers (${ids.length})"
+    )
+    val values = sessionContext.getSessionValues
+    val sAgg = partialSigs.foldLeft(FieldElement.zero) { case (acc, sig) =>
+      acc.add(sig)
+    }
+    val g = values.Q.toPublicKey.parity match {
+      case EvenParity => Pos
+      case OddParity  => Neg
+    }
+    // s + e * g * tacc
+    val eGTacc = g
+      .modify(values.tacc)
+      .multiply(values.e)
+    val s = sAgg
+      .add(eGTacc)
+    val schnorrNonce = SchnorrNonce.apply(values.R.x)
+    new SchnorrDigitalSignature(schnorrNonce, s, hashTypeOpt = None)
   }
 }
