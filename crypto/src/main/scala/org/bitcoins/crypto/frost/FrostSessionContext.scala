@@ -64,7 +64,7 @@ case class FrostSessionContext(
     require(e != FieldElement.zero,
             s"Computed challenge 'e' cannot be zero in FROST signing session")
     FrostSessionValues(tweakCtx = tweakCtx,
-                       ids = signingContext.ids.sorted,
+                       ids = signingContext.ids,
                        pubshares = signingContext.pubshares,
                        b = b,
                        R = r.toPoint,
