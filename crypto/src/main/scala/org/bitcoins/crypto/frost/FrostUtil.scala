@@ -18,6 +18,25 @@ object FrostUtil {
     CryptoUtil.taggedSha256(bytes, "FROST/noncecoef").bytes
   }
 
+  def hashFrostDeterministicNonce(bytes: ByteVector): ByteVector = {
+    CryptoUtil.taggedSha256(bytes, "FROST/deterministic/nonce").bytes
+  }
+
+  def hashFrostDeterministicNonce(
+      secshare: FieldElement,
+      aggOtherNonce: FrostNoncePub,
+      tweakThresholdPubKey: XOnlyPubKey,
+      message: ByteVector,
+      i: Byte): ByteVector = {
+    val b = secshare.bytes ++
+      aggOtherNonce.bytes ++
+      tweakThresholdPubKey.bytes ++
+      ByteVector.fromLong(message.length, 8) ++
+      message ++
+      ByteVector.fromByte(i)
+    hashFrostDeterministicNonce(b)
+  }
+
   def nonceGen(
       rand: ByteVector,
       secshare: Option[ByteVector],
@@ -282,5 +301,68 @@ object FrostUtil {
       .add(eGTacc)
     val schnorrNonce = SchnorrNonce.apply(values.R.x)
     new SchnorrDigitalSignature(schnorrNonce, s, hashTypeOpt = None)
+  }
+
+  val COORDINATOR_ID: Long = 1337L
+
+  def deterministicSign(
+      secshare: FieldElement,
+      myId: Long,
+      aggOtherNonce: FrostNoncePub,
+      signersContext: FrostSigningContext,
+      tweaks: Vector[FieldElement],
+      isXOnly: Vector[Boolean],
+      message: ByteVector,
+      auxRandOpt: Option[FieldElement]): (FrostNoncePub, FieldElement) = {
+    val secsharePrime = auxRandOpt match {
+      case Some(auxRand) =>
+        val b = secshare.bytes.xor(hashFrostAux(auxRand.bytes))
+        FieldElement.fromBytes(b)
+      case None => secshare
+    }
+    val initTweakCtx = FrostTweakContext(signersContext.thresholdPubKey)
+    val tweakCtx =
+      1.to(tweaks.length).foldLeft(initTweakCtx) { case (tweakCtx, i) =>
+        tweakCtx.applyTweak(tweaks(i - 1), isXOnly(i - 1))
+      }
+    val tweakedThresholdPubKey = tweakCtx.getXOnlyPubKey
+    val preimages: Vector[FieldElement] = 0
+      .until(2)
+      .map { i =>
+        hashFrostDeterministicNonce(secsharePrime,
+                                    aggOtherNonce,
+                                    tweakedThresholdPubKey,
+                                    message,
+                                    i.toByte)
+      }
+      .toVector
+      .map(FieldElement.fromBytes)
+    require(!preimages.contains(FieldElement.zero),
+            "Derived nonce preimage cannot be zero")
+    val r1: ECPublicKey = CryptoParams.getG.multiply(preimages.head)
+    val r2: ECPublicKey = CryptoParams.getG.multiply(preimages(1))
+    require(CryptoUtil.decodePoint(r1) != SecpPointInfinity)
+    require(CryptoUtil.decodePoint(r2) != SecpPointInfinity)
+    val myPubShare = CryptoParams.getG.multiply(secsharePrime)
+    val pubNonce = FrostNoncePub(r1.bytes ++ r2.bytes)
+    require(
+      signersContext.pubshares.contains(myPubShare),
+      s"Public share $myPubShare derived from secret share does not exist in the signing context pubshares: ${signersContext.pubshares}"
+    )
+    val secNonce = FrostNoncePriv(preimages.head.bytes ++ preimages(1).bytes)
+    val aggNonce = aggregateNonces(Vector(pubNonce, aggOtherNonce),
+                                   Vector(myId, COORDINATOR_ID))
+    val sessionCtx = FrostSessionContext(
+      signingContext = signersContext,
+      aggNonce = aggNonce,
+      tweaks = tweaks,
+      isXOnly = isXOnly,
+      message = message
+    )
+    val sig = sign(secNonce = secNonce,
+                   secShare = secshare,
+                   myId = myId,
+                   sessionContext = sessionCtx)
+    (aggNonce, sig)
   }
 }

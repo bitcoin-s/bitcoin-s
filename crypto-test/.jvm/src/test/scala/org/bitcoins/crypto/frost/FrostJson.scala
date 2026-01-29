@@ -438,4 +438,90 @@ object FrostJson {
         .map(_.toVector) and
       (__ \ "error_test_cases").read[Seq[SigAggErrorTestCase]].map(_.toVector)
   )(SigAggVectors.apply _)
+
+  // --- Deterministic signing vectors (det_sign_vectors.json) ---
+  case class DetSignValidTestCase(
+      rand: Option[FieldElement],
+      aggothernonce: FrostNoncePub,
+      id_indices: Vector[Int],
+      pubshare_indices: Vector[Int],
+      tweaks: Vector[FieldElement],
+      is_xonly: Vector[Boolean],
+      msg_index: Int,
+      signer_index: Int,
+      expected: Vector[ByteVector],
+      comment: Option[String]
+  ) {
+    def expectedAggNonce: FrostNoncePub = FrostNoncePub.fromBytes(expected.head)
+
+    def expectedSignature: FieldElement = FieldElement.fromBytes(expected(1))
+  }
+
+  case class DetSignErrorTestCase(
+      rand: Option[ByteVector],
+      aggothernonce: ByteVector,
+      id_indices: Vector[Int],
+      pubshare_indices: Vector[Int],
+      tweaks: Vector[ByteVector],
+      is_xonly: Vector[Boolean],
+      msg_index: Int,
+      signer_index: Option[Int],
+      signer_id: Option[Int],
+      error: SignError,
+      comment: Option[String]
+  )
+
+  case class DetSignVectors(
+      n: Int,
+      t: Int,
+      threshold_pubkey: ECPublicKey,
+      secshare_p0: FieldElement,
+      identifiers: Vector[Int],
+      pubshares: Vector[ByteVector],
+      msgs: Vector[ByteVector],
+      valid_test_cases: Vector[DetSignValidTestCase],
+      error_test_cases: Vector[DetSignErrorTestCase]
+  )
+
+  implicit val detSignValidReads: Reads[DetSignValidTestCase] = (
+    (__ \ "rand").readNullable[FieldElement] and
+      (__ \ "aggothernonce").read[FrostNoncePub] and
+      (__ \ "id_indices").read[Seq[Int]].map(_.toVector) and
+      (__ \ "pubshare_indices").read[Seq[Int]].map(_.toVector) and
+      (__ \ "tweaks").read[Seq[FieldElement]].map(_.toVector) and
+      (__ \ "is_xonly").read[Seq[Boolean]].map(_.toVector) and
+      (__ \ "msg_index").read[Int] and
+      (__ \ "signer_index").read[Int] and
+      (__ \ "expected").read[Seq[ByteVector]].map(_.toVector) and
+      (__ \ "comment").readNullable[String]
+  )(DetSignValidTestCase.apply _)
+
+  implicit val detSignErrorReads: Reads[DetSignErrorTestCase] = (
+    (__ \ "rand").readNullable[ByteVector] and
+      (__ \ "aggothernonce").read[ByteVector] and
+      (__ \ "id_indices").read[Seq[Int]].map(_.toVector) and
+      (__ \ "pubshare_indices").read[Seq[Int]].map(_.toVector) and
+      (__ \ "tweaks").read[Seq[ByteVector]].map(_.toVector) and
+      (__ \ "is_xonly").read[Seq[Boolean]].map(_.toVector) and
+      (__ \ "msg_index").read[Int] and
+      (__ \ "signer_index").readNullable[Int] and
+      (__ \ "signer_id").readNullable[Int] and
+      (__ \ "error").read[SignError] and
+      (__ \ "comment").readNullable[String]
+  )(DetSignErrorTestCase.apply _)
+
+  implicit val detSignVectorsReads: Reads[DetSignVectors] = (
+    (__ \ "n").read[Int] and
+      (__ \ "t").read[Int] and
+      (__ \ "threshold_pubkey").read[ECPublicKey] and
+      (__ \ "secshare_p0").read[FieldElement] and
+      (__ \ "identifiers").read[Seq[Int]].map(_.toVector) and
+      (__ \ "pubshares").read[Seq[ByteVector]].map(_.toVector) and
+      (__ \ "msgs").read[Seq[ByteVector]].map(_.toVector) and
+      (__ \ "valid_test_cases")
+        .read[Seq[DetSignValidTestCase]]
+        .map(_.toVector) and
+      (__ \ "error_test_cases").read[Seq[DetSignErrorTestCase]].map(_.toVector)
+  )(DetSignVectors.apply _)
+
 }

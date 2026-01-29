@@ -398,4 +398,47 @@ class FrostTestVectors extends BitcoinSCryptoTest {
 
     succeed
   }
+
+  it must "pass det_sign_vectors.json" in {
+    val fileName = "/det_sign_vectors.json"
+    val lines = Using(Source.fromURL(getClass.getResource(fileName))) {
+      source =>
+        source.mkString
+    }.get
+
+    val json = Json.parse(lines)
+
+    val vecs = json.validate[DetSignVectors].get
+
+    // Validate first valid test case shape if present
+    vecs.valid_test_cases.headOption.foreach { tc =>
+      val signersContext = {
+        val participantIds = tc.id_indices.map(vecs.identifiers(_).toLong)
+        val pubshares =
+          tc.pubshare_indices.map(vecs.pubshares(_)).map(ECPublicKey.fromBytes)
+
+        FrostSigningContext(
+          n = vecs.n,
+          t = vecs.t,
+          ids = participantIds,
+          pubshares = pubshares,
+          thresholdPubKey = vecs.threshold_pubkey
+        )
+      }
+      val (x, y) = FrostUtil.deterministicSign(vecs.secshare_p0,
+                                               tc.id_indices(tc.signer_index),
+                                               tc.aggothernonce,
+                                               signersContext = signersContext,
+                                               tc.tweaks,
+                                               tc.is_xonly,
+                                               vecs.msgs(tc.msg_index),
+                                               tc.rand)
+
+      assert(x == tc.expectedAggNonce)
+      assert(y == tc.expectedSignature)
+
+    }
+
+    succeed
+  }
 }
