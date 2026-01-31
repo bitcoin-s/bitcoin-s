@@ -109,7 +109,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
           addrF.map {
             case Some(addr) =>
               fail(
-                s"Found ${addr.address} $chain address although there was no previous addreses generated"
+                s"Found ${addr.address} $chain address although there was no previous addresses generated"
               )
             case None =>
           }

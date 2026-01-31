@@ -407,7 +407,7 @@ case class AccountHandling(
       account: AccountDb,
       chainType: HDChainType
   ): DBIOAction[AddressDb, NoStream, Effect.Read] = {
-    logger.debug(s"Getting new $chainType adddress for ${account.hdAccount}")
+    logger.debug(s"Getting new $chainType address for ${account.hdAccount}")
 
     val lastAddrOptA = chainType match {
       case HDChainType.External =>
