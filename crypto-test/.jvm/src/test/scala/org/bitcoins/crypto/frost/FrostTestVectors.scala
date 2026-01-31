@@ -411,7 +411,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
     val vecs = json.validate[DetSignVectors].get
 
     // Validate first valid test case shape if present
-    vecs.valid_test_cases.headOption.foreach { tc =>
+    vecs.valid_test_cases.foreach { tc =>
       val signersContext = {
         val participantIds = tc.id_indices.map(vecs.identifiers(_).toLong)
         val pubshares =
@@ -437,6 +437,36 @@ class FrostTestVectors extends BitcoinSCryptoTest {
       assert(x == tc.expectedAggNonce)
       assert(y == tc.expectedSignature)
 
+    }
+
+    vecs.error_test_cases.foreach { etc =>
+      assertThrows[IllegalArgumentException] {
+        val signersContext = {
+          val participantIds = etc.id_indices.map(vecs.identifiers(_).toLong)
+          val pubshares =
+            etc.pubshare_indices
+              .map(vecs.pubshares(_))
+              .map(ECPublicKey.fromBytes)
+
+          FrostSigningContext(
+            n = vecs.n,
+            t = vecs.t,
+            ids = participantIds,
+            pubshares = pubshares,
+            thresholdPubKey = vecs.threshold_pubkey
+          )
+        }
+        FrostUtil.deterministicSign(
+          secshare = vecs.secshare_p0,
+          myId = etc.id_indices(etc.signer_index.getOrElse(0)),
+          aggOtherNonce = etc.aggothernonce,
+          signersContext = signersContext,
+          tweaks = etc.tweaks,
+          isXOnly = etc.is_xonly,
+          message = vecs.msgs(etc.msg_index),
+          auxRandOpt = etc.rand
+        )
+      }
     }
 
     succeed

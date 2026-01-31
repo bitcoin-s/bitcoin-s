@@ -458,11 +458,11 @@ object FrostJson {
   }
 
   case class DetSignErrorTestCase(
-      rand: Option[ByteVector],
-      aggothernonce: ByteVector,
+      rand: Option[FieldElement],
+      aggothernonce: FrostNoncePub,
       id_indices: Vector[Int],
       pubshare_indices: Vector[Int],
-      tweaks: Vector[ByteVector],
+      tweaks: Vector[FieldElement],
       is_xonly: Vector[Boolean],
       msg_index: Int,
       signer_index: Option[Int],
@@ -497,11 +497,11 @@ object FrostJson {
   )(DetSignValidTestCase.apply _)
 
   implicit val detSignErrorReads: Reads[DetSignErrorTestCase] = (
-    (__ \ "rand").readNullable[ByteVector] and
-      (__ \ "aggothernonce").read[ByteVector] and
+    (__ \ "rand").readNullable[FieldElement] and
+      (__ \ "aggothernonce").read[FrostNoncePub] and
       (__ \ "id_indices").read[Seq[Int]].map(_.toVector) and
       (__ \ "pubshare_indices").read[Seq[Int]].map(_.toVector) and
-      (__ \ "tweaks").read[Seq[ByteVector]].map(_.toVector) and
+      (__ \ "tweaks").read[Seq[FieldElement]].map(_.toVector) and
       (__ \ "is_xonly").read[Seq[Boolean]].map(_.toVector) and
       (__ \ "msg_index").read[Int] and
       (__ \ "signer_index").readNullable[Int] and
