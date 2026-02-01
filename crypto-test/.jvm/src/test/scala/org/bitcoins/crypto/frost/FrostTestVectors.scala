@@ -59,8 +59,10 @@ class FrostTestVectors extends BitcoinSCryptoTest {
       )
       assert(
         aggNonce == test.expected_aggnonce,
-        s"\nFailed test: ${test.comment.getOrElse(
-            "")} expected=${test.expected_aggnonce.hex} got=${aggNonce.hex}"
+        s"\nFailed test: ${
+          test.comment.getOrElse(
+            "")
+        } expected=${test.expected_aggnonce.hex} got=${aggNonce.hex}"
       )
     }
 
@@ -114,9 +116,9 @@ class FrostTestVectors extends BitcoinSCryptoTest {
         message = vecs.msg
       )
       val result = FrostUtil.sign(secNonce = vecs.secnonce_p0,
-                                  secShare = vecs.secshare_p0,
-                                  myId = t.id_indices(t.signer_index),
-                                  sessionContext = sessionCtx)
+        secShare = vecs.secshare_p0,
+        myId = t.id_indices(t.signer_index),
+        sessionContext = sessionCtx)
       assert(
         result.bytes == t.expected,
         s"\nFailed test: ${t.comment.getOrElse("")} expected=${t.expected} got=${result.hex}")
@@ -151,9 +153,9 @@ class FrostTestVectors extends BitcoinSCryptoTest {
         )
         // Attempt to sign; any of the above steps may throw for malformed inputs
         FrostUtil.sign(secNonce = vecs.secnonce_p0,
-                       secShare = vecs.secshare_p0,
-                       myId = err.id_indices(err.signer_index),
-                       sessionContext = sessionCtx)
+          secShare = vecs.secshare_p0,
+          myId = err.id_indices(err.signer_index),
+          sessionContext = sessionCtx)
       }
     }
     succeed
@@ -357,8 +359,10 @@ class FrostTestVectors extends BitcoinSCryptoTest {
       )
 
       assert(signature == tc.expected,
-             s"\nFailed test: ${tc.comment.getOrElse(
-                 "")} expected=${tc.expected} got=${signature.hex}")
+        s"\nFailed test: ${
+          tc.comment.getOrElse(
+            "")
+        } expected=${tc.expected} got=${signature.hex}")
     }
 
     // Error test cases: ensure appropriate exceptions are raised when aggregating
@@ -426,13 +430,13 @@ class FrostTestVectors extends BitcoinSCryptoTest {
         )
       }
       val (x, y) = FrostUtil.deterministicSign(vecs.secshare_p0,
-                                               tc.id_indices(tc.signer_index),
-                                               tc.aggothernonce,
-                                               signersContext = signersContext,
-                                               tc.tweaks,
-                                               tc.is_xonly,
-                                               vecs.msgs(tc.msg_index),
-                                               tc.rand)
+        tc.id_indices(tc.signer_index),
+        tc.aggothernonce,
+        signersContext = signersContext,
+        tc.tweaks,
+        tc.is_xonly,
+        vecs.msgs(tc.msg_index),
+        tc.rand)
 
       assert(x == tc.expectedAggNonce)
       assert(y == tc.expectedSignature)
@@ -440,7 +444,6 @@ class FrostTestVectors extends BitcoinSCryptoTest {
     }
 
     vecs.error_test_cases.foreach { etc =>
-      println(s"Running error test case: ${etc.comment.getOrElse("")}")
       assertThrows[Exception] {
         val signersContext = {
           val participantIds = etc.id_indices.map(vecs.identifiers(_).toLong)
@@ -457,7 +460,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
             thresholdPubKey = vecs.threshold_pubkey
           )
         }
-        FrostUtil.deterministicSign(
+        val result = FrostUtil.deterministicSign(
           secshare = vecs.secshare_p0,
           myId = etc.id_indices(etc.signer_index.getOrElse(0)),
           aggOtherNonce = etc.aggothernonce,
