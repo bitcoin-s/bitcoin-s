@@ -100,6 +100,9 @@ object FrostUtil {
         } else {
           z._1.r2
         }
+        require(
+          nonce != SecpPointInfinity,
+          s"Nonce at index $idx for participant id ${z._2} is the point at infinity")
         nonce
       }
       val agg: SecpPoint = points.reduce[SecpPoint] { (a, b) =>
