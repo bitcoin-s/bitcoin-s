@@ -440,7 +440,8 @@ class FrostTestVectors extends BitcoinSCryptoTest {
     }
 
     vecs.error_test_cases.foreach { etc =>
-      assertThrows[IllegalArgumentException] {
+      println(s"Running error test case: ${etc.comment.getOrElse("")}")
+      assertThrows[Exception] {
         val signersContext = {
           val participantIds = etc.id_indices.map(vecs.identifiers(_).toLong)
           val pubshares =

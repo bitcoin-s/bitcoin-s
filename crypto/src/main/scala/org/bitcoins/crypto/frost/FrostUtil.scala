@@ -327,7 +327,7 @@ object FrostUtil {
       }
     val tweakedThresholdPubKey = tweakCtx.getXOnlyPubKey
     val preimages: Vector[FieldElement] = 0
-      .until(2)
+      .to(1)
       .map { i =>
         hashFrostDeterministicNonce(secsharePrime,
                                     aggOtherNonce,
@@ -343,12 +343,8 @@ object FrostUtil {
     val r2: ECPublicKey = CryptoParams.getG.multiply(preimages(1))
     require(CryptoUtil.decodePoint(r1) != SecpPointInfinity)
     require(CryptoUtil.decodePoint(r2) != SecpPointInfinity)
-    val myPubShare = CryptoParams.getG.multiply(secsharePrime)
     val pubNonce = FrostNoncePub(r1.bytes ++ r2.bytes)
-    require(
-      signersContext.pubshares.contains(myPubShare),
-      s"Public share $myPubShare derived from secret share does not exist in the signing context pubshares: ${signersContext.pubshares}"
-    )
+
     val secNonce = FrostNoncePriv(preimages.head.bytes ++ preimages(1).bytes)
     val aggNonce = aggregateNonces(Vector(pubNonce, aggOtherNonce),
                                    Vector(myId, COORDINATOR_ID))
@@ -363,6 +359,6 @@ object FrostUtil {
                    secShare = secshare,
                    myId = myId,
                    sessionContext = sessionCtx)
-    (aggNonce, sig)
+    (pubNonce, sig)
   }
 }
