@@ -35,7 +35,7 @@ import scodec.bits.ByteVector
   */
 case class FrostNoncePub(bytes: ByteVector) extends NetworkElement {
   require(bytes.length == 66,
-          s"FrostNonceAgg must be 66 bytes, got: ${bytes.length}")
+          s"FrostNoncePub must be 66 bytes, got: ${bytes.length}")
 
   /** Helper function to parse [[SecpPointInfinity]] case as that is not a valid
     * public key
