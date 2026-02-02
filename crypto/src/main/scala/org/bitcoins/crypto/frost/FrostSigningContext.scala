@@ -19,6 +19,7 @@ case class FrostSigningContext(
           s"t must be in the range [1, n], got: $t with n: $n")
 
   def u: Int = ids.length
+
   require(u >= t && u <= n,
           s"u must be in the range [t, n], got: $u with t: $t and n: $n")
   // TODO: Come back and look at these invariants, shouldn't they be equal?
@@ -26,6 +27,8 @@ case class FrostSigningContext(
     ids.length == pubshares.length,
     s"Must have the same number of ids and pubshares, ids length: ${ids.length} with pubshares length: ${pubshares.length}")
   require(ids.toSet.size == ids.length, s"All ids must be unique, got: $ids")
+  require(ids.forall(id => id >= 0 && id <= n),
+          s"All ids must be in the range [0, n], got: $ids with n: $n")
 
   private def pk: ECPublicKey = {
     var q: SecpPoint = SecpPointInfinity
@@ -43,6 +46,7 @@ case class FrostSigningContext(
       case p: SecpPointFinite => p.toPublicKey
     }
   }
+
   require(
     pk == thresholdPubKey,
     s"Computed threshold pubkey $pk does not match provided threshold pubkey $thresholdPubKey")
