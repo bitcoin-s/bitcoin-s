@@ -1,12 +1,6 @@
 package org.bitcoins.crypto.frost
 
-import org.bitcoins.crypto.{
-  ECPrivateKey,
-  Factory,
-  FieldElement,
-  MaskedToString,
-  NetworkElement
-}
+import org.bitcoins.crypto.*
 import scodec.bits.ByteVector
 
 /** FROST nonce (private) representation.
@@ -42,10 +36,15 @@ import scodec.bits.ByteVector
 case class FrostNoncePriv(bytes: ByteVector)
     extends NetworkElement
     with MaskedToString {
-  require(bytes.length == 64, s"FrostNoncePriv must be 64 bytes, got: $bytes")
+  require(bytes.length == 64,
+          s"FrostNoncePriv must be 64 bytes, got: ${bytes.length}")
+
   override def toStringSensitive: String = s"FrostNoncePriv(${bytes.toHex})"
+
   def k1: ECPrivateKey = ECPrivateKey.fromBytes(bytes.slice(0, 32))
+
   def k2: ECPrivateKey = ECPrivateKey.fromBytes(bytes.slice(32, 64))
+
   def toNoncePub: FrostNoncePub = {
     FrostNoncePub(k1.publicKey, k2.publicKey)
   }
