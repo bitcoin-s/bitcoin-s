@@ -23,11 +23,11 @@ object FrostUtil {
   }
 
   def hashFrostDeterministicNonce(
-      secshare: FieldElement,
-      aggOtherNonce: FrostNoncePub,
-      tweakThresholdPubKey: XOnlyPubKey,
-      message: ByteVector,
-      i: Byte): ByteVector = {
+                                   secshare: FieldElement,
+                                   aggOtherNonce: FrostNoncePub,
+                                   tweakThresholdPubKey: XOnlyPubKey,
+                                   message: ByteVector,
+                                   i: Byte): ByteVector = {
     val b = secshare.bytes ++
       aggOtherNonce.bytes ++
       tweakThresholdPubKey.bytes ++
@@ -38,15 +38,15 @@ object FrostUtil {
   }
 
   def nonceGen(
-      rand: ByteVector,
-      secshare: Option[ByteVector],
-      pubshare: Option[ECPublicKey],
-      threshold_pk: Option[XOnlyPubKey],
-      message: Option[ByteVector],
-      extra_in: Option[ByteVector]): (FrostNoncePriv, FrostNoncePub) = {
+                rand: ByteVector,
+                secshare: Option[ByteVector],
+                pubshare: Option[ECPublicKey],
+                threshold_pk: Option[XOnlyPubKey],
+                message: Option[ByteVector],
+                extra_in: Option[ByteVector]): (FrostNoncePriv, FrostNoncePub) = {
     val randPrime = secshare match {
       case Some(sec) => sec.xor(hashFrostAux(rand))
-      case None      => rand
+      case None => rand
     }
 
     // Match the Python reference: None -> 0x00, Some(msg) -> 0x01 || len(msg,8) || msg
@@ -75,7 +75,7 @@ object FrostUtil {
       }
       .toVector
     require(!preimages.contains(FieldElement.zero),
-            "Derived nonce preimage cannot be zero")
+      "Derived nonce preimage cannot be zero")
     val r1: ECPublicKey = CryptoParams.getG.multiply(preimages.head)
     val r2: ECPublicKey = CryptoParams.getG.multiply(preimages(1))
     require(CryptoUtil.decodePoint(r1) != SecpPointInfinity)
@@ -86,8 +86,8 @@ object FrostUtil {
   }
 
   def aggregateNonces(
-      pubnonces: Vector[FrostNoncePub],
-      participantIdentifiers: Vector[Long]): FrostNoncePub = {
+                       pubnonces: Vector[FrostNoncePub],
+                       participantIdentifiers: Vector[Long]): FrostNoncePub = {
     require(
       pubnonces.length == participantIdentifiers.length,
       s"Number of pubnonces (${pubnonces.length}) must match number of participant identifiers (${participantIdentifiers.length})"
@@ -132,19 +132,19 @@ object FrostUtil {
     * exist in the field).
     *
     * @param ids
-    *   Vector of participant identifiers (distinct, non\-negative).
+    * Vector of participant identifiers (distinct, non\-negative).
     * @param myId
-    *   Identifier for which to compute the Lagrange coefficient.
+    * Identifier for which to compute the Lagrange coefficient.
     * @return
-    *   The Lagrange coefficient as a `FieldElement`.
+    * The Lagrange coefficient as a `FieldElement`.
     */
   def deriveInterpolatingValue(ids: Vector[Long], myId: Long): FieldElement = {
     require(ids.contains(myId),
-            s"My id $myId must be in the list of participant ids: $ids")
+      s"My id $myId must be in the list of participant ids: $ids")
     require(ids.distinct.length == ids.length,
-            s"ids must not contain duplicates, ids=$ids")
+      s"ids must not contain duplicates, ids=$ids")
     require(0 <= myId && myId < 4294967296L,
-            s"myId must be in the range [2, 2^32 - 1], got: $myId")
+      s"myId must be in the range [0, 2^32 - 1], got: $myId")
     val initNum: FieldElement = FieldElement.one
     val initDenom: FieldElement = FieldElement.one
     val (num, denom) = ids.foldLeft((initNum, initDenom)) {
@@ -161,20 +161,20 @@ object FrostUtil {
   }
 
   def sign(
-      secNonce: FrostNoncePriv,
-      secShare: FieldElement,
-      myId: Long,
-      sessionContext: FrostSessionContext): FieldElement = {
+            secNonce: FrostNoncePriv,
+            secShare: FieldElement,
+            myId: Long,
+            sessionContext: FrostSessionContext): FieldElement = {
     require(
       sessionContext.signingContext.ids.contains(myId),
       s"My id $myId must be in the signing context ids: ${sessionContext.signingContext.ids}")
     val values = sessionContext.getSessionValues
     val (k1, k2) = values.R.toPublicKey.parity match {
       case EvenParity => (secNonce.k1, secNonce.k2)
-      case OddParity  => (secNonce.k1.negate, secNonce.k2.negate)
+      case OddParity => (secNonce.k1.negate, secNonce.k2.negate)
     }
     require(secShare != FieldElement.zero,
-            s"Secret share for participant id $myId cannot be zero")
+      s"Secret share for participant id $myId cannot be zero")
     val pubshare = CryptoParams.getG.multiply(secShare)
     require(
       values.pubshares.contains(pubshare),
@@ -184,7 +184,7 @@ object FrostUtil {
       deriveInterpolatingValue(sessionContext.signingContext.ids, myId)
     val g = values.Q.toPublicKey.parity match {
       case EvenParity => Pos
-      case OddParity  => Neg
+      case OddParity => Neg
     }
 
     val d = values.gacc
@@ -211,13 +211,13 @@ object FrostUtil {
   }
 
   def partialSigVerify(
-      partialSig: FieldElement,
-      pubnonces: Vector[FrostNoncePub],
-      signersContext: FrostSigningContext,
-      tweaks: Vector[FieldElement],
-      isXonlyT: Vector[Boolean],
-      message: ByteVector,
-      i: Long): Boolean = {
+                        partialSig: FieldElement,
+                        pubnonces: Vector[FrostNoncePub],
+                        signersContext: FrostSigningContext,
+                        tweaks: Vector[FieldElement],
+                        isXonlyT: Vector[Boolean],
+                        message: ByteVector,
+                        i: Long): Boolean = {
     require(
       signersContext.ids.contains(i),
       s"Signer id $i must be in the signing context ids: ${signersContext.ids}")
@@ -246,15 +246,15 @@ object FrostUtil {
   }
 
   def partialSigVerifyInternal(
-      partialSig: FieldElement,
-      myId: Long,
-      pubNonce: FrostNoncePub,
-      pubshare: ECPublicKey,
-      sessionCtx: FrostSessionContext): Boolean = {
+                                partialSig: FieldElement,
+                                myId: Long,
+                                pubNonce: FrostNoncePub,
+                                pubshare: ECPublicKey,
+                                sessionCtx: FrostSessionContext): Boolean = {
     val ids = sessionCtx.signingContext.ids
     val pubshares = sessionCtx.signingContext.pubshares
     require(ids.contains(myId),
-            s"My id $myId must be in the signing context ids: $ids")
+      s"My id $myId must be in the signing context ids: $ids")
     require(
       pubshares.contains(pubshare),
       s"Public share $pubshare must be in the signing context pubshares: $pubshares")
@@ -263,12 +263,12 @@ object FrostUtil {
       .add(pubNonce.r2.multiply(values.b))
     val re = values.R.toPublicKey.parity match {
       case EvenParity => rePrime
-      case OddParity  => rePrime.negate
+      case OddParity => rePrime.negate
     }
     val lambda = deriveInterpolatingValue(ids, myId)
     val g = values.Q.toPublicKey.parity match {
       case EvenParity => Pos
-      case OddParity  => Neg
+      case OddParity => Neg
     }
     val gPrime = values.gacc
       .multiply(g)
@@ -281,9 +281,9 @@ object FrostUtil {
   }
 
   def partialSigAgg(
-      partialSigs: Vector[FieldElement],
-      ids: Vector[Long],
-      sessionContext: FrostSessionContext): SchnorrDigitalSignature = {
+                     partialSigs: Vector[FieldElement],
+                     ids: Vector[Long],
+                     sessionContext: FrostSessionContext): SchnorrDigitalSignature = {
     require(
       partialSigs.length == ids.length,
       s"Number of partial signatures (${partialSigs.length}) must match number of participant identifiers (${ids.length})"
@@ -294,7 +294,7 @@ object FrostUtil {
     }
     val g = values.Q.toPublicKey.parity match {
       case EvenParity => Pos
-      case OddParity  => Neg
+      case OddParity => Neg
     }
     // s + e * g * tacc
     val eGTacc = g
@@ -309,14 +309,14 @@ object FrostUtil {
   val COORDINATOR_ID: Long = 1337L
 
   def deterministicSign(
-      secshare: FieldElement,
-      myId: Long,
-      aggOtherNonce: FrostNoncePub,
-      signersContext: FrostSigningContext,
-      tweaks: Vector[FieldElement],
-      isXOnly: Vector[Boolean],
-      message: ByteVector,
-      auxRandOpt: Option[FieldElement]): (FrostNoncePub, FieldElement) = {
+                         secshare: FieldElement,
+                         myId: Long,
+                         aggOtherNonce: FrostNoncePub,
+                         signersContext: FrostSigningContext,
+                         tweaks: Vector[FieldElement],
+                         isXOnly: Vector[Boolean],
+                         message: ByteVector,
+                         auxRandOpt: Option[FieldElement]): (FrostNoncePub, FieldElement) = {
     val secsharePrime = auxRandOpt match {
       case Some(auxRand) =>
         val b = secshare.bytes.xor(hashFrostAux(auxRand.bytes))
@@ -333,15 +333,15 @@ object FrostUtil {
       .to(1)
       .map { i =>
         hashFrostDeterministicNonce(secsharePrime,
-                                    aggOtherNonce,
-                                    tweakedThresholdPubKey,
-                                    message,
-                                    i.toByte)
+          aggOtherNonce,
+          tweakedThresholdPubKey,
+          message,
+          i.toByte)
       }
       .toVector
       .map(FieldElement.fromBytes)
     require(!preimages.contains(FieldElement.zero),
-            "Derived nonce preimage cannot be zero")
+      "Derived nonce preimage cannot be zero")
     val r1: ECPublicKey = CryptoParams.getG.multiply(preimages.head)
     val r2: ECPublicKey = CryptoParams.getG.multiply(preimages(1))
     require(CryptoUtil.decodePoint(r1) != SecpPointInfinity)
@@ -350,7 +350,7 @@ object FrostUtil {
 
     val secNonce = FrostNoncePriv(preimages.head.bytes ++ preimages(1).bytes)
     val aggNonce = aggregateNonces(Vector(pubNonce, aggOtherNonce),
-                                   Vector(myId, COORDINATOR_ID))
+      Vector(myId, COORDINATOR_ID))
     val sessionCtx = FrostSessionContext(
       signingContext = signersContext,
       aggNonce = aggNonce,
@@ -359,9 +359,9 @@ object FrostUtil {
       message = message
     )
     val sig = sign(secNonce = secNonce,
-                   secShare = secshare,
-                   myId = myId,
-                   sessionContext = sessionCtx)
+      secShare = secshare,
+      myId = myId,
+      sessionContext = sessionCtx)
     (pubNonce, sig)
   }
 }
