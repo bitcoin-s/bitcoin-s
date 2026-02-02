@@ -80,10 +80,6 @@ object SecpPoint extends Factory[SecpPoint] {
   def apply(x: String, y: String): SecpPointFinite =
     SecpPointFinite(CurveCoordinate.fromHex(x), CurveCoordinate.fromHex(y))
 
-  def sum(points: Vector[SecpPoint]): SecpPoint = {
-    points.reduce(_.add(_))
-  }
-
   override def fromBytes(bytes: ByteVector): SecpPoint = {
     CryptoUtil.decodePoint(bytes)
   }
