@@ -18,16 +18,13 @@ case class FrostSigningContext(
   require(1 <= t && t <= n,
           s"t must be in the range [1, n], got: $t with n: $n")
 
-  def u: Int = pubshares.length
+  def u: Int = ids.length
   require(u >= t && u <= n,
           s"u must be in the range [t, n], got: $u with t: $t and n: $n")
   // TODO: Come back and look at these invariants, shouldn't they be equal?
   require(
-    u == ids.length,
-    s"Must have enough ids to satisfy u, ids length: ${ids.length} with u: $u")
-  require(
-    u == pubshares.length,
-    s"Must have enough pubshares to satisfy u, pubshares length: ${pubshares.length} with u: $u")
+    ids.length == pubshares.length,
+    s"Must have the same number of ids and pubshares, ids length: ${ids.length} with pubshares length: ${pubshares.length}")
   require(ids.toSet.size == ids.length, s"All ids must be unique, got: $ids")
 
   private def pk: ECPublicKey = {
