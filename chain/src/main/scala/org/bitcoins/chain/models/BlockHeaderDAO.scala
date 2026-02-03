@@ -463,12 +463,12 @@ case class BlockHeaderDAO()(implicit
     if (diff.isEmpty) {
       chains
     } else {
-      val sortedDiff = diff.sortBy(_.height)(Ordering.Int.reverse)
+      val sortedDiff = diff.sortBy(_.height)(using Ordering.Int.reverse)
 
       val newChainHeaders =
         Blockchain.connectWalkBackwards(sortedDiff.head, allHeaders)
       val newChain = Blockchain(
-        newChainHeaders.sortBy(_.height)(Ordering.Int.reverse)
+        newChainHeaders.sortBy(_.height)(using Ordering.Int.reverse)
       )
 
       val newUsedHashes = usedHashes ++ newChain.headers.map(_.hashBE)
@@ -484,7 +484,7 @@ case class BlockHeaderDAO()(implicit
     getBetweenHeights(from = from, to = to).map { headers =>
       if (headers.map(_.height).distinct.size == headers.size) {
         Vector(
-          Blockchain.fromHeaders(headers.sortBy(_.height)(Ordering.Int.reverse))
+          Blockchain.fromHeaders(headers.sortBy(_.height)(using Ordering.Int.reverse))
         )
       } else {
         val headersByHeight: Vector[(Int, Vector[BlockHeaderDb])] =
@@ -498,7 +498,7 @@ case class BlockHeaderDAO()(implicit
             val chains = tips.map { tip =>
               Blockchain
                 .connectWalkBackwards(tip, headers)
-                .sortBy(_.height)(Ordering.Int.reverse)
+                .sortBy(_.height)(using Ordering.Int.reverse)
             }
             val init = chains.map(Blockchain(_))
 

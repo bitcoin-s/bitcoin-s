@@ -31,10 +31,10 @@ trait TestDbManagement extends DbManagement {
   def ec: ExecutionContext
 
   private lazy val testTable: TableQuery[Table[?]] =
-    TestDAO()(ec, appConfig).table
+    TestDAO()(using ec, appConfig).table
 
   private lazy val masterXpubTable: TableQuery[Table[?]] = {
-    MasterXPubDAO()(ec = ec, appConfig = appConfig).table
+    MasterXPubDAO()(using ec = ec, appConfig = appConfig).table
   }
 
   override lazy val allTables: List[TableQuery[Table[?]]] =
@@ -64,7 +64,7 @@ case class TestAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
       _ <- super.start()
       _ = migrate()
       _ = logger.debug(s"Initializing test setup")
-      _ <- createTable(TestDAO()(ec, this).table)
+      _ <- createTable(TestDAO()(using ec, this).table)
     } yield ()
   }
 }
