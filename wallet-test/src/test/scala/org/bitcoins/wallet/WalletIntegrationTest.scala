@@ -55,8 +55,10 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
     val bitcoind = walletWithBitcoind.bitcoind
     val walletConfig = walletWithBitcoind.walletConfig
 
-    val incomingDAO = IncomingTransactionDAO()(using system.dispatcher, walletConfig)
-    val outgoingDAO = OutgoingTransactionDAO()(using system.dispatcher, walletConfig)
+    val incomingDAO =
+      IncomingTransactionDAO()(using system.dispatcher, walletConfig)
+    val outgoingDAO =
+      OutgoingTransactionDAO()(using system.dispatcher, walletConfig)
     for {
       addr <- wallet.getNewAddress()
       txId <- bitcoind.sendToAddress(addr, valueFromBitcoind)

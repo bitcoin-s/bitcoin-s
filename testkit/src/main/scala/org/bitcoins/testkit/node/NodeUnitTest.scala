@@ -106,8 +106,8 @@ trait NodeUnitTest extends BaseNodeTest {
     }
     makeDependentFixture[NeutrinoNodeNotConnectedWithBitcoinds](
       build = nodeWithBitcoindBuilder,
-      destroy =
-        NodeUnitTest.destroyNodeNotConnectedWithBitcoinds(_)(using system, appConfig)
+      destroy = NodeUnitTest
+        .destroyNodeNotConnectedWithBitcoinds(_)(using system, appConfig)
     )(test)
   }
 

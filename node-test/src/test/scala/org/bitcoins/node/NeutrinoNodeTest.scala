@@ -147,7 +147,8 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         _ <- assertConnAndInit
         ourPeers <- Future.traverse(nodeConnectedWithBitcoind.bitcoinds)(
           NodeTestUtil.getBitcoindPeer)
-        peerDbs <- PeerDAO()(using node.nodeAppConfig, executionContext).findAll()
+        peerDbs <- PeerDAO()(using node.nodeAppConfig, executionContext)
+          .findAll()
       } yield {
 
         val allInDb = ourPeers.forall { p =>
@@ -270,7 +271,9 @@ class NeutrinoNodeTest extends NodeTestWithCachedBitcoindPair {
         _ <- NodeTestUtil.awaitSyncAndIBD(node, bitcoind)
         _ <- node.stop()
         // drop all compact filter headers / filters
-        _ <- CompactFilterHeaderDAO()(using executionContext, node.chainAppConfig)
+        _ <- CompactFilterHeaderDAO()(
+          using executionContext,
+          node.chainAppConfig)
           .deleteAll()
         _ <- CompactFilterDAO()(using executionContext, node.chainAppConfig)
           .deleteAll()

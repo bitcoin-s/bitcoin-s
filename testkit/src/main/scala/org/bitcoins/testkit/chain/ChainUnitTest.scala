@@ -122,7 +122,8 @@ trait ChainUnitTest extends BitcoinSFixture {
       build = () => {
         val c = chainAppConfig
         c.start().flatMap { _ =>
-          ChainUnitTest.createPopulatedBlockHeaderDAO()(using c, executionContext)
+          ChainUnitTest
+            .createPopulatedBlockHeaderDAO()(using c, executionContext)
         }
       },
       destroy = (bhDAO: BlockHeaderDAO) =>
@@ -136,7 +137,8 @@ trait ChainUnitTest extends BitcoinSFixture {
         val c = chainAppConfig
         c.start()
           .flatMap(_ =>
-            ChainUnitTest.createChainStateDescriptorDAO()(using executionContext, c))
+            ChainUnitTest
+              .createChainStateDescriptorDAO()(using executionContext, c))
 
       },
       destroy = (csDAO: ChainStateDescriptorDAO) =>
@@ -149,10 +151,12 @@ trait ChainUnitTest extends BitcoinSFixture {
       () => {
         val c = chainAppConfig
         c.start()
-          .flatMap(_ => ChainUnitTest.createChainHandler()(using executionContext, c))
+          .flatMap(_ =>
+            ChainUnitTest.createChainHandler()(using executionContext, c))
       },
       (ch: ChainHandler) =>
-        ChainUnitTest.destroyChainApi()(using system, chainAppConfig = ch.chainConfig)
+        ChainUnitTest
+          .destroyChainApi()(using system, chainAppConfig = ch.chainConfig)
     )(test)
   }
 
@@ -186,7 +190,8 @@ trait ChainUnitTest extends BitcoinSFixture {
     makeDependentFixture(
       build = () => {
         val c = chainAppConfig
-        c.start().flatMap(_ => createChainHandlerCachedWithGenesisFilter()(using c))
+        c.start()
+          .flatMap(_ => createChainHandlerCachedWithGenesisFilter()(using c))
 
       },
       destroy = (chcgf: ChainHandler) =>
