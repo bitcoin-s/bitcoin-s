@@ -94,4 +94,3 @@ class SerializedTransactionTest extends BitcoinSUnitTest {
     assert(witness.signature.isEmpty)
   }
 }
-
