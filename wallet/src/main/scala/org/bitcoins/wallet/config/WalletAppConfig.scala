@@ -207,7 +207,7 @@ case class WalletAppConfig(
         None
     }
   }
-  private val masterXPubDAO: MasterXPubDAO = MasterXPubDAO()(ec, this)
+  private val masterXPubDAO: MasterXPubDAO = MasterXPubDAO()(using ec, this)
 
   override def start(): Future[Unit] = {
     startFeeRateCallbackScheduler()
@@ -300,7 +300,7 @@ case class WalletAppConfig(
     WalletAppConfig.createHDWallet(
       nodeApi = nodeApi,
       chainQueryApi = chainQueryApi
-    )(this, system)
+    )(using this, system)
   }
 
   private var rebroadcastTransactionsCancelOpt: Option[ScheduledFuture[?]] =

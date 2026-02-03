@@ -18,7 +18,7 @@ class DisconnectedPeerTest extends NodeUnitTest {
   override type FixtureParam = NeutrinoNode
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withDisconnectedNeutrinoNode(test)(system, getFreshConfig)
+    withDisconnectedNeutrinoNode(test)(using system, getFreshConfig)
 
   it must "fail to broadcast a transaction when disconnected" in { node =>
     val tx = TransactionGenerators.transaction.sampleSome

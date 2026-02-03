@@ -46,7 +46,7 @@ class Socks5ClientTransport(proxyParams: Socks5ProxyParams)
       .mapMaterializedValue(
         _.map(
           _.copy(remoteAddress = InetSocketAddress.createUnresolved(host, port))
-        )(system.dispatcher)
+        )(using system.dispatcher)
       )
   }
 }

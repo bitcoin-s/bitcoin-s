@@ -118,9 +118,9 @@ class SortedVecTest extends BitcoinSUnitTest {
     val nonces = Vector(nonce1, nonce2, nonce3)
     val wrongOrder = Vector(nonce2, nonce3, nonce1)
 
-    val _ = SortedVec(nonces)(SortedVec.forOrdered(nonces))
+    val _ = SortedVec(nonces)(using SortedVec.forOrdered(nonces))
     assertThrows[IllegalArgumentException](
-      SortedVec(wrongOrder)(SortedVec.forOrdered(nonces))
+      SortedVec(wrongOrder)(using SortedVec.forOrdered(nonces))
     )
   }
 }

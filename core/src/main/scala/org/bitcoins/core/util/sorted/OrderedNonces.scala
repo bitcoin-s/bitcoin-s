@@ -15,7 +15,7 @@ object OrderedNonces extends SortedVecFactory[SchnorrNonce, OrderedNonces] {
   }
 
   override def fromUnsorted(vec: Vector[SchnorrNonce]): OrderedNonces = {
-    val sorted = vec.sorted(org.bitcoins.core.nonceOrdering)
+    val sorted = vec.sorted(using org.bitcoins.core.nonceOrdering)
     OrderedNonces(sorted)
   }
 }

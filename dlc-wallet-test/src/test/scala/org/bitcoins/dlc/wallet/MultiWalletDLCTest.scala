@@ -23,7 +23,7 @@ class MultiWalletDLCTest extends BitcoinSWalletTest {
   }
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withFundedDLCWallet(test)(getFreshConfig)
+    withFundedDLCWallet(test)(using getFreshConfig)
 
   it must "create 2 different dlc wallets" in { fundedWallet =>
     val walletNameConfB =
@@ -42,7 +42,7 @@ class MultiWalletDLCTest extends BitcoinSWalletTest {
     val walletBF = BitcoinSWalletTest.createDLCWallet2Accounts(
       MockNodeApi,
       MockChainQueryApi
-    )(configB, system)
+    )(using configB, system)
 
     for {
       accountA <- walletA.accountHandling.getDefaultAccount()

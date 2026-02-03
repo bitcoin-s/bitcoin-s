@@ -71,7 +71,7 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
           walletA <-
             FundWalletUtil.createFundedDLCWallet(nodeApi, chainQueryApi)
           walletB <- FundWalletUtil
-            .createFundedDLCWallet(nodeApi, chainQueryApi)(config2, system)
+            .createFundedDLCWallet(nodeApi, chainQueryApi)(using config2, system)
         } yield (walletA, walletB),
       destroy = { (fundedWallets: (FundedDLCWallet, FundedDLCWallet)) =>
         for {
@@ -109,7 +109,7 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
       chainQueryApi = chainQueryApi
     )
     val walletBF = FundWalletUtil.createFundedDLCWallet(nodeApi, chainQueryApi)(
-      config2,
+      using config2,
       system
     )
     for {
@@ -181,7 +181,7 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
       walletA <- FundWalletUtil.createFundedDLCWalletWithBitcoind(bitcoind)
       walletB <- FundWalletUtil.createFundedDLCWalletWithBitcoind(
         bitcoind = bitcoind
-      )(config2, system)
+      )(using config2, system)
       amt = expectedDefaultAmt / Satoshis(2)
       contractInfo = SingleContractInfo(amt.satoshis, contractOraclePair)
       (dlcWalletA, dlcWalletB) <-
@@ -202,7 +202,7 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
       walletB <- FundWalletUtil.createFundedDLCWallet(
         nodeApi = nodeApi,
         chainQueryApi = chainQueryApi
-      )(config2, system)
+      )(using config2, system)
       amt = expectedDefaultAmt / Satoshis(2)
       contractInfo = SingleContractInfo(amt.satoshis, contractOraclePair)
       (dlcWalletA, dlcWalletB) <-

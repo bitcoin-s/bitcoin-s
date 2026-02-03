@@ -118,7 +118,7 @@ case class TorAppConfig(
   private val isBootstrappedLogLine = "Bootstrapped 100% (done): Done"
 
   def createClient(implicit ec: ExecutionContext): TorClient = {
-    new TorClient()(ec, this)
+    new TorClient()(using ec, this)
   }
 
   /** Ensures correct tables and other required information is in place for our

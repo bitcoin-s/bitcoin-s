@@ -79,7 +79,7 @@ sealed trait KeySet {
 object KeySet {
 
   def apply(keys: Vector[SchnorrPublicKey]): LexicographicKeySet = {
-    val sortedKeys = keys.sorted(NetworkElement.lexicographicalOrdering)
+    val sortedKeys = keys.sorted(using NetworkElement.lexicographicalOrdering)
     LexicographicKeySet(sortedKeys)
   }
 
@@ -90,7 +90,7 @@ object KeySet {
   def apply(
       keys: Vector[SchnorrPublicKey],
       tweaks: Vector[MuSigTweak]): LexicographicKeySet = {
-    val sortedKeys = keys.sorted(NetworkElement.lexicographicalOrdering)
+    val sortedKeys = keys.sorted(using NetworkElement.lexicographicalOrdering)
     LexicographicKeySet(sortedKeys, tweaks)
   }
 }

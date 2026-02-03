@@ -177,7 +177,7 @@ case class BitcoindRpcAppConfig(
         zmqConfig = zmqConfig,
         binary = file,
         bitcoindDatadir = bitcoindDataDir
-      )(system, this)
+      )(using system, this)
 
     case None =>
       BitcoindInstanceRemote(
@@ -186,7 +186,7 @@ case class BitcoindRpcAppConfig(
         rpcUri = rpcUri,
         zmqConfig = zmqConfig,
         proxyParams = socks5ProxyParams
-      )(system, this)
+      )(using system, this)
   }
 
   /** Creates a bitcoind rpc client based on the [[bitcoindInstance]] configured
@@ -201,7 +201,7 @@ case class BitcoindRpcAppConfig(
       case remote: BitcoindInstanceRemote =>
         // first get a generic rpc client so we can retrieve
         // the proper version of the remote running bitcoind
-        val noVersionRpc = new BitcoindRpcClient(remote)(system)
+        val noVersionRpc = new BitcoindRpcClient(remote)(using system)
         val versionF = getBitcoindVersion(noVersionRpc)
 
         // if we don't retrieve the proper version, we can
@@ -210,7 +210,7 @@ case class BitcoindRpcAppConfig(
         // such as blockfilters
         // see: https://github.com/bitcoin-s/bitcoin-s/issues/3695#issuecomment-929492945
         versionF.map { version =>
-          BitcoindRpcClient.fromVersion(version, instance = remote)(system)
+          BitcoindRpcClient.fromVersion(version, instance = remote)(using system)
         }
     }
   }

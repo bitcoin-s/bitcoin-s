@@ -260,7 +260,7 @@ object CETCalculator {
   def searchForPrefix[Outcome](digits: Digits, outcomes: Vector[Outcome])(
       outcomeToPrefix: Outcome => Digits): Option[Outcome] = {
     val indexOrOverByOne = NumberUtil.search(outcomes, digits, outcomeToPrefix)(
-      NumberUtil.lexicographicalOrdering[Int])
+      using NumberUtil.lexicographicalOrdering[Int])
 
     if (indexOrOverByOne == outcomes.length) {
       if (digits.startsWith(outcomeToPrefix(outcomes.last))) {

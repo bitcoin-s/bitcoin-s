@@ -13,7 +13,7 @@ object OrderedTLVPoints extends SortedVecFactory[TLVPoint, OrderedTLVPoints] {
   }
 
   override def fromUnsorted(vec: Vector[TLVPoint]): OrderedTLVPoints = {
-    val sorted = vec.sorted(org.bitcoins.core.tlvPointOrdering)
+    val sorted = vec.sorted(using org.bitcoins.core.tlvPointOrdering)
     OrderedTLVPoints(sorted)
   }
 }

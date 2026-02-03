@@ -20,7 +20,7 @@ case class DLCFeeTestVector(
 ) extends TestVector {
 
   override def toJson: JsValue = {
-    Json.toJson(this)(DLCFeeTestVector.dlcFeeTestVectorFormat)
+    Json.toJson(this)(using DLCFeeTestVector.dlcFeeTestVectorFormat)
   }
 }
 
@@ -85,7 +85,7 @@ case class DLCFeeTestVectorInput(
 object DLCFeeTestVectorInput {
 
   def fromJson(json: JsValue): JsResult[DLCFeeTestVectorInput] = {
-    json.validate(DLCFeeTestVector.dlcFeeTestVectorInputFormat)
+    json.validate(using DLCFeeTestVector.dlcFeeTestVectorInputFormat)
   }
 }
 

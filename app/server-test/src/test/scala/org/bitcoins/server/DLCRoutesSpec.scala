@@ -31,7 +31,7 @@ class DLCRoutesSpec
 
   val mockWallet = mock[DLCNeutrinoHDWalletApi]
 
-  val mockNodeApi = DLCNode(mockWallet)(system, conf.dlcNodeConf)
+  val mockNodeApi = DLCNode(mockWallet)(using system, conf.dlcNodeConf)
 
   val mockIncomingDLCOfferHandlingApi: IncomingDLCOfferHandlingApi =
     mock[IncomingDLCOfferHandlingApi]

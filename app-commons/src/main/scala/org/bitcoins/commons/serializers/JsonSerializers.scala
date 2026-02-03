@@ -229,7 +229,7 @@ object JsonSerializers {
       (__ \ "bip152_hb_from").read[Boolean] and
       (__ \ "permissions").read[Vector[String]] and
       (__ \ "transport_protocol_type").read[String] and
-      (__ \ "session_id").read[String])(PeerInfoResponseV25.apply _)
+      (__ \ "session_id").read[String])(PeerInfoResponseV25.apply)
 
   implicit val nodeBanPostV22Reads: Reads[NodeBanPostV22] =
     Json.reads[NodeBanPostV22]
@@ -474,7 +474,7 @@ object JsonSerializers {
       (__ \ "timereceived").read[UInt32] and
       (__ \ "bip125-replaceable").read[String] and
       (__ \ "comment").readNullable[String] and
-      (__ \ "to").readNullable[String])(Payment.apply _)
+      (__ \ "to").readNullable[String])(Payment.apply)
 
   implicit val listSinceBlockResultReads: Reads[ListSinceBlockResult] =
     Json.reads[ListSinceBlockResult]
@@ -982,7 +982,7 @@ object JsonSerializers {
         (JsPath \ "prevout_txid").read[DoubleSha256DigestBE] and
         (JsPath \ "prevout_vout").read[Int] and
         (JsPath \ "prevout_spk").read[RpcPsbtScript]
-    )(DescriptorActivity.SpendDescriptorActivity.apply _)
+    )(DescriptorActivity.SpendDescriptorActivity.apply)
   }
 
   implicit val receiveDescriptorActivityReads
@@ -994,7 +994,7 @@ object JsonSerializers {
         (JsPath \ "txid").read[DoubleSha256DigestBE] and
         (JsPath \ "vout").read[Int] and
         (JsPath \ "output_spk").read[RpcPsbtScript]
-    )(DescriptorActivity.ReceiveDescriptorActivity.apply _)
+    )(DescriptorActivity.ReceiveDescriptorActivity.apply)
   }
 
   // --- Custom Reads for the sealed trait DescriptorActivity ---

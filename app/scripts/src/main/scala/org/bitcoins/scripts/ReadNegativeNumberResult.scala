@@ -50,7 +50,7 @@ object ReadNegativeNumberResult extends BitcoinSAppScalaDaemon {
   override val customFinalDirOpt = None
 
   implicit val rpcAppConfig: BitcoindRpcAppConfig =
-    BitcoindRpcAppConfig.fromDefaultDatadir()(system)
+    BitcoindRpcAppConfig.fromDefaultDatadir()(using system)
 
   case class NegativeNumberResult(
       txid: DoubleSha256DigestBE,

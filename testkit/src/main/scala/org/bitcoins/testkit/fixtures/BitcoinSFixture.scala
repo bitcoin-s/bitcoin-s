@@ -128,7 +128,7 @@ object BitcoinSFixture {
     val bitcoind = versionOpt match {
       case Some(v) =>
         BitcoindRpcClient.fromVersion(v, instance)
-      case None => new BitcoindRpcClient(instance)(system)
+      case None => new BitcoindRpcClient(instance)(using system)
     }
     BitcoindRpcTestUtil.startServers(Vector(bitcoind)).map(_ => bitcoind)
   }
@@ -171,7 +171,7 @@ object BitcoinSFixture {
       wrap: (T, U) => C
   )(implicit ec: ExecutionContext): () => Future[C] =
     () => {
-      composeBuilders(builder, dependentBuilder)(ec)().map {
+      composeBuilders(builder, dependentBuilder)(using ec)().map {
         case (first, second) =>
           wrap(first, second)
       }
@@ -190,7 +190,7 @@ object BitcoinSFixture {
       processResult: (T, U) => Future[C]
   )(implicit ec: ExecutionContext): () => Future[C] =
     () => {
-      composeBuilders(builder, dependentBuilder)(ec)().flatMap {
+      composeBuilders(builder, dependentBuilder)(using ec)().flatMap {
         case (first, second) => processResult(first, second)
       }
     }

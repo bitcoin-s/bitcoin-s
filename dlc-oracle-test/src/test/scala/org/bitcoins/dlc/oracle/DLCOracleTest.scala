@@ -120,7 +120,7 @@ class DLCOracleTest extends DLCOracleFixture {
     )
 
     newConf.start().flatMap { _ =>
-      val oracleB = new DLCOracle()(newConf)
+      val oracleB = new DLCOracle()(using newConf)
       assert(oracleA.publicKey() == oracleB.publicKey())
 
       val eventName = "test"

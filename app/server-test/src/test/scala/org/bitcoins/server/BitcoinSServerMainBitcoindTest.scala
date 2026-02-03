@@ -25,7 +25,7 @@ class BitcoinSServerMainBitcoindTest
 
   it must "fail to send requests to the app server if the password is bad" in {
     (config: BitcoinSAppConfig) =>
-      val server = new BitcoinSServerMain(ServerArgParser.empty)(system, config)
+      val server = new BitcoinSServerMain(ServerArgParser.empty)(using system, config)
 
       val cliConfig =
         Config(rpcPortOpt = Some(config.rpcPort), rpcPassword = "bad_password")
@@ -48,7 +48,7 @@ class BitcoinSServerMainBitcoindTest
 
   it must "start our app server with bitcoind as a backend" in {
     (config: BitcoinSAppConfig) =>
-      val server = new BitcoinSServerMain(ServerArgParser.empty)(system, config)
+      val server = new BitcoinSServerMain(ServerArgParser.empty)(using system, config)
 
       val cliConfig = Config(
         rpcPortOpt = Some(config.rpcPort),
@@ -77,7 +77,7 @@ class BitcoinSServerMainBitcoindTest
     val alice = None
     val bob = Some("bob")
 
-    val server = new BitcoinSServerMain(ServerArgParser.empty)(system, config)
+    val server = new BitcoinSServerMain(ServerArgParser.empty)(using system, config)
 
     val cliConfig = Config(
       rpcPortOpt = Some(config.rpcPort),

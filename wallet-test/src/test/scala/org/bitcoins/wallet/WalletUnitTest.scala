@@ -25,7 +25,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
   override type FixtureParam = Wallet
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withNewWallet(test)(getFreshWalletAppConfig)
+    withNewWallet(test)(using getFreshWalletAppConfig)
 
   behavior of "Wallet - unit test"
 
@@ -204,7 +204,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
         _ <- startedF
       } yield {
         Wallet(wallet.nodeApi, wallet.chainQueryApi)(
-          uniqueEntropyWalletConfig
+          using uniqueEntropyWalletConfig
         )
       }
 

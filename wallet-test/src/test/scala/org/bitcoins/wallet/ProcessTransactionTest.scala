@@ -23,7 +23,7 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
   override type FixtureParam = Wallet
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withNewWallet(test)(getFreshWalletAppConfig)
+    withNewWallet(test)(using getFreshWalletAppConfig)
   }
 
   behavior of "Wallet.processTransaction"

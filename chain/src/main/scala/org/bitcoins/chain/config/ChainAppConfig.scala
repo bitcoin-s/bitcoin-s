@@ -49,7 +49,7 @@ case class ChainAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
   }
 
   private def isInit: Future[Boolean] = {
-    val blockHeaderDAO = BlockHeaderDAO()(ec, appConfig)
+    val blockHeaderDAO = BlockHeaderDAO()(using ec, appConfig)
     blockHeaderDAO
       .findByHash(chain.genesisBlock.blockHeader.hashBE)
       .map(_.isDefined)
@@ -62,7 +62,7 @@ case class ChainAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
         chainWork = Pow.getBlockProof(chain.genesisBlock.blockHeader),
         bh = chain.genesisBlock.blockHeader
       )
-    val blockHeaderDAO = BlockHeaderDAO()(ec, appConfig)
+    val blockHeaderDAO = BlockHeaderDAO()(using ec, appConfig)
     val bhCreatedF = blockHeaderDAO.create(genesisHeader)
     bhCreatedF.flatMap { _ =>
       logger.info(s"Inserted genesis block header into DB")

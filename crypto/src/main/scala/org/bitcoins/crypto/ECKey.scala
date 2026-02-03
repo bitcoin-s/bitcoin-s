@@ -289,7 +289,7 @@ object ECPrivateKey extends Factory[ECPrivateKey] {
     val privKeys = 0.until(num).map(_ => ECPrivateKey.freshPrivateKey).toVector
     val sortByNonce = privKeys
       .map(p => (p, p.schnorrNonce))
-      .sortBy(_._2)(CryptoOrdering.nonceOrdering)
+      .sortBy(_._2)(using CryptoOrdering.nonceOrdering)
 
     sortByNonce.map(_._1)
   }
