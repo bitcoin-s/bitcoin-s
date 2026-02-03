@@ -32,7 +32,8 @@ object DLCWalletDAOs {
     val oracleAnnouncementDAO =
       OracleAnnouncementDataDAO()(using dlcConfig.ec, dlcConfig)
     val dlcRemoteTxDAO = DLCRemoteTxDAO()(using dlcConfig.ec, dlcConfig)
-    val incomingDLCOfferDAO = IncomingDLCOfferDAO()(using dlcConfig.ec, dlcConfig)
+    val incomingDLCOfferDAO =
+      IncomingDLCOfferDAO()(using dlcConfig.ec, dlcConfig)
     val contactDAO = DLCContactDAO()(using dlcConfig.ec, dlcConfig)
     DLCWalletDAOs(
       dlcDAO = dlcDAO,
