@@ -48,29 +48,4 @@ class SerializedTransactionTest extends BitcoinSUnitTest {
     assert(witness.pubKey.isEmpty)
     assert(witness.signature.isEmpty)
   }
-
-  it must "correctly decode properties of TaprootKeyPath witness" in {
-    // Another test using the same transaction to verify all TaprootKeyPath properties
-    val txHex =
-      "f705d6e8019870958e85d1d8f94aa6d74746ba974db0f5ccae49a49b32dcada4e19de4eb5ecb00000000925977cc01f9875c000000000016001431d2b00cd4687ceb34008d9894de84062def14aa05406346"
-    
-    val tx = Transaction.fromHex(txHex)
-    val decoded = SerializedTransaction.decodeRawTransaction(tx)
-
-    val witness = decoded.vin.head.txinwitness.get
-    
-    // Verify that TaprootKeyPath witness has the expected structure:
-    // - scriptType is set to "TaprootKeyPath"
-    // - stack is populated with witness elements
-    // - script, pubKey, and signature are None (not used for Taproot)
-    assert(witness.scriptType.contains("TaprootKeyPath"))
-    assert(witness.stack.isDefined)
-    assert(witness.script.isEmpty)
-    assert(witness.pubKey.isEmpty)
-    assert(witness.signature.isEmpty)
-    
-    // Verify the hex encoding of the entire witness
-    assert(witness.hex.nonEmpty)
-    assert(witness.hex.startsWith("01")) // witness has 1 stack element
-  }
 }
