@@ -105,6 +105,27 @@
       "comment": "Signing without auxiliary randomness"
     },
     {
+      "rand": "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+      "aggothernonce": "0258091883DA3CCA616F8BEC80AAE2E397E3572DFFC3C261EDC695E5FCA0BE00180251EC60E426128FA2370F13A6235040120CCDB0CA97C36BC63693C44FC5B73E44",
+      "id_indices": [
+        0,
+        1
+      ],
+      "pubshare_indices": [
+        0,
+        1
+      ],
+      "tweaks": [],
+      "is_xonly": [],
+      "msg_index": 0,
+      "signer_index": 0,
+      "expected": [
+        "03C2493BB6AB51760DBFBF1A08FCB6F82472552D4343637296DF6392D2F203821903B75F2339C21FB67AB0AA5351A15EB0A1CC5F7BCD3417CF06B6870AABAACAE9CF",
+        "77CE17195D39B6CBEF533E5EA416F173C294450AD8283153C67F6AAD87BFF0EB"
+      ],
+      "comment": "Signing with max auxiliary randomness"
+    },
+    {
       "rand": "0000000000000000000000000000000000000000000000000000000000000000",
       "aggothernonce": "03B7F17DD6A2495898D19BDEA05C46F45B2C14BCA17F61C3DDC1D3C087CD748AB002CF7D031F5075C164D6A9D713F03B56422FD3472BDC8E0E6BB3ED6B6ED9C529AE",
       "id_indices": [
@@ -237,7 +258,7 @@
       "signer_index": 0,
       "error": {
         "type": "ValueError",
-        "message": "The participant identifier list must contain unique elements."
+        "message": "The participant identifier list contains duplicate elements."
       },
       "comment": "The participant identifier list contains duplicate elements"
     },

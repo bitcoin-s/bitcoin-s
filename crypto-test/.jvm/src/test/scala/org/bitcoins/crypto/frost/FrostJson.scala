@@ -441,7 +441,7 @@ object FrostJson {
 
   // --- Deterministic signing vectors (det_sign_vectors.json) ---
   case class DetSignValidTestCase(
-      rand: Option[FieldElement],
+      rand: Option[ByteVector],
       aggothernonce: FrostNoncePub,
       id_indices: Vector[Int],
       pubshare_indices: Vector[Int],
@@ -458,7 +458,7 @@ object FrostJson {
   }
 
   case class DetSignErrorTestCase(
-      rand: Option[FieldElement],
+      rand: Option[ByteVector],
       aggothernonce: FrostNoncePub,
       id_indices: Vector[Int],
       pubshare_indices: Vector[Int],
@@ -484,7 +484,7 @@ object FrostJson {
   )
 
   implicit val detSignValidReads: Reads[DetSignValidTestCase] = (
-    (__ \ "rand").readNullable[FieldElement] and
+    (__ \ "rand").readNullable[ByteVector] and
       (__ \ "aggothernonce").read[FrostNoncePub] and
       (__ \ "id_indices").read[Seq[Int]].map(_.toVector) and
       (__ \ "pubshare_indices").read[Seq[Int]].map(_.toVector) and
@@ -497,7 +497,7 @@ object FrostJson {
   )(DetSignValidTestCase.apply _)
 
   implicit val detSignErrorReads: Reads[DetSignErrorTestCase] = (
-    (__ \ "rand").readNullable[FieldElement] and
+    (__ \ "rand").readNullable[ByteVector] and
       (__ \ "aggothernonce").read[FrostNoncePub] and
       (__ \ "id_indices").read[Seq[Int]].map(_.toVector) and
       (__ \ "pubshare_indices").read[Seq[Int]].map(_.toVector) and
