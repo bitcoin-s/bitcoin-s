@@ -33,7 +33,7 @@ trait NodeUnitTest extends BaseNodeTest {
       require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
       for {
         node <- NodeUnitTest.createNeutrinoNode(NodeUnitTest.emptyPeer, None)(
-          system,
+          using system,
           appConfig.chainConf,
           appConfig.nodeConf
         )
@@ -49,7 +49,7 @@ trait NodeUnitTest extends BaseNodeTest {
       destroy = (_: Node) => {
         for {
           _ <- ChainUnitTest
-            .destroyAllTables()(appConfig.chainConf, system.dispatcher)
+            .destroyAllTables()(using appConfig.chainConf, system.dispatcher)
           _ <- appConfig.stop()
         } yield ()
       }
@@ -69,7 +69,7 @@ trait NodeUnitTest extends BaseNodeTest {
       for {
         bitcoind <- BitcoinSFixture.createBitcoind(versionOpt)
         node <- NodeUnitTest.createNeutrinoNode(bitcoind, None)(
-          system,
+          using system,
           appConfig.chainConf,
           appConfig.nodeConf
         )
@@ -81,7 +81,7 @@ trait NodeUnitTest extends BaseNodeTest {
       build = nodeWithBitcoindBuilder,
       destroy = NodeUnitTest.destroyNodeConnectedWithBitcoind(
         _: NodeConnectedWithBitcoind
-      )(system, appConfig)
+      )(using system, appConfig)
     )(test)
   }
 
@@ -98,7 +98,7 @@ trait NodeUnitTest extends BaseNodeTest {
       for {
         _ <- appConfig.walletConf.kmConf.start()
         node <- NodeUnitTest.createNeutrinoNode(bitcoinds, None)(
-          system,
+          using system,
           appConfig.chainConf,
           appConfig.nodeConf
         )
@@ -107,7 +107,7 @@ trait NodeUnitTest extends BaseNodeTest {
     makeDependentFixture[NeutrinoNodeNotConnectedWithBitcoinds](
       build = nodeWithBitcoindBuilder,
       destroy =
-        NodeUnitTest.destroyNodeNotConnectedWithBitcoinds(_)(system, appConfig)
+        NodeUnitTest.destroyNodeNotConnectedWithBitcoinds(_)(using system, appConfig)
     )(test)
   }
 
@@ -125,10 +125,10 @@ trait NodeUnitTest extends BaseNodeTest {
           .createNeutrinoNodeFundedWalletBitcoind(
             versionOpt = versionOpt,
             walletCallbacks = walletCallbacks
-          )(system, appConfig),
+          )(using system, appConfig),
       destroy = NodeUnitTest.destroyNodeFundedWalletBitcoind(
         _: NodeFundedWalletBitcoind
-      )(system, appConfig)
+      )(using system, appConfig)
     )(test)
   }
 
@@ -270,7 +270,7 @@ object NodeUnitTest extends P2PLogger {
     for {
       bitcoind <- BitcoinSFixture.createBitcoindWithFunds(versionOpt)
       node <- createNeutrinoNode(bitcoind, None)(
-        system,
+        using system,
         appConfig.chainConf,
         appConfig.nodeConf
       )
@@ -285,7 +285,7 @@ object NodeUnitTest extends P2PLogger {
       // callbacks are executed asynchronously, which is how we fund the wallet
       // so we need to wait until the wallet balances are correct
       _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)(
-        appConfig.walletConf,
+        using appConfig.walletConf,
         system
       )
     } yield {
@@ -309,7 +309,7 @@ object NodeUnitTest extends P2PLogger {
     for {
       _ <- appConfig.walletConf.kmConf.start()
       node <- createNeutrinoNode(bitcoind, None)(
-        system,
+        using system,
         appConfig.chainConf,
         appConfig.nodeConf
       )
@@ -329,7 +329,7 @@ object NodeUnitTest extends P2PLogger {
       // callbacks are executed asynchronously, which is how we fund the wallet
       // so we need to wait until the wallet balances are correct
       _ <- BitcoinSWalletTest.awaitWalletBalances(fundedWallet)(
-        appConfig.walletConf,
+        using appConfig.walletConf,
         system
       )
     } yield {

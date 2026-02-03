@@ -25,7 +25,7 @@ class CompactFilterDAOTest extends ChainDbUnitTest {
 
   it must "create and read a filter from the database" in { compactFilterDAO =>
     val filterHeaderDAO =
-      CompactFilterHeaderDAO()(executionContext, compactFilterDAO.appConfig)
+      CompactFilterHeaderDAO()(using executionContext, compactFilterDAO.appConfig)
     val filterHeaderDb = ChainTestUtil.regTestGenesisHeaderCompactFilterHeaderDb
     val original = ChainTestUtil.regTestGenesisHeaderCompactFilterDb
 
@@ -38,7 +38,7 @@ class CompactFilterDAOTest extends ChainDbUnitTest {
 
   it must "find filters between heights" in { compactFilterDAO =>
     val blockHeaderDAO =
-      BlockHeaderDAO()(executionContext, compactFilterDAO.appConfig)
+      BlockHeaderDAO()(using executionContext, compactFilterDAO.appConfig)
     val blockHeaderDb =
       BlockHeaderHelper.buildNextHeader(ChainTestUtil.regTestGenesisHeaderDb)
     val blockHeaderDbF = blockHeaderDAO.create(blockHeaderDb)
@@ -75,7 +75,7 @@ class CompactFilterDAOTest extends ChainDbUnitTest {
 
   it must "find the filter with the heaviest work" in { compactFilterDAO =>
     val blockHeaderDAO =
-      BlockHeaderDAO()(executionContext, compactFilterDAO.appConfig)
+      BlockHeaderDAO()(using executionContext, compactFilterDAO.appConfig)
     val blockHeaderDbLightWork = {
       BlockHeaderHelper.buildNextHeader(ChainTestUtil.regTestGenesisHeaderDb)
     }

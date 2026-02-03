@@ -21,18 +21,18 @@ trait ChainDbManagement extends DbManagement {
   def ec: ExecutionContext
 
   private lazy val chainTable: TableQuery[Table[?]] =
-    BlockHeaderDAO()(ec, appConfig).table
+    BlockHeaderDAO()(using ec, appConfig).table
 
   private lazy val filterHeaderTable: TableQuery[Table[?]] = {
-    CompactFilterHeaderDAO()(ec, appConfig).table
+    CompactFilterHeaderDAO()(using ec, appConfig).table
   }
 
   private lazy val filterTable: TableQuery[Table[?]] = {
-    CompactFilterDAO()(ec, appConfig).table
+    CompactFilterDAO()(using ec, appConfig).table
   }
 
   private lazy val stateTable: TableQuery[Table[?]] = {
-    ChainStateDescriptorDAO()(ec, appConfig).table
+    ChainStateDescriptorDAO()(using ec, appConfig).table
   }
 
   override lazy val allTables: List[TableQuery[Table[?]]] =

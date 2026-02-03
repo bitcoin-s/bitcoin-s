@@ -13,47 +13,47 @@ trait DLCDbManagement extends DbManagement {
   def ec: ExecutionContext
 
   private lazy val announcementTable: TableQuery[Table[?]] = {
-    OracleAnnouncementDataDAO()(ec, appConfig).table
+    OracleAnnouncementDataDAO()(using ec, appConfig).table
   }
 
   private lazy val nonceTable: TableQuery[Table[?]] = {
-    OracleNonceDAO()(ec, appConfig).table
+    OracleNonceDAO()(using ec, appConfig).table
   }
 
   private lazy val dlcTable: TableQuery[Table[?]] = {
-    DLCDAO()(ec, appConfig).table
+    DLCDAO()(using ec, appConfig).table
   }
 
   private lazy val contractDataTable: TableQuery[Table[?]] = {
-    DLCContractDataDAO()(ec, appConfig).table
+    DLCContractDataDAO()(using ec, appConfig).table
   }
 
   private lazy val dlcAnnouncementTable: TableQuery[Table[?]] = {
-    DLCAnnouncementDAO()(ec, appConfig).table
+    DLCAnnouncementDAO()(using ec, appConfig).table
   }
 
   private lazy val dlcOfferTable: TableQuery[Table[?]] = {
-    DLCOfferDAO()(ec, appConfig).table
+    DLCOfferDAO()(using ec, appConfig).table
   }
 
   private lazy val dlcAcceptTable: TableQuery[Table[?]] = {
-    DLCAcceptDAO()(ec, appConfig).table
+    DLCAcceptDAO()(using ec, appConfig).table
   }
 
   private lazy val dlcFundingInputsTable: TableQuery[Table[?]] = {
-    DLCFundingInputDAO()(ec, appConfig).table
+    DLCFundingInputDAO()(using ec, appConfig).table
   }
 
   private lazy val dlcCETSigTable: TableQuery[Table[?]] = {
-    DLCCETSignaturesDAO()(ec, appConfig).table
+    DLCCETSignaturesDAO()(using ec, appConfig).table
   }
 
   private lazy val dlcRefundSigTable: TableQuery[Table[?]] = {
-    DLCRefundSigsDAO()(ec, appConfig).table
+    DLCRefundSigsDAO()(using ec, appConfig).table
   }
 
   private lazy val dlcRemoteTxTable: TableQuery[Table[?]] = {
-    DLCRemoteTxDAO()(ec, appConfig).table
+    DLCRemoteTxDAO()(using ec, appConfig).table
   }
 
   // Ordering matters here, tables with a foreign key should be listed after

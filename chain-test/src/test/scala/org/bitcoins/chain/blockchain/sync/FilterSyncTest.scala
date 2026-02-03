@@ -145,7 +145,7 @@ class FilterSyncTest extends ChainWithBitcoindNewestCachedUnitTest {
       FilterSync.syncFilters(
         chainApi = syncedChainHandler,
         getFilterFunc = getFilterFunc
-      )(executionContext, bitcoindChainHandler.chainHandler.chainConfig)
+      )(using executionContext, bitcoindChainHandler.chainHandler.chainConfig)
     }
   }
 }

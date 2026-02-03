@@ -66,12 +66,12 @@ trait ChainUnitTest extends BitcoinSFixture {
       build = () => {
         val c = chainAppConfig
         c.start().flatMap { _ =>
-          ChainUnitTest.createBlockHeaderDAO()(executionContext, c)
+          ChainUnitTest.createBlockHeaderDAO()(using executionContext, c)
         }
       },
       destroy = (blockHeaderDAO: BlockHeaderDAO) => {
         ChainUnitTest.destroyChainApi()(
-          system,
+          using system,
           blockHeaderDAO.appConfig
         )
       }
@@ -85,7 +85,7 @@ trait ChainUnitTest extends BitcoinSFixture {
           BitcoinSTestAppConfig.getNeutrinoTestConfig().chainConf)
       },
       destroy = (chainAppConfig: ChainAppConfig) =>
-        ChainUnitTest.destroyChainApi()(system, chainAppConfig)
+        ChainUnitTest.destroyChainApi()(using system, chainAppConfig)
     )(test)
   }
 
@@ -95,11 +95,11 @@ trait ChainUnitTest extends BitcoinSFixture {
       build = () => {
         val c = chainAppConfig
         c.start().flatMap { _ =>
-          ChainUnitTest.createFilterHeaderDAO()(c, executionContext)
+          ChainUnitTest.createFilterHeaderDAO()(using c, executionContext)
         }
       },
       destroy = (fhDAO: CompactFilterHeaderDAO) =>
-        ChainUnitTest.destroyChainApi()(system, fhDAO.appConfig)
+        ChainUnitTest.destroyChainApi()(using system, fhDAO.appConfig)
     )(test)
   }
 
@@ -109,11 +109,11 @@ trait ChainUnitTest extends BitcoinSFixture {
       build = () => {
         val c = chainAppConfig
         c.start().flatMap { _ =>
-          ChainUnitTest.createFilterDAO()(c, executionContext)
+          ChainUnitTest.createFilterDAO()(using c, executionContext)
         }
       },
       destroy = (cfDAO: CompactFilterDAO) =>
-        ChainUnitTest.destroyChainApi()(system, cfDAO.appConfig)
+        ChainUnitTest.destroyChainApi()(using system, cfDAO.appConfig)
     )(test)
   }
 
@@ -122,11 +122,11 @@ trait ChainUnitTest extends BitcoinSFixture {
       build = () => {
         val c = chainAppConfig
         c.start().flatMap { _ =>
-          ChainUnitTest.createPopulatedBlockHeaderDAO()(c, executionContext)
+          ChainUnitTest.createPopulatedBlockHeaderDAO()(using c, executionContext)
         }
       },
       destroy = (bhDAO: BlockHeaderDAO) =>
-        ChainUnitTest.destroyChainApi()(system, bhDAO.appConfig)
+        ChainUnitTest.destroyChainApi()(using system, bhDAO.appConfig)
     )(test)
   }
 
@@ -136,11 +136,11 @@ trait ChainUnitTest extends BitcoinSFixture {
         val c = chainAppConfig
         c.start()
           .flatMap(_ =>
-            ChainUnitTest.createChainStateDescriptorDAO()(executionContext, c))
+            ChainUnitTest.createChainStateDescriptorDAO()(using executionContext, c))
 
       },
       destroy = (csDAO: ChainStateDescriptorDAO) =>
-        ChainUnitTest.destroyChainApi()(system, csDAO.appConfig)
+        ChainUnitTest.destroyChainApi()(using system, csDAO.appConfig)
     )(test)
   }
 
@@ -149,10 +149,10 @@ trait ChainUnitTest extends BitcoinSFixture {
       () => {
         val c = chainAppConfig
         c.start()
-          .flatMap(_ => ChainUnitTest.createChainHandler()(executionContext, c))
+          .flatMap(_ => ChainUnitTest.createChainHandler()(using executionContext, c))
       },
       (ch: ChainHandler) =>
-        ChainUnitTest.destroyChainApi()(system, chainAppConfig = ch.chainConfig)
+        ChainUnitTest.destroyChainApi()(using system, chainAppConfig = ch.chainConfig)
     )(test)
   }
 
@@ -161,11 +161,11 @@ trait ChainUnitTest extends BitcoinSFixture {
       () => {
         val c = chainAppConfig
         c.start().flatMap { _ =>
-          ChainUnitTest.createChainHandlerCached()(executionContext, c)
+          ChainUnitTest.createChainHandlerCached()(using executionContext, c)
         }
       },
       (chc: ChainHandler) =>
-        ChainUnitTest.destroyChainApi()(system, chc.chainConfig)
+        ChainUnitTest.destroyChainApi()(using system, chc.chainConfig)
     )(test)
   }
 
@@ -173,10 +173,10 @@ trait ChainUnitTest extends BitcoinSFixture {
     makeDependentFixture(
       () => {
         val c = chainAppConfig
-        c.start().flatMap(_ => createChainHandlerWithGenesisFilter()(c))
+        c.start().flatMap(_ => createChainHandlerWithGenesisFilter()(using c))
       },
       (chgf: ChainHandler) =>
-        ChainUnitTest.destroyChainApi()(system, chgf.chainConfig)
+        ChainUnitTest.destroyChainApi()(using system, chgf.chainConfig)
     )(test)
   }
 
@@ -186,11 +186,11 @@ trait ChainUnitTest extends BitcoinSFixture {
     makeDependentFixture(
       build = () => {
         val c = chainAppConfig
-        c.start().flatMap(_ => createChainHandlerCachedWithGenesisFilter()(c))
+        c.start().flatMap(_ => createChainHandlerCachedWithGenesisFilter()(using c))
 
       },
       destroy = (chcgf: ChainHandler) =>
-        ChainUnitTest.destroyChainApi()(system, chcgf.chainConfig)
+        ChainUnitTest.destroyChainApi()(using system, chcgf.chainConfig)
     )(test)
   }
 
@@ -237,7 +237,7 @@ trait ChainUnitTest extends BitcoinSFixture {
         bitcoind.instance.zmqConfig.rawBlock
       val sink = Sink.foreachAsync(1) { (blocks: Vector[Block]) =>
         val chainApi =
-          ChainHandler.fromDatabase()(executionContext, chainAppConfig)
+          ChainHandler.fromDatabase()(using executionContext, chainAppConfig)
         val processF = chainApi.processHeaders(blocks.map(_.blockHeader))
         processF.failed.foreach { err =>
           logger.error(
@@ -250,7 +250,7 @@ trait ChainUnitTest extends BitcoinSFixture {
         .queue[Block](10, OverflowStrategy.backpressure)
         .batch(100, { t => Vector(t) }) { (vec, t) => vec.appended(t) }
         .to(sink)
-        .run()(Materializer.matFromSystem(system))
+        .run()(using Materializer.matFromSystem(using system))
       val handleRawBlock: Block => Unit = { (block: Block) =>
         queue
           .offer(block)
@@ -266,7 +266,7 @@ trait ChainUnitTest extends BitcoinSFixture {
             case org.apache.pekko.stream.QueueOfferResult.QueueClosed =>
               logger.error(
                 s"Block offer failed: queue closed for block ${block.blockHeader.hashBE}")
-          }(executionContext)
+          }(using executionContext)
         ()
       }
 
@@ -283,7 +283,7 @@ trait ChainUnitTest extends BitcoinSFixture {
 
       val handlerWithGenesisHeaderF =
         ChainUnitTest.setupHeaderTableWithGenesisHeader()(
-          executionContext,
+          using executionContext,
           chainAppConfig
         )
 
@@ -303,7 +303,7 @@ trait ChainUnitTest extends BitcoinSFixture {
           1.second
         )
       } yield {
-        (ChainHandler.fromDatabase()(executionContext, chainAppConfig),
+        (ChainHandler.fromDatabase()(using executionContext, chainAppConfig),
          zmqSubscriber)
       }
       subscribedF
@@ -323,7 +323,7 @@ trait ChainUnitTest extends BitcoinSFixture {
 
     ChainUnitTest
       .destroyBitcoindChainApiViaRpc(rpc)(
-        system,
+        using system,
         bitcoindChainHandler.chainHandler.chainConfig)
       .map { _ =>
         bitcoindChainHandler.zmqSubscriber.stop()
@@ -349,7 +349,7 @@ trait ChainUnitTest extends BitcoinSFixture {
       BitcoinSFixture.composeBuildersAndWrap(
         builder = () => BitcoinSFixture.createBitcoind(),
         dependentBuilder = { (rpc: BitcoindRpcClient) =>
-          createChainHandlerWithBitcoindZmq(rpc)(chainAppConfig)
+          createChainHandlerWithBitcoindZmq(rpc)(using chainAppConfig)
         },
         wrap = BitcoindChainHandlerViaZmq.apply
       )

@@ -84,7 +84,7 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
       createdF.flatMap { _ =>
         val blockchain = Blockchain.fromHeaders(firstThreeBlocks.reverse)
         val handler = chainHandler.copy(blockchains = Vector(blockchain))(
-          chainHandler.chainConfig,
+          using chainHandler.chainConfig,
           executionContext)
 
         // Takes way too long to do all blocks
@@ -131,7 +131,7 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
 
       val chainHandler =
         tempHandler.copy(blockchains =
-          Vector(tallestBlockchain, mostWorkChain))(tempHandler.chainConfig,
+          Vector(tallestBlockchain, mostWorkChain))(using tempHandler.chainConfig,
                                                     executionContext)
 
       for {
@@ -188,7 +188,7 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
           chainHandler.stateDAO,
           Vector(blockchain),
           Map.empty
-        )(chainHandler.chainConfig, executionContext)
+        )(using chainHandler.chainConfig, executionContext)
         val processorF = Future.successful(handler)
         // Takes way too long to do all blocks
         val blockHeadersToTest = blockHeaders.tail
@@ -224,7 +224,7 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
         Blockchain(headersWithNoWork :+ noWorkGenesis)
 
       val chainHandler = tempHandler.copy(blockchains = Vector(blockchain))(
-        tempHandler.chainConfig,
+        using tempHandler.chainConfig,
         executionContext)
 
       for {

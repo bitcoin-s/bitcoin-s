@@ -30,7 +30,7 @@ case class SpendingInfoDAO()(implicit
 
   private lazy val addrTable
       : profile.api.TableQuery[AddressDAO#AddressTable] = {
-    AddressDAO()(ec, appConfig).table
+    AddressDAO()(using ec, appConfig).table
   }
 
   private lazy val txTable: profile.api.TableQuery[

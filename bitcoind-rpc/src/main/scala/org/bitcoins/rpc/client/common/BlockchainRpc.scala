@@ -437,11 +437,11 @@ trait BlockchainRpc extends ChainApi { self: Client =>
 
   def scanBlocks(request: ScanBlocksRequest): Future[ScanBlocksResult] = {
     bitcoindCall("scanblocks", request.params)(
-      JsonSerializers.ScanBlocksResultReads)
+      using JsonSerializers.ScanBlocksResultReads)
   }
 
   def getChainStates(): Future[ChainStateResult] = {
-    bitcoindCall("getchainstates")(JsonSerializers.chainStateResultReads)
+    bitcoindCall("getchainstates")(using JsonSerializers.chainStateResultReads)
   }
 
   def getDescriptorActivity(
@@ -450,7 +450,7 @@ trait BlockchainRpc extends ChainApi { self: Client =>
       includeMempool: Boolean = true): Future[GetDescriptorActivityResult] = {
     bitcoindCall("getdescriptoractivity",
                  List(Json.toJson(blockHashes), Json.toJson(scanobjects)))(
-      JsonSerializers.getDescriptorActivityResultReads)
+      using JsonSerializers.getDescriptorActivityResultReads)
   }
 
   def waitForNewBlock(
@@ -463,7 +463,7 @@ trait BlockchainRpc extends ChainApi { self: Client =>
       case None => List(JsNumber(timeout.toMillis))
     }
     bitcoindCall("waitfornewblock", params)(
-      JsonSerializers.waitForBlockResultReads)
+      using JsonSerializers.waitForBlockResultReads)
   }
 
   def waitForBlock(
@@ -472,7 +472,7 @@ trait BlockchainRpc extends ChainApi { self: Client =>
     val params: List[JsValue] =
       List(JsString(blockHash.hex), JsNumber(timeout.toMillis))
     bitcoindCall("waitforblock", params)(
-      JsonSerializers.waitForBlockResultReads)
+      using JsonSerializers.waitForBlockResultReads)
   }
 
   def waitForBlockHeight(
@@ -481,6 +481,6 @@ trait BlockchainRpc extends ChainApi { self: Client =>
     val params: List[JsValue] =
       List(JsNumber(height), JsNumber(timeout.toMillis))
     bitcoindCall("waitforblockheight", params)(
-      JsonSerializers.waitForBlockResultReads)
+      using JsonSerializers.waitForBlockResultReads)
   }
 }

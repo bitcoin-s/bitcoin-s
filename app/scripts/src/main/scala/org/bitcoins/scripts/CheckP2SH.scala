@@ -84,7 +84,7 @@ object CheckP2SH extends BitcoinSAppScalaDaemon {
   override val customFinalDirOpt = None
 
   implicit val rpcAppConfig: BitcoindRpcAppConfig =
-    BitcoindRpcAppConfig.fromDefaultDatadir()(system)
+    BitcoindRpcAppConfig.fromDefaultDatadir()(using system)
 
   def getP2SHSource[T](
       filePath: Path,
@@ -107,7 +107,7 @@ object CheckP2SH extends BitcoinSAppScalaDaemon {
       .mapAsync(FutureUtil.getParallelism) { line =>
         Future {
           val json = Json.parse(line.utf8String)
-          val c = json.validate[Combo](Combo.reads).get
+          val c = json.validate[Combo](using Combo.reads).get
           fmt(c)
         }
       } // Read line by line

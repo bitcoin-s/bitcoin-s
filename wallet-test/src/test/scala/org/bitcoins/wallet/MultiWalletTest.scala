@@ -31,12 +31,12 @@ class MultiWalletTest extends BitcoinSAsyncTest with PostgresTestDatabase {
 
     val walletAF =
       BitcoinSWalletTest.createDefaultWallet(MockNodeApi, MockChainQueryApi)(
-        configA.walletConf
+        using configA.walletConf
       )
 
     val walletBF =
       BitcoinSWalletTest.createDefaultWallet(MockNodeApi, MockChainQueryApi)(
-        configB.walletConf
+        using configB.walletConf
       )
 
     val assertionF: Future[Assertion] = for {

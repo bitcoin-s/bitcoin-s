@@ -73,7 +73,7 @@ sealed trait DLCWalletLoaderApi
       dlcWallet <- dlcConfig.createDLCWallet(
         nodeApi = nodeApi,
         chainQueryApi = chainQueryApi
-      )(walletConfig)
+      )(using walletConfig)
     } yield (dlcWallet, walletConfig, dlcConfig)
   }
 
@@ -110,7 +110,7 @@ sealed trait DLCWalletLoaderApi
       walletNameOpt: Option[String]
   )(implicit ec: ExecutionContext): Future[Unit] = {
     val nodeStateDAO: NodeStateDescriptorDAO =
-      NodeStateDescriptorDAO()(ec, conf.nodeConf)
+      NodeStateDescriptorDAO()(using ec, conf.nodeConf)
     nodeStateDAO.updateWalletName(walletNameOpt)
   }
 

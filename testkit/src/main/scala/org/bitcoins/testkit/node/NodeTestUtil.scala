@@ -343,7 +343,7 @@ abstract class NodeTestUtil extends P2PLogger {
         NeutrinoNode(
           walletCreationTimeOpt = initNode.walletCreationTimeOpt,
           paramPeers = initNode.paramPeers
-        )(newNodeAppConfig, initNode.chainAppConfig, initNode.system)
+        )(using newNodeAppConfig, initNode.chainAppConfig, initNode.system)
       }
     }
 

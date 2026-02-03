@@ -20,7 +20,7 @@ case class SchnorrSigPointTestVector(
   def msgHash: Sha256Digest = inputs.msgHash
 
   override def toJson: JsValue = {
-    Json.toJson(this)(SchnorrSigPointTestVector.schnorrSigPointTestVectorFormat)
+    Json.toJson(this)(using SchnorrSigPointTestVector.schnorrSigPointTestVectorFormat)
   }
 }
 
@@ -34,7 +34,7 @@ object SchnorrSigPointTestVectorInput {
 
   def fromJson(json: JsValue): JsResult[SchnorrSigPointTestVectorInput] = {
     json.validate[SchnorrSigPointTestVectorInput](
-      SchnorrSigPointTestVector.schnorrSigPointTestVectorInputFormat
+      using SchnorrSigPointTestVector.schnorrSigPointTestVectorInputFormat
     )
   }
 }

@@ -605,7 +605,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
         bitcoind,
         wallet,
         chainCallbacksOpt
-      )(system)
+      )(using system)
       _ = syncF.map(_ => wallet.utxoHandling.updateUtxoPendingStates())
 
       // don't start polling until initial sync is done
@@ -697,7 +697,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
   }
 
   private lazy val nodeStateDAO: NodeStateDescriptorDAO =
-    NodeStateDescriptorDAO()(ec, nodeConf)
+    NodeStateDescriptorDAO()(using ec, nodeConf)
 
   private def getLastLoadedWalletName(): Future[Option[String]] = {
     nodeStateDAO
@@ -727,7 +727,7 @@ object BitcoinSServerMain extends BitcoinSAppScalaDaemon {
     BitcoinSAppConfig(
       datadirParser.datadir,
       Vector(datadirParser.baseConfig, serverCmdLineArgs.toConfig)
-    )(system)
+    )(using system)
 
   val m = new BitcoinSServerMain(serverCmdLineArgs)
 

@@ -51,7 +51,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
       _ <- torClientF
       bitcoinds <- bitcoindsF
       outcome = withUnstartedNeutrinoNodeBitcoinds(test, bitcoinds)(
-        system,
+        using system,
         getFreshConfig
       )
       f <- outcome.toFuture

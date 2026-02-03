@@ -111,7 +111,7 @@ sealed abstract class Transaction extends NetworkElement {
   }
 
   lazy val totalOutput: CurrencyUnit =
-    outputs.map(_.value).sum(org.bitcoins.core.currency.currencyUnitNumeric)
+    outputs.map(_.value).sum(using org.bitcoins.core.currency.currencyUnitNumeric)
 }
 
 object Transaction extends Factory[Transaction] {
