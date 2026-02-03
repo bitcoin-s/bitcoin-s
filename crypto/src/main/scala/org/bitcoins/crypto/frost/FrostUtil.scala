@@ -316,10 +316,10 @@ object FrostUtil {
       tweaks: Vector[FieldElement],
       isXOnly: Vector[Boolean],
       message: ByteVector,
-      auxRandOpt: Option[FieldElement]): (FrostNoncePub, FieldElement) = {
+      auxRandOpt: Option[ByteVector]): (FrostNoncePub, FieldElement) = {
     val secsharePrime = auxRandOpt match {
       case Some(auxRand) =>
-        val b = secshare.bytes.xor(hashFrostAux(auxRand.bytes))
+        val b = secshare.bytes.xor(hashFrostAux(auxRand))
         FieldElement.fromBytes(b)
       case None => secshare
     }
