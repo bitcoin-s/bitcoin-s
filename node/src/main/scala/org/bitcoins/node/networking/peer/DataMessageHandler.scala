@@ -53,6 +53,22 @@ case class DataMessageHandler(
     chainApi.isIBD()
   }
 
+  /** Determines if the payload is an expected response for the current sync
+    * state. This is used to avoid timing out on unrelated network messages like
+    * transactions.
+    */
+  private def isExpectedSyncResponse(
+      payload: DataPayload,
+      syncState: SyncNodeState
+  ): Boolean = {
+    (syncState, payload) match {
+      case (_: HeaderSync, _: HeadersMessage)                 => true
+      case (_: FilterHeaderSync, _: CompactFilterHeadersMessage) => true
+      case (_: FilterSync, _: CompactFilterMessage)           => true
+      case _                                                  => false
+    }
+  }
+
   def handleDataPayload(
       payload: DataPayload,
       peerData: PersistentPeerData
@@ -60,7 +76,9 @@ case class DataMessageHandler(
     state match {
       case syncState: SyncNodeState =>
         val syncPeer = syncState.syncPeer
-        val isQueryTimedOut = syncState.isQueryTimedOut(appConfig.queryWaitTime)
+        val isExpectedResponse = isExpectedSyncResponse(payload, syncState)
+        val isQueryTimedOut =
+          isExpectedResponse && syncState.isQueryTimedOut(appConfig.queryWaitTime)
         if (peerData.peer != syncPeer && !isQueryTimedOut) {
           // ignore message from peers that we aren't syncing with during IBD
           logger.debug(
