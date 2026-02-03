@@ -210,7 +210,8 @@ case class BitcoindRpcAppConfig(
         // such as blockfilters
         // see: https://github.com/bitcoin-s/bitcoin-s/issues/3695#issuecomment-929492945
         versionF.map { version =>
-          BitcoindRpcClient.fromVersion(version, instance = remote)(using system)
+          BitcoindRpcClient.fromVersion(version, instance = remote)(
+            using system)
         }
     }
   }
