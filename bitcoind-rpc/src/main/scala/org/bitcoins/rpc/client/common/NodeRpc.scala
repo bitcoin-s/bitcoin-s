@@ -44,7 +44,9 @@ trait NodeRpc { self: Client =>
 
     object LoggingReads extends Reads[Map[String, Boolean]] {
       override def reads(json: JsValue): JsResult[Map[String, Boolean]] =
-        JsonReaders.mapReads(json)(using implicitly[Reads[String]], IntOrBoolReads)
+        JsonReaders.mapReads(json)(
+          using implicitly[Reads[String]],
+          IntOrBoolReads)
     }
 
     // if we're just compiling for Scala 2.12 we could have converted the 20 lines

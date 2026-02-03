@@ -139,10 +139,7 @@ object CommonSettings {
       "-feature",
       "-deprecation",
       "-Ypatmat-exhaust-depth",
-      "off",
-      "-rewrite",
-      "-source",
-      "3.7-migration"
+      "off"
     ) ++ commonCompilerOpts ++ {
       scala2_13SourceCompilerOpts ++ scala2_13CompilerLinting
     }

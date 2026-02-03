@@ -71,7 +71,9 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
           walletA <-
             FundWalletUtil.createFundedDLCWallet(nodeApi, chainQueryApi)
           walletB <- FundWalletUtil
-            .createFundedDLCWallet(nodeApi, chainQueryApi)(using config2, system)
+            .createFundedDLCWallet(nodeApi, chainQueryApi)(
+              using config2,
+              system)
         } yield (walletA, walletB),
       destroy = { (fundedWallets: (FundedDLCWallet, FundedDLCWallet)) =>
         for {

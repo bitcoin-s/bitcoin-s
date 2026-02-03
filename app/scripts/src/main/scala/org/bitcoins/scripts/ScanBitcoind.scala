@@ -335,8 +335,8 @@ class ScanBitcoind()(implicit
       source <- sourceF
       sink = Flow[Vector[NegativeNumberResult]]
         .mapConcat(identity)
-        .map(
-          Json.toJson(_)(using ReadNegativeNumberResult.negativeNumberResultWrites))
+        .map(Json.toJson(_)(
+          using ReadNegativeNumberResult.negativeNumberResultWrites))
         .map(b => Json.stringify(b) + "\n")
         .batch(50_000, { t => Vector(t) }) { (vec, t) => vec.appended(t) }
         .map(batch => ByteString(batch.mkString))

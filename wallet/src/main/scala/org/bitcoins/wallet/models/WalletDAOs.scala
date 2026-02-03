@@ -29,8 +29,10 @@ case class WalletDAOs(
 
 object WalletDAOs {
   def fromWalletConfig(walletConfig: WalletAppConfig): WalletDAOs = {
-    val addressDAO: AddressDAO = AddressDAO()(using walletConfig.ec, walletConfig)
-    val accountDAO: AccountDAO = AccountDAO()(using walletConfig.ec, walletConfig)
+    val addressDAO: AddressDAO =
+      AddressDAO()(using walletConfig.ec, walletConfig)
+    val accountDAO: AccountDAO =
+      AccountDAO()(using walletConfig.ec, walletConfig)
     val spendingInfoDAO: SpendingInfoDAO =
       SpendingInfoDAO()(using walletConfig.ec, walletConfig)
     val transactionDAO: TransactionDAO =

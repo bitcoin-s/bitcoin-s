@@ -483,7 +483,8 @@ object BitcoinSWalletTest extends WalletLogger {
       )(using config.walletConf, system)
       // add callbacks for wallet
       nodeCallbacks <-
-        BitcoinSWalletTest.createNeutrinoNodeCallbacksForWallet(wallet)(using system)
+        BitcoinSWalletTest.createNeutrinoNodeCallbacksForWallet(wallet)(
+          using system)
       _ = config.nodeConf.addCallbacks(nodeCallbacks)
       withBitcoind <- createWalletWithBitcoind(wallet, bitcoindRpcClient)
       funded <- FundWalletUtil.fundWalletWithBitcoind(withBitcoind)

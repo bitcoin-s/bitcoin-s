@@ -25,7 +25,9 @@ class CompactFilterDAOTest extends ChainDbUnitTest {
 
   it must "create and read a filter from the database" in { compactFilterDAO =>
     val filterHeaderDAO =
-      CompactFilterHeaderDAO()(using executionContext, compactFilterDAO.appConfig)
+      CompactFilterHeaderDAO()(
+        using executionContext,
+        compactFilterDAO.appConfig)
     val filterHeaderDb = ChainTestUtil.regTestGenesisHeaderCompactFilterHeaderDb
     val original = ChainTestUtil.regTestGenesisHeaderCompactFilterDb
 

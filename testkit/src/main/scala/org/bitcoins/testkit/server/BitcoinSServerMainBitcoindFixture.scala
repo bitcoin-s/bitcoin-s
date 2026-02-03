@@ -30,7 +30,9 @@ trait BitcoinSServerMainBitcoindFixture
       for {
         bitcoind <- cachedBitcoindWithFundsF
         config = BitcoinSServerMainUtil.buildBitcoindBitcoinSAppConfig(bitcoind)
-        server = new BitcoinSServerMain(ServerArgParser.empty)(using system, config)
+        server = new BitcoinSServerMain(ServerArgParser.empty)(
+          using system,
+          config)
         _ <- server.start()
 
         // needed for fundWalletWithBitcoind

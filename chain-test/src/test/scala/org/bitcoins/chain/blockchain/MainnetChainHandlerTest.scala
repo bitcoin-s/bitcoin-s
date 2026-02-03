@@ -131,8 +131,9 @@ class MainnetChainHandlerTest extends ChainDbUnitTest {
 
       val chainHandler =
         tempHandler.copy(blockchains =
-          Vector(tallestBlockchain, mostWorkChain))(using tempHandler.chainConfig,
-                                                    executionContext)
+          Vector(tallestBlockchain, mostWorkChain))(
+          using tempHandler.chainConfig,
+          executionContext)
 
       for {
         hash <- chainHandler.getBestBlockHash()

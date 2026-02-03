@@ -126,7 +126,9 @@ class WalletSendingTest extends BitcoinSWalletTest {
         hashMessage = hashMessage,
         feeRateOpt = None
       )
-      outgoingTxDAO = OutgoingTransactionDAO()(using executionContext, walletConfig)
+      outgoingTxDAO = OutgoingTransactionDAO()(
+        using executionContext,
+        walletConfig)
       outgoingTxDbOpt <- outgoingTxDAO.read(tx.txIdBE)
     } yield {
       val opReturnOutputOpt = tx.outputs.find(_.value == 0.satoshis)
@@ -363,8 +365,9 @@ class WalletSendingTest extends BitcoinSWalletTest {
 
       newFeeRate = SatoshisPerByte(feeRate.currencyUnit + Satoshis(50))
       bumpedTx <- wallet.sendFundsHandling.bumpFeeRBF(tx.txIdBE, newFeeRate)
-      outgoingTxDAO = OutgoingTransactionDAO()(using executionContext,
-                                               fundedWallet.walletConfig)
+      outgoingTxDAO = OutgoingTransactionDAO()(
+        using executionContext,
+        fundedWallet.walletConfig)
       txDb1Opt <- outgoingTxDAO.findByTxId(tx.txIdBE)
       txDb2Opt <- outgoingTxDAO.findByTxId(bumpedTx.txIdBE)
 
@@ -443,8 +446,9 @@ class WalletSendingTest extends BitcoinSWalletTest {
                                                        None)
       bumpRate <- wallet.feeRateApi.getFeeRate()
       child <- wallet.sendFundsHandling.bumpFeeCPFP(parent.txIdBE, bumpRate)
-      spendingInfoDAO = SpendingInfoDAO()(using executionContext,
-                                          fundedWallet.walletConfig)
+      spendingInfoDAO = SpendingInfoDAO()(
+        using executionContext,
+        fundedWallet.walletConfig)
       received <- spendingInfoDAO.findTx(child).map(_.nonEmpty)
     } yield {
       // Verify we are only sending to ourself
@@ -517,8 +521,9 @@ class WalletSendingTest extends BitcoinSWalletTest {
             DoubleSha256DigestBE.empty
           ) // dummy spending txid
           .copyWithState(TxoState.PendingConfirmationsSpent)
-        spendingInfoDAO = SpendingInfoDAO()(using executionContext,
-                                            fundedWallet.walletConfig)
+        spendingInfoDAO = SpendingInfoDAO()(
+          using executionContext,
+          fundedWallet.walletConfig)
         _ <- spendingInfoDAO.update(spent)
         test <- recoverToSucceededIf[IllegalArgumentException](
           wallet.sendFundsHandling.sendFromOutPoints(

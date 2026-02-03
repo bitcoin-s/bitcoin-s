@@ -498,7 +498,8 @@ case class BlockHeaderDAO()(implicit
     getBetweenHeights(from = from, to = to).map { headers =>
       if (headers.map(_.height).distinct.size == headers.size) {
         Vector(
-          Blockchain.fromHeaders(headers.sortBy(_.height)(using Ordering.Int.reverse))
+          Blockchain.fromHeaders(
+            headers.sortBy(_.height)(using Ordering.Int.reverse))
         )
       } else {
         val headersByHeight: Vector[(Int, Vector[BlockHeaderDb])] =

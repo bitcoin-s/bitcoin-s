@@ -65,7 +65,11 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
           peerManagerApi = peerManager,
           paramPeers = Vector.empty,
           queue = node
-        )(using system.dispatcher, system, node.nodeAppConfig, node.chainAppConfig)
+        )(
+          using system.dispatcher,
+          system,
+          node.nodeAppConfig,
+          node.chainAppConfig)
         dataMessageHandler = DataMessageHandler(
           chainApi = chainApi,
           walletCreationTimeOpt = None,
@@ -218,7 +222,11 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
           peerManagerApi = peerManager,
           paramPeers = Vector.empty,
           queue = node
-        )(using system.dispatcher, system, node.nodeAppConfig, node.chainAppConfig)
+        )(
+          using system.dispatcher,
+          system,
+          node.nodeAppConfig,
+          node.chainAppConfig)
         dataMessageHandler = DataMessageHandler(
           chainApi = chainApi,
           walletCreationTimeOpt = None,
@@ -281,7 +289,11 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
           peerManagerApi = peerManager,
           paramPeers = Vector.empty,
           queue = node
-        )(using system.dispatcher, system, node.nodeAppConfig, node.chainAppConfig)
+        )(
+          using system.dispatcher,
+          system,
+          node.nodeAppConfig,
+          node.chainAppConfig)
         sentQuery0 = Instant.now()
         dataMessageHandler = DataMessageHandler(
           chainApi = chainApi,
