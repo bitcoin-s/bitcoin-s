@@ -75,7 +75,12 @@ class TimeoutLogicTest extends AsyncFlatSpec {
   }
 }
 
-/** Test wrapper to expose private methods for testing */
+/** Test wrapper that replicates the sync message classification logic from
+  * DataMessageHandler.isSyncRelatedMessage(). While this duplicates the logic,
+  * it allows for simple unit testing without needing to instantiate a full
+  * DataMessageHandler with all its dependencies. The logic must be kept in sync
+  * with the production implementation.
+  */
 case class TestDataMessageHandler() {
   def testIsSyncRelatedMessage(payload: DataPayload): Boolean = {
     payload match {

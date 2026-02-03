@@ -57,7 +57,7 @@ case class DataMessageHandler(
     * timeout checks. This excludes normal network traffic like transactions and
     * inventory messages.
     */
-  private def isSyncRelatedMessage(payload: DataPayload): Boolean = {
+  private[peer] def isSyncRelatedMessage(payload: DataPayload): Boolean = {
     payload match {
       case _: HeadersMessage                     => true
       case _: CompactFilterHeadersMessage        => true
