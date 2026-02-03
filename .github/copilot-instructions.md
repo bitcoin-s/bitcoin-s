@@ -64,7 +64,7 @@ sbt "testOnly *TestClassName -- -z test name pattern"
 ### Formatting
 
 - Use Scalafmt for code formatting - always run `sbt scalafmtAll` before committing
-- Configuration is in `.scalafmt.conf` with Scala 2.13 source 3 dialect
+- Configuration is in `.scalafmt.conf` with scala213source3 dialect
 - Align openParenCallSite but not openParenDefnSite
 - No dangling parentheses for call sites or definition sites
 
