@@ -93,9 +93,38 @@ object SerializedTransaction {
             stack = Some(p2wsh.stack.toVector.tail)
           )
         )
-      case taprootWitness: TaprootWitness =>
-        throw new UnsupportedOperationException(
-          s"Taproot not supported, got=$taprootWitness"
+      case taprootKeyPath: TaprootKeyPath =>
+        Some(
+          SerializedTransactionWitness(
+            hex = taprootKeyPath.hex,
+            scriptType = Some("TaprootKeyPath"),
+            script = None,
+            pubKey = None,
+            signature = None,
+            stack = Some(taprootKeyPath.stack)
+          )
+        )
+      case taprootScriptPath: TaprootScriptPath =>
+        Some(
+          SerializedTransactionWitness(
+            hex = taprootScriptPath.hex,
+            scriptType = Some("TaprootScriptPath"),
+            script = Some(taprootScriptPath.script.asm.toVector),
+            pubKey = None,
+            signature = None,
+            stack = Some(taprootScriptPath.stack)
+          )
+        )
+      case taprootUnknown: TaprootUnknownPath =>
+        Some(
+          SerializedTransactionWitness(
+            hex = taprootUnknown.hex,
+            scriptType = Some("TaprootUnknownPath"),
+            script = None,
+            pubKey = None,
+            signature = None,
+            stack = Some(taprootUnknown.stack)
+          )
         )
     }
   }
