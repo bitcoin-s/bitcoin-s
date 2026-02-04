@@ -243,4 +243,56 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
     }
 
   }
+
+  it should "submit a package of transactions" in { nodePair =>
+    val client = nodePair.node1
+    for {
+      // Generate blocks to ensure we have mature coinbase
+      _ <- client.generate(101)
+
+      // Create a parent transaction
+      address1 <- client.getNewAddress
+      transactionOne <- {
+        val inputs = Vector.empty
+        val outputs = Map(address1 -> Bitcoins(1))
+        client.createRawTransaction(inputs, outputs)
+      }
+      fundedTransactionOne <- client.fundRawTransaction(transactionOne)
+      signedParentTx <- BitcoindRpcTestUtil.signRawTransaction(
+        client,
+        fundedTransactionOne.hex
+      )
+
+      // Create a child transaction spending from parent
+      address2 <- client.getNewAddress
+      transactionTwo <- {
+        val sig: ScriptSignature = ScriptSignature.empty
+        val input = TransactionInput(
+          TransactionOutPoint(signedParentTx.hex.txIdBE, UInt32.zero),
+          sig,
+          UInt32.max - UInt32.one
+        )
+        val outputs = Map(address2 -> Bitcoins(0.5))
+        client.createRawTransaction(Vector(input), outputs)
+      }
+      fundedTransactionTwo <- client.fundRawTransaction(transactionTwo)
+      signedChildTx <- BitcoindRpcTestUtil.signRawTransaction(
+        client,
+        fundedTransactionTwo.hex
+      )
+
+      // Submit as package
+      result <- client.submitPackage(
+        Vector(signedParentTx.hex, signedChildTx.hex)
+      )
+
+      // Verify results
+      mempool <- client.getRawMemPool().map(_.txids)
+    } yield {
+      assert(result.package_msg == "success")
+      assert(result.tx_results.size == 2)
+      assert(mempool.contains(signedParentTx.hex.txIdBE))
+      assert(mempool.contains(signedChildTx.hex.txIdBE))
+    }
+  }
 }
