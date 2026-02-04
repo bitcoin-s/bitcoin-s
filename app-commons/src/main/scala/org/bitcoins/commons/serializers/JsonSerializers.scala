@@ -714,6 +714,54 @@ object JsonSerializers {
   implicit val indexInfoResultReads: Reads[IndexInfoResult] =
     Json.reads[IndexInfoResult]
 
+  implicit val submitPackageTxFeesReads: Reads[SubmitPackageTxFees] = {
+    (json: JsValue) =>
+      for {
+        base <- (json \ "base").validate[BitcoinFeeUnit]
+        effective_feerate <- (json \ "effective-feerate")
+          .validateOpt[BitcoinFeeUnit]
+        effective_includes <- (json \ "effective-includes")
+          .validateOpt[Vector[DoubleSha256DigestBE]]
+      } yield SubmitPackageTxFees(
+        base = base,
+        effective_feerate = effective_feerate,
+        effective_includes = effective_includes
+      )
+  }
+
+  implicit val submitPackageTxResultReads: Reads[SubmitPackageTxResult] = {
+    (json: JsValue) =>
+      for {
+        txid <- (json \ "txid").validate[DoubleSha256DigestBE]
+        other_wtxid <- (json \ "other-wtxid")
+          .validateOpt[DoubleSha256DigestBE]
+        vsize <- (json \ "vsize").validateOpt[Int]
+        fees <- (json \ "fees").validateOpt[SubmitPackageTxFees]
+        error <- (json \ "error").validateOpt[String]
+      } yield SubmitPackageTxResult(
+        txid = txid,
+        other_wtxid = other_wtxid,
+        vsize = vsize,
+        fees = fees,
+        error = error
+      )
+  }
+
+  implicit val submitPackageResultReads: Reads[SubmitPackageResult] = {
+    (json: JsValue) =>
+      for {
+        package_msg <- (json \ "package_msg").validate[String]
+        tx_results <- (json \ "tx-results")
+          .validate[Map[DoubleSha256DigestBE, SubmitPackageTxResult]]
+        replaced_transactions <- (json \ "replaced-transactions")
+          .validateOpt[Vector[DoubleSha256DigestBE]]
+      } yield SubmitPackageResult(
+        package_msg = package_msg,
+        tx_results = tx_results,
+        replaced_transactions = replaced_transactions
+      )
+  }
+
   implicit val createWalletResultReads: Reads[CreateWalletResult] =
     Json.reads[CreateWalletResult]
 

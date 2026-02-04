@@ -193,3 +193,23 @@ final case class SubmitHeaderResult(header: BlockHeader) extends OtherResult
 
 case class IndexInfoResult(synced: Boolean, best_block_height: Int)
     extends OtherResult
+
+case class SubmitPackageTxFees(
+    base: BitcoinFeeUnit,
+    effective_feerate: Option[BitcoinFeeUnit],
+    effective_includes: Option[Vector[DoubleSha256DigestBE]]
+)
+
+case class SubmitPackageTxResult(
+    txid: DoubleSha256DigestBE,
+    other_wtxid: Option[DoubleSha256DigestBE],
+    vsize: Option[Int],
+    fees: Option[SubmitPackageTxFees],
+    error: Option[String]
+)
+
+case class SubmitPackageResult(
+    package_msg: String,
+    tx_results: Map[DoubleSha256DigestBE, SubmitPackageTxResult],
+    replaced_transactions: Option[Vector[DoubleSha256DigestBE]]
+) extends OtherResult

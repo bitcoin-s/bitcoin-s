@@ -177,4 +177,19 @@ trait MempoolRpc { self: Client =>
       List(json)
     )
   }
+
+  def submitPackage(
+      transactions: Vector[Transaction],
+      maxFeeRate: Double = 0.10,
+      maxBurnAmount: Double = 0.0
+  ): Future[SubmitPackageResult] = {
+    bitcoindCall[SubmitPackageResult](
+      "submitpackage",
+      List(
+        Json.toJson(transactions),
+        Json.toJson(maxFeeRate),
+        Json.toJson(maxBurnAmount)
+      )
+    )
+  }
 }
