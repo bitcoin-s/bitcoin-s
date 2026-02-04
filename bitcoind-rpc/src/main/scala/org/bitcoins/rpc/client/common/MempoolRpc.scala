@@ -178,6 +178,29 @@ trait MempoolRpc { self: Client =>
     )
   }
 
+  /** Submit a package of raw transactions to the mempool.
+    *
+    * The package will be validated according to consensus and mempool policy
+    * rules. If any transaction passes, it will be accepted to mempool. The
+    * package must solely consist of a child transaction and all of its
+    * unconfirmed parents, if any. None of the parents may depend on each other.
+    *
+    * This RPC is experimental and the interface may be unstable. Package relay
+    * is not currently supported, so successful submission does not mean the
+    * transactions will propagate throughout the network.
+    *
+    * @param transactions
+    *   Vector of transactions to submit as a package (must be topologically
+    *   sorted with child last)
+    * @param maxFeeRate
+    *   Maximum fee rate in BTC/kvB. Transactions with higher fee rates will be
+    *   rejected. Set to 0 to accept any fee rate. Default is 0.10 BTC/kvB.
+    * @param maxBurnAmount
+    *   Maximum amount in BTC that can be burned through provably unspendable
+    *   outputs (e.g., OP_RETURN). Default is 0.
+    * @return
+    *   SubmitPackageResult containing package validation results
+    */
   def submitPackage(
       transactions: Vector[Transaction],
       maxFeeRate: Double = 0.10,

@@ -250,7 +250,8 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
       // Generate blocks to ensure we have mature coinbase
       _ <- client.generate(101)
 
-      // Create a parent transaction that will be low fee and won't be accepted alone
+      // Create a parent transaction. We use fundRawTransaction to automatically
+      // select inputs and add a change output, creating a valid transaction.
       address1 <- client.getNewAddress
       transactionOne <- {
         val inputs = Vector.empty
@@ -263,7 +264,8 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
         fundedTransactionOne.hex
       )
 
-      // Create a child transaction spending from the first output of parent
+      // Create a child transaction spending from the first output of parent.
+      // This demonstrates the package CPFP (Child Pays For Parent) use case.
       address2 <- client.getNewAddress
       transactionTwo <- {
         val sig: ScriptSignature = ScriptSignature.empty
@@ -273,17 +275,17 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
           sig,
           UInt32.max - UInt32.one
         )
-        // Create a transaction that spends some of the parent's output
+        // Create a transaction that spends most of the parent's output
         val outputs = Map(address2 -> Bitcoins(0.9))
         client.createRawTransaction(Vector(input), outputs)
       }
-      // Sign the child transaction - this will work because we control the keys
+      // Sign the child transaction
       signedChildTx <- BitcoindRpcTestUtil.signRawTransaction(
         client,
         transactionTwo
       )
 
-      // Submit as package
+      // Submit as package - both parent and child together
       result <- client.submitPackage(
         Vector(signedParentTx.hex, signedChildTx.hex)
       )
