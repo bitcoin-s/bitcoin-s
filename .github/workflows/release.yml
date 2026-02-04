@@ -38,14 +38,16 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest] #
+        os: [macos-13, macos-14, ubuntu-latest, windows-latest]
         # If os values you don't include the matrix os list above are set here, they will be included
         # If you want multiple variables per os see https://github.community/t/create-matrix-with-multiple-os-and-env-for-each-one/16895
         # Can run conditional steps below with https://github.community/t/what-is-the-correct-if-condition-syntax-for-checking-matrix-os-version/16221
         # This is here to get friendly labels for output filenames
         include:
-        - os: macos-latest
-          TARGET: mac
+        - os: macos-13
+          TARGET: mac-x86_64
+        - os: macos-14
+          TARGET: mac-arm64
         - os: ubuntu-latest
           TARGET: linux
         - os: windows-latest
@@ -142,12 +144,15 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest] # windows-latest
+        os: [macos-13, macos-14, ubuntu-latest] # windows-latest
         # If os values you don't include the matrix os list above are set here, they will be included
         # This is here to get friendly labels for output filenames
         include:
-        - os: macos-latest
-          TARGET: mac
+        - os: macos-13
+          TARGET: mac-x86_64
+          FORMAT: zip # dmg
+        - os: macos-14
+          TARGET: mac-arm64
           FORMAT: zip # dmg
         - os: ubuntu-latest
           TARGET: linux
@@ -300,8 +305,11 @@ jobs:
       #     : # echo "=== Verify app notarization ==="
       #     : # spctl -vvv --assess --type exec "$KRYSTALBULL_PATH"
       # Platform specific values here for folder depth
-      - name: (macos) Move .zip into /make
-        if: startsWith(matrix.os,'macos')
+      - name: (macos-x86_64) Move .zip into /make
+        if: matrix.os == 'macos-13'
+        run: mv ${{env.KB_MAKE}}/zip/darwin/x64/*.zip $KB_MAKE
+      - name: (macos-arm64) Move .zip into /make
+        if: matrix.os == 'macos-14'
         run: mv ${{env.KB_MAKE}}/zip/darwin/arm64/*.zip $KB_MAKE
       - name: (linux) Move .deb into /make
         if: startsWith(matrix.os,'ubuntu')
@@ -392,8 +400,11 @@ jobs:
       #     : # echo "=== Verify app notarization ==="
       #     : # spctl -vvv --assess --type exec "$WALLET_PATH"
       # Platform specific values here for folder depth
-      - name: (macos) Move .zip into /make
-        if: startsWith(matrix.os,'macos')
+      - name: (macos-x86_64) Move .zip into /make
+        if: matrix.os == 'macos-13'
+        run: mv ${{env.W_MAKE}}/zip/darwin/x64/*.zip $W_MAKE
+      - name: (macos-arm64) Move .zip into /make
+        if: matrix.os == 'macos-14'
         run: mv ${{env.W_MAKE}}/zip/darwin/arm64/*.zip $W_MAKE
       - name: (linux) Move .deb into /make
         if: startsWith(matrix.os,'ubuntu')
