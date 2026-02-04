@@ -197,9 +197,9 @@ class ChainHandler(
                   s"Processed headers from height=$startHeight to ${c.height}. Best hash=${c.tip.hashBE.hex}"
                 )
               }
-              // Log the failure to connect to this stale tip
+              // Log the failure to connect to this tip
               logger.debug(
-                s"Failed to connect header=${failed.failedHeader.hashBE.hex} to stale tip=${failed.blockchain.tip.hashBE.hex} at height=${failed.blockchain.height}. Reason: ${failed.tipUpdateFailure}"
+                s"Failed to connect header=${failed.failedHeader.hashBE.hex} to tip=${failed.blockchain.tip.hashBE.hex} at height=${failed.blockchain.height}. Reason: ${failed.tipUpdateFailure}"
               )
           }
           newChainHandler
