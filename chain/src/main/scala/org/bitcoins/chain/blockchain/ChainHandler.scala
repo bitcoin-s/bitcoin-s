@@ -183,16 +183,18 @@ class ChainHandler(
             case successful: BlockchainUpdate.Successful =>
               if (successful.successfulHeaders.nonEmpty) {
                 val c = successful.blockchain
+                val startHeight = c.height - successful.successfulHeaders.length
                 logger.info(
-                  s"Processed headers from height=${c.height - successful.successfulHeaders.length} to ${c.height}. Best hash=${c.tip.hashBE.hex}"
+                  s"Processed headers from height=$startHeight to ${c.height}. Best hash=${c.tip.hashBE.hex}"
                 )
               }
             case failed: BlockchainUpdate.Failed =>
               if (failed.successfulHeaders.nonEmpty) {
                 // Some headers were successfully connected before failure
                 val c = failed.blockchain
+                val startHeight = c.height - failed.successfulHeaders.length
                 logger.info(
-                  s"Processed headers from height=${c.height - failed.successfulHeaders.length} to ${c.height}. Best hash=${c.tip.hashBE.hex}"
+                  s"Processed headers from height=$startHeight to ${c.height}. Best hash=${c.tip.hashBE.hex}"
                 )
               }
               // Log the failure to connect to this stale tip
