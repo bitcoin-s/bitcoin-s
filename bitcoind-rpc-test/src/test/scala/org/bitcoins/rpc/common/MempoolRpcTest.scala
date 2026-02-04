@@ -250,7 +250,7 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
       // Generate blocks to ensure we have mature coinbase
       _ <- client.generate(101)
 
-      // Create a parent transaction
+      // Create a parent transaction that will be low fee and won't be accepted alone
       address1 <- client.getNewAddress
       transactionOne <- {
         val inputs = Vector.empty
@@ -263,22 +263,24 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
         fundedTransactionOne.hex
       )
 
-      // Create a child transaction spending from parent
+      // Create a child transaction spending from the first output of parent
       address2 <- client.getNewAddress
       transactionTwo <- {
         val sig: ScriptSignature = ScriptSignature.empty
+        // Spend from first output (index 0) of parent transaction
         val input = TransactionInput(
           TransactionOutPoint(signedParentTx.hex.txIdBE, UInt32.zero),
           sig,
           UInt32.max - UInt32.one
         )
-        val outputs = Map(address2 -> Bitcoins(0.5))
+        // Create a transaction that spends some of the parent's output
+        val outputs = Map(address2 -> Bitcoins(0.9))
         client.createRawTransaction(Vector(input), outputs)
       }
-      fundedTransactionTwo <- client.fundRawTransaction(transactionTwo)
+      // Sign the child transaction - this will work because we control the keys
       signedChildTx <- BitcoindRpcTestUtil.signRawTransaction(
         client,
-        fundedTransactionTwo.hex
+        transactionTwo
       )
 
       // Submit as package
@@ -289,8 +291,10 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
       // Verify results
       mempool <- client.getRawMemPool().map(_.txids)
     } yield {
+      // Check that package submission succeeded
       assert(result.package_msg == "success")
       assert(result.tx_results.size == 2)
+      // Both transactions should be in mempool
       assert(mempool.contains(signedParentTx.hex.txIdBE))
       assert(mempool.contains(signedChildTx.hex.txIdBE))
     }
