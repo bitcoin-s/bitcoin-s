@@ -1,8 +1,8 @@
 name: Release
 on:
   push:
-    branches: [master, main, "copilot/add-arm64-jlink-support"]
-    tags: ["*"]
+    branches: [ master, main ]
+    tags: [ "*" ]
   release:
     types: [ published ]
 
@@ -38,21 +38,21 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-15-intel, macos-latest, ubuntu-latest, windows-latest]
+        os: [ macos-15-intel, macos-latest, ubuntu-latest, windows-latest ]
         # If os values you don't include the matrix os list above are set here, they will be included
         # If you want multiple variables per os see https://github.community/t/create-matrix-with-multiple-os-and-env-for-each-one/16895
         # Can run conditional steps below with https://github.community/t/what-is-the-correct-if-condition-syntax-for-checking-matrix-os-version/16221
         # This is here to get friendly labels for output filenames
         include:
-        - os: macos-15-intel
-          TARGET: mac-x86_64
-        - os: macos-latest
-          TARGET: mac-arm64
-        - os: ubuntu-latest
-          TARGET: linux
-        - os: windows-latest
-        # TODO : Do we want to use 'win' or 'windows'?
-          TARGET: windows
+          - os: macos-15-intel
+            TARGET: mac-x86_64
+          - os: macos-latest
+            TARGET: mac-arm64
+          - os: ubuntu-latest
+            TARGET: linux
+          - os: windows-latest
+            # TODO : Do we want to use 'win' or 'windows'?
+            TARGET: windows
     steps:
       - uses: actions/checkout@v3
         with:
@@ -145,19 +145,19 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-15-intel, macos-latest, ubuntu-latest] # windows-latest
+        os: [ macos-15-intel, macos-latest, ubuntu-latest ] # windows-latest
         # If os values you don't include the matrix os list above are set here, they will be included
         # This is here to get friendly labels for output filenames
         include:
-        - os: macos-15-intel
-          TARGET: mac-x86_64
-          FORMAT: zip # dmg
-        - os: macos-latest
-          TARGET: mac-arm64
-          FORMAT: zip # dmg
-        - os: ubuntu-latest
-          TARGET: linux
-          FORMAT: deb
+          - os: macos-15-intel
+            TARGET: mac-x86_64
+            FORMAT: zip # dmg
+          - os: macos-latest
+            TARGET: mac-arm64
+            FORMAT: zip # dmg
+          - os: ubuntu-latest
+            TARGET: linux
+            FORMAT: deb
         # - os: windows-latest
         #   TARGET: windows
         #   FORMAT: zip # ???
@@ -204,7 +204,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: bitcoin-s/bitcoin-s-ts
-      #    ref: electron-forge-config # TODO : Merge to master and remove
+          #    ref: electron-forge-config # TODO : Merge to master and remove
           path: bitcoin-s-ts
       - name: bitcoin-s-ts install and build
         working-directory: bitcoin-s-ts
@@ -229,36 +229,36 @@ jobs:
           npm ci
           npm run build
           npm run make
-      # - name: (windows) Show windows artifacts 
-      #   if: startsWith(matrix.os,'windows')
-      #   run: |
-      #     ls -l $KB_OUT
-      #     ls -l $KB_MAKE
-      #     ls -l "$KB_MAKE/zip"
-      #     ls -l "$KB_MAKE/zip/windows"
-      #     ls -l "$KB_MAKE/zip/windows/x64"
-      # - name: (macos) Manually sign Krystal Bull
-      #   if: startsWith(matrix.os,'macos')
-      #   env:
-      #     APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
-      #     NOTORIZE_APPLE_ID: "stewart.chris1234@gmail.com"
-      #     NOTORIZE_APPLE_PW: ${{ secrets.MAC_NOTARIZATION_PW }}
-      #     TEAM_ID: "9ZG3GPKHX8"
-      #     PLIST: "bitcoin-s-ts/oracle-electron-ts/entitlements.plist"
-      #     KRYSTALBULL_PATH: "${{env.KB_OUT}}/Krystal Bull-darwin-x64/Krystal Bull.app"
-      #     BUNDLE_ID: "org.bitcoins.krystalbull"
-      #     ZIP_NAME: "KrystalBull-mac.zip"
-      #   run: |
-      #     echo "=== Signing app ==="
-      # : # See about signing subsystems - https://gist.github.com/jorangreef/27e708c67b7e6746a98a
-      #     codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --timestamp --options runtime -vvvv --deep "$KRYSTALBULL_PATH"
-      #     echo "=== Verifying app signature ==="
-      #     codesign -vvv --deep --strict "$KRYSTALBULL_PATH"
-      #     codesign -dvv "$KRYSTALBULL_PATH"
-      #     codesign -d --entitlements :- "$KRYSTALBULL_PATH"
-      #     echo "=== zip app ==="
-      #     zip -qr $ZIP_NAME "$KRYSTALBULL_PATH"
-      #     mv $ZIP_NAME $KB_MAKE
+        # - name: (windows) Show windows artifacts
+        #   if: startsWith(matrix.os,'windows')
+        #   run: |
+        #     ls -l $KB_OUT
+        #     ls -l $KB_MAKE
+        #     ls -l "$KB_MAKE/zip"
+        #     ls -l "$KB_MAKE/zip/windows"
+        #     ls -l "$KB_MAKE/zip/windows/x64"
+        # - name: (macos) Manually sign Krystal Bull
+        #   if: startsWith(matrix.os,'macos')
+        #   env:
+        #     APP_SIGNING_ID: "Developer ID Application: Chris Stewart (9ZG3GPKHX8)"
+        #     NOTORIZE_APPLE_ID: "stewart.chris1234@gmail.com"
+        #     NOTORIZE_APPLE_PW: ${{ secrets.MAC_NOTARIZATION_PW }}
+        #     TEAM_ID: "9ZG3GPKHX8"
+        #     PLIST: "bitcoin-s-ts/oracle-electron-ts/entitlements.plist"
+        #     KRYSTALBULL_PATH: "${{env.KB_OUT}}/Krystal Bull-darwin-x64/Krystal Bull.app"
+        #     BUNDLE_ID: "org.bitcoins.krystalbull"
+        #     ZIP_NAME: "KrystalBull-mac.zip"
+        #   run: |
+        #     echo "=== Signing app ==="
+        # : # See about signing subsystems - https://gist.github.com/jorangreef/27e708c67b7e6746a98a
+        #     codesign -s "$APP_SIGNING_ID" --entitlements "$PLIST" --timestamp --options runtime -vvvv --deep "$KRYSTALBULL_PATH"
+        #     echo "=== Verifying app signature ==="
+        #     codesign -vvv --deep --strict "$KRYSTALBULL_PATH"
+        #     codesign -dvv "$KRYSTALBULL_PATH"
+        #     codesign -d --entitlements :- "$KRYSTALBULL_PATH"
+        #     echo "=== zip app ==="
+        #     zip -qr $ZIP_NAME "$KRYSTALBULL_PATH"
+        #     mv $ZIP_NAME $KB_MAKE
         # mv ${{env.KB_MAKE}}/zip/darwin/x64/*.zip $ZIP_NAME
         # echo "=== Notarizing app ==="
         # : # Store xcrun creditials
