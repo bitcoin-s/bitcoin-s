@@ -4,15 +4,6 @@ import org.apache.pekko.actor.{ActorSystem, Cancellable}
 import org.apache.pekko.event.Logging
 import org.apache.pekko.io.Inet.SocketOption
 import org.apache.pekko.io.Tcp.SO.KeepAlive
-import org.apache.pekko.stream.{
-  ActorAttributes,
-  Attributes,
-  KillSwitches,
-  OverflowStrategy,
-  QueueOfferResult,
-  Supervision,
-  UniqueKillSwitch
-}
 import org.apache.pekko.stream.scaladsl.{
   BidiFlow,
   Flow,
@@ -34,10 +25,10 @@ import org.bitcoins.core.api.node.constant.NodeConstants
 import org.bitcoins.core.number.Int32
 import org.bitcoins.core.p2p.*
 import org.bitcoins.core.util.NetworkUtil
+import org.bitcoins.node.NodeStreamMessage
 import org.bitcoins.node.NodeStreamMessage.DisconnectedPeer
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.networking.peer.PeerConnection.ConnectionGraph
-import org.bitcoins.node.{NodeStreamMessage}
 import org.bitcoins.tor.{Socks5Connection, Socks5ConnectionState}
 import org.slf4j.{Logger, LoggerFactory}
 import scodec.bits.ByteVector
