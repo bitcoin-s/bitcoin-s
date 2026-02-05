@@ -172,7 +172,7 @@ case class TransactionProcessing(
 
   }
 
-  /** Helper method to process a block. This fetches all of our relevent
+  /** Helper method to process a block. This fetches all of our relevant
     * spending info dbs up front rather than fetching them every time
     * [[processTransaction]] is called. This significantly improves performance
     * on rescans or IBD with an existing wallet

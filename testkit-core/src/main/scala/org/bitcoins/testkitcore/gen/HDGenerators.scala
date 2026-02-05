@@ -79,7 +79,7 @@ object HDGenerators {
       int <- NumberGenerator.positiveInts
     } yield HDAccount(coin = coin, index = int)
 
-  /** Generates a valid HD adddress path
+  /** Generates a valid HD address path
     */
   def hdAddress: Gen[HDAddress] =
     for {
