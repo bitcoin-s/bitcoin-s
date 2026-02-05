@@ -1,7 +1,7 @@
 name: Release
 on:
   push:
-    branches: [master, main]
+    branches: [master, main, "copilot/add-arm64-jlink-support"]
     tags: ["*"]
   release:
     types: [ published ]
