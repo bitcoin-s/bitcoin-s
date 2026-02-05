@@ -158,8 +158,6 @@ class ChainHandler(
           )
         )
       } else {
-        val chains = blockchainUpdates.map(_.blockchain)
-
         val createdF = blockHeaderDAO.createAll(headersToBeCreated)
 
         val newChainHandler = ChainHandler(
@@ -180,10 +178,29 @@ class ChainHandler(
             chainConfig.callBacks
               .executeOnBlockHeaderConnectedCallbacks(headersWithHeight)
           }
-          chains.foreach { c =>
-            logger.info(
-              s"Processed headers from height=${c.height - headers.length} to ${c.height}. Best hash=${c.tip.hashBE.hex}"
-            )
+          // Log successful and failed updates separately
+          blockchainUpdates.foreach {
+            case successful: BlockchainUpdate.Successful =>
+              if (successful.successfulHeaders.nonEmpty) {
+                val c = successful.blockchain
+                val startHeight = c.height - successful.successfulHeaders.length
+                logger.info(
+                  s"Processed headers from height=$startHeight to ${c.height}. Best hash=${c.tip.hashBE.hex}"
+                )
+              }
+            case failed: BlockchainUpdate.Failed =>
+              if (failed.successfulHeaders.nonEmpty) {
+                // Some headers were successfully connected before failure
+                val c = failed.blockchain
+                val startHeight = c.height - failed.successfulHeaders.length
+                logger.info(
+                  s"Processed headers from height=$startHeight to ${c.height}. Best hash=${c.tip.hashBE.hex}"
+                )
+              }
+              // Log the failure to connect to this tip
+              logger.debug(
+                s"Failed to connect header=${failed.failedHeader.hashBE.hex} to tip=${failed.blockchain.tip.hashBE.hex} at height=${failed.blockchain.height}. Reason: ${failed.tipUpdateFailure}"
+              )
           }
           newChainHandler
         }
