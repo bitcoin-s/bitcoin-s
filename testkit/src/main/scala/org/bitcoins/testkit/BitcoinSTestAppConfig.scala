@@ -47,17 +47,8 @@ object BitcoinSTestAppConfig {
     val overrideConf = ConfigFactory.parseString {
       s"""
          |bitcoin-s {
-         |  node {
-         |     mode = neutrino
-         |     relay = true
-         |     enable-peer-discovery = false
-         |  }
-         |  wallet {
-         |    allowExternalDLCAddresses = true
-         |  }
          |  proxy.enabled = $torEnabled
          |  tor.enabled = $torEnabled
-         |  tor.use-random-ports = false
          |}
       """.stripMargin
     }
@@ -82,13 +73,10 @@ object BitcoinSTestAppConfig {
            |bitcoin-s {
            |  node {
            |     mode = neutrino
-           |     relay = true
            |     enable-peer-discovery = false
            |  }
-           |  fee-provider.name = "random"
            |  proxy.enabled = $torEnabled
            |  tor.enabled = $torEnabled
-           |  tor.use-random-ports = false
            |}
       """.stripMargin
       }
@@ -122,13 +110,11 @@ object BitcoinSTestAppConfig {
            |bitcoin-s {
            |  node {
            |     mode = neutrino
-           |     relay = true
            |     maxConnectedPeers = 8
            |     enable-peer-discovery = false
            |  }
            |  proxy.enabled = $torEnabled
            |  tor.enabled = $torEnabled
-           |  tor.use-random-ports = false
            |}
       """.stripMargin
       }
