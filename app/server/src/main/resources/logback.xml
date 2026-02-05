@@ -1,4 +1,4 @@
-<configuration scan="true" scanPeriod="15 seconds" >
+<configuration scan="true" scanPeriod="15 seconds">
     <appender name="STDOUT" target="System.out" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%date{ISO8601,UTC}UTC %level [%logger{0}] %msg%n</pattern>
@@ -7,7 +7,7 @@
 
     <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
         <queueSize>8192</queueSize>
-        <appender-ref ref="STDOUT" />
+        <appender-ref ref="STDOUT"/>
     </appender>
 
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
@@ -27,17 +27,36 @@
 
     <appender name="ASYNC-FILE" class="ch.qos.logback.classic.AsyncAppender">
         <queueSize>8192</queueSize>
-        <appender-ref ref="FILE" />
+        <appender-ref ref="FILE"/>
     </appender>
 
-    <root level="DEBUG">
+    <root level="INFO">
         <appender-ref ref="ASYNC"/>
         <appender-ref ref="ASYNC-FILE"/>
     </root>
-    <logger name="org.bitcoins.wallet" level="INFO"/>
-    <logger name="slick" level="OFF"/>
-    <logger name="org.apache.pekko" level="DEBUG"/>
-    <logger name="org.apache.pekko.stream" level="DEBUG"/>
 
-    <logger name="org.apache.pekko" level="DEBUG"/>
+    <logger name="org.bitcoins.node" level="DEBUG"/>
+
+    <logger name="org.bitcoins.chain" level="INFO"/>
+
+    <logger name="org.bitcoins.wallet" level="INFO"/>
+
+    <logger name="slick" level="OFF"/>
+    <logger name="com.zaxxer" level="INFO"/>
+
+    <!-- Get rid of messages like this:
+    Connection attempt failed. Backing off new connection
+    attempts for at least 800 milliseconds. -->
+    <logger name="org.apache.pekko.http.impl.engine.client.PoolGateway" level="OFF"/>
+
+    <!-- get rid of "Slf4jLogger started" messages -->
+    <logger name="org.apache.pekko.event.slf4j.Slf4jLogger" level="OFF"/>
+
+    <!-- get rid of "Running CoordinatedShutdown Phase" messages -->
+    <logger name="org.apache.pekko.actor.slf4j.CoordinatedShutdown" level="OFF"/>
+
+    <!-- get rid of akka dead letter messages -->
+    <logger name="org.apache.pekko.actor.RepointableActorRef" level="OFF"/>
+    <logger name="org.apache.pekko.actor.LocalActorRef" level="OFF"/>
+
 </configuration>

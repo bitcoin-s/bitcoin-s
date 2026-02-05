@@ -4,6 +4,7 @@ import org.apache.pekko.actor.{ActorSystem, Cancellable}
 import org.apache.pekko.event.Logging
 import org.apache.pekko.io.Inet.SocketOption
 import org.apache.pekko.io.Tcp.SO.KeepAlive
+import org.apache.pekko.stream.*
 import org.apache.pekko.stream.scaladsl.{
   BidiFlow,
   Flow,
@@ -14,7 +15,6 @@ import org.apache.pekko.stream.scaladsl.{
   SourceQueue,
   Tcp
 }
-import org.apache.pekko.stream.*
 import org.apache.pekko.util.ByteString
 import org.apache.pekko.{Done, NotUsed}
 import org.bitcoins.chain.blockchain.ChainHandler
@@ -98,63 +98,6 @@ case class PeerConnection(
       logger.debug(s"Sending version message=$v to peer=$peer")
       sendMsg(v.bytes, outboundQueue)
     }
-  }
-
-  private def parseHelper(
-      unalignedBytes: ByteString,
-      byteVec: ByteString
-  ): (ByteString, Vector[NetworkMessage]) = {
-    val bytes: ByteVector = ByteVector(unalignedBytes ++ byteVec)
-    logger.trace(s"Bytes for message parsing: ${bytes.toHex}")
-    val (messages, newUnalignedBytes) =
-      NetworkUtil.parseIndividualMessages(bytes)
-
-    (ByteString.fromArray(newUnalignedBytes.toArray), messages)
-  }
-
-  private val parseToNetworkMsgFlow
-      : Flow[ByteString, Vector[NetworkMessage], NotUsed] = {
-    Flow[ByteString]
-      .statefulMap(() => ByteString.empty)(
-        parseHelper,
-        { (_: ByteString) => None }
-      )
-      .log(
-        "parseToNetworkMsgFlow",
-        { case msgs: Vector[NetworkMessage] =>
-          s"received msgs=${msgs.map(_.payload.commandName)} from peer=$peer"
-        }
-      )
-      .withAttributes(Attributes.logLevels(onFailure = Logging.ErrorLevel))
-  }
-
-  private val writeNetworkMsgFlow: Flow[ByteString, ByteString, NotUsed] = {
-    Flow.apply
-      .log(
-        "writeNetworkMsgFlow",
-        { (bytes: ByteString) =>
-          s"Writing bytes.length=${bytes.length} to peer=$peer"
-        }
-      )
-      .alsoTo(Sink.foreach(bs =>
-        logger.debug(s"Actually writing ${bs.length} bytes to ${peer}")))
-      .watchTermination() { (_, done) =>
-        done.onComplete(r =>
-          logger.warn(s"writeNetworkMsgFlow completed for $peer: $r"))(
-          system.dispatcher)
-        NotUsed
-      }
-      .withAttributes(Attributes.logLevels(onFailure = Logging.ErrorLevel))
-  }
-
-  private val bidiFlow: BidiFlow[ByteString,
-                                 Vector[
-                                   NetworkMessage
-                                 ],
-                                 ByteString,
-                                 ByteString,
-                                 NotUsed] = {
-    BidiFlow.fromFlows(parseToNetworkMsgFlow, writeNetworkMsgFlow)
   }
 
   private val (outboundQueue: SourceQueue[ByteString],
