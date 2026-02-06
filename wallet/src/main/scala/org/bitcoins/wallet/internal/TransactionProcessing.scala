@@ -87,16 +87,15 @@ case class TransactionProcessing(
       transaction: Transaction,
       blockHashWithConfsOpt: Option[BlockHashWithConfs]
   ): Future[Unit] = {
+    val action = processTransactionImpl(
+      transaction = transaction,
+      blockHashWithConfsOpt = blockHashWithConfsOpt,
+      newTags = Vector.empty,
+      receivedSpendingInfoDbsOpt = None,
+      spentSpendingInfoDbsOpt = None,
+      relevantReceivedOutputsA = getRelevantOutputsAction(transaction)
+    )
     for {
-      relevantReceivedOutputs <- getRelevantOutputs(transaction)
-      action = processTransactionImpl(
-        transaction = transaction,
-        blockHashWithConfsOpt = blockHashWithConfsOpt,
-        newTags = Vector.empty,
-        receivedSpendingInfoDbsOpt = None,
-        spentSpendingInfoDbsOpt = None,
-        relevantReceivedOutputs = relevantReceivedOutputs
-      )
       processTx <- safeDatabase.run(action)
       // only notify about our transactions
       _ <-
@@ -179,12 +178,14 @@ case class TransactionProcessing(
     */
   private def processBlockCachedUtxos(block: Block): Future[Unit] = {
     // fetch all received spending info dbs relevant to txs in this block to improve performance
-    val receivedSpendingInfoDbsF =
+    val receivedSpendingInfoDbsA =
       spendingInfoDAO
-        .findTxs(block.transactions)
+        .findTxsAction(block.transactions)
 
-    val cachedReceivedOptF = receivedSpendingInfoDbsF
-      .map(Some(_)) // reduce allocations by creating Some here
+    val cachedReceivedOptA
+        : DBIOAction[Option[Vector[SpendingInfoDb]], NoStream, Effect.Read] =
+      receivedSpendingInfoDbsA
+        .map(Some(_)) // reduce allocations by creating Some here
 
     val blockHash = block.blockHeader.hashBE
     val blockHashWithConfsOptF: Future[Option[BlockHashWithConfs]] =
@@ -192,43 +193,41 @@ case class TransactionProcessing(
 
     // fetch all outputs we may have received in this block in advance
     // as an optimization
-    val relevantReceivedOutputsForBlockF = getRelevantOutputsForBlock(block)
+    val relevantReceivedOutputsForBlockA = getRelevantOutputsForBlock(block)
+    val actionsF
+        : Future[DBIOAction[Vector[ProcessTxResult], NoStream, Effect.All]] = {
+      blockHashWithConfsOptF.map { blockHashWithConfsOpt =>
+        for {
+          receivedSpendingInfoDbsOpt <- cachedReceivedOptA
+          actions <- {
+            DBIOAction.traverse(block.transactions) { transaction =>
+              val relevantReceivedOutputsForTxA =
+                relevantReceivedOutputsForBlockA.map(
+                  _.getOrElse(transaction.txIdBE, Vector.empty))
 
-    val actionsF: Future[Vector[
-      DBIOAction[ProcessTxResult, NoStream, Effect.Read & Effect.Write]]] =
-      for {
-        // map on these first so we don't have to call
-        // .map everytime we iterate through a tx
-        // which is costly (thread overhead)
-        receivedSpendingInfoDbsOpt <- cachedReceivedOptF
-        relevantReceivedOutputsForBlock <-
-          relevantReceivedOutputsForBlockF
-        blockHashWithConfsOpt <- blockHashWithConfsOptF
-        actions = {
-          block.transactions.map { transaction =>
-            val relevantReceivedOutputsForTx = relevantReceivedOutputsForBlock
-              .getOrElse(transaction.txIdBE, Vector.empty)
-            for {
-              action <-
-                processTransactionImpl(
-                  transaction = transaction,
-                  blockHashWithConfsOpt = blockHashWithConfsOpt,
-                  newTags = Vector.empty,
-                  receivedSpendingInfoDbsOpt = receivedSpendingInfoDbsOpt,
-                  spentSpendingInfoDbsOpt = None,
-                  relevantReceivedOutputs = relevantReceivedOutputsForTx
-                )
-            } yield {
-              action
+              for {
+                action <-
+                  processTransactionImpl(
+                    transaction = transaction,
+                    blockHashWithConfsOpt = blockHashWithConfsOpt,
+                    newTags = Vector.empty,
+                    receivedSpendingInfoDbsOpt = receivedSpendingInfoDbsOpt,
+                    spentSpendingInfoDbsOpt = None,
+                    relevantReceivedOutputsA = relevantReceivedOutputsForTxA
+                  )
+              } yield {
+                action
+              }
             }
           }
+        } yield {
+          actions
         }
-      } yield {
-        actions
       }
+    }
 
     actionsF
-      .flatMap(actions => safeDatabase.run(DBIOAction.sequence(actions)))
+      .flatMap(safeDatabase.run)
       .map(_ => ())
   }
 
@@ -294,7 +293,7 @@ case class TransactionProcessing(
       s"Processing TX from our wallet, transaction=${transaction.txIdBE.hex} with blockHash=${blockHashWithConfsOpt
           .map(_.blockHash.hex)}"
     )
-    val relevantOutputsF = getRelevantOutputs(transaction)
+    val relevantOutputsA = getRelevantOutputsAction(transaction)
     for {
       (txDb, _) <-
         insertOutgoingTransaction(
@@ -304,14 +303,13 @@ case class TransactionProcessing(
           sentAmount,
           blockHashWithConfsOpt.map(_.blockHash)
         )
-      relevantOutputs <- relevantOutputsF
       action = processTransactionImpl(
         transaction = txDb.transaction,
         blockHashWithConfsOpt = blockHashWithConfsOpt,
         newTags = newTags,
         receivedSpendingInfoDbsOpt = None,
         spentSpendingInfoDbsOpt = None,
-        relevantOutputs
+        relevantReceivedOutputsA = relevantOutputsA
       )
       result <- safeDatabase.run(action)
       _ <-
@@ -491,7 +489,9 @@ case class TransactionProcessing(
       newTags: Vector[AddressTag],
       receivedSpendingInfoDbsOpt: Option[Vector[SpendingInfoDb]],
       spentSpendingInfoDbsOpt: Option[Vector[SpendingInfoDb]],
-      relevantReceivedOutputs: Vector[OutputWithIndex]
+      relevantReceivedOutputsA: DBIOAction[Vector[OutputWithIndex],
+                                           NoStream,
+                                           Effect.Read]
   ): DBIOAction[ProcessTxResult, NoStream, Effect.Read & Effect.Write] = {
 
     logger.debug(
@@ -530,6 +530,7 @@ case class TransactionProcessing(
         : DBIOAction[ProcessTxResult, NoStream, Effect.Write & Effect.Read] =
       for {
         receivedSpendingInfoDbs <- receivedSpendingInfoDbsA
+        relevantReceivedOutputs <- relevantReceivedOutputsA
         receivedStart = TimeUtil.currentEpochMs
         incoming <- processReceivedUtxosAction(
           transaction = transaction,
@@ -755,11 +756,11 @@ case class TransactionProcessing(
   /** Filters outputs on tx so that only relevant outputs to our wallet are
     * included
     */
-  private def getRelevantOutputs(
+  private def getRelevantOutputsAction(
       transaction: Transaction
-  ): Future[Vector[OutputWithIndex]] = {
+  ): DBIOAction[Vector[OutputWithIndex], NoStream, Effect.Read] = {
     val spks = transaction.outputs.map(_.scriptPubKey)
-    scriptPubKeyDAO.findScriptPubKeys(spks.toVector).map { addrs =>
+    scriptPubKeyDAO.findScriptPubKeysAction(spks.toVector).map { addrs =>
       matchReceivedTx(addrs, transaction)
     }
   }
@@ -778,13 +779,15 @@ case class TransactionProcessing(
 
   private def getRelevantOutputsForBlock(
       block: Block
-  ): Future[Map[DoubleSha256DigestBE, Vector[OutputWithIndex]]] = {
+  ): DBIOAction[Map[DoubleSha256DigestBE, Vector[OutputWithIndex]],
+                NoStream,
+                Effect.Read] = {
     val spksInBlock: Vector[ScriptPubKey] = block.transactions
       .flatMap(tx => tx.outputs.map(o => o.scriptPubKey))
       .toVector
-    val spksInDbF = scriptPubKeyDAO.findScriptPubKeys(spksInBlock)
+    val spksInDbA = scriptPubKeyDAO.findScriptPubKeysAction(spksInBlock)
 
-    spksInDbF.map { addrs =>
+    spksInDbA.map { addrs =>
       block.transactions.foldLeft(
         Map.empty[DoubleSha256DigestBE, Vector[OutputWithIndex]]
       ) { (acc, tx) =>
