@@ -1,19 +1,18 @@
 package org.bitcoins.node
 
 import org.bitcoins.core.api.node.Peer
-import org.bitcoins.core.p2p.{
-  ControlPayload,
-  DataPayload,
-  ExpectsResponse,
-  NetworkMessage,
-  NetworkPayload
-}
+import org.bitcoins.core.p2p.*
+
+import java.time.Instant
 
 sealed abstract class NodeStreamMessage
 
 object NodeStreamMessage {
 
-  case class DataMessageWrapper(payload: DataPayload, peer: Peer)
+  case class DataMessageWrapper(
+      payload: DataPayload,
+      peer: Peer,
+      receivedAt: Instant = Instant.now())
       extends NodeStreamMessage
 
   case class ControlMessageWrapper(payload: ControlPayload, peer: Peer)

@@ -24,7 +24,7 @@ import org.bitcoins.node.models.{PeerDAO, PeerDAOHelper, PeerDb}
 import org.bitcoins.node.networking.peer.*
 import org.bitcoins.node.util.PeerMessageSenderApi
 
-import java.time.Instant
+import java.time.{Duration, Instant}
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
@@ -551,8 +551,10 @@ case class PeerManager(
         }
       case (state, i: InitializeDisconnect) =>
         handleInitializeDisconnect(i.peer, state)
-      case (state, DataMessageWrapper(payload, peer)) =>
-        logger.debug(s"Got ${payload.commandName} from peer=${peer} in stream")
+      case (state, DataMessageWrapper(payload, peer, receivedAt)) =>
+        logger.debug(
+          s"Got ${payload.commandName} from peer=${peer} in stream receivedAt=$receivedAt")
+        val start = Instant.now()
         state match {
           case runningState: NodeRunningState =>
             val peerDataOpt = runningState.peerDataMap.get(peer)
@@ -596,7 +598,11 @@ case class PeerManager(
                   }
                 resultF.map { r =>
                   logger.debug(
-                    s"Done processing ${payload.commandName} in peer=${peer} state=${r}"
+                    s"Done processing ${payload.commandName} in peer=${peer} state=${r}, total=${Duration
+                        .between(receivedAt, Instant.now())
+                        .toMillis}ms, stream=${Duration
+                        .between(start, Instant.now())
+                        .toMillis}ms"
                   )
                   r
                 }
