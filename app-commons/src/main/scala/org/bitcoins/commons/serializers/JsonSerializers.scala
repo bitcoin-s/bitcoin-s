@@ -717,9 +717,9 @@ object JsonSerializers {
   implicit val submitPackageTxFeesReads: Reads[SubmitPackageTxFees] = {
     (json: JsValue) =>
       for {
-        base <- (json \ "base").validate[BitcoinFeeUnit]
+        base <- (json \ "base").validate[Bitcoins]
         effective_feerate <- (json \ "effective-feerate")
-          .validateOpt[BitcoinFeeUnit]
+          .validateOpt[BigDecimal]
         effective_includes <- (json \ "effective-includes")
           .validateOpt[Vector[DoubleSha256DigestBE]]
       } yield SubmitPackageTxFees(

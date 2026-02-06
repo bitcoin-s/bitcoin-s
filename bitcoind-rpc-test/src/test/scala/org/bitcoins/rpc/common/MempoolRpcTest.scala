@@ -269,6 +269,7 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
       // Create a child transaction spending from the first output of parent.
       // This demonstrates the package CPFP (Child Pays For Parent) use case.
       address2 <- client.getNewAddress
+      fee = Satoshis(20)
       transactionTwo <- {
         val sig: ScriptSignature = ScriptSignature.empty
         // Spend from first output (index 0) of parent transaction
@@ -278,7 +279,7 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
           sequenceNumber = UInt32.max - UInt32.one
         )
         // Create a transaction that spends most of the parent's output
-        val amt = Bitcoins(parentAmt - Satoshis(20))
+        val amt = Bitcoins(parentAmt - fee)
         val outputs = Map(address2 -> amt)
         client.createRawTransaction(Vector(input), outputs)
       }
@@ -304,6 +305,7 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
       // Check that package submission succeeded
       assert(result.package_msg == "success")
       assert(result.tx_results.size == 2)
+      assert(result.tx_results.exists(_._2.fees.get.base == Bitcoins(fee)))
       // Both transactions should be in mempool
       assert(mempool.contains(signedParentTx.hex.txIdBE))
       assert(mempool.contains(signedChildTx.hex.txIdBE))
