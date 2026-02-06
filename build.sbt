@@ -8,10 +8,10 @@ Global / cancelable := true
 lazy val Benchmark = config("bench") extend Test
 
 lazy val benchSettings: Seq[Def.SettingsDefinition] = {
-  //for scalameter
-  //https://scalameter.github.io/home/download/
-  //you can add benchmarking to a project by adding these to lines
-  //to the projects build definition
+  // for scalameter
+  // https://scalameter.github.io/home/download/
+  // you can add benchmarking to a project by adding these to lines
+  // to the projects build definition
   //  .settings(benchSettings: _*)
   //  .configs(Benchmark)
   List(
@@ -306,12 +306,12 @@ lazy val secp256k1jni = project
     libraryDependencies ++= Deps.secp256k1jni,
     // we place lib files in this directory
     Compile / unmanagedResourceDirectories += baseDirectory.value / "natives",
-    //since this is not a scala module, we have no code coverage
-    //this also doesn't place nice with scoverage, see
-    //https://github.com/scoverage/sbt-scoverage/issues/275
+    // since this is not a scala module, we have no code coverage
+    // this also doesn't place nice with scoverage, see
+    // https://github.com/scoverage/sbt-scoverage/issues/275
     coverageEnabled := false,
     Compile / compile / javacOptions ++= {
-      //https://github.com/eclipse/jetty.project/issues/3244#issuecomment-495322586
+      // https://github.com/eclipse/jetty.project/issues/3244#issuecomment-495322586
       Seq("--release", "8")
     }
   )
@@ -382,14 +382,17 @@ lazy val oracleServer = project
   .settings(jlinkModules ++= CommonSettings.jlinkModules)
   .settings(jlinkModules --= CommonSettings.rmJlinkModules)
   .settings(jlinkOptions ++= CommonSettings.jlinkOptions)
-  .settings(jlinkIgnoreMissingDependency := CommonSettings.oracleServerJlinkIgnore)
+  .settings(
+    jlinkIgnoreMissingDependency := CommonSettings.oracleServerJlinkIgnore)
   .dependsOn(
     dlcOracle,
     serverRoutes
   )
-  .enablePlugins(JavaAppPackaging, DockerPlugin, JlinkPlugin, 
-    //needed for windows, else we have the 'The input line is too long` on windows OS
-    LauncherJarPlugin)
+  .enablePlugins(JavaAppPackaging,
+                 DockerPlugin,
+                 JlinkPlugin,
+                 // needed for windows, else we have the 'The input line is too long` on windows OS
+                 LauncherJarPlugin)
 
 lazy val oracleServerTest = project
   .in(file("app/oracle-server-test"))
@@ -431,9 +434,11 @@ lazy val appServer = project
     feeProvider,
     zmq
   )
-  .enablePlugins(JavaAppPackaging, DockerPlugin, JlinkPlugin,
-    //needed for windows, else we have the 'The input line is too long` on windows OS
-    LauncherJarPlugin)
+  .enablePlugins(JavaAppPackaging,
+                 DockerPlugin,
+                 JlinkPlugin,
+                 // needed for windows, else we have the 'The input line is too long` on windows OS
+                 LauncherJarPlugin)
 
 lazy val appServerTest = project
   .in(file("app/server-test"))
@@ -456,10 +461,12 @@ lazy val cli = project
   .settings(jlinkOptions ++= CommonSettings.jlinkOptions)
   .settings(jlinkModules --= CommonSettings.rmCliJlinkModules)
   .settings(jlinkIgnoreMissingDependency := CommonSettings.cliJlinkIgnore)
-  .settings(bashScriptExtraDefines ++= IO.readLines(baseDirectory.value / "src" / "universal" / "cli-extra-startup-script.sh"))
+  .settings(bashScriptExtraDefines ++= IO.readLines(
+    baseDirectory.value / "src" / "universal" / "cli-extra-startup-script.sh"))
   .dependsOn(
     appCommons
-  ).enablePlugins(JavaAppPackaging, NativeImagePlugin, JlinkPlugin)
+  )
+  .enablePlugins(JavaAppPackaging, NativeImagePlugin, JlinkPlugin)
 
 lazy val cliTest = project
   .in(file("app/cli-test"))
@@ -575,8 +582,7 @@ lazy val bitcoindRpcTest = project
   .in(file("bitcoind-rpc-test"))
   .settings(CommonSettings.testSettings: _*)
   .settings(name := "bitcoin-s-bitcoind-rpc-test",
-            libraryDependencies ++= Deps.bitcoindRpcTest.value
-  )
+            libraryDependencies ++= Deps.bitcoindRpcTest.value)
   .dependsOn(coreJVM % testAndCompile, testkit)
 
 lazy val bench = project
@@ -693,8 +699,8 @@ lazy val docs = project
   .settings(
     name := "bitcoin-s-docs",
     moduleName := name.value,
-    //removes scalajs projects from unidoc, see
-    //https://github.com/bitcoin-s/bitcoin-s/issues/2740
+    // removes scalajs projects from unidoc, see
+    // https://github.com/bitcoin-s/bitcoin-s/issues/2740
     ScalaUnidoc / unidoc / unidocProjectFilter := {
       inAnyProject -- inProjects(jsProjects: _*)
     },
@@ -755,7 +761,13 @@ lazy val wallet = project
     name := "bitcoin-s-wallet",
     libraryDependencies ++= Deps.wallet(scalaVersion.value)
   )
-  .dependsOn(coreJVM, appCommons, dbCommons, keyManager, asyncUtilsJVM, feeProvider, tor)
+  .dependsOn(coreJVM,
+             appCommons,
+             dbCommons,
+             keyManager,
+             asyncUtilsJVM,
+             feeProvider,
+             tor)
 
 lazy val walletTest = project
   .in(file("wallet-test"))
@@ -785,10 +797,7 @@ lazy val dlcWalletTest = project
     name := "bitcoin-s-dlc-wallet-test",
     libraryDependencies ++= Deps.dlcWalletTest
   )
-  .dependsOn(coreJVM % testAndCompile,
-             dlcWallet,
-             testkit,
-             testkitCoreJVM)
+  .dependsOn(coreJVM % testAndCompile, dlcWallet, testkit, testkitCoreJVM)
 
 lazy val dlcNode = project
   .in(file("dlc-node"))
@@ -833,7 +842,7 @@ lazy val scripts = project
   .settings(CommonSettings.settings: _*)
   .settings(
     name := "bitcoin-s-scripts",
-    publishArtifact := false //do not want to publish our scripts
+    publishArtifact := false // do not want to publish our scripts
   )
   .dependsOn(appServer)
   .enablePlugins(JavaAppPackaging)

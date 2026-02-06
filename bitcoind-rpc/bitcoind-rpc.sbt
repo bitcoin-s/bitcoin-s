@@ -104,13 +104,18 @@ TaskKeys.downloadBitcoind := {
             )
           else if (Properties.isMac)
             Map(
-            "28.2" -> (if (isAarch64)
-              "c0270ed50effc174f7ff3332dba5183a8693999dac2ba78b37d8c8797b3ea2b2"
-            else
-              "e1efd8c4605b2aabc876da93b6eee2bedd868ce7d1f02b0220c1001f903b3e2c"),
-            "29.2" -> ( if (isAarch64) "bd07450f76d149d094842feab58e6240673120c8a317a1c51d45ba30c34e85ef" else "69ca05fbe838123091cf4d6d2675352f36cf55f49e2e6fb3b52fcf32b5e8dd9f"),
-              "30.2" -> (if (isAarch64) "c2ecab62891de22228043815cb6211549a32272be3d5d052ff19847d3420bd10"
-              else "99d5cee9b9c37be506396c30837a4b98e320bfea71c474d6120a7e8eb6075c7b")
+              "28.2" -> (if (isAarch64)
+                           "c0270ed50effc174f7ff3332dba5183a8693999dac2ba78b37d8c8797b3ea2b2"
+                         else
+                           "e1efd8c4605b2aabc876da93b6eee2bedd868ce7d1f02b0220c1001f903b3e2c"),
+              "29.2" -> (if (isAarch64)
+                           "bd07450f76d149d094842feab58e6240673120c8a317a1c51d45ba30c34e85ef"
+                         else
+                           "69ca05fbe838123091cf4d6d2675352f36cf55f49e2e6fb3b52fcf32b5e8dd9f"),
+              "30.2" -> (if (isAarch64)
+                           "c2ecab62891de22228043815cb6211549a32272be3d5d052ff19847d3420bd10"
+                         else
+                           "99d5cee9b9c37be506396c30837a4b98e320bfea71c474d6120a7e8eb6075c7b")
             )
           else if (Properties.isWin)
             Map(
@@ -130,7 +135,7 @@ TaskKeys.downloadBitcoind := {
             "--directory",
             binaryDir.toString
           )
-          //val extractCommand = s"""tar -xzf \"$archiveLocation\" --directory \"$binaryDir\""""
+          // val extractCommand = s"""tar -xzf \"$archiveLocation\" --directory \"$binaryDir\""""
           logger.info(s"Extracting archive with command: $cmds")
           cmds.!!
         } else {
@@ -149,6 +154,6 @@ TaskKeys.downloadBitcoind := {
     }
   }
 
-  //timeout if we cannot download in 5 minutes
+  // timeout if we cannot download in 5 minutes
   Await.result(downloads, 2.minutes)
 }
