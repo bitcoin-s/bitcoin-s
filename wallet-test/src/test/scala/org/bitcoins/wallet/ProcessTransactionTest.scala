@@ -1,7 +1,7 @@
 package org.bitcoins.wallet
 
-import org.bitcoins.core.api.wallet.WalletApi
-import org.bitcoins.core.currency._
+import org.bitcoins.core.api.wallet.{ProcessTxResult, WalletApi}
+import org.bitcoins.core.currency.*
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.transaction.{
   Transaction,
@@ -11,7 +11,7 @@ import org.bitcoins.core.protocol.transaction.{
 import org.bitcoins.core.wallet.fee.SatoshisPerByte
 import org.bitcoins.testkit.chain.MockChainQueryApi
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, WalletTestUtil}
-import org.bitcoins.testkitcore.Implicits._
+import org.bitcoins.testkitcore.Implicits.*
 import org.bitcoins.testkitcore.gen.TransactionGenerators
 import org.bitcoins.testkitcore.util.TransactionTestUtil
 import org.scalatest.FutureOutcome
@@ -171,7 +171,7 @@ class ProcessTransactionTest extends BitcoinSWalletTest {
         )
       } yield fundingTx
 
-      val processedFundingTxF: Future[Unit] = for {
+      val processedFundingTxF: Future[ProcessTxResult] = for {
         (fundingTx, _) <- fundingTxF
         // make sure wallet is empty
         balance <- wallet.getBalance()

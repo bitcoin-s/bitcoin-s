@@ -3,17 +3,17 @@ package org.bitcoins.dlc.wallet.internal
 import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.dlc.wallet.DLCWalletApi
 import org.bitcoins.core.api.dlc.wallet.db.*
+import org.bitcoins.core.api.wallet.db.{SpendingInfoDb, TransactionDb}
 import org.bitcoins.core.api.wallet.{
   ProcessTxResult,
   TransactionProcessingApi,
   UtxoHandlingApi
 }
-import org.bitcoins.core.api.wallet.db.{SpendingInfoDb, TransactionDb}
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.dlc.execution.SetupDLC
-import org.bitcoins.core.protocol.dlc.models.DLCMessage.*
 import org.bitcoins.core.protocol.dlc.models.*
+import org.bitcoins.core.protocol.dlc.models.DLCMessage.*
 import org.bitcoins.core.protocol.script.*
 import org.bitcoins.core.protocol.tlv.*
 import org.bitcoins.core.protocol.transaction.{
@@ -521,14 +521,29 @@ case class DLCTransactionProcessing(
 
   override def processTransaction(
       transaction: Transaction,
-      blockHashWithConfsOpt: Option[BlockHashWithConfs]): Future[Unit] = {
-    txProcessing
-      .processTransaction(transaction, blockHashWithConfsOpt)
-      .flatMap(_ =>
-        processFundingTx(transaction, blockHashWithConfsOpt.map(_.blockHash)))
-      .flatMap(_ =>
-        processSettledDLCs(transaction, blockHashWithConfsOpt.map(_.blockHash)))
-      .map(_ => ())
+      blockHashWithConfsOpt: Option[BlockHashWithConfs])
+      : Future[ProcessTxResult] = {
+    for {
+      processTxResult <- txProcessing.processTransaction(transaction,
+                                                         blockHashWithConfsOpt)
+      _ <- {
+        if (
+          processTxResult.updatedIncoming.nonEmpty ||
+          processTxResult.updatedOutgoing.nonEmpty
+        ) {
+          processFundingTx(transaction, blockHashWithConfsOpt.map(_.blockHash))
+        } else FutureUtil.unit
+      }
+      _ <- {
+        if (
+          processTxResult.updatedIncoming.nonEmpty ||
+          processTxResult.updatedOutgoing.nonEmpty
+        ) {
+          processSettledDLCs(transaction,
+                             blockHashWithConfsOpt.map(_.blockHash))
+        } else FutureUtil.unit
+      }
+    } yield processTxResult
   }
 
   override def processReceivedUtxos(
