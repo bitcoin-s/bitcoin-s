@@ -1,11 +1,9 @@
 package org.bitcoins.node.networking.peer
 
-import org.apache.pekko.{Done, NotUsed}
 import org.apache.pekko.actor.{ActorSystem, Cancellable}
 import org.apache.pekko.event.Logging
 import org.apache.pekko.io.Inet.SocketOption
 import org.apache.pekko.io.Tcp.SO.KeepAlive
-import org.apache.pekko.stream.{Attributes, KillSwitches, UniqueKillSwitch}
 import org.apache.pekko.stream.scaladsl.{
   BidiFlow,
   Flow,
@@ -17,7 +15,9 @@ import org.apache.pekko.stream.scaladsl.{
   SourceQueue,
   Tcp
 }
+import org.apache.pekko.stream.{Attributes, KillSwitches, UniqueKillSwitch}
 import org.apache.pekko.util.ByteString
+import org.apache.pekko.{Done, NotUsed}
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.commons.util.BitcoinSLogger
@@ -25,7 +25,7 @@ import org.bitcoins.core.api.node.Peer
 import org.bitcoins.core.api.node.constant.NodeConstants
 import org.bitcoins.core.number.Int32
 import org.bitcoins.core.p2p.*
-import org.bitcoins.core.util.NetworkUtil
+import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
 import org.bitcoins.node.NodeStreamMessage.DisconnectedPeer
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.networking.peer.PeerConnection.ConnectionGraph
@@ -138,7 +138,7 @@ case class PeerConnection(
         : Sink[Vector[NetworkMessage], (UniqueKillSwitch, Future[Done])] = {
       Flow[Vector[NetworkMessage]]
         .mapConcat(identity)
-        .mapAsync(1) { case msg =>
+        .mapAsync(FutureUtil.getParallelism) { msg =>
           val wrapper = msg.payload match {
             case c: ControlPayload =>
               NodeStreamMessage.ControlMessageWrapper(c, peer)
