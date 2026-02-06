@@ -1,4 +1,4 @@
-<configuration scan="true" scanPeriod="15 seconds" >
+<configuration scan="true" scanPeriod="15 seconds">
     <appender name="STDOUT" target="System.out" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%date{ISO8601,UTC}UTC %level [%logger{0}] %msg%n</pattern>
@@ -7,7 +7,7 @@
 
     <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
         <queueSize>8192</queueSize>
-        <appender-ref ref="STDOUT" />
+        <appender-ref ref="STDOUT"/>
     </appender>
 
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
@@ -27,7 +27,7 @@
 
     <appender name="ASYNC-FILE" class="ch.qos.logback.classic.AsyncAppender">
         <queueSize>8192</queueSize>
-        <appender-ref ref="FILE" />
+        <appender-ref ref="FILE"/>
     </appender>
 
     <root level="INFO">
@@ -35,7 +35,7 @@
         <appender-ref ref="ASYNC-FILE"/>
     </root>
 
-    <logger name="org.bitcoins.node" level="INFO"/>
+    <logger name="org.bitcoins.node" level="DEBUG"/>
 
     <logger name="org.bitcoins.chain" level="INFO"/>
 

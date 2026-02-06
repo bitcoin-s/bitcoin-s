@@ -1,16 +1,14 @@
 package org.bitcoins.node.networking.peer
 
-import org.apache.pekko.{Done, NotUsed}
 import org.apache.pekko.actor.{ActorSystem, Cancellable}
 import org.apache.pekko.event.Logging
 import org.apache.pekko.io.Inet.SocketOption
 import org.apache.pekko.io.Tcp.SO.KeepAlive
-import org.apache.pekko.stream.{Attributes, KillSwitches, UniqueKillSwitch}
+import org.apache.pekko.stream.*
 import org.apache.pekko.stream.scaladsl.{
   BidiFlow,
   Flow,
   Keep,
-  MergeHub,
   RunnableGraph,
   Sink,
   Source,
@@ -18,6 +16,7 @@ import org.apache.pekko.stream.scaladsl.{
   Tcp
 }
 import org.apache.pekko.util.ByteString
+import org.apache.pekko.{Done, NotUsed}
 import org.bitcoins.chain.blockchain.ChainHandler
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.commons.util.BitcoinSLogger
@@ -26,11 +25,12 @@ import org.bitcoins.core.api.node.constant.NodeConstants
 import org.bitcoins.core.number.Int32
 import org.bitcoins.core.p2p.*
 import org.bitcoins.core.util.NetworkUtil
+import org.bitcoins.node.NodeStreamMessage
 import org.bitcoins.node.NodeStreamMessage.DisconnectedPeer
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.networking.peer.PeerConnection.ConnectionGraph
-import org.bitcoins.node.{NodeStreamMessage, P2PLogger}
 import org.bitcoins.tor.{Socks5Connection, Socks5ConnectionState}
+import org.slf4j.{Logger, LoggerFactory}
 import scodec.bits.ByteVector
 
 import java.net.InetSocketAddress
@@ -43,8 +43,8 @@ case class PeerConnection(
     nodeAppConfig: NodeAppConfig,
     chainAppConfig: ChainAppConfig,
     system: ActorSystem
-) extends P2PLogger {
-
+) /*extends P2PLogger */ {
+  private def logger: Logger = LoggerFactory.getLogger(getClass)
   import system.dispatcher
 
   private val socket: InetSocketAddress = {
@@ -93,21 +93,21 @@ case class PeerConnection(
     }
   }
 
-  private def sendVersionMsg(): Future[Unit] = {
+  private def sendVersionMsg(): Future[QueueOfferResult] = {
     versionMsgF.flatMap { v =>
       logger.debug(s"Sending version message=$v to peer=$peer")
-      sendMsg(v.bytes, mergeHubSink)
+      sendMsg(v.bytes, outboundQueue)
     }
   }
 
-  private val (
-    mergeHubSink: Sink[ByteString, NotUsed],
-    mergeHubSource: Source[ByteString, NotUsed]
-  ) = {
-    MergeHub
-      .source[ByteString](PeerConnection.outboundBufferSize)
+  private val (outboundQueue: SourceQueue[ByteString],
+               outboundQueueSource: Source[ByteString, NotUsed]) =
+    Source
+      .queue[ByteString](
+        bufferSize = NodeConstants.bufferSize,
+        overflowStrategy = OverflowStrategy.backpressure
+      )
       .preMaterialize()
-  }
 
   private val connectionFlow: Flow[ByteString,
                                    Vector[
@@ -124,11 +124,17 @@ case class PeerConnection(
   ): RunnableGraph[
     ((Future[Tcp.OutgoingConnection], UniqueKillSwitch), Future[Done])
   ] = {
-    val result = mergeHubSource
+
+    val result = outboundQueueSource
       .viaMat(connectionFlow)(Keep.right)
       .toMat(handleNetworkMsgSink)(Keep.both)
 
     result.mapMaterializedValue(r => ((r._1, r._2._1), r._2._2))
+  }
+
+  private val decider: Supervision.Decider = { case err: Throwable =>
+    logger.error(s"Peer connection failed with err", err)
+    Supervision.Resume
   }
 
   private def buildConnectionGraph()
@@ -147,6 +153,7 @@ case class PeerConnection(
           }
           inboundQueue.offer(wrapper)
         }
+        .withAttributes(ActorAttributes.supervisionStrategy(decider))
         .viaMat(KillSwitches.single)(Keep.right)
         .toMat(Sink.ignore)(Keep.both)
     }
@@ -178,13 +185,13 @@ case class PeerConnection(
             ByteString,
             Future[Tcp.OutgoingConnection]
           ] =
-            mergeHubSource.viaMat(connection)(Keep.right)
+            outboundQueueSource.viaMat(connection)(Keep.right)
           Socks5Connection
             .socks5Handler(
               socket = peer.socket,
               source = source,
               sink = connectionSink,
-              mergeHubSink = mergeHubSink,
+              outboundQueue = outboundQueue,
               credentialsOpt = s.credentialsOpt
             )
             .map(r => ((r._1, r._2._1), r._2._2))
@@ -243,7 +250,7 @@ case class PeerConnection(
           for {
             outgoingConnection <- outgoingConnectionF
             graph = ConnectionGraph(
-              mergeHubSink = mergeHubSink,
+              outboundQueue = outboundQueue,
               connectionF = outgoingConnectionF.map(_._1._1),
               streamDoneF = outgoingConnection._2,
               killswitch = outgoingConnection._1._2
@@ -341,7 +348,7 @@ case class PeerConnection(
     }
   }
 
-  private[node] def sendMsg(msg: NetworkPayload): Future[Unit] = {
+  private[node] def sendMsg(msg: NetworkPayload): Future[QueueOfferResult] = {
     // version or verack messages are the only messages that
     // can be sent before we are fully initialized
     // as they are needed to complete our handshake with our peer
@@ -349,43 +356,43 @@ case class PeerConnection(
     sendMsg(networkMsg)
   }
 
-  private[node] def sendMsg(msg: NetworkMessage): Future[Unit] = {
-    logger.debug(
-      s"Sending msg=${msg.header.commandName} to peer=${peer} socket=$socket"
-    )
+  private[node] def sendMsg(msg: NetworkMessage): Future[QueueOfferResult] = {
+
     connectionGraphOpt match {
       case Some(g) =>
-        sendMsg(msg.bytes, g.mergeHubSink)
+        sendMsg(msg.bytes, g.outboundQueue).map { offerResult =>
+          logger.debug(
+            s"Sending msg=${msg.header.commandName} to peer=${peer} socket=$socket offerResult=$offerResult"
+          )
+          offerResult
+        }
       case None =>
         val log =
           s"Could not send msg=${msg.payload.commandName} because we do not have an active connection to peer=${peer} socket=$socket"
         logger.warn(log)
-        Future.unit
+        Future.successful(QueueOfferResult.dropped)
     }
   }
 
   private def sendMsg(
       bytes: ByteVector,
-      mergeHubSink: Sink[ByteString, NotUsed]
-  ): Future[Unit] = {
-    sendMsg(ByteString.fromArray(bytes.toArray), mergeHubSink)
+      queue: SourceQueue[ByteString]
+  ): Future[QueueOfferResult] = {
+    sendMsg(ByteString.fromArray(bytes.toArray), queue)
   }
 
   private def sendMsg(
       bytes: ByteString,
-      mergeHubSink: Sink[ByteString, NotUsed]
-  ): Future[Unit] = {
-    val sendMsgF = Future {
-      Source.single(bytes).to(mergeHubSink).run()
-    }.map(_ => ())
-    sendMsgF
+      queue: SourceQueue[ByteString]
+  ): Future[QueueOfferResult] = {
+    queue.offer(bytes)
   }
 }
 
 object PeerConnection extends BitcoinSLogger {
   val outboundBufferSize: Int = 1024
   case class ConnectionGraph(
-      mergeHubSink: Sink[ByteString, NotUsed],
+      outboundQueue: SourceQueue[ByteString],
       connectionF: Future[Tcp.OutgoingConnection],
       streamDoneF: Future[Done],
       killswitch: UniqueKillSwitch
