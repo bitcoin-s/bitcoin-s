@@ -1,6 +1,6 @@
 package org.bitcoins.commons.jsonmodels.bitcoind
 
-import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.currency.{Bitcoins, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.blockchain.BlockHeader
@@ -193,3 +193,23 @@ final case class SubmitHeaderResult(header: BlockHeader) extends OtherResult
 
 case class IndexInfoResult(synced: Boolean, best_block_height: Int)
     extends OtherResult
+
+case class SubmitPackageTxFees(
+    base: Bitcoins,
+    effective_feerate: Option[BigDecimal], // BTC/kvb
+    effective_includes: Option[Vector[DoubleSha256DigestBE]]
+)
+
+case class SubmitPackageTxResult(
+    txid: DoubleSha256DigestBE,
+    other_wtxid: Option[DoubleSha256DigestBE],
+    vsize: Option[Int],
+    fees: Option[SubmitPackageTxFees],
+    error: Option[String]
+)
+
+case class SubmitPackageResult(
+    package_msg: String,
+    tx_results: Map[DoubleSha256DigestBE, SubmitPackageTxResult],
+    replaced_transactions: Option[Vector[DoubleSha256DigestBE]]
+) extends OtherResult

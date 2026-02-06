@@ -1,7 +1,7 @@
 package org.bitcoins.core.currency
 
 import org.bitcoins.core.consensus.Consensus
-import org.bitcoins.core.number._
+import org.bitcoins.core.number.*
 import org.bitcoins.core.protocol.ln.currency.{LnCurrencyUnit, MilliSatoshis}
 import org.bitcoins.core.serializers.RawSatoshisSerializer
 import org.bitcoins.crypto.{Factory, NetworkElement}
@@ -9,7 +9,6 @@ import scodec.bits.ByteVector
 
 import scala.math.BigDecimal.RoundingMode
 import scala.math.BigDecimal.RoundingMode.RoundingMode
-import scala.math.Numeric
 import scala.util.{Failure, Success, Try}
 
 sealed abstract class CurrencyUnit
@@ -211,6 +210,8 @@ object Bitcoins extends BaseNumbers[Bitcoins] with Bounded[Bitcoins] {
   val one = Bitcoins(1)
   val two = Bitcoins(2)
 
+  def apply(currencyUnit: CurrencyUnit): Bitcoins = Bitcoins(
+    currencyUnit.satoshis)
   def apply(satoshis: Satoshis): Bitcoins = {
     val b: BigDecimal = satoshis.toLong * CurrencyUnits.satoshisToBTCScalar
     Bitcoins(b)
