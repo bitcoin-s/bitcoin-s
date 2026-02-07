@@ -167,6 +167,21 @@ object BlockHeader extends Factory[BlockHeader] {
                     nonce)
   }
 
+  def apply(
+      version: Int32,
+      previousBlockHashBE: DoubleSha256DigestBE,
+      merkleRootHashBE: DoubleSha256DigestBE,
+      time: UInt32,
+      nBits: UInt32,
+      nonce: UInt32): BlockHeader = {
+    BlockHeaderImpl(version,
+                    previousBlockHashBE.flip,
+                    merkleRootHashBE.flip,
+                    time,
+                    nBits,
+                    nonce)
+  }
+
   def fromBytes(bytes: ByteVector): BlockHeader =
     RawBlockHeaderSerializer.read(bytes)
 

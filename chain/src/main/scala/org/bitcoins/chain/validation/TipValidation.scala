@@ -49,6 +49,8 @@ sealed abstract class TipValidation extends ChainVerificationLogger {
         TipUpdateResult.BadPOW(newPotentialTip)
       } else if (isBadNonce(newPotentialTip)) {
         TipUpdateResult.BadNonce(newPotentialTip)
+      } else if (isBadMTP(newPotentialTip, blockchain)) {
+        TipUpdateResult.BadMTP(newPotentialTip)
       } else {
         val headerDb = BlockHeaderDbHelper.fromBlockHeader(
           height = currentTip.height + 1,
@@ -111,7 +113,18 @@ sealed abstract class TipValidation extends ChainVerificationLogger {
       blockchain = blockchain,
       chainParams = chainParams
     )
+  }
 
+  private def isBadMTP(
+      newPotentialTip: BlockHeader,
+      blockchain: Blockchain
+  ): Boolean = {
+    if (blockchain.length < 11) {
+      false
+    } else {
+      val medianTimePast = blockchain.getMedianTimePast
+      newPotentialTip.time.toLong <= medianTimePast
+    }
   }
 }
 

@@ -40,4 +40,6 @@ object TipUpdateResult {
     * invalid
     */
   case class BadNonce(override val header: BlockHeader) extends Failure
+
+  case class BadMTP(override val header: BlockHeader) extends Failure
 }
