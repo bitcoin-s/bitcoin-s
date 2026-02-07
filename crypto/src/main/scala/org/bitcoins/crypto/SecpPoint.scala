@@ -32,7 +32,7 @@ sealed trait SecpPoint extends NetworkElement {
   * 0x00 = FieldElement.zero*G).
   */
 case object SecpPointInfinity extends SecpPoint {
-  override val bytes: ByteVector = ByteVector(0x00)
+  override val bytes: ByteVector = ByteVector.fill(33)(0.toByte)
 }
 
 /** A non-identity point, (x, y), on the secp256k1 elliptic curve.
@@ -57,7 +57,7 @@ case class SecpPointFinite(x: CurveCoordinate, y: CurveCoordinate)
   }
 }
 
-object SecpPoint {
+object SecpPoint extends Factory[SecpPoint] {
 
   def fromPublicKey(key: ECPublicKey): SecpPointFinite = {
     val (x, y) = key.decompressedBytes.tail.splitAt(32)
@@ -79,4 +79,8 @@ object SecpPoint {
 
   def apply(x: String, y: String): SecpPointFinite =
     SecpPointFinite(CurveCoordinate.fromHex(x), CurveCoordinate.fromHex(y))
+
+  override def fromBytes(bytes: ByteVector): SecpPoint = {
+    CryptoUtil.decodePoint(bytes)
+  }
 }

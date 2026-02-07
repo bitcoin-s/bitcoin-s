@@ -1,38 +1,38 @@
 package org.bitcoins.commons.serializers
 
-import org.bitcoins.commons.jsonmodels._
+import org.bitcoins.commons.jsonmodels.*
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.{
   AddressType,
   LabelPurpose
 }
-import org.bitcoins.commons.jsonmodels.bitcoind._
-import org.bitcoins.commons.jsonmodels.clightning.CLightningJsonModels._
+import org.bitcoins.commons.jsonmodels.bitcoind.*
+import org.bitcoins.commons.jsonmodels.clightning.CLightningJsonModels.*
 import org.bitcoins.commons.jsonmodels.eclair.WebSocketEvent.{
   ChannelClosed,
   ChannelCreated,
   ChannelOpened,
   ChannelStateChange
 }
-import org.bitcoins.commons.jsonmodels.eclair._
-import org.bitcoins.commons.serializers.JsonSerializers._
-import org.bitcoins.core.config._
-import org.bitcoins.core.currency._
-import org.bitcoins.core.number._
+import org.bitcoins.commons.jsonmodels.eclair.*
+import org.bitcoins.commons.serializers.JsonSerializers.*
+import org.bitcoins.core.config.*
+import org.bitcoins.core.currency.*
+import org.bitcoins.core.number.*
 import org.bitcoins.core.p2p.ServiceIdentifier
 import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader, MerkleBlock}
-import org.bitcoins.core.protocol.ln._
-import org.bitcoins.core.protocol.ln.channel._
-import org.bitcoins.core.protocol.ln.currency._
+import org.bitcoins.core.protocol.ln.*
+import org.bitcoins.core.protocol.ln.channel.*
+import org.bitcoins.core.protocol.ln.currency.*
 import org.bitcoins.core.protocol.ln.fee.FeeProportionalMillionths
 import org.bitcoins.core.protocol.ln.node.{Feature, FeatureSupport, NodeId}
 import org.bitcoins.core.protocol.ln.routing.{ChannelRoute, NodeRoute, Route}
-import org.bitcoins.core.protocol.script._
+import org.bitcoins.core.protocol.script.*
 import org.bitcoins.core.protocol.script.descriptor.Descriptor
 import org.bitcoins.core.protocol.tlv.{
   OracleAnnouncementV0TLV,
   OracleAttestmentV0TLV
 }
-import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.protocol.{
   Address,
   Bech32mAddress,
@@ -42,18 +42,19 @@ import org.bitcoins.core.protocol.{
 }
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.script.ScriptType
-import org.bitcoins.core.wallet.fee._
-import org.bitcoins.crypto._
-import play.api.libs.json._
+import org.bitcoins.core.wallet.fee.*
+import org.bitcoins.crypto.*
+import org.bitcoins.crypto.frost.{FrostNoncePriv, FrostNoncePub}
+import play.api.libs.json.*
 import ujson.{Num, Str, Value}
 import scodec.bits.ByteVector
 
 import java.io.File
-import java.net._
+import java.net.*
 import java.nio.file.Path
-import java.time._
+import java.time.*
 import java.util.UUID
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.util.{Failure, Success, Try}
 
 object JsonReaders {
@@ -395,6 +396,25 @@ object JsonReaders {
       SerializerUtil.processJsString[SchnorrPublicKey](
         SchnorrPublicKey.fromHex
       )(json)
+  }
+
+  implicit object XOnlyPubKeyReads extends Reads[XOnlyPubKey] {
+    override def reads(json: JsValue): JsResult[XOnlyPubKey] = {
+      SerializerUtil.processJsString(XOnlyPubKey.fromHex)(json)
+    }
+  }
+
+  implicit object FrostNoncePrivReads extends Reads[FrostNoncePriv] {
+
+    override def reads(json: JsValue): JsResult[FrostNoncePriv] =
+      SerializerUtil.processJsString[FrostNoncePriv](FrostNoncePriv.fromHex)(
+        json
+      )
+  }
+  implicit object FrostNoncePubReads extends Reads[FrostNoncePub] {
+
+    override def reads(json: JsValue): JsResult[FrostNoncePub] =
+      SerializerUtil.processJsString[FrostNoncePub](FrostNoncePub.fromHex)(json)
   }
 
   implicit object SchnorrNonceReads extends Reads[SchnorrNonce] {
