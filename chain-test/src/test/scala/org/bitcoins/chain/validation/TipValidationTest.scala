@@ -1,76 +1,82 @@
 package org.bitcoins.chain.validation
 
+import org.apache.pekko.stream.scaladsl.{Keep, Sink, Source}
+import org.bitcoins.chain.blockchain.Blockchain
 import org.bitcoins.chain.models.BlockHeaderDAO
-import org.bitcoins.chain.pow.Pow
-import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
-import org.bitcoins.core.protocol.blockchain.{
-  BlockHeader,
-  RegTestNetChainParams
-}
+import org.bitcoins.core.api.chain.db.{BlockHeaderDb, BlockHeaderDbHelper}
+import org.bitcoins.core.config.RegTest
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainDbUnitTest}
-import org.scalatest.{Assertion, FutureOutcome}
+import org.scalatest.FutureOutcome
+
+import scala.concurrent.Future
 
 class TipValidationTest extends ChainDbUnitTest {
-  import org.bitcoins.chain.blockchain.Blockchain
-  import org.bitcoins.chain.config.ChainAppConfig
 
+  behavior of "TipValidation"
   override type FixtureParam = BlockHeaderDAO
-
-  // we're working with mainnet data
-  override def chainAppConfig: ChainAppConfig = mainnetAppConfig
-
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
     withBlockHeaderDAO(test)
 
-  behavior of "TipValidation"
+  it must "reject a new tip whose time is <= the median of the last 11 headers" in {
+    blockHeaderDAO =>
+      require(blockHeaderDAO.appConfig.network == RegTest)
+      val firstHeaderF = blockHeaderDAO.getBestChainTips.map(_.head)
+      val headersDbF: Future[Seq[BlockHeaderDb]] = firstHeaderF.flatMap { f =>
+        Source(f.height.until(f.height + 11))
+          .fold(Vector(f)) { (prevHeaders, _) =>
+            val nextHeader = BlockHeaderHelper.buildNextHeader(prevHeaders.last)
+            prevHeaders.appended(nextHeader)
+          }
+          .toMat(Sink.last)(Keep.right)
+          .run()
+      }
+      val blockchainF = headersDbF.map(_.reverse).map(Blockchain.fromHeaders)
+      for {
+        blockchain <- blockchainF
+        medianTimePast = blockchain.getMedianTimePast
+        newHeaderBadMTP = BlockHeaderHelper
+          .buildNextHeader(blockchain.tip,
+                           timeOpt = Some(UInt32(medianTimePast - 1)))
+          .blockHeader
+        newHeaderStaleMTP = BlockHeaderHelper
+          .buildNextHeader(blockchain.tip,
+                           timeOpt = Some(UInt32(medianTimePast)))
+          .blockHeader
+        newHeaderGoodMTP = BlockHeaderHelper
+          .buildNextHeader(blockchain.tip,
+                           timeOpt = Some(UInt32(medianTimePast + 1)))
+          .blockHeader
+        tipValidationResultBadMTP = TipValidation.checkNewTip(
+          newHeaderBadMTP,
+          blockchain,
+          chainParams
+        )
+        tipValidationResultStaleMTP = TipValidation.checkNewTip(
+          newHeaderStaleMTP,
+          blockchain,
+          chainParams
+        )
+        tipValidationResultGoodMTP = TipValidation.checkNewTip(
+          newHeaderGoodMTP,
+          blockchain,
+          chainParams
+        )
+      } yield {
+        assert(
+          tipValidationResultBadMTP == TipUpdateResult.BadMTP(newHeaderBadMTP)
+        )
+        assert(
+          tipValidationResultStaleMTP == TipUpdateResult.BadMTP(
+            newHeaderStaleMTP))
+        val goodDb = BlockHeaderDbHelper.fromBlockHeader(
+          blockchain.tip.height + 1,
+          blockchain.tip.chainWork + org.bitcoins.chain.pow.Pow
+            .getBlockProof(newHeaderGoodMTP),
+          newHeaderGoodMTP
+        )
+        assert(tipValidationResultGoodMTP == TipUpdateResult.Success(goodDb))
+      }
 
-  // blocks 566,092 and 566,093
-  val newValidTip = BlockHeaderHelper.header1
-  val currentTipDb = BlockHeaderHelper.header2Db
-  val blockchain = Blockchain.fromHeaders(Vector(currentTipDb))
-
-  it must "connect two blocks with that are valid" in { _ =>
-    val newValidTipDb =
-      BlockHeaderDbHelper.fromBlockHeader(
-        566093,
-        currentTipDb.chainWork + Pow.getBlockProof(newValidTip),
-        newValidTip
-      )
-    val expected = TipUpdateResult.Success(newValidTipDb)
-
-    runTest(newValidTip, expected, blockchain)
-  }
-
-  it must "fail to connect two blocks that do not reference prev block hash correctly" in {
-    _ =>
-      val badPrevHash = BlockHeaderHelper.badPrevHash
-
-      val expected = TipUpdateResult.BadPreviousBlockHash(badPrevHash)
-
-      runTest(badPrevHash, expected, blockchain)
-  }
-
-  it must "fail to connect two blocks with two different POW requirements at the wrong interval" in {
-    _ =>
-      val badPOW = BlockHeaderHelper.badNBits
-      val expected = TipUpdateResult.BadPOW(badPOW)
-      runTest(badPOW, expected, blockchain)
-  }
-
-  it must "fail to connect two blocks with a bad nonce" in { _ =>
-    val badNonce = BlockHeaderHelper.badNonce
-    val expected = TipUpdateResult.BadNonce(badNonce)
-    runTest(badNonce, expected, blockchain)
-  }
-
-  private def runTest(
-      header: BlockHeader,
-      expected: TipUpdateResult,
-      blockchain: Blockchain
-  ): Assertion = {
-    val result = TipValidation.checkNewTip(newPotentialTip = header,
-                                           blockchain = blockchain,
-                                           chainParams = RegTestNetChainParams)
-    assert(result == expected)
   }
 }

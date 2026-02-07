@@ -617,7 +617,7 @@ class ChainHandlerTest extends ChainDbUnitTest {
         assert(newHeaderC.hashBE == marker.stopBlockHash.flip)
       }
 
-      val headerDF = newHeaderCF.map(BlockHeaderHelper.buildNextHeader)
+      val headerDF = newHeaderCF.map(BlockHeaderHelper.buildNextHeader(_, None))
       // now let's build a new block header ontop of C and process it
       // when we call chainHandler.nextBlockHeaderBatchRange it
       // should be C's hash instead of D's hash due to batchSize

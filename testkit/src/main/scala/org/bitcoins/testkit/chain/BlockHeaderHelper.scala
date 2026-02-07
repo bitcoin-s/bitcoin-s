@@ -5,13 +5,11 @@ import org.bitcoins.chain.validation.TipValidation
 import org.bitcoins.core.api.chain.db.{BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.crypto.{
-  DoubleSha256Digest,
-  DoubleSha256DigestBE,
-  ECPrivateKey
-}
+import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
+import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
+import scala.util.Random
 
 /** Useful helper methods for getting block header related data for unit tests.
   */
@@ -124,26 +122,28 @@ abstract class BlockHeaderHelper {
     * @return
     */
   @tailrec
-  final def buildNextHeader(prevHeader: BlockHeaderDb): BlockHeaderDb = {
+  final def buildNextHeader(
+      prevHeader: BlockHeaderDb,
+      timeOpt: Option[UInt32] = None): BlockHeaderDb = {
     val prevHash = prevHeader.blockHeader.hash
+    val nonce = UInt32(Random.between(0, UInt32.max.toLong))
     val blockHeader = {
       BlockHeader(
         version = Int32(5),
         previousBlockHash = prevHash,
         // get random 32 bytes
         merkleRootHash =
-          DoubleSha256Digest.fromBytes(ECPrivateKey.freshPrivateKey.bytes),
-        time = prevHeader.time + UInt32.one,
+          DoubleSha256Digest.fromBytes(ByteVector(Random.nextBytes(32))),
+        time = timeOpt.getOrElse(prevHeader.time + UInt32.one),
         nBits = prevHeader.nBits,
         // generate random uint32 for nonce
-        nonce =
-          UInt32(Math.abs(scala.util.Random.nextInt() % UInt32.max.toLong))
+        nonce = nonce
       )
     }
 
     // check if header meets pow requirement, if it doesn't generate another
     if (TipValidation.isBadNonce(blockHeader)) {
-      buildNextHeader(prevHeader)
+      buildNextHeader(prevHeader, timeOpt)
     } else {
       val chainWork = prevHeader.chainWork + Pow.getBlockProof(blockHeader)
       BlockHeaderDbHelper.fromBlockHeader(
