@@ -4,4 +4,7 @@ import org.bitcoins.core.api.wallet.db.SpendingInfoDb
 
 case class ProcessTxResult(
     updatedIncoming: Vector[SpendingInfoDb],
-    updatedOutgoing: Vector[SpendingInfoDb])
+    updatedOutgoing: Vector[SpendingInfoDb]) {
+  def isEmpty: Boolean = updatedIncoming.isEmpty && updatedOutgoing.isEmpty
+  def nonEmpty: Boolean = !isEmpty
+}

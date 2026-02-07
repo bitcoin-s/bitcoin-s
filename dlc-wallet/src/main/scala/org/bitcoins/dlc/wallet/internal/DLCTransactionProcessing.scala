@@ -527,9 +527,7 @@ case class DLCTransactionProcessing(
       processTxResult <- txProcessing.processTransaction(transaction,
                                                          blockHashWithConfsOpt)
       _ <- {
-        val isRelevant =
-          processTxResult.updatedIncoming.nonEmpty ||
-            processTxResult.updatedOutgoing.nonEmpty
+        val isRelevant = processTxResult.nonEmpty
 
         if (isRelevant) {
           for {
