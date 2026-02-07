@@ -2,7 +2,20 @@ package org.bitcoins.core.policy
 
 import org.bitcoins.core.currency.{CurrencyUnit, CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.script.flag._
+import org.bitcoins.core.protocol.script.{
+  ConditionalScriptSignature,
+  EmptyScriptSignature,
+  LockTimeScriptSignature,
+  MultiSignatureScriptSignature,
+  NonStandardScriptSignature,
+  P2PKHScriptSignature,
+  P2PKScriptSignature,
+  P2SHScriptSignature,
+  TrivialTrueScriptSignature
+}
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutput}
+import org.bitcoins.core.script.flag.*
+import org.bitcoins.core.util.BitcoinScriptUtil
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 
 /** Created by chris on 4/6/16. Mimics the policy files found in
@@ -70,6 +83,39 @@ sealed abstract class Policy {
   def maxFee: CurrencyUnit = Satoshis(10) * CurrencyUnits.oneMBTC
 
   def sequence: UInt32 = UInt32.zero
+
+  /** Limit of sigops per block as per BIP54
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0054.md]]
+    */
+  def sigOps: Int = 2500
+
+  def checkBip54SigOpLimit(
+      transaction: Transaction,
+      spentOutputs: Vector[TransactionOutput]): Boolean = {
+    val spkCount = spentOutputs
+      .map(o =>
+        BitcoinScriptUtil.countSigOps(o.scriptPubKey.asm, fAccurate = false))
+      .sum
+    val scriptSigCount = transaction.inputs.map { i =>
+      i.scriptSignature match {
+        case p: P2SHScriptSignature =>
+          BitcoinScriptUtil.countSigOps(p.redeemScript.asm,
+                                        fAccurate = false) + BitcoinScriptUtil
+            .countSigOps(p.scriptSignatureNoRedeemScript.asm, fAccurate = false)
+        case s @ (_: MultiSignatureScriptSignature | _: P2PKScriptSignature |
+            _: NonStandardScriptSignature | _: LockTimeScriptSignature |
+            _: ConditionalScriptSignature | EmptyScriptSignature |
+            _: P2PKHScriptSignature | TrivialTrueScriptSignature) =>
+          BitcoinScriptUtil.countSigOps(s.asm, fAccurate = false)
+      }
+    }.sum
+    val result = spkCount + scriptSigCount
+    result <= sigOps
+  }
+
+  def checkTransactionSizeLimit(tx: Transaction): Boolean = {
+    tx.toBaseTx.byteSize != 64
+  }
 }
 
 object Policy extends Policy
