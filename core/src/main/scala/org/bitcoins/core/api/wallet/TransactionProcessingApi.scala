@@ -28,7 +28,7 @@ trait TransactionProcessingApi {
   def processTransaction(
       transaction: Transaction,
       blockHashWithConfsOpt: Option[BlockHashWithConfs]
-  ): Future[Unit]
+  ): Future[ProcessTxResult]
 
   /** Processes TXs originating from our wallet. This is called right after
     * we've signed a TX, updating our UTXO state.

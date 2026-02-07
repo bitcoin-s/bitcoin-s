@@ -475,24 +475,31 @@ object DLCWalletUtil extends BitcoinSLogger {
     for {
       contractId <- getContractId(dlcA)
       fundingTx <- dlcB.broadcastDLCFundingTx(contractId)
-      tx <-
+      closingTx <-
         if (asInitiator) {
           func(dlcA)
         } else {
           func(dlcB)
         }
       _ <- {
-        if (asInitiator) dlcB.transactionProcessing.processTransaction(tx, None)
-        else dlcA.transactionProcessing.processTransaction(tx, None)
+        if (asInitiator) {
+          dlcB.transactionProcessing.processTransaction(closingTx, None)
+        } else dlcA.transactionProcessing.processTransaction(closingTx, None)
       }
-      _ <- dlcA.broadcastTransaction(tx)
+      _ <- dlcA.broadcastTransaction(closingTx)
       dlcDb <- dlcA.dlcDAO.findByContractId(contractId)
-      _ <- verifyProperlySetTxIds(contractId = contractId, wallet = dlcA)
-      _ <- verifyProperlySetTxIds(contractId = contractId, wallet = dlcB)
+      _ <- verifyProperlySetTxIds(contractId = contractId,
+                                  wallet = dlcA,
+                                  fundingTx.txIdBE,
+                                  closingTxId = closingTx.txIdBE)
+      _ <- verifyProperlySetTxIds(contractId = contractId,
+                                  wallet = dlcB,
+                                  fundingTx.txIdBE,
+                                  closingTxId = closingTx.txIdBE)
     } yield {
-      assert(tx.inputs.size == 1)
-      assert(tx.outputs.size == expectedOutputs)
-      assert(ScriptInterpreter.checkTransaction(tx))
+      assert(closingTx.inputs.size == 1)
+      assert(closingTx.outputs.size == expectedOutputs)
+      assert(ScriptInterpreter.checkTransaction(closingTx))
 
       val fundOutputIndex = dlcDb.get.fundingOutPointOpt.get.vout.toInt
       val fundingOutput = fundingTx.outputs(fundOutputIndex)
@@ -501,13 +508,15 @@ object DLCWalletUtil extends BitcoinSLogger {
 
       val outputMap = PreviousOutputMap(Map(fundingOutPoint -> fundingOutput))
 
-      verifyInput(tx, 0, fundingOutput, outputMap)
+      verifyInput(closingTx, 0, fundingOutput, outputMap)
     }
   }
 
   private def verifyProperlySetTxIds(
       contractId: ByteVector,
-      wallet: DLCWallet
+      wallet: DLCWallet,
+      fundingTxId: DoubleSha256DigestBE,
+      closingTxId: DoubleSha256DigestBE
   )(implicit ec: ExecutionContext): Future[Unit] = {
     for {
       dlcDbOpt <- wallet.dlcDAO.findByContractId(contractId)
@@ -515,8 +524,10 @@ object DLCWalletUtil extends BitcoinSLogger {
       dlcDbOpt match {
         case None => fail()
         case Some(dlcDb) =>
-          Assertions.assert(dlcDb.fundingOutPointOpt.isDefined)
-          Assertions.assert(dlcDb.closingTxIdOpt.isDefined)
+          Assertions.assert(dlcDb.fundingOutPointOpt.isDefined,
+                            s"Expected $fundingTxId")
+          Assertions.assert(dlcDb.closingTxIdOpt.isDefined,
+                            s"Expected $closingTxId")
           ()
       }
     }

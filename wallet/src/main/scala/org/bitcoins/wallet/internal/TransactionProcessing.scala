@@ -4,12 +4,12 @@ import org.apache.pekko.actor.{ActorRef, Status}
 import org.apache.pekko.stream.OverflowStrategy
 import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import org.bitcoins.core.api.chain.ChainQueryApi
+import org.bitcoins.core.api.wallet.db.*
 import org.bitcoins.core.api.wallet.{
   ProcessTxResult,
   TransactionProcessingApi,
   WalletApi
 }
-import org.bitcoins.core.api.wallet.db.*
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.currency.CurrencyUnit
 import org.bitcoins.core.number.UInt32
@@ -30,17 +30,7 @@ import org.bitcoins.db.SafeDatabase
 import org.bitcoins.wallet.*
 import org.bitcoins.wallet.callback.WalletCallbacks
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.models.{
-  AddressDAO,
-  AddressTagDAO,
-  IncomingTransactionDAO,
-  OutgoingTransactionDAO,
-  ScriptPubKeyDAO,
-  SpendingInfoDAO,
-  TransactionDAO,
-  WalletDAOs,
-  WalletStateDescriptorDAO
-}
+import org.bitcoins.wallet.models.*
 import org.bitcoins.wallet.util.WalletUtil
 import slick.dbio.{DBIOAction, Effect, NoStream}
 
@@ -86,7 +76,7 @@ case class TransactionProcessing(
   override def processTransaction(
       transaction: Transaction,
       blockHashWithConfsOpt: Option[BlockHashWithConfs]
-  ): Future[Unit] = {
+  ): Future[ProcessTxResult] = {
     for {
       relevantReceivedOutputs <- getRelevantOutputs(transaction)
       action = processTransactionImpl(
@@ -100,16 +90,14 @@ case class TransactionProcessing(
       processTx <- safeDatabase.run(action)
       // only notify about our transactions
       _ <-
-        if (
-          processTx.updatedIncoming.nonEmpty || processTx.updatedOutgoing.nonEmpty
-        ) {
+        if (processTx.nonEmpty) {
           logger.info(
             s"Finished processing of transaction=${transaction.txIdBE.hex}. Relevant incomingTXOs=${processTx.updatedIncoming.length}, outgoingTXOs=${processTx.updatedOutgoing.length}"
           )
           walletCallbacks.executeOnTransactionProcessed(transaction)
         } else Future.unit
     } yield {
-      ()
+      processTx
     }
   }
 
