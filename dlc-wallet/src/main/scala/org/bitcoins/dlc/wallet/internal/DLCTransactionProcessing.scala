@@ -527,20 +527,17 @@ case class DLCTransactionProcessing(
       processTxResult <- txProcessing.processTransaction(transaction,
                                                          blockHashWithConfsOpt)
       _ <- {
-        if (
+        val isRelevant =
           processTxResult.updatedIncoming.nonEmpty ||
-          processTxResult.updatedOutgoing.nonEmpty
-        ) {
-          processFundingTx(transaction, blockHashWithConfsOpt.map(_.blockHash))
-        } else FutureUtil.unit
-      }
-      _ <- {
-        if (
-          processTxResult.updatedIncoming.nonEmpty ||
-          processTxResult.updatedOutgoing.nonEmpty
-        ) {
-          processSettledDLCs(transaction,
-                             blockHashWithConfsOpt.map(_.blockHash))
+            processTxResult.updatedOutgoing.nonEmpty
+
+        if (isRelevant) {
+          for {
+            _ <- processFundingTx(transaction,
+                                  blockHashWithConfsOpt.map(_.blockHash))
+            _ <- processSettledDLCs(transaction,
+                                    blockHashWithConfsOpt.map(_.blockHash))
+          } yield ()
         } else FutureUtil.unit
       }
     } yield processTxResult
