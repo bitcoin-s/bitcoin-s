@@ -234,7 +234,7 @@ class CurrencyUnitTest extends BitcoinSUnitTest {
   it must "sum Satoshis" in {
     val sats: Vector[Satoshis] = Vector.fill(10)(Satoshis.one)
     // need to add the implicit Satoshis here because CurrencyUnits also is Numeric
-    val sum = sats.sum(Satoshis)
+    val sum = sats.sum(using Satoshis)
     assert(sum == Satoshis(10))
   }
 }

@@ -22,7 +22,7 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
   override type FixtureParam = WalletWithBitcoindRpc
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withNewWalletAndBitcoind(test)(getFreshWalletAppConfig)
+    withNewWalletAndBitcoind(test)(using getFreshWalletAppConfig)
 
   behavior of "Address Tag - integration test"
 
@@ -38,7 +38,7 @@ class AddressTagIntegrationTest extends BitcoinSWalletTest {
     // the amount we're sending to bitcoind
     val valueToBitcoind = Bitcoins(0.5)
     val incomingTxDAO =
-      IncomingTransactionDAO()(system.dispatcher, walletConfig)
+      IncomingTransactionDAO()(using system.dispatcher, walletConfig)
     for {
       addr <- wallet.getNewAddress()
       taggedAddr <- wallet.addressHandling.getNewAddress(Vector(exampleTag))

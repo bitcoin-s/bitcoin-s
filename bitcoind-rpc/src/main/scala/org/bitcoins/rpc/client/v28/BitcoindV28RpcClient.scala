@@ -22,6 +22,6 @@ object BitcoindV28RpcClient {
   def apply(instance: BitcoindInstanceLocal)(implicit
       system: ActorSystem
   ): BitcoindV28RpcClient =
-    new BitcoindV28RpcClient(instance)(system)
+    new BitcoindV28RpcClient(instance)(using system)
 
 }

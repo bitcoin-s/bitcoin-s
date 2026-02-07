@@ -126,7 +126,7 @@ object BitcoindInstanceLocal
       zmqConfig = zmqConfig,
       binary = binary,
       datadir = bitcoindDatadir
-    )(system, bitcoindRpcAppConfig)
+    )(using system, bitcoindRpcAppConfig)
   }
 
   lazy val DEFAULT_BITCOIND_LOCATION: Option[File] = {
@@ -244,7 +244,7 @@ object BitcoindInstanceLocal
       zmqConfig = ZmqConfig.fromConfig(config),
       binary = binary,
       datadir = config.datadir
-    )(system, bitcoindRpcAppConfig)
+    )(using system, bitcoindRpcAppConfig)
   }
 
   override val DEFAULT_DATADIR: Path = BitcoindConfig.DEFAULT_DATADIR.toPath
@@ -314,7 +314,7 @@ object BitcoindInstanceRemote
       config.rpcUri,
       zmqConfig = config.zmqConfig,
       proxyParams = None
-    )(system, config)
+    )(using system, config)
   }
 
   override def fromDataDir(

@@ -21,7 +21,7 @@ trait DLCOracleFixture extends BitcoinSFixture with EmbeddedPg {
 
       val oracleConfF: Future[Unit] = conf.start()
 
-      oracleConfF.map(_ => new DLCOracle()(conf))
+      oracleConfF.map(_ => new DLCOracle()(using conf))
     }
 
     val destroy: DLCOracle => Future[Unit] = dlcOracle => {

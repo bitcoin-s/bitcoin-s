@@ -144,7 +144,7 @@ trait BitcoinSWalletTestCachedBitcoindNewest
     val f: Future[Outcome] = for {
       bitcoind <- cachedBitcoindWithFundsF
       futOutcome = withFundedWalletAndBitcoindCached(test, bitcoind)(
-        getFreshWalletAppConfig
+        using getFreshWalletAppConfig
       )
       fut <- futOutcome.toFuture
     } yield fut

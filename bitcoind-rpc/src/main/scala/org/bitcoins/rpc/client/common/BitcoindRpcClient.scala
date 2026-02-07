@@ -330,7 +330,7 @@ object BitcoindRpcClient {
   def apply(instance: BitcoindInstanceLocal)(implicit
       system: ActorSystem
   ): BitcoindRpcClient =
-    new BitcoindRpcClient(instance)(system)
+    new BitcoindRpcClient(instance)(using system)
 
   /** Constructs a RPC client from the given datadir, or the default datadir if
     * no directory is provided. This is always a [[BitcoindInstanceLocal]] since

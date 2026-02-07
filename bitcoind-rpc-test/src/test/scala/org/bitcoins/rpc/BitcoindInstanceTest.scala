@@ -120,7 +120,7 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
         rpcUri = new URI(s"http://localhost:$rpcPort"),
         binary = BitcoindRpcTestUtil.newestBitcoindBinary,
         bitcoindDatadir = bitcoindDatadir
-      )(system, bitcoindRpcAppConfig)
+      )(using system, bitcoindRpcAppConfig)
 
     testClientStart(BitcoindRpcClient(instance))
   }
@@ -155,7 +155,7 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
         rpcUri = new URI(s"http://localhost:$rpcPort"),
         binary = BitcoindRpcTestUtil.newestBitcoindBinary,
         bitcoindDatadir = bitcoindDatadir
-      )(system, bitcoindRpcAppConfig)
+      )(using system, bitcoindRpcAppConfig)
 
     val client =
       BitcoindRpcClient(instance)
@@ -167,8 +167,8 @@ class BitcoindInstanceTest extends BitcoindRpcTest {
         rpcUri = instance.rpcUri,
         zmqConfig = instance.zmqConfig,
         proxyParams = None
-      )(system, bitcoindRpcAppConfig)
-      remoteClient = new BitcoindRpcClient(remoteInstance)(system)
+      )(using system, bitcoindRpcAppConfig)
+      remoteClient = new BitcoindRpcClient(remoteInstance)(using system)
       _ <- remoteClient.start()
       _ <- remoteClient.isStartedF.map {
         case false =>

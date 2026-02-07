@@ -860,7 +860,7 @@ case class PeerManager(
       headerSync: HeaderSync
   ): Future[HeaderSync] = {
     val blockchainsF =
-      BlockHeaderDAO()(ec, chainAppConfig).getBlockchains()
+      BlockHeaderDAO()(using ec, chainAppConfig).getBlockchains()
 
     for {
       blockchains <- blockchainsF

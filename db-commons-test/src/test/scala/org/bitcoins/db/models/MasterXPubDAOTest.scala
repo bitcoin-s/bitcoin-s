@@ -12,7 +12,7 @@ class MasterXPubDAOTest extends TestAppConfigFixture {
     val xpriv = ExtPrivateKey.freshRootKey(ExtKeyVersion.SegWitTestNet3Priv)
     val xpub = xpriv.extPublicKey
     val masterXpub =
-      MasterXPubDAO()(executionContext, appConfig = testAppConfig)
+      MasterXPubDAO()(using executionContext, appConfig = testAppConfig)
 
     val createdF = masterXpub.create(xpub)
 
@@ -32,7 +32,7 @@ class MasterXPubDAOTest extends TestAppConfigFixture {
 
   it must "create only one master xpub" in { (testAppConfig: TestAppConfig) =>
     val masterXpubDAO =
-      MasterXPubDAO()(executionContext, appConfig = testAppConfig)
+      MasterXPubDAO()(using executionContext, appConfig = testAppConfig)
 
     val xpriv = ExtPrivateKey.freshRootKey(ExtKeyVersion.SegWitTestNet3Priv)
     val xpub = xpriv.extPublicKey
@@ -56,7 +56,7 @@ class MasterXPubDAOTest extends TestAppConfigFixture {
       val xpriv = ExtPrivateKey.freshRootKey(ExtKeyVersion.SegWitTestNet3Priv)
       val xpub = xpriv.extPublicKey
       val masterXpub =
-        MasterXPubDAO()(executionContext, appConfig = testAppConfig)
+        MasterXPubDAO()(using executionContext, appConfig = testAppConfig)
 
       val createdF = masterXpub.create(xpub)
 
@@ -71,7 +71,7 @@ class MasterXPubDAOTest extends TestAppConfigFixture {
       val xpriv = ExtPrivateKey.freshRootKey(ExtKeyVersion.SegWitTestNet3Priv)
       val xpub = xpriv.extPublicKey
       val masterXpub =
-        MasterXPubDAO()(executionContext, appConfig = testAppConfig)
+        MasterXPubDAO()(using executionContext, appConfig = testAppConfig)
 
       val createdF = masterXpub.create(xpub)
 

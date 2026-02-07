@@ -273,7 +273,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
           )
         }
         chan.state == state
-      }(system.dispatcher)
+      }(using system.dispatcher)
     }
 
     TestAsyncUtil.retryUntilSatisfiedF(
@@ -388,7 +388,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
           } else {
             true
           }
-        }(system.dispatcher)
+        }(using system.dispatcher)
     }
 
     TestAsyncUtil.retryUntilSatisfiedF(
@@ -781,7 +781,7 @@ trait EclairRpcTestUtil extends BitcoinSLogger {
         uri = new URI("http://localhost:18333"),
         rpcUri = auth.bitcoindRpcUri,
         zmqConfig = instance.zmqConfig.get
-      )(system, bitcoindRpcAppConfig)
+      )(using system, bitcoindRpcAppConfig)
       BitcoindRpcClient.fromVersion(bitcoindVersion, bitcoindInstance)
     }
     bitcoindRpc
