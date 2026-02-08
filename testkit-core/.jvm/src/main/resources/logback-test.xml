@@ -27,7 +27,7 @@
 
     <logger name="org.bitcoins.node" level="WARN"/>
 
-    <logger name="org.bitcoins.chain" level="INFO"/>
+    <logger name="org.bitcoins.chain" level="WARN"/>
 
     <logger name="org.bitcoins.wallet" level="WARN"/>
 
