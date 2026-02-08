@@ -171,6 +171,8 @@ case class PeerConnection(
                       Future.successful(ByteString.empty)
                   }
               }
+              .groupedWithin(64, 10.millis)
+              .map(seq => seq.fold(ByteString.empty)(_ ++ _))
               .viaMat(PeerConnection.parseToNetworkMsgFlow)(Keep.left)
               .toMat(handleNetworkMsgSink)(Keep.right)
 
@@ -402,7 +404,6 @@ object PeerConnection extends BitcoinSLogger {
       byteVec: ByteString
   ): (ByteString, Vector[NetworkMessage]) = {
     val bytes: ByteVector = ByteVector(unalignedBytes ++ byteVec)
-    logger.trace(s"Bytes for message parsing: ${bytes.toHex}")
     val (messages, newUnalignedBytes) =
       NetworkUtil.parseIndividualMessages(bytes)
 
