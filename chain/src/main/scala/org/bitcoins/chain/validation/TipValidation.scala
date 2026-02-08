@@ -51,6 +51,8 @@ sealed abstract class TipValidation extends ChainVerificationLogger {
         TipUpdateResult.BadNonce(newPotentialTip)
       } else if (isBadMTP(newPotentialTip, blockchain)) {
         TipUpdateResult.BadMTP(newPotentialTip)
+      } else if (isTimeToNew(newPotentialTip)) {
+        TipUpdateResult.TimeToNew(newPotentialTip)
       } else {
         val headerDb = BlockHeaderDbHelper.fromBlockHeader(
           height = currentTip.height + 1,
@@ -125,6 +127,11 @@ sealed abstract class TipValidation extends ChainVerificationLogger {
       val medianTimePast = blockchain.getMedianTimePast
       newPotentialTip.time.toLong <= medianTimePast
     }
+  }
+
+  private def isTimeToNew(header: BlockHeader): Boolean = {
+    val currentTime = System.currentTimeMillis() / 1000
+    header.time.toLong > currentTime + 2 * 60 * 60
   }
 }
 

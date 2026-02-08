@@ -42,4 +42,6 @@ object TipUpdateResult {
   case class BadNonce(override val header: BlockHeader) extends Failure
 
   case class BadMTP(override val header: BlockHeader) extends Failure
+
+  case class TimeToNew(override val header: BlockHeader) extends Failure
 }

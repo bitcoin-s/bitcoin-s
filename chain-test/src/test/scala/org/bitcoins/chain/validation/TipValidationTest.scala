@@ -4,11 +4,11 @@ import org.apache.pekko.stream.scaladsl.{Keep, Sink, Source}
 import org.bitcoins.chain.blockchain.Blockchain
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.core.api.chain.db.{BlockHeaderDb, BlockHeaderDbHelper}
-import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainDbUnitTest}
 import org.scalatest.FutureOutcome
 
+import java.time.Instant
 import scala.concurrent.Future
 
 class TipValidationTest extends ChainDbUnitTest {
@@ -20,7 +20,6 @@ class TipValidationTest extends ChainDbUnitTest {
 
   it must "reject a new tip whose time is <= the median of the last 11 headers" in {
     blockHeaderDAO =>
-      require(blockHeaderDAO.appConfig.network == RegTest)
       val firstHeaderF = blockHeaderDAO.getBestChainTips.map(_.head)
       val headersDbF: Future[Seq[BlockHeaderDb]] = firstHeaderF.flatMap { f =>
         Source(f.height.until(f.height + 11))
@@ -77,6 +76,44 @@ class TipValidationTest extends ChainDbUnitTest {
         )
         assert(tipValidationResultGoodMTP == TipUpdateResult.Success(goodDb))
       }
+  }
 
+  it must "reject blocks headers that are too new" in { blockHeaderDAO =>
+    val firstHeaderF: Future[BlockHeaderDb] =
+      blockHeaderDAO.getBestChainTips.map(_.head)
+    val blockchainF = firstHeaderF.map(b => Blockchain.fromHeaders(Vector(b)))
+    for {
+      blockchain <- blockchainF
+
+      // 2 hours and 5 second in the future
+      tooNewTime = UInt32(Instant.now().toEpochMilli / 1000 + (60 * 60 * 2 + 5))
+      // just under 2 hours in the future
+      validTime = UInt32(Instant.now().toEpochMilli / 1000 + (60 * 60 * 2 - 1))
+      newHeaderTooNew = BlockHeaderHelper
+        .buildNextHeader(blockchain.tip, timeOpt = Some(tooNewTime))
+        .blockHeader
+
+      newHeaderTime2hoursDb = BlockHeaderHelper
+        .buildNextHeader(blockchain.tip, timeOpt = Some(validTime))
+      newHeaderTime2hours = newHeaderTime2hoursDb.blockHeader
+      tipValidationResultTooNew = TipValidation.checkNewTip(
+        newHeaderTooNew,
+        blockchain,
+        chainParams
+      )
+      tipValidationResultValid = TipValidation.checkNewTip(
+        newHeaderTime2hours,
+        blockchain,
+        chainParams
+      )
+    } yield {
+      assert(
+        tipValidationResultTooNew == TipUpdateResult.TimeToNew(newHeaderTooNew)
+      )
+      assert(
+        tipValidationResultValid == TipUpdateResult.Success(
+          newHeaderTime2hoursDb)
+      )
+    }
   }
 }
