@@ -5,8 +5,8 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.core.api.chain.db.BlockHeaderDb
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.crypto.DoubleSha256DigestBE
+import org.bitcoins.db.*
 import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
-import org.bitcoins.db._
 
 import scala.annotation.tailrec
 import scala.concurrent.{ExecutionContext, Future}
@@ -20,7 +20,7 @@ case class BlockHeaderDAO()(implicit
 ) extends CRUD[BlockHeaderDb, DoubleSha256DigestBE]
     with SlickUtil[BlockHeaderDb, DoubleSha256DigestBE] {
 
-  import profile.api._
+  import profile.api.*
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers.{doubleSha256DigestBEMapper, int32Mapper, uInt32Mapper}
 
@@ -87,45 +87,27 @@ case class BlockHeaderDAO()(implicit
      * To avoid making many database reads, we make one database read for all
      * possibly useful block headers.
      */
-    lazy val headersF = getBetweenHeights(from = height, to = child.height - 1)
+    val headersF = getBetweenHeights(from = height, to = child.height - 1)
 
-    /*
-     * We then bucket sort these headers by height so that any ancestor can be found
-     * in linear time assuming a bounded number of contentious tips.
-     */
-    val headersByHeight: Array[Vector[BlockHeaderDb]] =
-      Array.fill(child.height - height)(Vector.empty[BlockHeaderDb])
-
-    // Bucket sort
+    // Build a map from hash -> header for O(1) lookups, then walk backwards
+    // following previousBlockHashBE until we reach the target height. This
+    // avoids repeated linear searches across per-height buckets.
     headersF.map { headers =>
-      headers.foreach { header =>
-        val index = header.height - height
-        headersByHeight(index) = headersByHeight(index).:+(header)
-      }
-
-      val groupedByHeightHeaders: Array[Vector[BlockHeaderDb]] =
-        headersByHeight.reverse
+      val headersByHash: Map[DoubleSha256DigestBE, BlockHeaderDb] =
+        headers.map(h => h.hashBE -> h).toMap
 
       @tailrec
-      def loop(
-          currentHeader: BlockHeaderDb,
-          headersByDescHeight: Array[Vector[BlockHeaderDb]]
-      ): Option[BlockHeaderDb] = {
+      def loop(currentHeader: BlockHeaderDb): Option[BlockHeaderDb] =
         if (currentHeader.height == height) {
           Some(currentHeader)
         } else {
-          val prevHeaderOpt = headersByDescHeight.headOption.flatMap(
-            _.find(_.hashBE == currentHeader.previousBlockHashBE)
-          )
-
-          prevHeaderOpt match {
-            case None             => None
-            case Some(prevHeader) => loop(prevHeader, headersByDescHeight.tail)
+          headersByHash.get(currentHeader.previousBlockHashBE) match {
+            case None        => None
+            case Some(prevH) => loop(prevH)
           }
         }
-      }
 
-      loop(child, groupedByHeightHeaders)
+      loop(child)
     }
   }
 
