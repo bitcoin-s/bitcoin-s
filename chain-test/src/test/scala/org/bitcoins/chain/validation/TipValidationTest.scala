@@ -1,6 +1,5 @@
 package org.bitcoins.chain.validation
 
-import org.apache.pekko.stream.scaladsl.{Keep, Sink, Source}
 import org.bitcoins.chain.blockchain.Blockchain
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.core.api.chain.db.{BlockHeaderDb, BlockHeaderDbHelper}
@@ -21,14 +20,13 @@ class TipValidationTest extends ChainDbUnitTest {
   it must "reject a new tip whose time is <= the median of the last 11 headers" in {
     blockHeaderDAO =>
       val firstHeaderF = blockHeaderDAO.getBestChainTips.map(_.head)
-      val headersDbF: Future[Seq[BlockHeaderDb]] = firstHeaderF.flatMap { f =>
-        Source(f.height.until(f.height + 11))
-          .fold(Vector(f)) { (prevHeaders, _) =>
-            val nextHeader = BlockHeaderHelper.buildNextHeader(prevHeaders.last)
-            prevHeaders.appended(nextHeader)
-          }
-          .toMat(Sink.last)(Keep.right)
-          .run()
+      val headersDbF: Future[Seq[BlockHeaderDb]] = firstHeaderF.map { f =>
+        // produce 11 headers after `f` (inclusive of f we get 12 total)
+        // adjust the range if you want exactly 11 headers total
+        (0 until 11).foldLeft(Vector(f)) { (prevHeaders, _) =>
+          val nextHeader = BlockHeaderHelper.buildNextHeader(prevHeaders.last)
+          prevHeaders.appended(nextHeader)
+        }
       }
       val blockchainF = headersDbF.map(_.reverse).map(Blockchain.fromHeaders)
       for {
