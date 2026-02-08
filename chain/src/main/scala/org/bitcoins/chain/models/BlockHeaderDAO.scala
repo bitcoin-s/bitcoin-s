@@ -454,11 +454,12 @@ case class BlockHeaderDAO()(implicit
   @tailrec
   private def loop(
       chains: Vector[Blockchain],
-      allHeaders: Vector[BlockHeaderDb]
+      allHeaders: Vector[BlockHeaderDb],
+      usedHashes: Set[DoubleSha256DigestBE]
   ): Vector[Blockchain] = {
-    val usedHeaders = chains.flatMap(_.headers).distinct
-    val diff = allHeaders.filter(header =>
-      !usedHeaders.exists(_.hashBE == header.hashBE))
+    // Use a hash set for membership checks to make filtering linear instead of quadratic.
+    val diff = allHeaders.filterNot(h => usedHashes.contains(h.hashBE))
+
     if (diff.isEmpty) {
       chains
     } else {
@@ -469,7 +470,10 @@ case class BlockHeaderDAO()(implicit
       val newChain = Blockchain(
         newChainHeaders.sortBy(_.height)(Ordering.Int.reverse)
       )
-      loop(chains :+ newChain, allHeaders)
+
+      val newUsedHashes = usedHashes ++ newChain.headers.map(_.hashBE)
+
+      loop(chains :+ newChain, allHeaders, newUsedHashes)
     }
   }
 
@@ -498,7 +502,10 @@ case class BlockHeaderDAO()(implicit
             }
             val init = chains.map(Blockchain(_))
 
-            loop(init, headers).distinct
+            val initUsedHashes: Set[DoubleSha256DigestBE] =
+              init.flatMap(_.headers).map(_.hashBE).toSet
+
+            loop(init, headers, initUsedHashes).distinct
         }
       }
     }
