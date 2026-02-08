@@ -57,7 +57,7 @@ class BitcoindChainHandlerViaZmqTest extends ChainDbUnitTest {
       for {
         blockCount <- bitcoind.getBlockCount()
         _ <- ChainUnitTest.isSynced(chainHandler, bitcoind)
-        numBlocks = Random.nextInt(100)
+        numBlocks = Random.between(5, 100)
         _ <- genNBlocksCheckMTP(bitcoind, chainHandler, numBlocks)
         newBlockCount <- chainHandler.getBlockCount()
       } yield {
