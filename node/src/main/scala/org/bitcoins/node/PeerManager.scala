@@ -597,11 +597,12 @@ case class PeerManager(
                     }
                   }
                 resultF.map { r =>
+                  val end = Instant.now()
                   logger.debug(
                     s"Done processing ${payload.commandName} in peer=${peer} state=${r}, total=${Duration
-                        .between(receivedAt, Instant.now())
+                        .between(receivedAt, end)
                         .toMillis}ms, stream=${Duration
-                        .between(start, Instant.now())
+                        .between(start, end)
                         .toMillis}ms"
                   )
                   r
@@ -609,8 +610,11 @@ case class PeerManager(
             }
         }
 
-      case (state, ControlMessageWrapper(payload, peer)) =>
-        state match {
+      case (state, ControlMessageWrapper(payload, peer, receivedAt)) =>
+        logger.debug(
+          s"Got ${payload.commandName} from peer=${peer} in stream receivedAt=$receivedAt")
+        val start = Instant.now()
+        val resultF = state match {
           case runningState: NodeRunningState =>
             val peerMsgSenderApiOpt: Option[PeerMessageSenderApi] = {
               runningState.getPeerMsgSender(peer) match {
@@ -655,6 +659,18 @@ case class PeerManager(
                 Future.successful(state)
             }
         }
+        resultF.map { r =>
+          val end = Instant.now()
+          logger.debug(
+            s"Done processing ${payload.commandName} in peer=${peer} state=${r}, total=${Duration
+                .between(receivedAt, end)
+                .toMillis}ms, stream=${Duration
+                .between(start, end)
+                .toMillis}ms"
+          )
+          r
+        }
+        resultF
 
       case (state, HeaderTimeoutWrapper(peer)) =>
         logger.debug(s"Processing timeout header for $peer")
