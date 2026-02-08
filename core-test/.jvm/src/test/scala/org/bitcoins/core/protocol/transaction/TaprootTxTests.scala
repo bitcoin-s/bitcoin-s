@@ -4,14 +4,13 @@ import org.bitcoins.core.protocol.script.{ScriptSignature, TaprootKeyPath}
 import org.bitcoins.core.script.flag.ScriptVerifyTaproot
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.scalatest.Assertion
 import org.scalatest.time.Span
 import scodec.bits.ByteVector
 
-import scala.concurrent.duration.DurationInt
 import scala.concurrent.*
+import scala.concurrent.duration.DurationInt
 import scala.util.Using
 
 class TaprootTxTests extends BitcoinSAsyncTest {
@@ -61,30 +60,18 @@ class TaprootTxTests extends BitcoinSAsyncTest {
   }
 
   it must "run the success test cases through the script interpreter" in {
-    // execute in parallel as running test cases sequentially takes 17 minutes on CI
-    val groupedTestCases =
-      testCases.grouped(Runtime.getRuntime.availableProcessors())
-
-    val execute: Vector[Future[Vector[Assertion]]] = {
-      groupedTestCases
-        .map(cases => executeSuccessTestCases(cases.toVector))
-        .toVector
-    }
     Future
-      .sequence(execute)
-      .map(_.flatten)
+      .traverse(testCases)(executeSuccessTestCases)
       .map(_ => succeed)
   }
 
   private def executeSuccessTestCases(
-      testCases: Vector[TaprootTestCase]
-  ): Future[Vector[Assertion]] = {
-    FutureUtil.makeAsync { () =>
-      testCases.map { testCase =>
-        withClue(testCase.comment) {
-          val result = ScriptInterpreter.run(testCase.successProgram)
-          assert(result == ScriptOk)
-        }
+      testCase: TaprootTestCase
+  ): Future[Assertion] = {
+    Future {
+      withClue(testCase.comment) {
+        val result = ScriptInterpreter.run(testCase.successProgram)
+        assert(result == ScriptOk)
       }
     }
   }
