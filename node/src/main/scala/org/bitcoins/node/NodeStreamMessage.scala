@@ -15,7 +15,10 @@ object NodeStreamMessage {
       receivedAt: Instant = Instant.now())
       extends NodeStreamMessage
 
-  case class ControlMessageWrapper(payload: ControlPayload, peer: Peer)
+  case class ControlMessageWrapper(
+      payload: ControlPayload,
+      peer: Peer,
+      receivedAt: Instant = Instant.now())
       extends NodeStreamMessage
 
   case class HeaderTimeoutWrapper(peer: Peer) extends NodeStreamMessage
