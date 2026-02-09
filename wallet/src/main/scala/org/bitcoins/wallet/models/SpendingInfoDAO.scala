@@ -19,9 +19,9 @@ case class SpendingInfoDAO()(implicit
     override val ec: ExecutionContext,
     override val appConfig: WalletAppConfig
 ) extends CRUDAutoInc[UTXORecord] {
-  import profile.api._
+  import profile.api.*
   private val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
-  import mappers._
+  import mappers.*
   import org.bitcoins.core.currency.currencyUnitNumeric
 
   /** The table inside our database we are inserting into */
@@ -427,10 +427,11 @@ case class SpendingInfoDAO()(implicit
     spkJoinQuery
       .filter(_._1.state.inSet(TxoState.receivedStates))
       .filter(_._1.txid.inSet(txids))
+      .map { case (utxo, spk) => (utxo, spk.scriptPubKey) }
       .result
       .map(res =>
-        res.map { case (utxoRec, spkRec) =>
-          utxoRec.toSpendingInfoDb(spkRec.scriptPubKey)
+        res.map { case (utxoRec, spk) =>
+          utxoRec.toSpendingInfoDb(spk)
         })
       .map(_.toVector)
   }
