@@ -1,13 +1,13 @@
 package org.bitcoins.testkit.util
 
 import org.apache.pekko.actor.ActorSystem
-import org.apache.pekko.util.Timeout
 import org.apache.pekko.testkit.TestKit
+import org.apache.pekko.util.Timeout
 import org.bitcoins.commons.util.BitcoinSLogger
-import org.bitcoins.core.config.NetworkParameters
+import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
 import org.bitcoins.testkitcore.util.BaseAsyncTest
-import org.scalatest._
+import org.scalatest.*
 import org.scalatest.flatspec.{AsyncFlatSpec, FixtureAsyncFlatSpec}
 
 import scala.concurrent.ExecutionContext
@@ -22,7 +22,7 @@ trait BitcoinSPekkoAsyncTest extends BaseAsyncTest with BitcoinSLogger {
   implicit val system: ActorSystem = {
     ActorSystem(s"${getClass.getSimpleName}-${System.currentTimeMillis()}")
   }
-  implicit val networkParam: NetworkParameters = BitcoindRpcTestUtil.network
+  implicit val networkParam: BitcoinNetwork = BitcoindRpcTestUtil.network
 
   /** Needed because the default execution context will become overloaded if we
     * do not specify a unique execution context for each suite

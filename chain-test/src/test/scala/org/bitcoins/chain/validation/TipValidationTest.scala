@@ -106,7 +106,7 @@ class TipValidationTest extends ChainDbUnitTest {
       )
     } yield {
       assert(
-        tipValidationResultTooNew == TipUpdateResult.TimeToNew(newHeaderTooNew)
+        tipValidationResultTooNew == TipUpdateResult.TimeTooNew(newHeaderTooNew)
       )
       assert(
         tipValidationResultValid == TipUpdateResult.Success(
