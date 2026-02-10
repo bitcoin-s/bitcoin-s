@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS idx_txo_spending_info_txid_state ON txo_spending_info (txid, txo_state);
