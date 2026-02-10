@@ -3,7 +3,7 @@ package org.bitcoins.db
 import com.typesafe.config.Config
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.db.ChainDbManagement
-import org.bitcoins.db.DatabaseDriver._
+import org.bitcoins.db.DatabaseDriver.*
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.dlc.wallet.{DLCAppConfig, DLCDbManagement}
 import org.bitcoins.node.config.NodeAppConfig
@@ -95,7 +95,7 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
         assert(flywayInfo.applied().length == expected)
         assert(flywayInfo.pending().length == 0)
       case PostgreSQL =>
-        val expected = 10
+        val expected = 11
         assert(result.migrationsExecuted == expected)
         val flywayInfo = dlcAppConfig.info()
 
@@ -114,13 +114,13 @@ class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
     val result = walletDbManagement.migrate()
     walletAppConfig.driver match {
       case SQLite =>
-        val expected = 16
+        val expected = 18
         assert(result.migrationsExecuted == expected)
         val flywayInfo = walletDbManagement.info()
         assert(flywayInfo.applied().length == expected)
         assert(flywayInfo.pending().length == 0)
       case PostgreSQL =>
-        val expected = 14
+        val expected = 16
         assert(result.migrationsExecuted == expected)
         val flywayInfo = walletDbManagement.info()
 
