@@ -21,7 +21,7 @@ case class CompactFilterDAO()(implicit
     doubleSha256DigestBEMapper,
     filterTypeMapper
   }
-  import profile.api._
+  import profile.api.*
 
   implicit private val bigIntMapper: BaseColumnType[BigInt] =
     appConfig.driver match {
@@ -117,7 +117,7 @@ case class CompactFilterDAO()(implicit
     result
   }
 
-  private val maxHeightQuery
+  private lazy val maxHeightQuery
       : profile.ProfileAction[Int, NoStream, Effect.Read] = {
     val query = table.map(_.height).max.getOrElse(0).result
     query
@@ -143,7 +143,7 @@ case class CompactFilterDAO()(implicit
       .result
   }
 
-  private val bestFilterQuery = {
+  private lazy val bestFilterQuery = {
     val join = table
       .join(blockHeaderTable)
       .on(_.blockHash === _.hash)
@@ -166,7 +166,7 @@ case class CompactFilterDAO()(implicit
     safeDatabase.run(bestFilterQuery).map(_.headOption)
   }
 
-  private val bestFilterHeightQuery
+  private lazy val bestFilterHeightQuery
       : DBIOAction[Option[Int], NoStream, Effect.Read] = {
     table.map(_.height).max.result
   }
