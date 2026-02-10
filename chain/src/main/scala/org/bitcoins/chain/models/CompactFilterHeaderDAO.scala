@@ -13,7 +13,7 @@ case class CompactFilterHeaderDAO()(implicit
     override val appConfig: ChainAppConfig
 ) extends CRUD[CompactFilterHeaderDb, DoubleSha256DigestBE]
     with SlickUtil[CompactFilterHeaderDb, DoubleSha256DigestBE] {
-  import profile.api._
+  import profile.api.*
   val mappers = new org.bitcoins.db.DbCommonsColumnMappers(profile)
   import mappers.doubleSha256DigestBEMapper
 
@@ -127,13 +127,13 @@ case class CompactFilterHeaderDAO()(implicit
     result
   }
 
-  private val maxHeightQuery
+  private lazy val maxHeightQuery
       : profile.ProfileAction[Int, NoStream, Effect.Read] = {
     val query = table.map(_.height).max.getOrElse(0).result
     query
   }
 
-  private val bestFilterHeaderQuery = {
+  private lazy val bestFilterHeaderQuery = {
     val join = table
       .join(blockHeaderTable)
       .on(_.blockHash === _.hash)
@@ -161,7 +161,7 @@ case class CompactFilterHeaderDAO()(implicit
     safeDatabase.run(bestFilterHeaderQuery).map(_.headOption)
   }
 
-  private val bestFilterHeaderHeightQuery: Rep[Option[Int]] = {
+  private lazy val bestFilterHeaderHeightQuery: Rep[Option[Int]] = {
     table.map(_.height).max
   }
 
