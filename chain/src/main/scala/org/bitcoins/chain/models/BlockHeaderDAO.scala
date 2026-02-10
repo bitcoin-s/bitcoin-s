@@ -242,7 +242,7 @@ case class BlockHeaderDAO()(implicit
     }
   }
 
-  private val lowestNoWorkQuery
+  private lazy val lowestNoWorkQuery
       : profile.ProfileAction[Int, NoStream, Effect.Read] = {
     val noWork =
       table.filter(h => h.chainWork === BigInt(0) || h.chainWork == null)
@@ -260,7 +260,7 @@ case class BlockHeaderDAO()(implicit
     safeDatabase.run(query)
   }
 
-  private val maxHeightQuery
+  private lazy val maxHeightQuery
       : profile.ProfileAction[Int, NoStream, Effect.Read] = {
     val query = table.map(_.height).max.getOrElse(0).result
     query
@@ -274,7 +274,7 @@ case class BlockHeaderDAO()(implicit
     }
   }
 
-  private val maxWorkQuery
+  private lazy val maxWorkQuery
       : profile.ProfileAction[BigInt, NoStream, Effect.Read] = {
     val query = table.map(_.chainWork).max.getOrElse(BigInt(0)).result
     query
