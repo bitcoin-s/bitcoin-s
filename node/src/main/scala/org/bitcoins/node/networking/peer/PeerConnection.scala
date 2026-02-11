@@ -171,7 +171,7 @@ case class PeerConnection(
                       Future.successful(ByteString.empty)
                   }
               }
-              .groupedWithin(64, 10.millis)
+              .groupedWithin(16, 100.millis)
               .map(seq => seq.fold(ByteString.empty)(_ ++ _))
               .viaMat(PeerConnection.parseToNetworkMsgFlow)(Keep.left)
               .toMat(handleNetworkMsgSink)(Keep.right)
