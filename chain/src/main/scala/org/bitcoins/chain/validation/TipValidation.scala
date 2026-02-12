@@ -121,7 +121,7 @@ sealed abstract class TipValidation extends ChainVerificationLogger {
       newPotentialTip: BlockHeader,
       blockchain: Blockchain
   ): Boolean = {
-    if (blockchain.length < 11) {
+    if (blockchain.length <= 4) {
       false
     } else {
       val medianTimePast = blockchain.getMedianTimePast
