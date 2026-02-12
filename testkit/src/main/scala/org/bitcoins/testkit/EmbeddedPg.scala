@@ -1,8 +1,11 @@
 package org.bitcoins.testkit
 
-import com.opentable.db.postgres.embedded.EmbeddedPostgres
+import com.dimafeng.testcontainers.PostgreSQLContainer
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{BeforeAndAfterAll, Suite}
+import org.testcontainers.utility.DockerImageName
+
+import java.sql.DriverManager
 
 trait EmbeddedPg extends BeforeAndAfterAll { this: Suite =>
 
@@ -19,53 +22,50 @@ trait EmbeddedPg extends BeforeAndAfterAll { this: Suite =>
         false
       }
     }
-    val isPgEnabled = isEnv || isConfig
-    isPgEnabled
+    isEnv || isConfig
   }
 
-  lazy val pg: Option[EmbeddedPostgres] = {
-
-    if (pgEnabled) {
+  // Lazily create a Testcontainers PostgreSQL container when enabled.
+  // We configure a small image and reasonable defaults similar to the otj usage.
+  private lazy val createdContainer: Option[PostgreSQLContainer] = {
+    if (!pgEnabled) None
+    else {
       val pgStartupWait = sys.env.getOrElse("PG_STARTUP_WAIT", "60").toInt
-      val p = EmbeddedPostgres
-        .builder()
-        .setPGStartupWait(java.time.Duration.ofSeconds(pgStartupWait))
-        .setServerConfig("max_connections", "25")
-        .setServerConfig("shared_buffers", "1MB")
-        .start()
-      Some(p)
-    } else {
-      None
+      val image = sys.env.getOrElse("PG_IMAGE", "postgres:15-alpine")
+      val container =
+        PostgreSQLContainer(dockerImage = DockerImageName.parse(image))
+      // Start container and wait for readiness
+      container.start()
+      Some(container)
     }
   }
 
-  def pgUrl(): Option[String] =
-    pg.map(_.getJdbcUrl("postgres"))
+  def pg: Option[PostgreSQLContainer] = createdContainer
+
+  def pgUrl(): Option[String] = pg.map(_.jdbcUrl)
 
   override def afterAll(): Unit = {
-    super.afterAll()
-
-    val _ = pg.foreach { p =>
-      p.close()
-    }
-    ()
+    try {
+      pg.foreach(_.stop())
+    } finally super.afterAll()
   }
 
   def executePgSql(sql: String): Unit =
-    pg.foreach { pg =>
+    pg.foreach { container =>
+      val url = container.jdbcUrl
+      val user = container.username
+      val pass = container.password
+      var conn: java.sql.Connection = null
       try {
-        val conn = pg.getPostgresDatabase.getConnection
-        try {
-          val st = conn.createStatement()
-          try {
-            st.execute(sql)
-          } finally st.close()
-        } finally conn.close()
+        conn = DriverManager.getConnection(url, user, pass)
+        val st = conn.createStatement()
+        try st.execute(sql)
+        finally st.close()
       } catch {
         case ex: Throwable =>
           System.err.println(sql)
           ex.printStackTrace()
-      }
+      } finally if (conn != null) conn.close()
     }
 
 }
