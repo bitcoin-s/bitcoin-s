@@ -76,7 +76,7 @@ class TipValidationTest extends ChainDbUnitTest {
       }
   }
 
-  it must "reject blocks headers that are too new" in { blockHeaderDAO =>
+  it must "reject block headers that are too new" in { blockHeaderDAO =>
     val firstHeaderF: Future[BlockHeaderDb] =
       blockHeaderDAO.getBestChainTips.map(_.head)
     val blockchainF = firstHeaderF.map(b => Blockchain.fromHeaders(Vector(b)))
