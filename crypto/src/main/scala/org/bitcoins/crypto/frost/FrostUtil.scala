@@ -22,6 +22,10 @@ object FrostUtil {
     CryptoUtil.taggedSha256(bytes, "FROST/deterministic/nonce").bytes
   }
 
+  def hashFrostCoeffGen(bytes: ByteVector): ByteVector = {
+    CryptoUtil.taggedSha256(bytes, "FROST/coeffgen").bytes
+  }
+
   def hashFrostDeterministicNonce(
       secshare: FieldElement,
       aggOtherNonce: FrostNoncePub,
@@ -364,4 +368,86 @@ object FrostUtil {
                    sessionContext = sessionCtx)
     (pubNonce, sig)
   }
+
+  /** https://github.com/jesseposner/secp256k1-zkp/blob/b14bad4b87aa267d216d1bc19f6a3fa7ca2ae366/src/modules/frost/keygen_impl.h#L155
+    *
+    * @param seed
+    * @param threshold
+    * @param numShares
+    * @return
+    */
+  def generateShares(
+      seed: ECPrivateKey,
+      threshold: Int,
+      numShares: Int): FrostShareGenResult = {
+    require(threshold > 1, s"Threshold must be > 1: $threshold")
+    require(
+      numShares >= threshold,
+      s"Number of shares must be at least the threshold, got: $numShares with threshold $threshold")
+    val vssPreimage =
+      seed.bytes ++ ByteVector.fromLong(threshold, 8) ++ ByteVector.fromLong(
+        numShares,
+        8)
+    val polygen = CryptoUtil.sha256(vssPreimage).bytes
+    val vssCommitments = vssCommitment(polygen, threshold)
+    val idSharesTuple: Vector[(Long, FieldElement)] = 0
+      .until(numShares)
+      .map { i =>
+        val id = i.toLong + 1L
+        val share = generateShare(polygen, threshold, id)
+        (id, share)
+      }
+      .toVector
+    FrostShareGenResult(
+      ids = idSharesTuple.map(_._1),
+      shares = idSharesTuple.map(_._2),
+      commitments = vssCommitments
+    )
+  }
+
+  /** https://github.com/jesseposner/secp256k1-zkp/blob/frost-trusted-dealer/src/modules/frost/keygen_impl.h#L130
+    * @param polygen
+    * @param threshold
+    * @param id
+    * @return
+    */
+  private def generateShare(
+      polygen: ByteVector,
+      threshold: Int,
+      id: Long): FieldElement = {
+    var idx = 0L
+    var shareI = FieldElement.zero
+    0.until(threshold).foreach { i =>
+      val coeff = deriveCoefficient(polygen, i)
+      shareI = coeff.add(shareI)
+      if (i < threshold - 1) {
+        idx = id + 1
+        shareI = shareI.multiply(FieldElement(idx))
+      }
+    }
+    shareI
+  }
+
+  def vssCommitment(
+      polygen: ByteVector,
+      threshold: Int): Vector[ECPublicKey] = {
+    deriveCoefficients(polygen, threshold).map { coeff =>
+      CryptoParams.getG.multiply(coeff)
+    }
+  }
+
+  def deriveCoefficients(
+      polygen: ByteVector,
+      threshold: Int): Vector[FieldElement] = {
+    0.until(threshold)
+      .map(deriveCoefficient(polygen, _))
+      .toVector
+  }
+
+  private def deriveCoefficient(polygen: ByteVector, idx: Int): FieldElement = {
+    val coeffPreimage = polygen ++ ByteVector.fromLong(idx, 8)
+    val coeff = hashFrostCoeffGen(coeffPreimage)
+    FieldElement.fromBytes(coeff)
+  }
+
 }
