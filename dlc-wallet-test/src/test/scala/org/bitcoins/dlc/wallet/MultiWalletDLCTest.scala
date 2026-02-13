@@ -19,7 +19,7 @@ class MultiWalletDLCTest extends BitcoinSWalletTest {
   override type FixtureParam = FundedDLCWallet
 
   override def getFreshConfig: BitcoinSAppConfig = {
-    BitcoinSWalletTest.getSegwitWalletConfigWithBip39PasswordOpt(pgUrl())
+    BitcoinSWalletTest.getSegwitWalletConfigWithBip39PasswordOpt(postgresOpt)
   }
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
@@ -30,7 +30,7 @@ class MultiWalletDLCTest extends BitcoinSWalletTest {
       ConfigFactory.parseString(s"bitcoin-s.wallet.walletName = walletB")
 
     val dbConf =
-      BitcoinSTestAppConfig.configWithEmbeddedDb(project = None, () => pgUrl())
+      BitcoinSTestAppConfig.configWithEmbeddedDb(project = None, postgresOpt)
 
     val dir = BitcoinSTestAppConfig.tmpDir()
 

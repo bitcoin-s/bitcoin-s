@@ -13,7 +13,7 @@ import org.bitcoins.node.NodeCallbacks
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.server.{BitcoinSAppConfig, BitcoindRpcBackendUtil}
 import org.bitcoins.server.util.CallbackUtil
-import org.bitcoins.testkit.EmbeddedPg
+import org.bitcoins.testkit.PostgresTestDatabase
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
 import org.bitcoins.testkit.node.MockNodeApi
@@ -27,6 +27,7 @@ import org.bitcoins.wallet.callback.WalletCallbacks
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import org.scalatest.*
+import org.testcontainers.postgresql.PostgreSQLContainer
 
 import java.util.UUID
 import scala.concurrent.*
@@ -35,7 +36,7 @@ import scala.concurrent.duration.*
 trait BitcoinSWalletTest
     extends BitcoinSFixture
     with BaseWalletTest
-    with EmbeddedPg {
+    with PostgresTestDatabase {
   import BitcoinSWalletTest._
 
   implicit protected def getFreshDLCAppConfig: DLCAppConfig = {
@@ -45,7 +46,7 @@ trait BitcoinSWalletTest
   override def beforeAll(): Unit = {
     AppConfig.throwIfDefaultDatadir(getFreshConfig.walletConf)
     AppConfig.throwIfDefaultDatadir(getFreshConfig.dlcConf)
-    super[EmbeddedPg].beforeAll()
+    super[PostgresTestDatabase].beforeAll()
   }
 
   override def afterAll(): Unit = {
@@ -53,7 +54,7 @@ trait BitcoinSWalletTest
     Await.result(getFreshConfig.nodeConf.stop(), 1.minute)
     Await.result(getFreshConfig.walletConf.stop(), 1.minute)
     Await.result(getFreshConfig.dlcConf.stop(), 1.minute)
-    super[EmbeddedPg].afterAll()
+    super[PostgresTestDatabase].afterAll()
     super[BitcoinSFixture].afterAll()
   }
 
@@ -190,7 +191,7 @@ trait BitcoinSWalletTest
 
   def withWalletConfig(test: OneArgAsyncTest): FutureOutcome = {
     val builder: () => Future[WalletAppConfig] = () => {
-      createWalletAppConfig(() => pgUrl(), Vector.empty)
+      createWalletAppConfig(postgresOpt, Vector.empty)
     }
 
     val destroy: WalletAppConfig => Future[Unit] = walletAppConfig => {
@@ -201,7 +202,7 @@ trait BitcoinSWalletTest
 
   def withWalletConfigNotStarted(test: OneArgAsyncTest): FutureOutcome = {
     val builder: () => Future[WalletAppConfig] = () => {
-      createWalletAppConfigNotStarted(() => pgUrl(), Vector.empty)
+      createWalletAppConfigNotStarted(postgresOpt, Vector.empty)
     }
 
     val destroy: WalletAppConfig => Future[Unit] = _ => {
@@ -227,11 +228,11 @@ object BitcoinSWalletTest extends WalletLogger {
   lazy val initialFunds: CurrencyUnit = expectedDefaultAmt + expectedAccount1Amt
 
   def createWalletAppConfig(
-      pgUrl: () => Option[String],
+      postgresOpt: Option[PostgreSQLContainer],
       configs: Vector[Config]
   )(implicit system: ActorSystem): Future[WalletAppConfig] = {
     import system.dispatcher
-    val walletAppConfigF = createWalletAppConfigNotStarted(pgUrl, configs)
+    val walletAppConfigF = createWalletAppConfigNotStarted(postgresOpt, configs)
     for {
       appConfig <- walletAppConfigF
       _ <- appConfig.start()
@@ -239,10 +240,10 @@ object BitcoinSWalletTest extends WalletLogger {
   }
 
   def createWalletAppConfigNotStarted(
-      pgUrl: () => Option[String],
+      postgresOpt: Option[PostgreSQLContainer],
       configs: Vector[Config]
   )(implicit system: ActorSystem): Future[WalletAppConfig] = {
-    val baseConf = BaseWalletTest.getFreshWalletAppConfig(pgUrl, configs)
+    val baseConf = BaseWalletTest.getFreshWalletAppConfig(postgresOpt, configs)
     val walletNameOpt = if (NumberGenerator.bool.sampleSome) {
       Some(UUID.randomUUID().toString.replace("-", ""))
     } else None
@@ -604,7 +605,7 @@ object BitcoinSWalletTest extends WalletLogger {
   }
 
   def getSegwitWalletConfigWithBip39PasswordOpt(
-      pgUrl: Option[String]
+      postgresOpt: Option[PostgreSQLContainer]
   )(implicit system: ActorSystem): BitcoinSAppConfig = {
     val segwitConfig = BaseWalletTest.segwitWalletConf
 
@@ -612,6 +613,6 @@ object BitcoinSWalletTest extends WalletLogger {
       bip39PasswordOpt = KeyManagerTestUtil.bip39PasswordOpt,
       extraConfig = Some(segwitConfig)
     )
-    BaseWalletTest.getFreshConfig(() => pgUrl, Vector(extraConfig))
+    BaseWalletTest.getFreshConfig(postgresOpt, Vector(extraConfig))
   }
 }

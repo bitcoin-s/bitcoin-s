@@ -33,7 +33,7 @@ trait BitcoinSDualWalletTest extends BitcoinSWalletTest {
     val walletNameConfig =
       ConfigFactory.parseString(s"bitcoin-s.wallet.walletName=$randomHex")
     val extraConfig = segwitConfig.withFallback(walletNameConfig)
-    BaseWalletTest.getFreshConfig(() => pgUrl(), Vector(extraConfig))
+    BaseWalletTest.getFreshConfig(postgresOpt, Vector(extraConfig))
   }
 
   /** Enables external payout addresses which is needed for some unit tests */

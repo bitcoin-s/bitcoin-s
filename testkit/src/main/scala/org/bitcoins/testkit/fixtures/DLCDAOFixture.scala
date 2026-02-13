@@ -2,14 +2,14 @@ package org.bitcoins.testkit.fixtures
 
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.dlc.wallet.DLCAppConfig
-import org.bitcoins.dlc.wallet.models.{IncomingDLCOfferDAO, _}
+import org.bitcoins.dlc.wallet.models.*
 import org.bitcoins.server.BitcoinSAppConfig
-import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
+import org.bitcoins.testkit.{BitcoinSTestAppConfig, PostgresTestDatabase}
 import org.scalatest._
 
 import scala.concurrent.{Await, Future}
 
-trait DLCDAOFixture extends BitcoinSFixture with EmbeddedPg {
+trait DLCDAOFixture extends BitcoinSFixture with PostgresTestDatabase {
 
   private lazy val daos: DLCDAOs = {
     val announcementDAO = OracleAnnouncementDataDAO()
@@ -46,14 +46,14 @@ trait DLCDAOFixture extends BitcoinSFixture with EmbeddedPg {
 
   implicit protected val config: BitcoinSAppConfig =
     BitcoinSTestAppConfig
-      .getNeutrinoWithEmbeddedDbTestConfig(() => pgUrl(), Vector.empty)
+      .getNeutrinoWithEmbeddedDbTestConfig(postgresOpt, Vector.empty)
 
   implicit private val dlcConfig: DLCAppConfig = config.dlcConf
 
   override def afterAll(): Unit = {
     val stoppedF = config.stop()
     val _ = Await.ready(stoppedF, akkaTimeout.duration)
-    super[EmbeddedPg].afterAll()
+    super[PostgresTestDatabase].afterAll()
   }
 
   def withFixture(test: OneArgAsyncTest): FutureOutcome =

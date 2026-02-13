@@ -1,7 +1,7 @@
 package org.bitcoins.testkit.wallet
 
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.testkit.EmbeddedPg
+import org.bitcoins.testkit.PostgresTestDatabase
 import org.bitcoins.testkit.rpc.{
   BitcoindFixturesCached,
   CachedBitcoind,
@@ -15,10 +15,10 @@ import scala.concurrent.Future
 trait WalletAppConfigWithBitcoindFixtures
     extends BitcoinSAsyncFixtureTest
     with BitcoindFixturesCached
-    with EmbeddedPg { self: CachedBitcoind[?] =>
+    with PostgresTestDatabase { self: CachedBitcoind[?] =>
 
   override def afterAll(): Unit = {
-    super[EmbeddedPg].afterAll()
+    super[PostgresTestDatabase].afterAll()
     super[BitcoinSAsyncFixtureTest].afterAll()
   }
 }
@@ -50,7 +50,7 @@ trait WalletAppConfigWithBitcoindNewestFixtures
     makeDependentFixture[WalletAppConfigWithBitcoindRpc](
       () => {
         val walletConfig =
-          BaseWalletTest.getFreshWalletAppConfig(() => pgUrl(), Vector.empty)
+          BaseWalletTest.getFreshWalletAppConfig(postgresOpt, Vector.empty)
         for {
           _ <- walletConfig.start()
           model = WalletAppConfigWithBitcoindRpc(walletConfig, bitcoind)

@@ -2,7 +2,7 @@ package org.bitcoins.testkit.fixtures
 
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.dlc.oracle.storage._
-import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
+import org.bitcoins.testkit.{BitcoinSTestAppConfig, PostgresTestDatabase}
 import org.flywaydb.core.api.output.CleanResult
 import org.scalatest._
 
@@ -14,10 +14,10 @@ case class DLCOracleDAOs(
     outcomeDAO: EventOutcomeDAO
 )
 
-trait DLCOracleDAOFixture extends BitcoinSFixture with EmbeddedPg {
+trait DLCOracleDAOFixture extends BitcoinSFixture with PostgresTestDatabase {
 
   implicit protected val config: DLCOracleAppConfig =
-    BitcoinSTestAppConfig.getDLCOracleWithEmbeddedDbTestConfig(() => pgUrl())
+    BitcoinSTestAppConfig.getDLCOracleWithEmbeddedDbTestConfig(postgresOpt)
 
   override type FixtureParam = DLCOracleDAOs
 

@@ -1,7 +1,7 @@
 package org.bitcoins.testkit.db
 
 import org.bitcoins.testkit.BitcoinSTestAppConfig.ProjectType
-import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
+import org.bitcoins.testkit.{BitcoinSTestAppConfig, PostgresTestDatabase}
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.scalatest.{BeforeAndAfterAll, FutureOutcome}
 import org.scalatest.flatspec.FixtureAsyncFlatSpec
@@ -12,7 +12,7 @@ trait TestAppConfigFixture
     extends FixtureAsyncFlatSpec
     with BeforeAndAfterAll
     with BitcoinSFixture
-    with EmbeddedPg {
+    with PostgresTestDatabase {
 
   override type FixtureParam = TestAppConfig
 
@@ -27,7 +27,7 @@ trait TestAppConfigFixture
   def getFreshTestConfig(): Future[TestAppConfig] = {
     val configOverride = BitcoinSTestAppConfig.configWithEmbeddedDb(
       Some(ProjectType.Test),
-      pgUrl = () => pgUrl()
+      postgresOpt = postgresOpt
     )
     val config =
       TestAppConfig(BitcoinSTestAppConfig.tmpDir(), Vector(configOverride))

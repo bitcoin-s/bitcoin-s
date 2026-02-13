@@ -3,15 +3,15 @@ package org.bitcoins.testkit.chain
 import com.typesafe.config.ConfigFactory
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig.ProjectType
-import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
+import org.bitcoins.testkit.{BitcoinSTestAppConfig, PostgresTestDatabase}
 
-trait ChainDbUnitTest extends ChainUnitTest with EmbeddedPg {
+trait ChainDbUnitTest extends ChainUnitTest with PostgresTestDatabase {
 
   override def mainnetAppConfig: ChainAppConfig = {
     val memoryDb =
       BitcoinSTestAppConfig.configWithEmbeddedDb(
         Some(ProjectType.Chain),
-        () => pgUrl()
+        postgresOpt
       )
     val mainnetConf = ConfigFactory.parseString("bitcoin-s.network = mainnet")
     val chainConfig: ChainAppConfig =
@@ -20,7 +20,7 @@ trait ChainDbUnitTest extends ChainUnitTest with EmbeddedPg {
   }
 
   override def afterAll(): Unit = {
-    super[EmbeddedPg].afterAll()
+    super[PostgresTestDatabase].afterAll()
     super[ChainUnitTest].afterAll()
   }
 }

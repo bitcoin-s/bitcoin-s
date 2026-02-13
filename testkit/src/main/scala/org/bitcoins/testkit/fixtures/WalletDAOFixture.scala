@@ -1,18 +1,18 @@
 package org.bitcoins.testkit.fixtures
 
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
+import org.bitcoins.testkit.{BitcoinSTestAppConfig, PostgresTestDatabase}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.models._
 import org.scalatest._
 
 import scala.concurrent.{Await, Future}
 
-trait WalletDAOFixture extends BitcoinSFixture with EmbeddedPg {
+trait WalletDAOFixture extends BitcoinSFixture with PostgresTestDatabase {
 
   implicit protected val config: WalletAppConfig =
     BitcoinSTestAppConfig
-      .getNeutrinoWithEmbeddedDbTestConfig(() => pgUrl(), Vector.empty)
+      .getNeutrinoWithEmbeddedDbTestConfig(postgresOpt, Vector.empty)
       .walletConf
 
   final override type FixtureParam = WalletDAOs
@@ -61,6 +61,6 @@ trait WalletDAOFixture extends BitcoinSFixture with EmbeddedPg {
   override def afterAll(): Unit = {
     val stoppedF = config.stop()
     val _ = Await.ready(stoppedF, akkaTimeout.duration)
-    super[EmbeddedPg].afterAll()
+    super[PostgresTestDatabase].afterAll()
   }
 }

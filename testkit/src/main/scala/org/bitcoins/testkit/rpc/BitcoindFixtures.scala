@@ -3,7 +3,7 @@ package org.bitcoins.testkit.rpc
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.AddNodeArgument
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.util.{NodePair, NodeTriple}
-import org.bitcoins.testkit.EmbeddedPg
+import org.bitcoins.testkit.PostgresTestDatabase
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.util.BitcoinSAsyncFixtureTest
 import org.scalatest.{FutureOutcome, Outcome}
@@ -11,7 +11,7 @@ import org.scalatest.{FutureOutcome, Outcome}
 import scala.concurrent.Future
 
 /** A trait that is useful if you need bitcoind fixtures for your test suite */
-trait BitcoindFixtures extends BitcoinSFixture with EmbeddedPg {
+trait BitcoindFixtures extends BitcoinSFixture with PostgresTestDatabase {
   self: BitcoinSAsyncFixtureTest =>
 
   def withNewestFundedBitcoindCached(

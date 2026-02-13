@@ -21,7 +21,7 @@ trait BitcoinSDLCNodeTest extends BitcoinSWalletTest with CachedTor {
       .withFallback(BaseWalletTest.segwitWalletConf)
 
     BaseWalletTest.getFreshConfig(
-      () => pgUrl(),
+      postgresOpt,
       Vector(dlcListenWithSegwitWallet)
     )
   }
