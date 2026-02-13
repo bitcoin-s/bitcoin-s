@@ -2,7 +2,7 @@ package org.bitcoins.testkit.server
 
 import org.bitcoins.server.DLCWalletBitcoindBackendLoader
 import org.bitcoins.server.util.WalletHolderWithBitcoindLoaderApi
-import org.bitcoins.testkit.EmbeddedPg
+import org.bitcoins.testkit.PostgresTestDatabase
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.rpc.CachedBitcoindNewest
 import org.bitcoins.wallet.WalletHolder
@@ -12,7 +12,7 @@ import scala.concurrent.Future
 
 trait WalletLoaderFixtures
     extends BitcoinSFixture
-    with EmbeddedPg
+    with PostgresTestDatabase
     with CachedBitcoindNewest {
 
   def withBitcoindBackendLoader(test: OneArgAsyncTest): FutureOutcome = {
@@ -52,7 +52,7 @@ trait WalletLoaderFixtures
 
   override def afterAll(): Unit = {
     super[CachedBitcoindNewest].afterAll()
-    super[EmbeddedPg].afterAll()
+    super[PostgresTestDatabase].afterAll()
     super[BitcoinSFixture].afterAll()
   }
 }

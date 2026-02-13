@@ -8,7 +8,7 @@ import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.chain.MockChainQueryApi
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
 import org.bitcoins.testkit.util.BitcoinSPekkoAsyncTest
-import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
+import org.bitcoins.testkit.{BitcoinSTestAppConfig, PostgresTestDatabase}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.scalatest.Suite
 import org.testcontainers.containers.PostgreSQLContainer
@@ -16,16 +16,16 @@ import org.testcontainers.containers.PostgreSQLContainer
 import scala.util.Random
 
 /** Base test trait for all the tests in our walletTest module */
-trait BaseWalletTest extends EmbeddedPg {
+trait BaseWalletTest extends PostgresTestDatabase {
   self: Suite & BitcoinSPekkoAsyncTest =>
 
   override def beforeAll(): Unit = {
     AppConfig.throwIfDefaultDatadir(getFreshConfig.walletConf)
-    super[EmbeddedPg].beforeAll()
+    super[PostgresTestDatabase].beforeAll()
   }
 
   override def afterAll(): Unit = {
-    super[EmbeddedPg].afterAll()
+    super[PostgresTestDatabase].afterAll()
   }
 
   /** Wallet config with data directory set to user temp directory */

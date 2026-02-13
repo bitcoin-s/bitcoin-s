@@ -6,7 +6,7 @@ import org.bitcoins.commons.rpc.{CreateNewAccount, GetBalance, GetNewAddress}
 import org.bitcoins.commons.util.ServerArgParser
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.server.BitcoinSServerMain
-import org.bitcoins.testkit.EmbeddedPg
+import org.bitcoins.testkit.PostgresTestDatabase
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.rpc.CachedBitcoindNewest
 import org.bitcoins.testkit.wallet.{BitcoinSWalletTest, FundWalletUtil}
@@ -20,7 +20,7 @@ import scala.concurrent.duration.DurationInt
   */
 trait BitcoinSServerMainBitcoindFixture
     extends BitcoinSFixture
-    with EmbeddedPg
+    with PostgresTestDatabase
     with CachedBitcoindNewest {
 
   override type FixtureParam = ServerWithBitcoind
@@ -75,7 +75,7 @@ trait BitcoinSServerMainBitcoindFixture
 
   override def afterAll(): Unit = {
     super[CachedBitcoindNewest].afterAll()
-    super[EmbeddedPg].afterAll()
+    super[PostgresTestDatabase].afterAll()
     super[BitcoinSFixture].afterAll()
   }
 }

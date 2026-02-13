@@ -1,7 +1,7 @@
 package org.bitcoins.testkit.wallet
 
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.testkit.EmbeddedPg
+import org.bitcoins.testkit.PostgresTestDatabase
 import org.bitcoins.testkit.chain.SyncUtil
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.rpc.{
@@ -29,7 +29,7 @@ import scala.util.{Failure, Success}
 trait BitcoinSWalletTestCachedBitcoind
     extends BitcoinSFixture
     with BaseWalletTest
-    with EmbeddedPg { self: CachedBitcoind[?] =>
+    with PostgresTestDatabase { self: CachedBitcoind[?] =>
 
   /** Creates a funded wallet fixture with bitcoind This is different than
     * [[withFundedWalletAndBitcoind()]] in the sense that it does NOT destroy

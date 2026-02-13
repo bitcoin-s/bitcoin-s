@@ -6,12 +6,12 @@ import org.bitcoins.testkit.chain.MockChainQueryApi
 import org.bitcoins.testkit.node.MockNodeApi
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.bitcoins.testkit.wallet.BitcoinSWalletTest
-import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
+import org.bitcoins.testkit.{BitcoinSTestAppConfig, PostgresTestDatabase}
 import org.scalatest.Assertion
 
 import scala.concurrent.Future
 
-class MultiWalletTest extends BitcoinSAsyncTest with EmbeddedPg {
+class MultiWalletTest extends BitcoinSAsyncTest with PostgresTestDatabase {
 
   it must "create 2 different wallets" in {
     val walletNameConfA =

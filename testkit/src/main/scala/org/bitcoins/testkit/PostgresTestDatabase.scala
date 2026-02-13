@@ -6,7 +6,7 @@ import org.testcontainers.containers.PostgreSQLContainer
 
 import java.sql.DriverManager
 
-trait EmbeddedPg extends BeforeAndAfterAll { this: Suite =>
+trait PostgresTestDatabase extends BeforeAndAfterAll { this: Suite =>
 
   lazy val pgEnabled: Boolean = {
     val config = ConfigFactory.load()

@@ -13,7 +13,7 @@ import org.bitcoins.node.NodeCallbacks
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.server.{BitcoinSAppConfig, BitcoindRpcBackendUtil}
 import org.bitcoins.server.util.CallbackUtil
-import org.bitcoins.testkit.EmbeddedPg
+import org.bitcoins.testkit.PostgresTestDatabase
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
 import org.bitcoins.testkit.node.MockNodeApi
@@ -36,7 +36,7 @@ import scala.concurrent.duration.*
 trait BitcoinSWalletTest
     extends BitcoinSFixture
     with BaseWalletTest
-    with EmbeddedPg {
+    with PostgresTestDatabase {
   import BitcoinSWalletTest._
 
   implicit protected def getFreshDLCAppConfig: DLCAppConfig = {
@@ -46,7 +46,7 @@ trait BitcoinSWalletTest
   override def beforeAll(): Unit = {
     AppConfig.throwIfDefaultDatadir(getFreshConfig.walletConf)
     AppConfig.throwIfDefaultDatadir(getFreshConfig.dlcConf)
-    super[EmbeddedPg].beforeAll()
+    super[PostgresTestDatabase].beforeAll()
   }
 
   override def afterAll(): Unit = {
@@ -54,7 +54,7 @@ trait BitcoinSWalletTest
     Await.result(getFreshConfig.nodeConf.stop(), 1.minute)
     Await.result(getFreshConfig.walletConf.stop(), 1.minute)
     Await.result(getFreshConfig.dlcConf.stop(), 1.minute)
-    super[EmbeddedPg].afterAll()
+    super[PostgresTestDatabase].afterAll()
     super[BitcoinSFixture].afterAll()
   }
 

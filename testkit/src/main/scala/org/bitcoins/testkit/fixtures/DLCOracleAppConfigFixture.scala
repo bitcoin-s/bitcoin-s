@@ -2,12 +2,14 @@ package org.bitcoins.testkit.fixtures
 
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.testkit.oracle.OracleTestUtil
-import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
+import org.bitcoins.testkit.{BitcoinSTestAppConfig, PostgresTestDatabase}
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
 
-trait DLCOracleAppConfigFixture extends BitcoinSFixture with EmbeddedPg {
+trait DLCOracleAppConfigFixture
+    extends BitcoinSFixture
+    with PostgresTestDatabase {
 
   override type FixtureParam = DLCOracleAppConfig
 

@@ -16,7 +16,7 @@ import org.bitcoins.core.protocol.{BitcoinAddress, BlockStamp}
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.server.BitcoinSAppConfig
-import org.bitcoins.testkit.EmbeddedPg
+import org.bitcoins.testkit.PostgresTestDatabase
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
 import org.bitcoins.testkitcore.chain.ChainTestUtil
@@ -25,7 +25,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
 /** A base test trait for all the tests in our nodeTest module */
-trait BaseNodeTest extends BitcoinSFixture with EmbeddedPg {
+trait BaseNodeTest extends BitcoinSFixture with PostgresTestDatabase {
 
   /** Wallet config with data directory set to user temp directory */
   protected def getFreshConfig: BitcoinSAppConfig
@@ -34,11 +34,11 @@ trait BaseNodeTest extends BitcoinSFixture with EmbeddedPg {
 
   override def beforeAll(): Unit = {
     AppConfig.throwIfDefaultDatadir(getFreshConfig.nodeConf)
-    super[EmbeddedPg].beforeAll()
+    super[PostgresTestDatabase].beforeAll()
   }
 
   override def afterAll(): Unit = {
-    super[EmbeddedPg].afterAll()
+    super[PostgresTestDatabase].afterAll()
     super[BitcoinSFixture].afterAll()
   }
 

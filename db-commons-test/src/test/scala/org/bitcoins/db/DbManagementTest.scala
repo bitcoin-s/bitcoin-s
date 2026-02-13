@@ -10,13 +10,13 @@ import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.node.db.NodeDbManagement
 import org.bitcoins.testkit.BitcoinSTestAppConfig.ProjectType
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
-import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
+import org.bitcoins.testkit.{BitcoinSTestAppConfig, PostgresTestDatabase}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.db.WalletDbManagement
 
 import scala.concurrent.ExecutionContext
 
-class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
+class DbManagementTest extends BitcoinSAsyncTest with PostgresTestDatabase {
 
   def dbConfig(project: ProjectType): Config = {
     BitcoinSTestAppConfig.configWithEmbeddedDb(Some(project), postgresOpt)

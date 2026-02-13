@@ -1,17 +1,19 @@
 package org.bitcoins.testkit.fixtures
 
 import org.bitcoins.server.BitcoinSAppConfig
-import org.bitcoins.testkit.{BitcoinSTestAppConfig, EmbeddedPg}
+import org.bitcoins.testkit.{BitcoinSTestAppConfig, PostgresTestDatabase}
 import org.bitcoins.testkit.rpc.CachedBitcoindNewest
 import org.bitcoins.testkit.server.BitcoinSServerMainUtil
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
 
-sealed trait BitcoinSAppConfigFixture extends BitcoinSFixture with EmbeddedPg {
+sealed trait BitcoinSAppConfigFixture
+    extends BitcoinSFixture
+    with PostgresTestDatabase {
 
   override def afterAll(): Unit = {
-    super[EmbeddedPg].afterAll()
+    super[PostgresTestDatabase].afterAll()
     super[BitcoinSFixture].afterAll()
   }
 }
