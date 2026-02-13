@@ -4,6 +4,8 @@ import org.bitcoins.crypto.*
 import org.bitcoins.crypto.musig.{Neg, Pos}
 import scodec.bits.ByteVector
 
+import java.math.BigInteger
+
 object FrostUtil {
 
   def hashFrostAux(bytes: ByteVector): ByteVector = {
@@ -395,6 +397,7 @@ object FrostUtil {
       .map { i =>
         val id = i.toLong + 1L
         val share = generateShare(polygen, threshold, id)
+        println(s"Generated share for id $id: $share")
         (id, share)
       }
       .toVector
@@ -450,4 +453,21 @@ object FrostUtil {
     FieldElement.fromBytes(coeff)
   }
 
+  def secShareVerify(): Boolean = ???
+
+  def vssVerify(
+      share: FieldElement,
+      id: Long,
+      commitments: Vector[ECPublicKey]): Boolean = {
+    require(id > 0, s"Identifier must be positive, got: $id")
+    val lhs = CryptoParams.getG.multiply(share)
+    val rhs: SecpPoint =
+      commitments.zipWithIndex.foldLeft[SecpPoint](SecpPointInfinity) {
+        case (acc, (commitment, j)) =>
+          val y = FieldElement(id).pow(BigInteger.valueOf(j))
+          val x = commitment.multiply(y)
+          acc.add(x.toPoint)
+      }
+    lhs.toPoint == rhs
+  }
 }
