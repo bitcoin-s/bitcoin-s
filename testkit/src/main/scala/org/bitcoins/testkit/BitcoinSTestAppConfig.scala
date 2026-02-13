@@ -15,6 +15,7 @@ import org.bitcoins.testkit.wallet.BaseWalletTest
 import org.bitcoins.testkitcore.Implicits.GeneratorOps
 import org.bitcoins.testkitcore.gen.NumberGenerator
 import org.bitcoins.wallet.config.WalletAppConfig
+import org.testcontainers.containers.PostgreSQLContainer
 
 import java.nio.file.*
 import java.util.UUID
@@ -72,7 +73,7 @@ object BitcoinSTestAppConfig {
     * @return
     */
   def getNeutrinoWithEmbeddedDbTestConfig(
-      pgUrl: () => Option[String],
+      postgresOpt: Option[PostgreSQLContainer[?]],
       config: Vector[Config],
       forceNamedWallet: Boolean = false
   )(implicit system: ActorSystem): BitcoinSAppConfig = {
@@ -99,7 +100,7 @@ object BitcoinSTestAppConfig {
       tmpDir(),
       (overrideConf +: configWithEmbeddedDb(
         project = None,
-        pgUrl
+        postgresOpt
       ) +: config)
     )
   }
@@ -112,7 +113,7 @@ object BitcoinSTestAppConfig {
     * @return
     */
   def getMultiPeerNeutrinoWithEmbeddedDbTestConfig(
-      pgUrl: () => Option[String],
+      postgresOpt: Option[PostgreSQLContainer[?]],
       config: Vector[Config],
       forceNamedWallet: Boolean = false
   )(implicit system: ActorSystem): BitcoinSAppConfig = {
@@ -138,7 +139,7 @@ object BitcoinSTestAppConfig {
       tmpDir(),
       (overrideConf +: configWithEmbeddedDb(
         project = None,
-        pgUrl
+        postgresOpt
       ) +: config).toVector
     )
   }
@@ -161,7 +162,7 @@ object BitcoinSTestAppConfig {
   }
 
   def getDLCOracleWithEmbeddedDbTestConfig(
-      pgUrl: () => Option[String],
+      postgresOpt: Option[PostgreSQLContainer[?]],
       config: Config*
   )(implicit ec: ExecutionContext): DLCOracleAppConfig = {
     val overrideConf = KeyManagerTestUtil.aesPasswordOpt match {
@@ -179,7 +180,7 @@ object BitcoinSTestAppConfig {
       tmpDir(),
       (overrideConf +: configWithEmbeddedDb(
         project = None,
-        pgUrl
+        postgresOpt
       ) +: config).toVector
     )
   }
@@ -204,13 +205,13 @@ object BitcoinSTestAppConfig {
     */
   def configWithEmbeddedDb(
       project: Option[ProjectType],
-      pgUrl: () => Option[String]
+      postgresOpt: Option[PostgreSQLContainer[?]]
   ): Config = {
 
-    def pgConfigForProject(project: ProjectType): String = {
-      val url = pgUrl().getOrElse(
-        throw new RuntimeException(s"Cannot get db url for $project")
-      )
+    def pgConfigForProject(
+        project: ProjectType,
+        postgres: PostgreSQLContainer[?]): String = {
+      val url = postgres.getJdbcUrl
       val parts = url.split(":")
       require(
         parts.size >= 3 && parts(0) == "jdbc",
@@ -238,8 +239,8 @@ object BitcoinSTestAppConfig {
          |   name = postgres
          |   url = "$url"
          |   driver = "org.postgresql.Driver"
-         |   user = "postgres"
-         |   password = "postgres"
+         |   user = "${postgres.getUsername}"
+         |   password = "${postgres.getPassword}"
          |   poolName = "$poolName"
          |   port = $port
          |   numThreads = 1
@@ -248,10 +249,10 @@ object BitcoinSTestAppConfig {
     }
 
     def configForProject(project: ProjectType): String = {
-      if (pgUrl().isDefined)
-        pgConfigForProject(project)
-      else
-        ""
+      postgresOpt match {
+        case Some(p) => pgConfigForProject(project, p)
+        case None    => ""
+      }
     }
 
     val confStr = project match {

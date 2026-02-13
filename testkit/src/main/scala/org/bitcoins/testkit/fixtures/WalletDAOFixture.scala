@@ -12,7 +12,7 @@ trait WalletDAOFixture extends BitcoinSFixture with EmbeddedPg {
 
   implicit protected val config: WalletAppConfig =
     BitcoinSTestAppConfig
-      .getNeutrinoWithEmbeddedDbTestConfig(() => pgUrl(), Vector.empty)
+      .getNeutrinoWithEmbeddedDbTestConfig(postgresOpt, Vector.empty)
       .walletConf
 
   final override type FixtureParam = WalletDAOs

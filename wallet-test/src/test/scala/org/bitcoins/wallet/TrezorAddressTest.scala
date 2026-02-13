@@ -229,7 +229,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
     implicit val conf: WalletAppConfig =
       BitcoinSTestAppConfig
         .getNeutrinoWithEmbeddedDbTestConfig(
-          () => pgUrl(),
+          postgresOpt,
           Vector(confOverride)
         )
         .walletConf

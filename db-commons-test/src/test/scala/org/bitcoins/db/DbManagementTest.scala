@@ -19,7 +19,7 @@ import scala.concurrent.ExecutionContext
 class DbManagementTest extends BitcoinSAsyncTest with EmbeddedPg {
 
   def dbConfig(project: ProjectType): Config = {
-    BitcoinSTestAppConfig.configWithEmbeddedDb(Some(project), () => pgUrl())
+    BitcoinSTestAppConfig.configWithEmbeddedDb(Some(project), postgresOpt)
   }
 
   def createChainDbManagement(

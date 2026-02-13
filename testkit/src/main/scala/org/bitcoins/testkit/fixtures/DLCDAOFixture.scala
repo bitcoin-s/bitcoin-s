@@ -46,7 +46,7 @@ trait DLCDAOFixture extends BitcoinSFixture with EmbeddedPg {
 
   implicit protected val config: BitcoinSAppConfig =
     BitcoinSTestAppConfig
-      .getNeutrinoWithEmbeddedDbTestConfig(() => pgUrl(), Vector.empty)
+      .getNeutrinoWithEmbeddedDbTestConfig(postgresOpt, Vector.empty)
 
   implicit private val dlcConfig: DLCAppConfig = config.dlcConf
 

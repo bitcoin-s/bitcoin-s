@@ -20,7 +20,7 @@ class MultiWalletTest extends BitcoinSAsyncTest with EmbeddedPg {
       ConfigFactory.parseString(s"bitcoin-s.wallet.walletName = walletB")
 
     val dbConf =
-      BitcoinSTestAppConfig.configWithEmbeddedDb(project = None, () => pgUrl())
+      BitcoinSTestAppConfig.configWithEmbeddedDb(project = None, postgresOpt)
 
     val dir = BitcoinSTestAppConfig.tmpDir()
 

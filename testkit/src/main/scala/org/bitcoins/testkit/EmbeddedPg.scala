@@ -1,9 +1,8 @@
 package org.bitcoins.testkit
 
-import com.dimafeng.testcontainers.PostgreSQLContainer
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{BeforeAndAfterAll, Suite}
-import org.testcontainers.utility.DockerImageName
+import org.testcontainers.containers.PostgreSQLContainer
 
 import java.sql.DriverManager
 
@@ -27,34 +26,38 @@ trait EmbeddedPg extends BeforeAndAfterAll { this: Suite =>
 
   // Lazily create a Testcontainers PostgreSQL container when enabled.
   // We configure a small image and reasonable defaults similar to the otj usage.
-  private lazy val createdContainer: Option[PostgreSQLContainer] = {
+  private lazy val createdContainer: Option[PostgreSQLContainer[?]] = {
     if (!pgEnabled) None
     else {
-      val pgStartupWait = sys.env.getOrElse("PG_STARTUP_WAIT", "60").toInt
+      // val pgStartupWait = sys.env.getOrElse("PG_STARTUP_WAIT", "60").toInt
       val image = sys.env.getOrElse("PG_IMAGE", "postgres:15-alpine")
       val container =
-        PostgreSQLContainer(dockerImage = DockerImageName.parse(image))
+        new PostgreSQLContainer(image)
       // Start container and wait for readiness
       container.start()
       Some(container)
     }
   }
 
-  def pg: Option[PostgreSQLContainer] = createdContainer
+  def postgresOpt: Option[PostgreSQLContainer[?]] = createdContainer
 
-  def pgUrl(): Option[String] = pg.map(_.jdbcUrl)
+  def pgUrl(): Option[String] = postgresOpt
+    .map(_.getJdbcUrl)
+
+  def pgUsername(): Option[String] = postgresOpt.map(_.getUsername)
+  def pgPassword(): Option[String] = postgresOpt.map(_.getPassword)
 
   override def afterAll(): Unit = {
     try {
-      pg.foreach(_.stop())
+      postgresOpt.foreach(_.stop())
     } finally super.afterAll()
   }
 
   def executePgSql(sql: String): Unit =
-    pg.foreach { container =>
-      val url = container.jdbcUrl
-      val user = container.username
-      val pass = container.password
+    postgresOpt.foreach { container =>
+      val url = container.getJdbcUrl
+      val user = container.getUsername
+      val pass = container.getPassword
       var conn: java.sql.Connection = null
       try {
         conn = DriverManager.getConnection(url, user, pass)

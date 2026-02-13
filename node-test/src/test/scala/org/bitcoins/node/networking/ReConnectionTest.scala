@@ -19,7 +19,7 @@ class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
 
   override protected def getFreshConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(
-      () => pgUrl(),
+      postgresOpt,
       Vector.empty
     )
 

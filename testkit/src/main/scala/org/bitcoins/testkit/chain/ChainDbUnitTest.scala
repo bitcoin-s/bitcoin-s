@@ -11,7 +11,7 @@ trait ChainDbUnitTest extends ChainUnitTest with EmbeddedPg {
     val memoryDb =
       BitcoinSTestAppConfig.configWithEmbeddedDb(
         Some(ProjectType.Chain),
-        () => pgUrl()
+        postgresOpt
       )
     val mainnetConf = ConfigFactory.parseString("bitcoin-s.network = mainnet")
     val chainConfig: ChainAppConfig =

@@ -50,9 +50,8 @@ object Deps {
     val scalaCollectionCompatV = "2.14.0"
     val pgEmbeddedV = "1.1.1"
 
-    // Testcontainers for Docker-backed integration tests (works on GitHub Actions ubuntu-24.04)
-    val testcontainersV = "1.19.0"
-    val testcontainersScalaV = "0.40.12"
+    val testcontainersV = "1.19.0" //    // GitHub: https://github.com/testcontainers/testcontainers-java
+
 
     val breezeV = "1.3"
 
@@ -245,10 +244,13 @@ object Deps {
     val scalaTestPlus = Def.setting(
       "org.scalatestplus" %%% "scalacheck-1-17" % V.scalaTestPlus withSources () withJavadoc ())
 
+    // GitHub: https://github.com/testcontainers/testcontainers-java
     val testcontainersCore =
       "org.testcontainers" % "testcontainers" % V.testcontainersV withSources () withJavadoc ()
+
+    // GitHub: https://github.com/testcontainers/testcontainers-java/tree/master/modules/postgresql
     val testcontainersPostgres =
-      "org.testcontainers" % "postgresql" % V.testcontainersScalaV withSources () withJavadoc ()
+      "org.testcontainers" % "postgresql" % V.testcontainersV withSources () withJavadoc ()
 
     val dropwizardMetricsCore =
       "io.dropwizard.metrics" % "metrics-core" % V.dropwizardMetricsV withSources () withJavadoc ()
@@ -299,10 +301,7 @@ object Deps {
     val testcontainersCore =
       "org.testcontainers" % "testcontainers" % V.testcontainersV % "test" withSources () withJavadoc ()
     val testcontainersPostgres =
-      "org.testcontainers" % "postgresql" % V.testcontainersScalaV % "test" withSources () withJavadoc ()
-    val testcontainersScalaPostgres =
-      "com.dimafeng" %% "testcontainers-scala-postgresql" % V.testcontainersScalaV withSources () withJavadoc ()
-
+      "org.testcontainers" % "postgresql" % V.testcontainersV % "test" withSources () withJavadoc ()
     val akkaTestkit =
       "org.apache.pekko" %% "pekko-testkit" % V.akkaActorV withSources () withJavadoc ()
   }
@@ -316,10 +315,8 @@ object Deps {
   )
 
   val chainTest = List(
-    Test.testcontainersPostgres,
-    Test.testcontainersScalaPostgres
+    Test.testcontainersPostgres
   )
-
   val appCommons = Def.setting {
     List(
       Compile.newMicroPickle.value,
@@ -368,8 +365,7 @@ object Deps {
   val dlcWalletTest =
     List(
       Test.akkaTestkit,
-      Test.testcontainersPostgres,
-      Test.testcontainersScalaPostgres
+      Test.testcontainersPostgres
     )
 
   val secp256k1jni = List(
@@ -453,8 +449,7 @@ object Deps {
       Compile.slickHikari,
       Compile.slf4j,
       Test.scalaTest.value,
-      Test.testcontainersPostgres,
-      Test.testcontainersScalaPostgres
+      Test.testcontainersPostgres
     )
   }
 
@@ -616,8 +611,7 @@ object Deps {
     List(
       Test.akkaTestkit,
       Test.scalaTest.value,
-      Test.testcontainersPostgres,
-      Test.testcontainersScalaPostgres
+      Test.testcontainersPostgres
     )
   }
 
@@ -663,8 +657,7 @@ object Deps {
     )
 
   val walletTest = List(
-    Test.testcontainersPostgres,
-    Test.testcontainersScalaPostgres
+    Test.testcontainersPostgres
   )
 
   def docs = Def.setting {

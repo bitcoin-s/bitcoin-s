@@ -36,7 +36,7 @@ class PeerConnectionTest extends NodeUnitTest {
       aggregateInboundQueue: SourceQueueWithComplete[NodeStreamMessage])
   override protected def getFreshConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(
-      () => pgUrl(),
+      postgresOpt,
       Vector.empty
     )
 

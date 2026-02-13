@@ -50,7 +50,7 @@ trait WalletAppConfigWithBitcoindNewestFixtures
     makeDependentFixture[WalletAppConfigWithBitcoindRpc](
       () => {
         val walletConfig =
-          BaseWalletTest.getFreshWalletAppConfig(() => pgUrl(), Vector.empty)
+          BaseWalletTest.getFreshWalletAppConfig(postgresOpt, Vector.empty)
         for {
           _ <- walletConfig.start()
           model = WalletAppConfigWithBitcoindRpc(walletConfig, bitcoind)

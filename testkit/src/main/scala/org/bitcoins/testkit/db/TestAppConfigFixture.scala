@@ -27,7 +27,7 @@ trait TestAppConfigFixture
   def getFreshTestConfig(): Future[TestAppConfig] = {
     val configOverride = BitcoinSTestAppConfig.configWithEmbeddedDb(
       Some(ProjectType.Test),
-      pgUrl = () => pgUrl()
+      postgresOpt = postgresOpt
     )
     val config =
       TestAppConfig(BitcoinSTestAppConfig.tmpDir(), Vector(configOverride))

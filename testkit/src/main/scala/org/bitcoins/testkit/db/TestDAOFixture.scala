@@ -22,7 +22,7 @@ sealed trait TestDAOFixture
     val configOverrides =
       BitcoinSTestAppConfig.configWithEmbeddedDb(
         Some(ProjectType.Test),
-        () => pgUrl()
+        postgresOpt
       )
     TestAppConfig(BitcoinSTestAppConfig.tmpDir(), Vector(configOverrides))
   }

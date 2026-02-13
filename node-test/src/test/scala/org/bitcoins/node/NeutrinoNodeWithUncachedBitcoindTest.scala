@@ -37,7 +37,7 @@ class NeutrinoNodeWithUncachedBitcoindTest extends NodeUnitTest with CachedTor {
 
   override protected def getFreshConfig: BitcoinSAppConfig = {
     BitcoinSTestAppConfig.getMultiPeerNeutrinoWithEmbeddedDbTestConfig(
-      () => pgUrl(),
+      postgresOpt,
       Vector.empty
     )
   }

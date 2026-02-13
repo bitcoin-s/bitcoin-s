@@ -15,8 +15,7 @@ trait DLCOracleFixture extends BitcoinSFixture with EmbeddedPg {
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     val builder: () => Future[DLCOracle] = () => {
       val conf: DLCOracleAppConfig =
-        BitcoinSTestAppConfig.getDLCOracleWithEmbeddedDbTestConfig(() =>
-          pgUrl())
+        BitcoinSTestAppConfig.getDLCOracleWithEmbeddedDbTestConfig(postgresOpt)
       val _ = conf.migrate()
 
       val oracleConfF: Future[Unit] = conf.start()

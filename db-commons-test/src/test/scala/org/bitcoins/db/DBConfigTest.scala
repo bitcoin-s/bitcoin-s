@@ -88,7 +88,7 @@ class DBConfigTest extends BitcoinSAsyncTest {
     val memoryDb =
       BitcoinSTestAppConfig.configWithEmbeddedDb(
         Some(ProjectType.Chain),
-        () => None
+        postgresOpt = None
       )
     val mainnetConf = ConfigFactory.parseString("bitcoin-s.network = mainnet")
     val chainConfig: ChainAppConfig = {

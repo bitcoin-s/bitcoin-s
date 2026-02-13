@@ -11,7 +11,7 @@ class DisconnectedPeerTest extends NodeUnitTest {
 
   override protected def getFreshConfig: BitcoinSAppConfig =
     BitcoinSTestAppConfig.getNeutrinoWithEmbeddedDbTestConfig(
-      () => pgUrl(),
+      postgresOpt,
       Vector.empty
     )
 
