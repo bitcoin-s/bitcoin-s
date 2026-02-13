@@ -392,10 +392,10 @@ object FrostUtil {
         8)
     val polygen = CryptoUtil.sha256(vssPreimage).bytes
     val vssCommitments = vssCommitment(polygen, threshold)
-    val idSharesTuple: Vector[(Long, FieldElement)] = 0
+    val idSharesTuple: Vector[(Long, FieldElement)] = 0L
       .until(numShares)
       .map { i =>
-        val id = i.toLong + 1L
+        val id = i + 1
         val share = generateShare(polygen, threshold, id)
         println(s"Generated share for id $id: $share")
         (id, share)
@@ -464,7 +464,8 @@ object FrostUtil {
     val rhs: SecpPoint =
       commitments.zipWithIndex.foldLeft[SecpPoint](SecpPointInfinity) {
         case (acc, (commitment, j)) =>
-          val y = FieldElement(id).pow(BigInteger.valueOf(j))
+          println(s"j=$j commitment=$commitment")
+          val y = FieldElement(id).pow(BigInteger.valueOf(j + 1))
           val x = commitment.multiply(y)
           acc.add(x.toPoint)
       }
