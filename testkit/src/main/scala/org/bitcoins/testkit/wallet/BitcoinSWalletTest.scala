@@ -27,7 +27,7 @@ import org.bitcoins.wallet.callback.WalletCallbacks
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import org.scalatest.*
-import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.postgresql.PostgreSQLContainer
 
 import java.util.UUID
 import scala.concurrent.*
@@ -228,7 +228,7 @@ object BitcoinSWalletTest extends WalletLogger {
   lazy val initialFunds: CurrencyUnit = expectedDefaultAmt + expectedAccount1Amt
 
   def createWalletAppConfig(
-      postgresOpt: Option[PostgreSQLContainer[?]],
+      postgresOpt: Option[PostgreSQLContainer],
       configs: Vector[Config]
   )(implicit system: ActorSystem): Future[WalletAppConfig] = {
     import system.dispatcher
@@ -240,7 +240,7 @@ object BitcoinSWalletTest extends WalletLogger {
   }
 
   def createWalletAppConfigNotStarted(
-      postgresOpt: Option[PostgreSQLContainer[?]],
+      postgresOpt: Option[PostgreSQLContainer],
       configs: Vector[Config]
   )(implicit system: ActorSystem): Future[WalletAppConfig] = {
     val baseConf = BaseWalletTest.getFreshWalletAppConfig(postgresOpt, configs)
@@ -605,7 +605,7 @@ object BitcoinSWalletTest extends WalletLogger {
   }
 
   def getSegwitWalletConfigWithBip39PasswordOpt(
-      postgresOpt: Option[PostgreSQLContainer[?]]
+      postgresOpt: Option[PostgreSQLContainer]
   )(implicit system: ActorSystem): BitcoinSAppConfig = {
     val segwitConfig = BaseWalletTest.segwitWalletConf
 

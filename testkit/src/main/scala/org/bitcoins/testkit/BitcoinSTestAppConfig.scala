@@ -15,7 +15,7 @@ import org.bitcoins.testkit.wallet.BaseWalletTest
 import org.bitcoins.testkitcore.Implicits.GeneratorOps
 import org.bitcoins.testkitcore.gen.NumberGenerator
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.postgresql.PostgreSQLContainer
 
 import java.nio.file.*
 import java.util.UUID
@@ -73,7 +73,7 @@ object BitcoinSTestAppConfig {
     * @return
     */
   def getNeutrinoWithEmbeddedDbTestConfig(
-      postgresOpt: Option[PostgreSQLContainer[?]],
+      postgresOpt: Option[PostgreSQLContainer],
       config: Vector[Config],
       forceNamedWallet: Boolean = false
   )(implicit system: ActorSystem): BitcoinSAppConfig = {
@@ -113,7 +113,7 @@ object BitcoinSTestAppConfig {
     * @return
     */
   def getMultiPeerNeutrinoWithEmbeddedDbTestConfig(
-      postgresOpt: Option[PostgreSQLContainer[?]],
+      postgresOpt: Option[PostgreSQLContainer],
       config: Vector[Config],
       forceNamedWallet: Boolean = false
   )(implicit system: ActorSystem): BitcoinSAppConfig = {
@@ -162,7 +162,7 @@ object BitcoinSTestAppConfig {
   }
 
   def getDLCOracleWithEmbeddedDbTestConfig(
-      postgresOpt: Option[PostgreSQLContainer[?]],
+      postgresOpt: Option[PostgreSQLContainer],
       config: Config*
   )(implicit ec: ExecutionContext): DLCOracleAppConfig = {
     val overrideConf = KeyManagerTestUtil.aesPasswordOpt match {
@@ -205,12 +205,12 @@ object BitcoinSTestAppConfig {
     */
   def configWithEmbeddedDb(
       project: Option[ProjectType],
-      postgresOpt: Option[PostgreSQLContainer[?]]
+      postgresOpt: Option[PostgreSQLContainer]
   ): Config = {
 
     def pgConfigForProject(
         project: ProjectType,
-        postgres: PostgreSQLContainer[?]): String = {
+        postgres: PostgreSQLContainer): String = {
       val url = postgres.getJdbcUrl
       val parts = url.split(":")
       require(

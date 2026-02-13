@@ -2,7 +2,7 @@ package org.bitcoins.testkit
 
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{BeforeAndAfterAll, Suite}
-import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.postgresql.PostgreSQLContainer
 
 import java.sql.DriverManager
 
@@ -26,7 +26,7 @@ trait PostgresTestDatabase extends BeforeAndAfterAll { this: Suite =>
 
   // Lazily create a Testcontainers PostgreSQL container when enabled.
   // We configure a small image and reasonable defaults similar to the otj usage.
-  private lazy val createdContainer: Option[PostgreSQLContainer[?]] = {
+  private lazy val createdContainer: Option[PostgreSQLContainer] = {
     if (!pgEnabled) None
     else {
       // val pgStartupWait = sys.env.getOrElse("PG_STARTUP_WAIT", "60").toInt
@@ -39,7 +39,7 @@ trait PostgresTestDatabase extends BeforeAndAfterAll { this: Suite =>
     }
   }
 
-  def postgresOpt: Option[PostgreSQLContainer[?]] = createdContainer
+  def postgresOpt: Option[PostgreSQLContainer] = createdContainer
 
   def pgUrl(): Option[String] = postgresOpt
     .map(_.getJdbcUrl)

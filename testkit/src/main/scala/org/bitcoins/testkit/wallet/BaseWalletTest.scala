@@ -11,7 +11,7 @@ import org.bitcoins.testkit.util.BitcoinSPekkoAsyncTest
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, PostgresTestDatabase}
 import org.bitcoins.wallet.config.WalletAppConfig
 import org.scalatest.Suite
-import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.postgresql.PostgreSQLContainer
 
 import scala.util.Random
 
@@ -50,7 +50,7 @@ trait BaseWalletTest extends PostgresTestDatabase {
 object BaseWalletTest {
 
   def getFreshConfig(
-      postgresOpt: Option[PostgreSQLContainer[?]],
+      postgresOpt: Option[PostgreSQLContainer],
       config: Vector[Config])(implicit
       system: ActorSystem
   ): BitcoinSAppConfig = {
@@ -59,7 +59,7 @@ object BaseWalletTest {
   }
 
   def getFreshWalletAppConfig(
-      postgresOpt: Option[PostgreSQLContainer[?]],
+      postgresOpt: Option[PostgreSQLContainer],
       config: Vector[Config]
   )(implicit system: ActorSystem): WalletAppConfig = {
     getFreshConfig(postgresOpt, config).walletConf
