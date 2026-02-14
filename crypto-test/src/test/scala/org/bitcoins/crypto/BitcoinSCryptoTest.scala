@@ -1,5 +1,6 @@
 package org.bitcoins.crypto
 
+import org.bitcoins.testkitcore.Implicits.GeneratorOps
 import org.scalacheck.Gen
 import org.scalactic.anyvals.PosInt
 import org.scalatest.flatspec.{AnyFlatSpec, AsyncFlatSpec}
