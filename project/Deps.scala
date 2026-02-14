@@ -11,7 +11,7 @@ object Deps {
 
     val dropwizardMetricsV = "4.2.38" // https://github.com/dropwizard/metrics
 
-    val logback = "1.5.29" // https://github.com/qos-ch/logback
+    val logback = "1.5.30" // https://github.com/qos-ch/logback
     val log4jV = "1.2.17"
 
     val logkitV = "20020529"
@@ -50,8 +50,8 @@ object Deps {
     val scalaCollectionCompatV = "2.14.0"
     val pgEmbeddedV = "1.1.1"
 
-    val testcontainersV = "2.0.3" //    // GitHub: https://github.com/testcontainers/testcontainers-java
-
+    val testcontainersV =
+      "2.0.3" //    // GitHub: https://github.com/testcontainers/testcontainers-java
 
     val breezeV = "1.3"
 
