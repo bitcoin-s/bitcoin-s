@@ -392,12 +392,15 @@ object FrostUtil {
         8)
     val polygen = CryptoUtil.sha256(vssPreimage).bytes
     val vssCommitments = vssCommitment(polygen, threshold)
+    require(
+      vssCommitments.size == threshold,
+      s"Number of commitments must match threshold: " +
+        s"got ${vssCommitments.size} commitments for threshold $threshold")
     val idSharesTuple: Vector[(Long, FieldElement)] = 0L
       .until(numShares)
       .map { i =>
         val id = i + 1
         val share = generateShare(polygen, threshold, id)
-        println(s"Generated share for id $id: $share")
         (id, share)
       }
       .toVector
@@ -414,19 +417,14 @@ object FrostUtil {
     * @param id
     * @return
     */
-  private def generateShare(
-      polygen: ByteVector,
+  def generateShare(
+      seed: ByteVector,
       threshold: Int,
       id: Long): FieldElement = {
-    var idx = 0L
     var shareI = FieldElement.zero
-    0.until(threshold).foreach { i =>
-      val coeff = deriveCoefficient(polygen, i)
-      shareI = coeff.add(shareI)
-      if (i < threshold - 1) {
-        idx = id + 1
-        shareI = shareI.multiply(FieldElement(idx))
-      }
+    deriveCoefficients(seed, threshold).reverse.foreach { coeff =>
+      shareI = shareI.multiply(FieldElement(id))
+      shareI = shareI.add(coeff)
     }
     shareI
   }
@@ -447,8 +445,8 @@ object FrostUtil {
       .toVector
   }
 
-  private def deriveCoefficient(polygen: ByteVector, idx: Int): FieldElement = {
-    val coeffPreimage = polygen ++ ByteVector.fromLong(idx, 8)
+  def deriveCoefficient(seed: ByteVector, idx: Int): FieldElement = {
+    val coeffPreimage = seed ++ ByteVector.fromLong(idx, 8)
     val coeff = hashFrostCoeffGen(coeffPreimage)
     FieldElement.fromBytes(coeff)
   }
@@ -464,8 +462,7 @@ object FrostUtil {
     val rhs: SecpPoint =
       commitments.zipWithIndex.foldLeft[SecpPoint](SecpPointInfinity) {
         case (acc, (commitment, j)) =>
-          println(s"j=$j commitment=$commitment")
-          val y = FieldElement(id).pow(BigInteger.valueOf(j + 1))
+          val y = FieldElement(id).pow(BigInteger.valueOf(j))
           val x = commitment.multiply(y)
           acc.add(x.toPoint)
       }

@@ -8,4 +8,5 @@ case class FrostShareGenResult(
     commitments: Vector[ECPublicKey]) {
   require(ids.length == shares.length)
   require(ids.forall(_ >= 0))
+  require(commitments.length <= ids.length)
 }
