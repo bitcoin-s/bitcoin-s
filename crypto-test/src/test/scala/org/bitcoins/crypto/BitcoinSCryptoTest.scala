@@ -1,6 +1,5 @@
 package org.bitcoins.crypto
 
-import org.bitcoins.testkitcore.Implicits.GeneratorOps
 import org.scalacheck.Gen
 import org.scalactic.anyvals.PosInt
 import org.scalatest.flatspec.{AnyFlatSpec, AsyncFlatSpec}
@@ -65,7 +64,7 @@ trait BitcoinSCryptoAsyncTest
   )(func: A => Future[Assertion]): Future[Assertion] = {
 
     val samples = 1
-      .to(generatorDrivenConfig.minSize)
+      .to(generatorDrivenConfig.minSuccessful)
       .map(_ => gen.sampleSome)
       .toVector
 
@@ -78,7 +77,7 @@ trait BitcoinSCryptoAsyncTest
       func: (A, B) => Future[Assertion]
   ): Future[Assertion] = {
     val samples = 1
-      .to(generatorDrivenConfig.minSize)
+      .to(generatorDrivenConfig.minSuccessful)
       .map(_ => (genA.sampleSome, genB.sampleSome))
       .toVector
 
@@ -95,7 +94,7 @@ trait BitcoinSCryptoAsyncTest
       val failed = testRuns.filterNot(_ == Succeeded)
       if (succeeded.size < generatorDrivenConfig.minSuccessful) {
         failed.headOption.getOrElse(fail(
-          s"succeded.size=${succeeded.size} failed.size=${failed.size} minSuccessful=${generatorDrivenConfig.minSuccessful}"))
+          s"succeeded.size=${succeeded.size} failed.size=${failed.size} minSuccessful=${generatorDrivenConfig.minSuccessful}"))
       } else {
         succeed
       }
