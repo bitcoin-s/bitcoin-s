@@ -107,7 +107,7 @@ sealed abstract class Pow {
     if (chainParams.noRetargeting) {
       currentTip.nBits
     } else {
-      var actualTimespan = (currentTip.time - firstBlock.time).toLong
+      var actualTimespan = currentTip.time.toLong - firstBlock.time.toLong
       val timespanSeconds = chainParams.powTargetTimeSpan.toSeconds
       if (actualTimespan < timespanSeconds / 4) {
         actualTimespan = timespanSeconds / 4

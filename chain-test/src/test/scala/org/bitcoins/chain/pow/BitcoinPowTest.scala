@@ -63,4 +63,31 @@ class BitcoinPowTest extends BitcoinSAsyncTest {
       assert(proof == BigInt(4295032833L))
     }
   }
+
+  it must "handle negative timespan when currentTip time is less than firstBlock time" in {
+    Future {
+      // Create a scenario where currentTip.time < firstBlock.time
+      // This can happen on testnet due to the 20-minute difficulty reset rule
+      val firstBlockDb = ChainTestUtil.ValidPOWChange.blockHeaderDb564480
+      
+      // Create a currentTip with a time that is 2000 seconds BEFORE firstBlock
+      val currentTipDb = firstBlockDb.copy(
+        time = org.bitcoins.core.number.UInt32(
+          Math.max(0, firstBlockDb.time.toLong - 2000)
+        ),
+        height = firstBlockDb.height + 100
+      )
+      
+      // This should not throw an exception even though timespan is negative
+      val calculatedWork = Pow.calculateNextWorkRequired(
+        currentTipDb,
+        firstBlockDb,
+        TestNetChainParams
+      )
+      
+      // The calculated work should be valid (clamped to minimum timespan)
+      // When timespan is negative or too small, it gets clamped to timespanSeconds / 4
+      assert(calculatedWork != org.bitcoins.core.number.UInt32.zero)
+    }
+  }
 }
