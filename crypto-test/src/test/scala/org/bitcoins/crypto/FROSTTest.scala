@@ -68,29 +68,35 @@ class FROSTTest extends BitcoinSCryptoAsyncTest {
     val pubshare0 = secshare0.toPoint.toPublicKey
     val secshare1 = result.shares.apply(1)
     val pubshare1 = secshare1.toPoint.toPublicKey
-    val (secnonce0, pubnonce0) = FrostUtil.nonceGen(rand = rand,
-                                                    secshare = Some(secshare0),
-                                                    pubshare = Some(pubshare0),
-                                                    threshold_pk =
-                                                      Some(pubshare0.toXOnly),
-                                                    message = Some(message),
-                                                    extra_in = None)
-    val (_, pubnonce1) = FrostUtil.nonceGen(rand = rand,
-                                            secshare = Some(secshare1),
-                                            pubshare = Some(pubshare1),
-                                            threshold_pk =
-                                              Some(pubshare1.toXOnly),
-                                            message = Some(message),
-                                            extra_in = None)
-    // val secNonces = Vector(secnonce0, secnonce1)
-    val pubNonces = Vector(pubnonce0, pubnonce1)
+
     val participantIds: Vector[Long] = Vector(1, 2)
     val participantPubShares = Vector(pubshare0, pubshare1)
+    val signingContext =
+      result.toSigningContext(participantIds, participantPubShares)
+
+    val (secnonce0, pubnonce0) = FrostUtil.nonceGen(
+      rand = rand,
+      secshare = None,
+      pubshare = None,
+      threshold_pk = None,
+      message = Some(message),
+      extra_in = None
+    )
+    val (_, pubnonce1) = FrostUtil.nonceGen(
+      rand = rand,
+      secshare = None,
+      pubshare = None,
+      threshold_pk = None,
+      message = Some(message),
+      extra_in = None
+    )
+    // val secNonces = Vector(secnonce0, secnonce1)
+    val pubNonces = Vector(pubnonce0, pubnonce1)
+
     val aggNonce01 = FrostUtil.aggregateNonces(pubnonces = pubNonces,
                                                participantIdentifiers =
                                                  participantIds)
-    val signingContext =
-      result.toSigningContext(participantIds, participantPubShares)
+
     val sessionCtx = FrostSessionContext(
       signingContext = signingContext,
       aggNonce = aggNonce01,
@@ -98,19 +104,25 @@ class FROSTTest extends BitcoinSCryptoAsyncTest {
       isXOnly = Vector.empty,
       message = message
     )
-    val pSig0 = FrostUtil.sign(secnonce0,
-                               secshare0,
+    val pSig0 = FrostUtil.sign(secNonce = secnonce0,
+                               secShare = secshare0,
                                signerId = 1,
                                sessionContext = sessionCtx)
-    val _ = FrostUtil.partialSigVerify(pSig0,
-                                       pubNonces,
-                                       signingContext,
-                                       Vector.empty,
-                                       Vector.empty,
-                                       message,
-                                       1)
-    // assert(verify0, s"psig0 invalid")
-    succeed
+    val internalVerify0 =
+      FrostUtil.partialSigVerifyInternal(partialSig = pSig0,
+                                         signerId = 1,
+                                         pubNonce = pubnonce0,
+                                         pubshare = pubshare0,
+                                         sessionCtx = sessionCtx)
+    assert(internalVerify0, s"internal psig0 invalid")
+    val verify0 = FrostUtil.partialSigVerify(partialSig = pSig0,
+                                             pubnonces = pubNonces,
+                                             signersContext = signingContext,
+                                             tweaks = Vector.empty,
+                                             isXonlyT = Vector.empty,
+                                             message = message,
+                                             signerId = 1)
+    assert(verify0, s"psig0 invalid")
   }
 
 }

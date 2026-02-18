@@ -246,10 +246,10 @@ object FrostUtil {
     )
     partialSigVerifyInternal(
       partialSig,
-      signerId,
-      aggNonce,
-      pubshares(ids.indexOf(signerId)),
-      sessionCtx
+      signerId = signerId,
+      pubNonce = pubnonces(ids.indexOf(signerId)),
+      pubshare = pubshares(ids.indexOf(signerId)),
+      sessionCtx = sessionCtx
     )
   }
 
