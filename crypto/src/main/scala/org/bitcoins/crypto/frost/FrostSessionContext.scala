@@ -1,12 +1,5 @@
 package org.bitcoins.crypto.frost
-import org.bitcoins.crypto.{
-  CryptoParams,
-  CryptoUtil,
-  FieldElement,
-  SecpPoint,
-  SecpPointFinite,
-  SecpPointInfinity
-}
+import org.bitcoins.crypto.*
 import scodec.bits.ByteVector
 
 case class FrostSessionContext(
@@ -33,10 +26,11 @@ case class FrostSessionContext(
       1.to(v.toInt).foldLeft(initTweakCtx) { case (tweakCtx, i) =>
         tweakCtx.applyTweak(tweaks(i - 1), isXOnly(i - 1))
       }
-    val serializedIds = signingContext.ids.sorted.foldLeft(ByteVector.empty) {
-      case (acc, id) =>
-        acc ++ ByteVector.fromLong(id, 4)
-    }
+    val serializedIds =
+      signingContext.participantIds.sorted.foldLeft(ByteVector.empty) {
+        case (acc, id) =>
+          acc ++ ByteVector.fromLong(id, 4)
+      }
 
     val bHash = FrostUtil.hashFrostNonceCoef(
       serializedIds ++
@@ -64,7 +58,7 @@ case class FrostSessionContext(
     require(e != FieldElement.zero,
             s"Computed challenge 'e' cannot be zero in FROST signing session")
     FrostSessionValues(tweakCtx = tweakCtx,
-                       ids = signingContext.ids,
+                       ids = signingContext.participantIds,
                        pubshares = signingContext.pubshares,
                        b = b,
                        R = r.toPoint,

@@ -42,7 +42,7 @@ object FrostJson {
 
   case class NonceGenTestVector(
       rand: ByteVector,
-      secshare: Option[ByteVector],
+      secshare: Option[FieldElement],
       pubshare: Option[ECPublicKey],
       threshold_pubkey: Option[XOnlyPubKey],
       msg: Option[ByteVector],
@@ -54,7 +54,7 @@ object FrostJson {
 
   implicit val nonceGenTestVectorReads: Reads[NonceGenTestVector] = (
     (__ \ "rand_").read[ByteVector] and
-      (__ \ "secshare").readNullable[ByteVector] and
+      (__ \ "secshare").readNullable[FieldElement] and
       (__ \ "pubshare").readNullable[ECPublicKey] and
       (__ \ "threshold_pubkey").readNullable[XOnlyPubKey] and
       (__ \ "msg").readNullable[ByteVector] and

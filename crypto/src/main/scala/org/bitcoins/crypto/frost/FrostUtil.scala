@@ -45,13 +45,13 @@ object FrostUtil {
 
   def nonceGen(
       rand: ByteVector,
-      secshare: Option[ByteVector],
+      secshare: Option[FieldElement],
       pubshare: Option[ECPublicKey],
       threshold_pk: Option[XOnlyPubKey],
       message: Option[ByteVector],
       extra_in: Option[ByteVector]): (FrostNoncePriv, FrostNoncePub) = {
     val randPrime = secshare match {
-      case Some(sec) => sec.xor(hashFrostAux(rand))
+      case Some(sec) => sec.bytes.xor(hashFrostAux(rand))
       case None      => rand
     }
 
@@ -169,25 +169,27 @@ object FrostUtil {
   def sign(
       secNonce: FrostNoncePriv,
       secShare: FieldElement,
-      myId: Long,
+      signerId: Long,
       sessionContext: FrostSessionContext): FieldElement = {
     require(
-      sessionContext.signingContext.ids.contains(myId),
-      s"My id $myId must be in the signing context ids: ${sessionContext.signingContext.ids}")
+      sessionContext.signingContext.participantIds.contains(signerId),
+      s"My id $signerId must be in the signing context ids: ${sessionContext.signingContext.participantIds}"
+    )
     val values = sessionContext.getSessionValues
     val (k1, k2) = values.R.toPublicKey.parity match {
       case EvenParity => (secNonce.k1, secNonce.k2)
       case OddParity  => (secNonce.k1.negate, secNonce.k2.negate)
     }
     require(secShare != FieldElement.zero,
-            s"Secret share for participant id $myId cannot be zero")
+            s"Secret share for participant id $signerId cannot be zero")
     val pubshare = CryptoParams.getG.multiply(secShare)
     require(
       values.pubshares.contains(pubshare),
       s"Public share $pubshare derived from secret share does not exist in the session context pubshares: ${values.pubshares}"
     )
     val lambda =
-      deriveInterpolatingValue(sessionContext.signingContext.ids, myId)
+      deriveInterpolatingValue(sessionContext.signingContext.participantIds,
+                               signerId)
     val g = values.Q.toPublicKey.parity match {
       case EvenParity => Pos
       case OddParity  => Neg
@@ -204,7 +206,7 @@ object FrostUtil {
     val pubnonce = secNonce.toNoncePub
     val verified = partialSigVerifyInternal(
       partialSig = s,
-      myId = myId,
+      signerId = signerId,
       pubNonce = pubnonce,
       pubshare = pubshare,
       sessionCtx = sessionContext
@@ -223,12 +225,12 @@ object FrostUtil {
       tweaks: Vector[FieldElement],
       isXonlyT: Vector[Boolean],
       message: ByteVector,
-      i: Long): Boolean = {
+      signerId: Long): Boolean = {
     require(
-      signersContext.ids.contains(i),
-      s"Signer id $i must be in the signing context ids: ${signersContext.ids}")
+      signersContext.participantIds.contains(signerId),
+      s"Signer id $signerId must be in the signing context ids: ${signersContext.participantIds}")
     // val u = signersContext.u
-    val ids = signersContext.ids
+    val ids = signersContext.participantIds
     val pubshares = signersContext.pubshares
     // val thresholdPubKey = signersContext.thresholdPubKey
     val aggNonce = FrostUtil.aggregateNonces(
@@ -244,23 +246,23 @@ object FrostUtil {
     )
     partialSigVerifyInternal(
       partialSig,
-      i,
+      signerId,
       aggNonce,
-      pubshares(ids.indexOf(i)),
+      pubshares(ids.indexOf(signerId)),
       sessionCtx
     )
   }
 
   def partialSigVerifyInternal(
       partialSig: FieldElement,
-      myId: Long,
+      signerId: Long,
       pubNonce: FrostNoncePub,
       pubshare: ECPublicKey,
       sessionCtx: FrostSessionContext): Boolean = {
-    val ids = sessionCtx.signingContext.ids
+    val ids = sessionCtx.signingContext.participantIds
     val pubshares = sessionCtx.signingContext.pubshares
-    require(ids.contains(myId),
-            s"My id $myId must be in the signing context ids: $ids")
+    require(ids.contains(signerId),
+            s"Signer id $signerId must be in the signing context ids: $ids")
     require(
       pubshares.contains(pubshare),
       s"Public share $pubshare must be in the signing context pubshares: $pubshares")
@@ -271,7 +273,7 @@ object FrostUtil {
       case EvenParity => rePrime
       case OddParity  => rePrime.negate
     }
-    val lambda = deriveInterpolatingValue(ids, myId)
+    val lambda = deriveInterpolatingValue(ids, signerId)
     val g = values.Q.toPublicKey.parity match {
       case EvenParity => Pos
       case OddParity  => Neg
@@ -316,7 +318,7 @@ object FrostUtil {
 
   def deterministicSign(
       secshare: FieldElement,
-      myId: Long,
+      signerId: Long,
       aggOtherNonce: FrostNoncePub,
       signersContext: FrostSigningContext,
       tweaks: Vector[FieldElement],
@@ -356,7 +358,7 @@ object FrostUtil {
 
     val secNonce = FrostNoncePriv(preimages.head.bytes ++ preimages(1).bytes)
     val aggNonce = aggregateNonces(Vector(pubNonce, aggOtherNonce),
-                                   Vector(myId, COORDINATOR_ID))
+                                   Vector(signerId, COORDINATOR_ID))
     val sessionCtx = FrostSessionContext(
       signingContext = signersContext,
       aggNonce = aggNonce,
@@ -366,7 +368,7 @@ object FrostUtil {
     )
     val sig = sign(secNonce = secNonce,
                    secShare = secshare,
-                   myId = myId,
+                   signerId = signerId,
                    sessionContext = sessionCtx)
     (pubNonce, sig)
   }
@@ -467,5 +469,24 @@ object FrostUtil {
           acc.add(x.toPoint)
       }
     lhs.toPoint == rhs
+  }
+
+  def computeThresholdPubKey(
+      pubshares: Vector[ECPublicKey],
+      ids: Vector[Long]): ECPublicKey = {
+    var q: SecpPoint = SecpPointInfinity
+    pubshares.zipWithIndex.foreach { case (p, idx) =>
+      val myId = ids(idx)
+      val interpolation =
+        FrostUtil.deriveInterpolatingValue(ids = ids, myId = myId)
+      val x = p.toPoint.multiply(interpolation)
+      q = q.add(x)
+    }
+    q match {
+      case SecpPointInfinity =>
+        throw new IllegalArgumentException(
+          s"Computed threshold pubkey is point at infinity")
+      case p: SecpPointFinite => p.toPublicKey
+    }
   }
 }

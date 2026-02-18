@@ -99,7 +99,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
       val signingContext = FrostSigningContext(
         n = vecs.n,
         t = vecs.t,
-        ids = participantIds,
+        participantIds = participantIds,
         pubshares = pubshares.map(ECPublicKey.fromBytes),
         thresholdPubKey = vecs.threshold_pubkey
       )
@@ -115,7 +115,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
       )
       val result = FrostUtil.sign(secNonce = vecs.secnonce_p0,
                                   secShare = vecs.secshare_p0,
-                                  myId = t.id_indices(t.signer_index),
+                                  signerId = t.id_indices(t.signer_index),
                                   sessionContext = sessionCtx)
       assert(
         result.bytes == t.expected,
@@ -134,7 +134,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
         val signingContext = FrostSigningContext(
           n = vecs.n,
           t = vecs.t,
-          ids = participantIds,
+          participantIds = participantIds,
           pubshares = pubshares.map(ECPublicKey.fromBytes),
           thresholdPubKey = vecs.threshold_pubkey
         )
@@ -152,7 +152,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
         // Attempt to sign; any of the above steps may throw for malformed inputs
         FrostUtil.sign(secNonce = vecs.secnonce_p0,
                        secShare = vecs.secshare_p0,
-                       myId = err.id_indices(err.signer_index),
+                       signerId = err.id_indices(err.signer_index),
                        sessionContext = sessionCtx)
       }
     }
@@ -182,7 +182,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
       val signingContext = FrostSigningContext(
         n = vecs.n,
         t = vecs.t,
-        ids = participantIds,
+        participantIds = participantIds,
         pubshares = pubshares,
         thresholdPubKey = vecs.threshold_pubkey
       )
@@ -201,7 +201,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
       val s = FrostUtil.sign(
         secNonce = secNonce,
         secShare = secShare,
-        myId = t.id_indices(t.signer_index).toLong,
+        signerId = t.id_indices(t.signer_index).toLong,
         sessionContext = sessionCtx
       )
 
@@ -223,7 +223,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
         val signingContext = FrostSigningContext(
           n = vecs.n,
           t = vecs.t,
-          ids = participantIds,
+          participantIds = participantIds,
           pubshares = pubshares,
           thresholdPubKey = vecs.threshold_pubkey
         )
@@ -238,7 +238,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
         FrostUtil.sign(
           secNonce = secnonceOpt.getOrElse(vecs.secnonces_p0.head),
           secShare = FieldElement.fromBytes(vecs.secshare_p0),
-          myId = err.signer_id
+          signerId = err.signer_id
             .map(_.toLong)
             .getOrElse(vecs.identifiers(err.signer_index.getOrElse(-1)).toLong),
           sessionContext = sessionCtx
@@ -260,7 +260,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
         val signingContext = FrostSigningContext(
           n = vecs.n,
           t = vecs.t,
-          ids = participantIds,
+          participantIds = participantIds,
           pubshares = pubshares,
           thresholdPubKey = vecs.threshold_pubkey
         )
@@ -272,7 +272,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
           tweaks = Vector.empty,
           isXonlyT = Vector.empty,
           message = msg,
-          i = participantIds(vtc.signer_index)
+          signerId = participantIds(vtc.signer_index)
         )
       }.getOrElse(false)
 
@@ -294,7 +294,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
         val signingContext = FrostSigningContext(
           n = vecs.n,
           t = vecs.t,
-          ids = participantIds,
+          participantIds = participantIds,
           pubshares = pubshares,
           thresholdPubKey = vecs.threshold_pubkey
         )
@@ -307,7 +307,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
           tweaks = Vector.empty,
           isXonlyT = Vector.empty,
           message = msg,
-          i = participantIds.head
+          signerId = participantIds.head
         )
       }
     }
@@ -337,7 +337,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
       val signingContext = FrostSigningContext(
         n = vecs.n,
         t = vecs.t,
-        ids = participantIds,
+        participantIds = participantIds,
         pubshares = pubshares,
         thresholdPubKey = vecs.threshold_pubkey
       )
@@ -375,7 +375,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
         val signingContext = FrostSigningContext(
           n = vecs.n,
           t = vecs.t,
-          ids = participantIds,
+          participantIds = participantIds,
           pubshares = pubshares,
           thresholdPubKey = vecs.threshold_pubkey
         )
@@ -420,7 +420,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
         FrostSigningContext(
           n = vecs.n,
           t = vecs.t,
-          ids = participantIds,
+          participantIds = participantIds,
           pubshares = pubshares,
           thresholdPubKey = vecs.threshold_pubkey
         )
@@ -451,14 +451,14 @@ class FrostTestVectors extends BitcoinSCryptoTest {
           FrostSigningContext(
             n = vecs.n,
             t = vecs.t,
-            ids = participantIds,
+            participantIds = participantIds,
             pubshares = pubshares,
             thresholdPubKey = vecs.threshold_pubkey
           )
         }
         FrostUtil.deterministicSign(
           secshare = vecs.secshare_p0,
-          myId = etc.id_indices(etc.signer_index.getOrElse(0)),
+          signerId = etc.id_indices(etc.signer_index.getOrElse(0)),
           aggOtherNonce = etc.aggothernonce,
           signersContext = signersContext,
           tweaks = etc.tweaks,

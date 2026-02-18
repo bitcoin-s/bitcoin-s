@@ -1,16 +1,11 @@
 package org.bitcoins.crypto.frost
 
-import org.bitcoins.crypto.{
-  ECPublicKey,
-  SecpPoint,
-  SecpPointFinite,
-  SecpPointInfinity
-}
+import org.bitcoins.crypto.ECPublicKey
 
 case class FrostSigningContext(
     n: Long,
     t: Long,
-    ids: Vector[Long],
+    participantIds: Vector[Long],
     pubshares: Vector[ECPublicKey],
     thresholdPubKey: ECPublicKey) {
   require(n >= 2 && n < 4294967296L,
@@ -18,36 +13,43 @@ case class FrostSigningContext(
   require(1 <= t && t <= n,
           s"t must be in the range [1, n], got: $t with n: $n")
 
-  def u: Int = ids.length
+  def u: Int = participantIds.length
 
   require(u >= t && u <= n,
           s"u must be in the range [t, n], got: $u with t: $t and n: $n")
   // TODO: Come back and look at these invariants, shouldn't they be equal?
   require(
-    ids.length == pubshares.length,
-    s"Must have the same number of ids and pubshares, ids length: ${ids.length} with pubshares length: ${pubshares.length}")
-  require(ids.toSet.size == ids.length, s"All ids must be unique, got: $ids")
-  require(ids.forall(id => id >= 0 && id <= n),
-          s"All ids must be in the range [0, n], got: $ids with n: $n")
+    participantIds.length == pubshares.length,
+    s"Must have the same number of ids and pubshares, ids length: ${participantIds.length} with pubshares length: ${pubshares.length}"
+  )
+  require(participantIds.toSet.size == participantIds.length,
+          s"All ids must be unique, got: $participantIds")
+  require(
+    participantIds.forall(id => id >= 0 && id <= n),
+    s"All ids must be in the range [0, n], got: $participantIds with n: $n")
 
   private def pk: ECPublicKey = {
-    var q: SecpPoint = SecpPointInfinity
-    pubshares.zipWithIndex.foreach { case (p, idx) =>
-      val myId = ids(idx)
-      val interpolation =
-        FrostUtil.deriveInterpolatingValue(ids = ids, myId = myId)
-      val x = p.toPoint.multiply(interpolation)
-      q = q.add(x)
-    }
-    q match {
-      case SecpPointInfinity =>
-        throw new IllegalArgumentException(
-          s"Computed threshold pubkey is point at infinity")
-      case p: SecpPointFinite => p.toPublicKey
-    }
+    FrostUtil.computeThresholdPubKey(pubshares, participantIds)
   }
 
   require(
     pk == thresholdPubKey,
     s"Computed threshold pubkey $pk does not match provided threshold pubkey $thresholdPubKey")
+}
+
+object FrostSigningContext {
+  def fromShareGen(
+      result: FrostShareGenResult,
+      participantIds: Vector[Long],
+      pubshares: Vector[ECPublicKey]): FrostSigningContext = {
+    FrostSigningContext(
+      n = result.shares.length,
+      t = result.threshold,
+      participantIds = participantIds,
+      pubshares = pubshares,
+      // is this right? Particularily 'result.ids' vs 'participantIds'?
+      thresholdPubKey =
+        FrostUtil.computeThresholdPubKey(pubshares, participantIds)
+    )
+  }
 }
