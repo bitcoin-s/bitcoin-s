@@ -90,6 +90,14 @@ case class XOnlyPubKey(bytes: ByteVector) extends PublicKey {
   private def tapTweakHash(bytes: ByteVector): Sha256Digest = {
     CryptoUtil.tapTweakHash(bytes)
   }
+
+  def verify(data: ByteVector, signature: SchnorrDigitalSignature): Boolean = {
+    schnorrPublicKey.verify(data, signature)
+  }
+
+  def verify(hash: HashDigest, signature: SchnorrDigitalSignature): Boolean = {
+    schnorrPublicKey.verify(hash.bytes, signature)
+  }
 }
 
 object XOnlyPubKey extends Factory[XOnlyPubKey] {
