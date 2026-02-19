@@ -7,8 +7,9 @@ import org.bitcoins.core.script.constant.*
 import org.bitcoins.core.script.control.{OP_ELSE, OP_ENDIF, OP_IF, OP_NOTIF}
 import org.bitcoins.core.script.flag.ScriptFlag
 import org.bitcoins.core.script.result.*
-import org.bitcoins.core.util.BitcoinScriptUtil
+import org.bitcoins.core.util.{BitcoinScriptUtil, BytesUtil}
 import org.bitcoins.crypto.Sha256Digest
+import scodec.bits.ByteVector
 
 /** Created by chris on 2/3/16.
   */
@@ -27,6 +28,8 @@ sealed trait ScriptProgram {
 
   /** The script operations that need to still be executed. */
   def script: List[ScriptToken]
+
+  lazy val scriptByteVector: ByteVector = BytesUtil.toByteVector(script)
 
   /** The original script that was given. */
   def originalScript: List[ScriptToken]
