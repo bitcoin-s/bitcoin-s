@@ -1,12 +1,12 @@
 package org.bitcoins.testkitcore.util
 
 import org.bitcoins.asyncutil.AsyncUtil
-import org.bitcoins.core.config.{NetworkParameters, RegTest}
-import org.bitcoins.core.protocol.blockchain.ChainParams
+import org.bitcoins.core.config.{BitcoinNetwork, RegTest}
+import org.bitcoins.core.protocol.blockchain.BitcoinChainParams
 import org.bitcoins.core.util.FutureUtil
 import org.scalacheck.{Gen, Shrink}
 import org.scalactic.anyvals.PosInt
-import org.scalatest._
+import org.scalatest.*
 import org.scalatest.concurrent.AsyncTimeLimitedTests
 import org.scalatest.flatspec.AsyncFlatSpec
 import org.scalatest.matchers.must.Matchers
@@ -15,7 +15,7 @@ import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 import scala.annotation.nowarn
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 import scala.concurrent.{ExecutionContext, Future}
 
 /** This is a base trait in bitcoin-s for async tests
@@ -27,9 +27,10 @@ trait BaseAsyncTest
     with ScalaCheckPropertyChecks
     with AsyncTimeLimitedTests { this: AsyncTestSuite =>
 
-  implicit def np: NetworkParameters = RegTest
+  implicit def np: BitcoinNetwork = RegTest
 
-  implicit def chainParams: ChainParams = np.chainParams
+  implicit def chainParams: BitcoinChainParams =
+    np.chainParams
 
   implicit val duration: FiniteDuration = 10.seconds
   override lazy val timeLimit: Span = 5.minutes

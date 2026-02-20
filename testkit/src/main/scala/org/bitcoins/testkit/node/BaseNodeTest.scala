@@ -8,7 +8,7 @@ import org.bitcoins.core.api.chain.db.{
   CompactFilterHeaderDb
 }
 import org.bitcoins.core.api.chain.{ChainApi, ChainQueryApi, FilterSyncMarker}
-import org.bitcoins.core.config.{NetworkParameters, RegTest}
+import org.bitcoins.core.config.{BitcoinNetwork, RegTest}
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.blockchain.BlockHeader
@@ -30,7 +30,7 @@ trait BaseNodeTest extends BitcoinSFixture with PostgresTestDatabase {
   /** Wallet config with data directory set to user temp directory */
   protected def getFreshConfig: BitcoinSAppConfig
 
-  implicit override lazy val np: NetworkParameters = RegTest
+  implicit override lazy val np: BitcoinNetwork = RegTest
 
   override def beforeAll(): Unit = {
     AppConfig.throwIfDefaultDatadir(getFreshConfig.nodeConf)
