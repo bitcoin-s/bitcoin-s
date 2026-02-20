@@ -174,7 +174,7 @@ class FROSTTest extends BitcoinSCryptoAsyncTest {
       FrostUtil.partialSigAgg(pSigs, participantIds, sessionCtx)
     val verifySigAgg = {
       if (tweaks.isEmpty) {
-        signingContext.thresholdPubKey.toXOnly.schnorrPublicKey
+        signingContext.thresholdPubKey.toXOnly
           .verify(message, sigAgg)
       } else {
         val tweakedKey = FrostTweakContext.calculateTweakedKey(
@@ -182,7 +182,7 @@ class FROSTTest extends BitcoinSCryptoAsyncTest {
           tweaks.map(_._1),
           tweaks.map(_._2)
         )
-        tweakedKey.schnorrPublicKey.verify(message, sigAgg)
+        tweakedKey.toXOnly.verify(message, sigAgg)
       }
 
     }
