@@ -109,4 +109,17 @@ object FrostTweakContext {
       gacc = musigTweak.parityAcc
     )
   }
+
+  def calculateTweakedKey(
+      baseKey: ECPublicKey,
+      tweaks: Vector[FieldElement],
+      isXOnly: Vector[Boolean]
+  ): ECPublicKey = {
+    val initTweakCtx = FrostTweakContext(baseKey)
+    val finalTweakCtx =
+      1.to(tweaks.length).foldLeft(initTweakCtx) { case (tweakCtx, i) =>
+        tweakCtx.applyTweak(tweaks(i - 1), isXOnly(i - 1))
+      }
+    finalTweakCtx.getPlainPubKey
+  }
 }

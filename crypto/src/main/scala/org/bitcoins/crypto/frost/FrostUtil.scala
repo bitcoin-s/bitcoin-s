@@ -331,18 +331,16 @@ object FrostUtil {
         FieldElement.fromBytes(b)
       case None => secshare
     }
-    val initTweakCtx = FrostTweakContext(signersContext.thresholdPubKey)
-    val tweakCtx =
-      1.to(tweaks.length).foldLeft(initTweakCtx) { case (tweakCtx, i) =>
-        tweakCtx.applyTweak(tweaks(i - 1), isXOnly(i - 1))
-      }
-    val tweakedThresholdPubKey = tweakCtx.getXOnlyPubKey
+    val tweakedThresholdPubKey = FrostTweakContext.calculateTweakedKey(
+      signersContext.thresholdPubKey,
+      tweaks,
+      isXOnly)
     val preimages: Vector[FieldElement] = 0
       .to(1)
       .map { i =>
         hashFrostDeterministicNonce(secsharePrime,
                                     aggOtherNonce,
-                                    tweakedThresholdPubKey,
+                                    tweakedThresholdPubKey.toXOnly,
                                     message,
                                     i.toByte)
       }

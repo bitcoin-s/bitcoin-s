@@ -1,10 +1,6 @@
 package org.bitcoins.crypto
 
-import org.bitcoins.crypto.frost.{
-  FrostSessionContext,
-  FrostShareGenResult,
-  FrostUtil
-}
+import org.bitcoins.crypto.frost.*
 import org.scalatest.Assertion
 import scodec.bits.ByteVector
 
@@ -72,109 +68,110 @@ class FROSTTest extends BitcoinSCryptoAsyncTest {
       CryptoUtil.sha256(ByteVector.view("Hello World!".getBytes())).bytes
 
     val participantIds12: Vector[Long] = Vector(1, 2)
-    signAndVerify2of3(result, participantIds12, message)
+    signAndVerify(result, participantIds12, message, tweaks = Vector.empty)
     val participantIds13: Vector[Long] = Vector(1, 3)
-    signAndVerify2of3(result, participantIds13, message)
+    signAndVerify(result, participantIds13, message, tweaks = Vector.empty)
     val participantIds23: Vector[Long] = Vector(2, 3)
-    signAndVerify2of3(result, participantIds23, message)
+    signAndVerify(result, participantIds23, message, tweaks = Vector.empty)
 
     // reversing order shouldn't matter
-    signAndVerify2of3(result, participantIds13.reverse, message)
+    signAndVerify(result,
+                  participantIds13.reverse,
+                  message,
+                  tweaks = Vector.empty)
+
+    // tweaks should work as well
+    signAndVerify(result,
+                  participantIds12,
+                  message,
+                  tweaks = Vector((FieldElement.one, Random.nextBoolean())))
   }
 
-  private def signAndVerify2of3(
+  private def signAndVerify(
       result: FrostShareGenResult,
       participantIds: Vector[Long],
-      message: ByteVector): Assertion = {
+      message: ByteVector,
+      tweaks: Vector[(FieldElement, Boolean)]): Assertion = {
     val secshares =
       participantIds.map(id => result.shares.apply((id - 1).toInt))
-    val secshare0 = secshares.apply(0)
-    val pubshare0 = secshare0.toPoint.toPublicKey
-    val secshare1 = secshares.apply(1)
-    val pubshare1 = secshare1.toPoint.toPublicKey
     val participantPubShares = secshares.map(_.toPoint.toPublicKey)
 
-    val (secnonce0, pubnonce0) = FrostUtil.nonceGen(
-      rand = rand(),
-      secshare = Some(secshare0),
-      pubshare = Some(pubshare0),
-      threshold_pk = None,
-      message = Some(message),
-      extra_in = None
-    )
-    val (secnonce1, pubnonce1) = FrostUtil.nonceGen(
-      rand = rand(),
-      secshare = Some(secshare1),
-      pubshare = Some(pubshare1),
-      threshold_pk = None,
-      message = Some(message),
-      extra_in = None
-    )
-    val secnonces = Vector(secnonce0, secnonce1)
-    val pubnonces = secnonces.map(_.toNoncePub)
+    val secAndPubNonces: Vector[(FieldElement, FrostNoncePriv, FrostNoncePub)] =
+      secshares.map { secShare =>
+        val x = FrostUtil.nonceGen(
+          rand = rand(),
+          secshare = Some(secShare),
+          pubshare = Some(secShare.toPoint.toPublicKey),
+          threshold_pk = None,
+          message = Some(message),
+          extra_in = None
+        )
+        (secShare, x._1, x._2)
+      }
+
+    // val secnonces = secAndPubNonces.map(_._2)
+    val pubnonces = secAndPubNonces.map(_._3)
     val signingContext =
       result.toSigningContext(participantIds, participantPubShares)
-    val aggNonce01 = FrostUtil.aggregateNonces(pubnonces = pubnonces,
-                                               participantIdentifiers =
-                                                 participantIds)
+    val aggNonce = FrostUtil.aggregateNonces(pubnonces = pubnonces,
+                                             participantIdentifiers =
+                                               participantIds)
 
     val sessionCtx = FrostSessionContext(
       signingContext = signingContext,
-      aggNonce = aggNonce01,
-      tweaks = Vector.empty,
-      isXOnly = Vector.empty,
+      aggNonce = aggNonce,
+      tweaks = tweaks.map(_._1),
+      isXOnly = tweaks.map(_._2),
       message = message
     )
-    val pSig0 = FrostUtil.sign(secNonce = secnonce0,
-                               secShare = secshare0,
-                               signerId = participantIds(0),
-                               sessionContext = sessionCtx)
-    val internalVerify0 =
-      FrostUtil.partialSigVerifyInternal(partialSig = pSig0,
-                                         signerId = participantIds(0),
-                                         pubNonce = pubnonce0,
-                                         pubshare = pubshare0,
-                                         sessionCtx = sessionCtx)
-    assert(internalVerify0, s"internal psig0 invalid")
-    val verify0 = FrostUtil.partialSigVerify(
-      partialSig = pSig0,
-      pubnonces = pubnonces,
-      signersContext = signingContext,
-      tweaks = Vector.empty,
-      isXonlyT = Vector.empty,
-      message = message,
-      signerId = participantIds(0)
-    )
-    assert(verify0, s"psig0 invalid")
-
-    val pSig1 = FrostUtil.sign(secNonce = secnonce1,
-                               secShare = secshare1,
-                               signerId = participantIds(1),
-                               sessionContext = sessionCtx)
-    val internalVerify1 =
-      FrostUtil.partialSigVerifyInternal(partialSig = pSig1,
-                                         signerId = participantIds(1),
-                                         pubNonce = pubnonce1,
-                                         pubshare = pubshare1,
-                                         sessionCtx = sessionCtx)
-    assert(internalVerify1, s"internal psig1 invalid")
-    val verify1 = FrostUtil.partialSigVerify(
-      partialSig = pSig1,
-      pubnonces = pubnonces,
-      signersContext = signingContext,
-      tweaks = Vector.empty,
-      isXonlyT = Vector.empty,
-      message = message,
-      signerId = participantIds(1)
-    )
-    assert(verify1, s"psig1 invalid")
-
+    val pSigs = secAndPubNonces.zipWithIndex.map {
+      case ((secshare, secnonce, pubnonce), idx) =>
+        val signerId = participantIds(idx)
+        val pubshare = secshare.toPoint.toPublicKey
+        val pSig = FrostUtil.sign(secNonce = secnonce,
+                                  secShare = secshare,
+                                  signerId = signerId,
+                                  sessionContext = sessionCtx)
+        val internalVerify0 =
+          FrostUtil.partialSigVerifyInternal(partialSig = pSig,
+                                             signerId = signerId,
+                                             pubNonce = pubnonce,
+                                             pubshare = pubshare,
+                                             sessionCtx = sessionCtx)
+        assert(internalVerify0,
+               s"internal psig0 invalid for signerId=$signerId")
+        val verify0 = FrostUtil.partialSigVerify(
+          partialSig = pSig,
+          pubnonces = pubnonces,
+          signersContext = signingContext,
+          tweaks = tweaks.map(_._1),
+          isXonlyT = tweaks.map(_._2),
+          message = message,
+          signerId = signerId
+        )
+        assert(verify0, s"psig invalid for signerId=$signerId")
+        pSig
+    }
     val sigAgg =
-      FrostUtil.partialSigAgg(Vector(pSig0, pSig1), participantIds, sessionCtx)
-    val verifySigAgg = signingContext.thresholdPubKey.toXOnly.schnorrPublicKey
-      .verify(message, sigAgg)
+      FrostUtil.partialSigAgg(pSigs, participantIds, sessionCtx)
+    val verifySigAgg = {
+      if (tweaks.isEmpty) {
+        signingContext.thresholdPubKey.toXOnly.schnorrPublicKey
+          .verify(message, sigAgg)
+      } else {
+        val tweakedKey = FrostTweakContext.calculateTweakedKey(
+          signingContext.thresholdPubKey,
+          tweaks.map(_._1),
+          tweaks.map(_._2)
+        )
+        tweakedKey.schnorrPublicKey.verify(message, sigAgg)
+      }
 
-    assert(verifySigAgg)
+    }
+
+    assert(
+      verifySigAgg,
+      s"Aggregated signature for participantIds $participantIds failed to verify")
   }
 
 }
