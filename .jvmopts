@@ -1,2 +1,3 @@
--Xmx8G
+-XX:InitialHeapSize=512M
+-XX:MaxHeapSize=8G
 -Xss2M

@@ -1,7 +1,7 @@
 name: Release
 on:
   push:
-    branches: [ master, main ]
+    branches: [ master, main, "2026-02-19-jvmopts" ]
     tags: [ "*" ]
   release:
     types: [ published ]
