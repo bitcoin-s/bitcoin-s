@@ -87,6 +87,24 @@ class FROSTTest extends BitcoinSCryptoAsyncTest {
                   tweaks = Vector((FieldElement.one, Random.nextBoolean())))
   }
 
+  it must "sign and verify an arbitrary t/n with arbitrary tweaks" in {
+    forAllAsync(CryptoGenerators.privateKey,
+                NumberGenerator.positiveByte.suchThat(_ > 1),
+                CryptoGenerators.sha256Digest,
+                CryptoGenerators.tweaks) {
+      case (seed, numShares, message, tweaks) =>
+        Future {
+          val threshold = getThreshold(numShares)
+
+          val result = FrostUtil.generateShares(seed,
+                                                threshold = threshold,
+                                                numShares = numShares)
+          val participantIds = result.ids.take(threshold.toInt)
+          signAndVerify(result, participantIds, message.bytes, tweaks)
+        }
+    }
+  }
+
   private def signAndVerify(
       result: FrostShareGenResult,
       participantIds: Vector[Long],
@@ -174,4 +192,13 @@ class FROSTTest extends BitcoinSCryptoAsyncTest {
       s"Aggregated signature for participantIds $participantIds failed to verify")
   }
 
+  private def getThreshold(numShares: Byte): Int = {
+    if (numShares == 2) {
+      // for the case where numShares is 2
+      // we want to make sure we test the threshold of 2/2
+      2
+    } else {
+      Random.between(2, numShares)
+    }
+  }
 }
