@@ -404,6 +404,8 @@ object Deps {
     )
   }
 
+  def cryptoTestJVM = Vector(Compile.playJson)
+
   def bitcoindZmq = Def.setting {
     List(
       Compile.zeromq,

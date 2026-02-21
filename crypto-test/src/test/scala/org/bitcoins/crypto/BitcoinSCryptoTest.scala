@@ -45,10 +45,14 @@ trait BitcoinSCryptoAsyncTest
   implicit override def executionContext: ExecutionContext =
     scala.concurrent.ExecutionContext.Implicits.global
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
-    generatorDrivenConfigNewCode
+    generatorDrivenConfigOldCode
 
   def generatorDrivenConfigNewCode: PropertyCheckConfiguration = {
     customGenDrivenConfig(BitcoinSCryptoTest.NEW_CODE_EXECUTIONS)
+  }
+
+  def generatorDrivenConfigOldCode: PropertyCheckConfiguration = {
+    customGenDrivenConfig(BitcoinSCryptoTest.OLD_CODE_EXECUTIONS)
   }
 
   /** Sets the generator driven tests to perform the given amount of execs */
@@ -83,6 +87,37 @@ trait BitcoinSCryptoAsyncTest
       .toVector
 
     val testRunsF = Future.traverse(samples)(x => func(x._1, x._2))
+
+    checkRunResults(testRunsF)
+  }
+
+  def forAllAsync[A, B, C](genA: Gen[A], genB: Gen[B], genC: Gen[C])(
+      func: (A, B, C) => Future[Assertion]
+  ): Future[Assertion] = {
+    val samples = 1
+      .to(generatorDrivenConfig.minSuccessful)
+      .map(_ => (genA.sampleSome, genB.sampleSome, genC.sampleSome))
+      .toVector
+
+    val testRunsF = Future.traverse(samples)(x => func(x._1, x._2, x._3))
+
+    checkRunResults(testRunsF)
+  }
+
+  def forAllAsync[A, B, C, D](
+      genA: Gen[A],
+      genB: Gen[B],
+      genC: Gen[C],
+      genD: Gen[D])(
+      func: (A, B, C, D) => Future[Assertion]
+  ): Future[Assertion] = {
+    val samples = 1
+      .to(generatorDrivenConfig.minSuccessful)
+      .map(_ =>
+        (genA.sampleSome, genB.sampleSome, genC.sampleSome, genD.sampleSome))
+      .toVector
+
+    val testRunsF = Future.traverse(samples)(x => func(x._1, x._2, x._3, x._4))
 
     checkRunResults(testRunsF)
   }

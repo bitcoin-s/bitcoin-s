@@ -56,6 +56,7 @@ sealed abstract class CryptoGenerators {
   def xOnlyPubKey: Gen[XOnlyPubKey] = publicKey.map(_.toXOnly)
 
   /** Generate a sequence of private keys
+    *
     * @param num
     *   maximum number of keys to generate
     * @return
@@ -65,6 +66,7 @@ sealed abstract class CryptoGenerators {
 
   /** Generates a sequence of private keys, and determines an amount of
     * 'required' private keys that a transaction needs to be signed with
+    *
     * @param num
     *   the maximum number of keys to generate
     * @return
@@ -173,6 +175,7 @@ sealed abstract class CryptoGenerators {
   }
 
   /** Generates a sequence of [[DoubleSha256Digest DoubleSha256Digest]]
+    *
     * @param num
     *   the number of digets to generate
     * @return
@@ -221,6 +224,19 @@ sealed abstract class CryptoGenerators {
       .listOfN(16, NumberGenerator.byte)
       .map(ByteVector(_))
       .map(SipHashKey(_))
+
+  def tweaks: Gen[Vector[(FieldElement, Boolean)]] = {
+    val numTweaksGen = Gen.choose(0, 5)
+    val gen = for {
+      fe <- fieldElement
+      isXOnly <- Gen.oneOf(true, false)
+    } yield (fe, isXOnly)
+    numTweaksGen
+      .flatMap(num => Gen.listOfN(num, gen))
+      .map(_.toVector)
+  }
+
+  def threshold: Gen[Int] = Gen.choose(2, 32)
 }
 
 object CryptoGenerators extends CryptoGenerators

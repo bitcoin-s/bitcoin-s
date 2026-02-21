@@ -27,7 +27,12 @@ object BouncyCastleUtil {
   }
 
   private[crypto] def decodePoint(bytes: ByteVector): ECPoint = {
-    curve.decodePoint(bytes.toArray)
+    val b = if (bytes == SecpPointInfinity.bytes) {
+      // infinity point in bouncy castle is a single byte - 0x00
+      // elsewhere in our codebase we use 33 0x00 bytes to represent infinity
+      Array.fill(1)(0.toByte)
+    } else bytes.toArray
+    curve.decodePoint(b)
   }
 
   private[crypto] def decodePoint(pubKey: ECPublicKey): ECPoint = {

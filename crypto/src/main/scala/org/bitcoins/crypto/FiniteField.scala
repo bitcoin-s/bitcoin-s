@@ -49,6 +49,10 @@ abstract class FiniteFieldMember[F <: FiniteFieldMember[F]](
   }
 
   def inverse: F = fieldObj.computeInverse(thisAsF)
+
+  def pow(exponent: BigInteger): F = {
+    fieldObj.pow(thisAsF, exponent)
+  }
 }
 
 abstract class FiniteFieldObject[F <: FiniteFieldMember[F]](
@@ -105,6 +109,12 @@ abstract class FiniteFieldObject[F <: FiniteFieldMember[F]](
 
     val sum = num1.multiply(num2).mod(fieldOrder)
     apply(sum)
+  }
+
+  def pow(fe1: F, exponent: BigInteger): F = {
+    val num1 = fe1.toBigInteger
+    val pow = num1.modPow(exponent, fieldOrder)
+    apply(pow)
   }
 
   def negate(fe: F): F = {

@@ -47,6 +47,8 @@ trait NumberGenerator {
   /** Generates an arbitrary [[scala.Byte Byte]] in Scala */
   def byte: Gen[Byte] = arbitrary[Byte]
 
+  def positiveByte: Gen[Byte] = Gen.chooseNum[Byte](0, Byte.MaxValue)
+
   /** Generates an arbitrary [[scodec.bits.ByteVector ByteVector]] */
   def bytevector: Gen[ByteVector] = Gen.listOf(byte).map(ByteVector(_))
 
