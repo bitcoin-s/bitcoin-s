@@ -47,7 +47,7 @@ lazy val crypto = crossProject(JVMPlatform, JSPlatform)
   )
   .jsSettings(
     Compile / npmDependencies ++= Seq(
-      "bcrypto" -> "5.4.0"
+      "bcrypto" -> "5.5.2"
     )
   )
   .jvmSettings(CommonSettings.jvmSettings: _*)
