@@ -30,7 +30,7 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoindNewest {
     val f: Future[Outcome] = for {
       bitcoind <- cachedBitcoindWithFundsF
       futOutcome = withNewWalletAndBitcoindCached(test, bitcoind)(
-        getFreshWalletAppConfig
+        using getFreshWalletAppConfig
       )
       fut <- futOutcome.toFuture
     } yield fut
@@ -148,7 +148,7 @@ class ProcessBlockTest extends BitcoinSWalletTestCachedBitcoindNewest {
     val sendAmount = Bitcoins(0.5)
 
     val accountDAO: AccountDAO =
-      AccountDAO()(system.dispatcher, param.walletConfig)
+      AccountDAO()(using system.dispatcher, param.walletConfig)
     for {
       startBal <- wallet.getBalance()
       recvAddr <- wallet.getNewAddress()

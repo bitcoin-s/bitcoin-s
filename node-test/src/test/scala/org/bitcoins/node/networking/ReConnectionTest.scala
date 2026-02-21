@@ -29,7 +29,7 @@ class ReConnectionTest extends NodeTestWithCachedBitcoindNewest {
     val f = for {
       bitcoind <- cachedBitcoindWithFundsF
       outcome <- withNeutrinoNodeUnstarted(test, bitcoind)(
-        system,
+        using system,
         getFreshConfig
       ).toFuture
     } yield outcome

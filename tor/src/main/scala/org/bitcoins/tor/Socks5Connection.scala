@@ -401,7 +401,7 @@ object Socks5Connection extends BitcoinSLogger {
       greetingSource.to(mergeHubSink).run()
 
       (conn, matSink)
-    }(mat.executionContext)
+    }(using mat.executionContext)
   }
 
 }

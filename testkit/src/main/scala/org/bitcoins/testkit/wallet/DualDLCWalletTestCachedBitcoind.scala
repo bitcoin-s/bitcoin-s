@@ -64,7 +64,7 @@ trait DualDLCWalletTestCachedBitcoind
             FundWalletUtil.createFundedDLCWalletWithBitcoind(bitcoind)
           walletB <- FundWalletUtil.createFundedDLCWalletWithBitcoind(
             bitcoind
-          )(config2, system)
+          )(using config2, system)
         } yield (walletA, walletB, bitcoind),
       destroy = { (fundedWallets: (FundedDLCWallet, FundedDLCWallet, ?)) =>
         for {
@@ -95,7 +95,7 @@ trait DualDLCWalletTestCachedBitcoind
           _ <- walletAF
           walletB <- FundWalletUtil.createFundedDLCWalletWithBitcoind(
             bitcoind
-          )(config2, system)
+          )(using config2, system)
         } yield { walletB }
 
         for {

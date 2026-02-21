@@ -48,7 +48,7 @@ object Zip extends BitcoinSAppScalaDaemon {
 
   implicit lazy val conf: BitcoinSAppConfig =
     BitcoinSAppConfig(datadirParser.datadir, Vector(datadirParser.baseConfig))(
-      system
+      using system
     )
 
   new ZipDatadir(serverCmdLineArgs).run()

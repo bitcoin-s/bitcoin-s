@@ -11,7 +11,7 @@ class AddressLabelTest extends BitcoinSWalletTest {
   type FixtureParam = FundedWallet
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withFundedWallet(test)(getFreshWalletAppConfig)
+    withFundedWallet(test)(using getFreshWalletAppConfig)
   }
 
   behavior of "Address tags"

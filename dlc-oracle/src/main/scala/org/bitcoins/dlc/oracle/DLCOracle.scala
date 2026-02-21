@@ -93,7 +93,7 @@ case class DLCOracle()(implicit val conf: DLCOracleAppConfig)
   protected[bitcoins] val eventOutcomeDAO: EventOutcomeDAO = EventOutcomeDAO()
 
   protected[bitcoins] val masterXpubDAO: MasterXPubDAO =
-    MasterXPubDAO()(ec, conf)
+    MasterXPubDAO()(using ec, conf)
 
   private lazy val safeDatabase: SafeDatabase = rValueDAO.safeDatabase
   import rValueDAO.profile.api._
@@ -610,7 +610,7 @@ object DLCOracle {
   ): Future[DLCOracle] = {
     implicit val appConfig: DLCOracleAppConfig =
       DLCOracleAppConfig.fromDatadir(datadir = path, configs)
-    val masterXpubDAO: MasterXPubDAO = MasterXPubDAO()(ec, appConfig)
+    val masterXpubDAO: MasterXPubDAO = MasterXPubDAO()(using ec, appConfig)
     val oracle = DLCOracle()
 
     for {

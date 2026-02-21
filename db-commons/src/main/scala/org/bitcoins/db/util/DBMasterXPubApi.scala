@@ -16,7 +16,7 @@ trait DBMasterXPubApi extends MasterXPubApi { dbAppConfig: DbAppConfig =>
   def seedPath: Path
 
   override def seedExists()(implicit ec: ExecutionContext): Future[Boolean] = {
-    val masterXPubDAO: MasterXPubDAO = MasterXPubDAO()(ec, dbAppConfig)
+    val masterXPubDAO: MasterXPubDAO = MasterXPubDAO()(using ec, dbAppConfig)
     val fileExists = WalletStorage.seedExists(seedPath)
     masterXPubDAO.existsOneXpub().map { bool =>
       bool && fileExists

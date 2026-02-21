@@ -48,7 +48,8 @@ class PeerConnectionTest extends NodeUnitTest {
   it must "relay and consume information over a peer connection" in { param =>
     val test: (ChainAppConfig, NodeAppConfig) => Future[Assertion] = {
       case (chainAppConfig: ChainAppConfig, nodeAppConfig: NodeAppConfig) =>
-        val testHelper = setupPeerConnection()(chainAppConfig, nodeAppConfig)
+        val testHelper =
+          setupPeerConnection()(using chainAppConfig, nodeAppConfig)
         val pc = testHelper.peerConnection
         val serverBindingF = testHelper.serverBindingF
         val messagesF = testHelper.outboundMessagesF
@@ -70,7 +71,8 @@ class PeerConnectionTest extends NodeUnitTest {
   it must "send a lot of outbound messages" in { param =>
     val test: (ChainAppConfig, NodeAppConfig) => Future[Assertion] = {
       case (chainAppConfig: ChainAppConfig, nodeAppConfig: NodeAppConfig) =>
-        val testHelper = setupPeerConnection()(chainAppConfig, nodeAppConfig)
+        val testHelper =
+          setupPeerConnection()(using chainAppConfig, nodeAppConfig)
         val pc = testHelper.peerConnection
         val serverBindingF = testHelper.serverBindingF
         val messagesF = testHelper.outboundMessagesF

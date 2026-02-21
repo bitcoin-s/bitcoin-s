@@ -21,7 +21,7 @@ class DLCServerTest extends BitcoinSActorFixtureWithDLCWallet {
   override type FixtureParam = FundedDLCWallet
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withFundedDLCWallet(test)(getFreshConfig)
+    withFundedDLCWallet(test)(using getFreshConfig)
   }
 
   private val handleWriteFn: (BigSizeUInt, ByteVector) => Future[Unit] = {

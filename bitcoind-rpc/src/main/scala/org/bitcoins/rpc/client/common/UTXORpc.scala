@@ -93,12 +93,12 @@ trait UTXORpc { self: Client =>
     bitcoindCall[LoadTxOutSetResult](
       "loadtxoutset",
       List(Json.toJson(path.toString))
-    )(JsonSerializers.loadTxOutSetResultReads)
+    )(using JsonSerializers.loadTxOutSetResultReads)
   }
 
   def scanTxoutSet(request: ScanTxoutSetRequest): Future[ScanTxoutSetResult] = {
     bitcoindCall[ScanTxoutSetResult]("scantxoutset", request.params)(
-      JsonSerializers.scanTxoutSetResultReads)
+      using JsonSerializers.scanTxoutSetResultReads)
   }
 
 }

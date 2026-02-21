@@ -60,7 +60,7 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
             val bitcoindRpcAppConfig =
               BitcoindRpcAppConfig(baseDatadir,
                                    configOverrides,
-                                   authCredentinalsOpt = None)(system)
+                                   authCredentinalsOpt = None)(using system)
             bitcoindRpcAppConfig.binaryOpt match {
               case Some(_) =>
                 bitcoindRpcAppConfig.clientF
@@ -108,7 +108,7 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
       .foldLeft(Vector.empty[String])((acc, i) => acc :+ list.get(i))
     val result = strs.map(_.replace("localhost", "127.0.0.1"))
 
-    BitcoinSNodeUtil.stringsToPeers(result)(this)
+    BitcoinSNodeUtil.stringsToPeers(result)(using this)
   }
 
   lazy val torConf: TorAppConfig =
@@ -204,7 +204,7 @@ case class NodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
       walletCreationTimeOpt: Option[Instant]
   )(chainConf: ChainAppConfig, system: ActorSystem): Future[Node] = {
     NodeAppConfig.createNode(peers, walletCreationTimeOpt)(
-      this,
+      using this,
       chainConf,
       system
     )

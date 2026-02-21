@@ -16,7 +16,7 @@ class BitcoindChainHandlerViaZmqTest extends ChainDbUnitTest {
   override type FixtureParam = BitcoindChainHandlerViaZmq
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withBitcoindChainHandlerViaZmq(test)(system, chainAppConfig)
+    withBitcoindChainHandlerViaZmq(test)(using system, chainAppConfig)
 
   behavior of "BitcoindChainHandlerViaZmq"
 

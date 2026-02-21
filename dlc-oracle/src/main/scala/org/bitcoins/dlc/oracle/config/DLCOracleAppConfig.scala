@@ -99,7 +99,7 @@ case class DLCOracleAppConfig(
       val initializeF = initializeKeyManager()
       for {
         _ <- initializeF
-        oracle = new DLCOracle()(this)
+        oracle = new DLCOracle()(using this)
         _ <- MasterXPubUtil.checkMasterXPub(oracle.getRootXpub, masterXPubDAO)
         _ <- migrationWorkAroundF
       } yield {
@@ -168,22 +168,22 @@ case class DLCOracleAppConfig(
     initF
   }
 
-  private val masterXPubDAO: MasterXPubDAO = MasterXPubDAO()(ec, this)
+  private val masterXPubDAO: MasterXPubDAO = MasterXPubDAO()(using ec, this)
 
   private lazy val masterXPubTable: TableQuery[Table[?]] = {
     masterXPubDAO.table
   }
 
   private lazy val rValueTable: TableQuery[Table[?]] = {
-    RValueDAO()(ec, appConfig).table
+    RValueDAO()(using ec, appConfig).table
   }
 
   private lazy val eventTable: TableQuery[Table[?]] = {
-    EventDAO()(ec, appConfig).table
+    EventDAO()(using ec, appConfig).table
   }
 
   private lazy val eventOutcomeTable: TableQuery[Table[?]] = {
-    EventOutcomeDAO()(ec, appConfig).table
+    EventOutcomeDAO()(using ec, appConfig).table
   }
 
   override def allTables: List[TableQuery[Table[?]]] =
@@ -197,11 +197,11 @@ case class DLCOracleAppConfig(
 
         val dummyMigrationTLV = EnumEventDescriptorV0TLV.dummy
 
-        val eventDAO = EventDAO()(ec, appConfig)
+        val eventDAO = EventDAO()(using ec, appConfig)
         for {
           // get all old events
           allEvents <- eventDAO.findByEventDescriptor(dummyMigrationTLV)
-          allOutcomes <- EventOutcomeDAO()(ec, appConfig).findAll()
+          allOutcomes <- EventOutcomeDAO()(using ec, appConfig).findAll()
 
           outcomesByNonce = allOutcomes.groupBy(_.nonce)
           // Update them to have the correct event descriptor

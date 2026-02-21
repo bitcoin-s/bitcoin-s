@@ -36,7 +36,7 @@ class UTXOLifeCycleTest
     val f: Future[Outcome] = for {
       bitcoind <- cachedBitcoindWithFundsF
       futOutcome = withFundedWalletAndBitcoindCached(test, bitcoind)(
-        getFreshWalletAppConfig
+        using getFreshWalletAppConfig
       )
       fut <- futOutcome.toFuture
     } yield fut
@@ -305,7 +305,7 @@ class UTXOLifeCycleTest
     val wallet = param.wallet
 
     val spendingInfoDAO =
-      SpendingInfoDAO()(system.dispatcher, param.walletConfig)
+      SpendingInfoDAO()(using system.dispatcher, param.walletConfig)
     for {
       tx <- wallet.sendFundsHandling.sendToAddress(testAddr,
                                                    Satoshis(3000),

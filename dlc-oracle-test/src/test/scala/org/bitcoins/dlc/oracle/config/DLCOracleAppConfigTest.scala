@@ -17,8 +17,8 @@ class DLCOracleAppConfigTest extends DLCOracleAppConfigFixture {
     for {
       _ <- started1F
       _ <- started2F
-      dlcOracle1 = new DLCOracle()(dlcOracleAppConfig)
-      dlcOracle2 = new DLCOracle()(dlcOracleAppConfig)
+      dlcOracle1 = new DLCOracle()(using dlcOracleAppConfig)
+      dlcOracle2 = new DLCOracle()(using dlcOracleAppConfig)
     } yield {
       assert(dlcOracle1.publicKey() == dlcOracle2.publicKey())
     }
@@ -30,7 +30,7 @@ class DLCOracleAppConfigTest extends DLCOracleAppConfigFixture {
       val startedF = dlcOracleAppConfig.start()
       val pubKeyBeforeMoveF = for {
         _ <- startedF
-        dlcOracle = new DLCOracle()(dlcOracleAppConfig)
+        dlcOracle = new DLCOracle()(using dlcOracleAppConfig)
       } yield {
         dlcOracle.publicKey()
       }
@@ -63,7 +63,7 @@ class DLCOracleAppConfigTest extends DLCOracleAppConfigFixture {
         _ <- appConfig.start()
       } yield ()
 
-      val dlcOracle2F = started2F.map(_ => new DLCOracle()(appConfig))
+      val dlcOracle2F = started2F.map(_ => new DLCOracle()(using appConfig))
 
       for {
         _ <- stoppedF

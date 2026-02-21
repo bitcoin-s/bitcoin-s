@@ -44,12 +44,14 @@ trait NodeRpc { self: Client =>
 
     object LoggingReads extends Reads[Map[String, Boolean]] {
       override def reads(json: JsValue): JsResult[Map[String, Boolean]] =
-        JsonReaders.mapReads(json)(implicitly[Reads[String]], IntOrBoolReads)
+        JsonReaders.mapReads(json)(
+          using implicitly[Reads[String]],
+          IntOrBoolReads)
     }
 
     // if we're just compiling for Scala 2.12 we could have converted the 20 lines
     // above into a one-liner, but Play Json for 2.11 isn't quite clever enough
-    bitcoindCall[Map[String, Boolean]]("logging", params)(LoggingReads)
+    bitcoindCall[Map[String, Boolean]]("logging", params)(using LoggingReads)
 
   }
   def logging: Future[Map[String, Boolean]] = logging(None, None)

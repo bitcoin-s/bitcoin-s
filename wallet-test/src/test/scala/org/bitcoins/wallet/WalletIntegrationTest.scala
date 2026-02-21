@@ -34,7 +34,7 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
       futOutcome = withNewWalletAndBitcoindCached(
         test = test,
         bitcoind = bitcoind
-      )(getFreshWalletAppConfig)
+      )(using getFreshWalletAppConfig)
       fut <- futOutcome.toFuture
     } yield fut
     new FutureOutcome(f)
@@ -55,8 +55,10 @@ class WalletIntegrationTest extends BitcoinSWalletTestCachedBitcoindNewest {
     val bitcoind = walletWithBitcoind.bitcoind
     val walletConfig = walletWithBitcoind.walletConfig
 
-    val incomingDAO = IncomingTransactionDAO()(system.dispatcher, walletConfig)
-    val outgoingDAO = OutgoingTransactionDAO()(system.dispatcher, walletConfig)
+    val incomingDAO =
+      IncomingTransactionDAO()(using system.dispatcher, walletConfig)
+    val outgoingDAO =
+      OutgoingTransactionDAO()(using system.dispatcher, walletConfig)
     for {
       addr <- wallet.getNewAddress()
       txId <- bitcoind.sendToAddress(addr, valueFromBitcoind)

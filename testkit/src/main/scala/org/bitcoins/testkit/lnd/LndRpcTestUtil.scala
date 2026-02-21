@@ -257,12 +257,12 @@ trait LndRpcTestUtil extends BitcoinSLogger {
     val actorSystemA =
       ActorSystem.create("bitcoin-s-lnd-test-" + FileUtil.randomDirName)
     val clientA = LndRpcTestClient
-      .fromSbtDownload(Some(bitcoind))(actorSystemA)
+      .fromSbtDownload(Some(bitcoind))(using actorSystemA)
 
     val actorSystemB =
       ActorSystem.create("bitcoin-s-lnd-test-" + FileUtil.randomDirName)
     val clientB = LndRpcTestClient
-      .fromSbtDownload(Some(bitcoind))(actorSystemB)
+      .fromSbtDownload(Some(bitcoind))(using actorSystemB)
 
     val clientsF = for {
       a <- clientA.start()

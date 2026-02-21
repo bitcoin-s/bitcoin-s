@@ -54,7 +54,7 @@ class DLCWalletBitcoindBackendLoaderTest extends WalletLoaderFixtures {
       balance <- wallet.getBalance()
       _ = assert(balance == CurrencyUnits.zero)
       descriptorDAO = WalletStateDescriptorDAO()(
-        system.dispatcher,
+        using system.dispatcher,
         walletConfig
       )
       set <- descriptorDAO.compareAndSetRescanning(false, true)

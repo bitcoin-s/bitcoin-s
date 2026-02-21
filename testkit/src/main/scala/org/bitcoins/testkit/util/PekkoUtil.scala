@@ -13,7 +13,7 @@ trait PekkoUtil {
   )(implicit system: ActorSystem): Future[Unit] = {
     val p = Promise[Unit]()
     system.scheduler
-      .scheduleOnce(duration)(p.success(()))(system.dispatcher)
+      .scheduleOnce(duration)(p.success(()))(using system.dispatcher)
     p.future
   }
 

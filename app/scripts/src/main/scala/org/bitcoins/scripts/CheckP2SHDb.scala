@@ -137,7 +137,7 @@ object CheckP2SHDb extends BitcoinSAppScalaDaemon {
   override val customFinalDirOpt = None
 
   implicit val rpcAppConfig: BitcoindRpcAppConfig =
-    BitcoindRpcAppConfig.fromDefaultDatadir()(system)
+    BitcoindRpcAppConfig.fromDefaultDatadir()(using system)
 
   new CheckP2SHDb().run()
 }

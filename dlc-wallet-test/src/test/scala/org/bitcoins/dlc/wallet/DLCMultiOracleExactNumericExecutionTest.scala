@@ -26,7 +26,7 @@ class DLCMultiOracleExactNumericExecutionTest extends BitcoinSDualWalletTest {
     val unsorted = 0.until(5).map(_ => ECPrivateKey.freshPrivateKey).toVector
     val nonces = unsorted
       .map(u => (u, u.schnorrNonce))
-      .sortBy(_._2)(org.bitcoins.core.nonceOrdering)
+      .sortBy(_._2)(using org.bitcoins.core.nonceOrdering)
     nonces.map(_._1)
   }
 
@@ -36,7 +36,7 @@ class DLCMultiOracleExactNumericExecutionTest extends BitcoinSDualWalletTest {
         0.until(numDigits).map(_ => ECPrivateKey.freshPrivateKey).toVector
       val sorted = unsorted
         .map(u => (u, u.schnorrNonce))
-        .sortBy(_._2)(org.bitcoins.core.nonceOrdering)
+        .sortBy(_._2)(using org.bitcoins.core.nonceOrdering)
       sorted.map(_._1)
     }
   }

@@ -541,7 +541,7 @@ class EclairRpcClient(
         case _: JsError           => JsSuccess(None)
       }
     }
-    eclairCall[Option[IncomingPayment]]("getreceivedinfo", params*)(r)
+    eclairCall[Option[IncomingPayment]]("getreceivedinfo", params*)(using r)
   }
 
   override def getSentInfo(

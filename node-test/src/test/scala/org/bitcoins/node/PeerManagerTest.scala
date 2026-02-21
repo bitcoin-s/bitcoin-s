@@ -33,7 +33,7 @@ class PeerManagerTest extends NodeTestWithCachedBitcoindNewest {
       _ <- torClientF
       bitcoind <- cachedBitcoindWithFundsF
       outcome = withNeutrinoNodeUnstarted(test, bitcoind)(
-        system,
+        using system,
         getFreshConfig
       )
       f <- outcome.toFuture
@@ -97,7 +97,7 @@ class PeerManagerTest extends NodeTestWithCachedBitcoindNewest {
         timestamp = Instant.now()
         _ <- NodeTestUtil.disconnectNode(bitcoind, node)
         addrBytes = PeerDAOHelper.getAddrBytes(peer)
-        peerDb <- PeerDAO()(node.nodeAppConfig, system.dispatcher)
+        peerDb <- PeerDAO()(using node.nodeAppConfig, system.dispatcher)
           .read((addrBytes, peer.port))
           .map(_.get)
       } yield {

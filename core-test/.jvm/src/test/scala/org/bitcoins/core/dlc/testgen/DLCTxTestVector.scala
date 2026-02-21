@@ -6,7 +6,7 @@ case class DLCTxTestVector(inputs: ValidTestInputs, txs: DLCTransactions)
     extends TestVector {
 
   override def toJson: JsValue =
-    Json.toJson(this)(DLCTxTestVector.dlcTxTestVectorFormat)
+    Json.toJson(this)(using DLCTxTestVector.dlcTxTestVectorFormat)
 }
 
 object DLCTxTestVector extends TestVectorParser[DLCTxTestVector] {

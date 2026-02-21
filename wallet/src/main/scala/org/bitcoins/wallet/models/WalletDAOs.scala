@@ -29,25 +29,27 @@ case class WalletDAOs(
 
 object WalletDAOs {
   def fromWalletConfig(walletConfig: WalletAppConfig): WalletDAOs = {
-    val addressDAO: AddressDAO = AddressDAO()(walletConfig.ec, walletConfig)
-    val accountDAO: AccountDAO = AccountDAO()(walletConfig.ec, walletConfig)
+    val addressDAO: AddressDAO =
+      AddressDAO()(using walletConfig.ec, walletConfig)
+    val accountDAO: AccountDAO =
+      AccountDAO()(using walletConfig.ec, walletConfig)
     val spendingInfoDAO: SpendingInfoDAO =
-      SpendingInfoDAO()(walletConfig.ec, walletConfig)
+      SpendingInfoDAO()(using walletConfig.ec, walletConfig)
     val transactionDAO: TransactionDAO =
-      TransactionDAO()(walletConfig.ec, walletConfig)
+      TransactionDAO()(using walletConfig.ec, walletConfig)
     val scriptPubKeyDAO: ScriptPubKeyDAO =
-      ScriptPubKeyDAO()(walletConfig.ec, walletConfig)
+      ScriptPubKeyDAO()(using walletConfig.ec, walletConfig)
 
     val incomingTxDAO: IncomingTransactionDAO =
-      IncomingTransactionDAO()(walletConfig.ec, walletConfig)
+      IncomingTransactionDAO()(using walletConfig.ec, walletConfig)
 
     val outgoingTxDAO: OutgoingTransactionDAO =
-      OutgoingTransactionDAO()(walletConfig.ec, walletConfig)
+      OutgoingTransactionDAO()(using walletConfig.ec, walletConfig)
     val addressTagDAO: AddressTagDAO =
-      AddressTagDAO()(walletConfig.ec, walletConfig)
+      AddressTagDAO()(using walletConfig.ec, walletConfig)
 
     val stateDescriptorDAO: WalletStateDescriptorDAO =
-      WalletStateDescriptorDAO()(walletConfig.ec, walletConfig)
+      WalletStateDescriptorDAO()(using walletConfig.ec, walletConfig)
     WalletDAOs(accountDAO,
                addressDAO,
                addressTagDAO,

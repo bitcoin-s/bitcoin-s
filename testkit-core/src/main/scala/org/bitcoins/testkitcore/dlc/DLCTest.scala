@@ -902,7 +902,7 @@ trait DLCTest {
             )
             .filter(_.head.digits == digits)
             .map(_.apply(1).digits)
-            .sorted(NumberUtil.lexicographicalOrdering[Int])
+            .sorted(using NumberUtil.lexicographicalOrdering[Int])
             .map(UnsignedNumericOutcome.apply)
         }
 

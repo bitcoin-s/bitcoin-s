@@ -92,7 +92,7 @@ object OracleServerMain extends BitcoinSAppScalaDaemon {
 
   implicit lazy val conf: DLCOracleAppConfig =
     DLCOracleAppConfig(datadirParser.datadir, Vector(datadirParser.baseConfig))(
-      system.dispatcher
+      using system.dispatcher
     )
 
   val m = new OracleServerMain(serverCmdLineArgs)

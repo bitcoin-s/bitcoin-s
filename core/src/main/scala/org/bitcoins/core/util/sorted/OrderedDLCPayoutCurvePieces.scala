@@ -18,7 +18,7 @@ object OrderedDLCPayoutCurvePieces
 
   override def fromUnsorted(
       vec: Vector[DLCPayoutCurvePiece]): OrderedDLCPayoutCurvePieces = {
-    val sorted = vec.sorted(org.bitcoins.core.dlcPayoutCurvePieceOrdering)
+    val sorted = vec.sorted(using org.bitcoins.core.dlcPayoutCurvePieceOrdering)
     OrderedDLCPayoutCurvePieces(sorted)
   }
 }

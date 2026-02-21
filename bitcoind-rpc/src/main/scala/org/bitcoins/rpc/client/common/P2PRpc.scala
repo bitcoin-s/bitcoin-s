@@ -100,6 +100,6 @@ trait P2PRpc { self: Client =>
 
   def getAddrManInfo(): Future[GetAddrmanInfoResponse] = {
     bitcoindCall[GetAddrmanInfoResponse]("getaddrmaninfo")(
-      JsonSerializers.getAddrmanInfoResponseReads)
+      using JsonSerializers.getAddrmanInfoResponseReads)
   }
 }

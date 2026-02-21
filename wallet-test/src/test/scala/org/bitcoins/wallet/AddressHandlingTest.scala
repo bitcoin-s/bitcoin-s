@@ -22,7 +22,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
   type FixtureParam = FundedWallet
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    withFundedWallet(test)(getFreshWalletAppConfig)
+    withFundedWallet(test)(using getFreshWalletAppConfig)
   }
 
   behavior of "AddressHandling"
@@ -151,7 +151,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
     (fundedWallet: FundedWallet) =>
       val wallet = fundedWallet.wallet
       val spendingInfoDAO =
-        SpendingInfoDAO()(executionContext, fundedWallet.walletConfig)
+        SpendingInfoDAO()(using executionContext, fundedWallet.walletConfig)
       for {
         addrDbs <- spendingInfoDAO.findAllSpendingInfos()
         fundedAddresses <- wallet.addressHandling.getUnusedAddresses()
@@ -274,7 +274,7 @@ class AddressHandlingTest extends BitcoinSWalletTest {
       val wallet = fundedWallet.wallet
       val addressF = wallet.getNewAddress()
       val spkDAO =
-        ScriptPubKeyDAO()(executionContext, fundedWallet.walletConfig)
+        ScriptPubKeyDAO()(using executionContext, fundedWallet.walletConfig)
       for {
         address <- addressF
         utxos <- wallet.utxoHandling.findByScriptPubKey(address.scriptPubKey)
