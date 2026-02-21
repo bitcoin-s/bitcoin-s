@@ -26,6 +26,15 @@ object BitcoinSTestAppConfig {
   /** Generates a temp directory with the prefix 'bitcoin-s- */
   def tmpDir(): Path = Files.createTempDirectory("bitcoin-s-")
 
+  /** Loads testkit's default configuration.
+    * This config is explicitly loaded to ensure it layers over db-commons and other module reference.conf files.
+    * By using a separate name (testkit-defaults.conf instead of reference.conf), we avoid HOCON's
+    * undefined merge order when multiple reference.conf files exist on the classpath.
+    */
+  private lazy val testkitDefaults: Config = {
+    ConfigFactory.parseResources("testkit-defaults.conf")
+  }
+
   def genWalletNameConf(forceNamedWallet: Boolean): Config = {
     val walletNameOpt =
       if (forceNamedWallet || NumberGenerator.bool.sampleSome) {
@@ -48,21 +57,12 @@ object BitcoinSTestAppConfig {
     val overrideConf = ConfigFactory.parseString {
       s"""
          |bitcoin-s {
-         |  node {
-         |     mode = neutrino
-         |     relay = true
-         |     enable-peer-discovery = false
-         |  }
-         |  wallet {
-         |    allowExternalDLCAddresses = true
-         |  }
          |  proxy.enabled = $torEnabled
          |  tor.enabled = $torEnabled
-         |  tor.use-random-ports = false
          |}
       """.stripMargin
     }
-    BitcoinSAppConfig(tmpDir(), (overrideConf +: config).toVector)
+    BitcoinSAppConfig(tmpDir(), (overrideConf +: testkitDefaults +: config).toVector)
   }
 
   /** @param pgUrl
@@ -83,13 +83,10 @@ object BitcoinSTestAppConfig {
            |bitcoin-s {
            |  node {
            |     mode = neutrino
-           |     relay = true
            |     enable-peer-discovery = false
            |  }
-           |  fee-provider.name = "random"
            |  proxy.enabled = $torEnabled
            |  tor.enabled = $torEnabled
-           |  tor.use-random-ports = false
            |}
       """.stripMargin
       }
@@ -98,7 +95,7 @@ object BitcoinSTestAppConfig {
 
     BitcoinSAppConfig(
       tmpDir(),
-      (overrideConf +: configWithEmbeddedDb(
+      (overrideConf +: testkitDefaults +: configWithEmbeddedDb(
         project = None,
         postgresOpt
       ) +: config)
@@ -123,13 +120,11 @@ object BitcoinSTestAppConfig {
            |bitcoin-s {
            |  node {
            |     mode = neutrino
-           |     relay = true
            |     maxConnectedPeers = 8
            |     enable-peer-discovery = false
            |  }
            |  proxy.enabled = $torEnabled
            |  tor.enabled = $torEnabled
-           |  tor.use-random-ports = false
            |}
       """.stripMargin
       }
@@ -137,7 +132,7 @@ object BitcoinSTestAppConfig {
 
     BitcoinSAppConfig(
       tmpDir(),
-      (overrideConf +: configWithEmbeddedDb(
+      (overrideConf +: testkitDefaults +: configWithEmbeddedDb(
         project = None,
         postgresOpt
       ) +: config).toVector
