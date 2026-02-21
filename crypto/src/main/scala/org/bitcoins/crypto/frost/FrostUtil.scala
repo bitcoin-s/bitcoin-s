@@ -205,8 +205,8 @@ object FrostUtil {
             s"My id $myId must be in the list of participant ids: $ids")
     require(ids.distinct.length == ids.length,
             s"ids must not contain duplicates, ids=$ids")
-    require(0 <= myId && myId < 4294967296L,
-            s"myId must be in the range [0, 2^32 - 1], got: $myId")
+    require(0 < myId && myId < 4294967296L,
+            s"myId must be in the range [1, 2^32 - 1], got: $myId")
     val initNum: FieldElement = FieldElement.one
     val initDenom: FieldElement = FieldElement.one
     val (num, denom) = ids.foldLeft((initNum, initDenom)) {
@@ -654,10 +654,9 @@ object FrostUtil {
       vssCommitments.size == threshold,
       s"Number of commitments must match threshold: " +
         s"got ${vssCommitments.size} commitments for threshold $threshold")
-    val idSharesTuple: Vector[(Long, FieldElement)] = 0L
-      .until(numShares)
-      .map { i =>
-        val id = i + 1
+    val idSharesTuple: Vector[(Long, FieldElement)] = 1L
+      .to(numShares)
+      .map { id =>
         val share = generateShare(polygen, threshold, id)
         (id, share)
       }
@@ -696,12 +695,12 @@ object FrostUtil {
       seed: ByteVector,
       threshold: Int,
       id: Long): FieldElement = {
-    var shareI = FieldElement.zero
-    deriveCoefficients(seed, threshold).reverse.foreach { coeff =>
-      shareI = shareI.multiply(FieldElement(id))
-      shareI = shareI.add(coeff)
-    }
-    shareI
+    deriveCoefficients(seed, threshold).reverse
+      .foldLeft(FieldElement.zero) { case (shareI, coeff) =>
+        shareI
+          .multiply(FieldElement(id))
+          .add(coeff)
+      }
   }
 
   /** Generates VSS (Verifiable Secret Sharing) commitments.
@@ -840,13 +839,13 @@ object FrostUtil {
   def computeThresholdPubKey(
       pubshares: Vector[ECPublicKey],
       ids: Vector[Long]): ECPublicKey = {
-    var q: SecpPoint = SecpPointInfinity
-    pubshares.zipWithIndex.foreach { case (p, idx) =>
-      val myId = ids(idx)
-      val interpolation =
-        FrostUtil.deriveInterpolatingValue(ids = ids, myId = myId)
-      val x = p.toPoint.multiply(interpolation)
-      q = q.add(x)
+    val q = pubshares.zipWithIndex.foldLeft[SecpPoint](SecpPointInfinity) {
+      case (q, (p, idx)) =>
+        val myId = ids(idx)
+        val interpolation =
+          FrostUtil.deriveInterpolatingValue(ids = ids, myId = myId)
+        val x = p.toPoint.multiply(interpolation)
+        q.add(x)
     }
     q match {
       case SecpPointInfinity =>

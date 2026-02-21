@@ -47,7 +47,6 @@ object FrostSigningContext {
       t = result.threshold,
       participantIds = participantIds,
       pubshares = pubshares,
-      // is this right? Particularily 'result.ids' vs 'participantIds'?
       thresholdPubKey =
         FrostUtil.computeThresholdPubKey(pubshares, participantIds)
     )

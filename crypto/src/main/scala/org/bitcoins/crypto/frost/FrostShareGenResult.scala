@@ -39,8 +39,9 @@ case class FrostShareGenResult(
   require(ids.length == shares.length)
   require(ids.forall(_ >= 0))
   require(commitments.length <= ids.length)
-  require(shares.length >= commitments.length,
-          s"Must have more commitments than shares")
+  require(
+    shares.length >= commitments.length,
+    s"Number of shares must be >= number of commitments, shares=${shares.length}, commitments=${commitments.length}")
 
   /** The threshold t (minimum number of signers required).
     *

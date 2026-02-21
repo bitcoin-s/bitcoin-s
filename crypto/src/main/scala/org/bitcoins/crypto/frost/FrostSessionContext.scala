@@ -100,8 +100,6 @@ case class FrostSessionContext(
 
     require(b != FieldElement.zero,
             s"Computed challenge 'b' cannot be zero in FROST signing session")
-    // come back and looks at this to make sure we handle
-    // infinity correct in the getsessionvalues algo ('cpoint_ext')
     val rPrime = r1.add(r2.multiply(b))
     val r = rPrime match {
       case SecpPointInfinity  => CryptoParams.getG
