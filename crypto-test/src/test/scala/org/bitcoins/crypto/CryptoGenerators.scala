@@ -235,6 +235,8 @@ sealed abstract class CryptoGenerators {
       .flatMap(num => Gen.listOfN(num, gen))
       .map(_.toVector)
   }
+
+  def threshold: Gen[Int] = Gen.choose(2, 32)
 }
 
 object CryptoGenerators extends CryptoGenerators

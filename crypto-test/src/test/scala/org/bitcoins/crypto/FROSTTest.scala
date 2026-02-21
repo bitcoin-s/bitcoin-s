@@ -26,22 +26,22 @@ class FROSTTest extends BitcoinSCryptoAsyncTest {
   }
 
   it must "create/verify vss commitments for arbitrary thresholds" in {
-    forAllAsync(NumberGenerator.bytevector(32),
-                // threshold must be > 1 , max = 127 to run tests in a reasonable time
-                NumberGenerator.positiveByte.suchThat(_ > 0)) {
-      case (seed, threshold) =>
-        Future {
-          val shares = 1.until(threshold + 1).map { id =>
-            FrostUtil.generateShare(seed, threshold = threshold, id = id)
-          }
-          val commitments = FrostUtil.vssCommitment(seed, threshold = threshold)
-          shares.zipWithIndex.foreach { case (share, idx) =>
-            val id = idx + 1L
-            assert(
-              FrostUtil.vssVerify(share, id = id, commitments = commitments))
-          }
-          succeed
+    forAllAsync(
+      NumberGenerator.bytevector(32),
+      CryptoGenerators.threshold
+    ) { case (seed, threshold) =>
+      Future {
+        val shares = 1.until(threshold + 1).map { id =>
+          FrostUtil.generateShare(seed, threshold = threshold, id = id)
         }
+        val commitments = FrostUtil.vssCommitment(seed, threshold = threshold)
+        shares.zipWithIndex.foreach { case (share, idx) =>
+          val id = idx + 1L
+          assert(FrostUtil.vssVerify(share, id = id, commitments = commitments))
+
+        }
+        succeed
+      }
     }
   }
 
@@ -86,7 +86,7 @@ class FROSTTest extends BitcoinSCryptoAsyncTest {
 
   it must "sign and verify an arbitrary t/n with arbitrary tweaks" in {
     forAllAsync(CryptoGenerators.privateKey,
-                NumberGenerator.positiveByte.suchThat(_ > 1),
+                CryptoGenerators.threshold,
                 CryptoGenerators.sha256Digest,
                 CryptoGenerators.tweaks) {
       case (seed, numShares, message, tweaks) =>
@@ -189,7 +189,7 @@ class FROSTTest extends BitcoinSCryptoAsyncTest {
       s"Aggregated signature for participantIds $participantIds failed to verify")
   }
 
-  private def getThreshold(numShares: Byte): Int = {
+  private def getThreshold(numShares: Int): Int = {
     if (numShares == 2) {
       // for the case where numShares is 2
       // we want to make sure we test the threshold of 2/2

@@ -45,10 +45,14 @@ trait BitcoinSCryptoAsyncTest
   implicit override def executionContext: ExecutionContext =
     scala.concurrent.ExecutionContext.Implicits.global
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
-    generatorDrivenConfigNewCode
+    generatorDrivenConfigOldCode
 
   def generatorDrivenConfigNewCode: PropertyCheckConfiguration = {
     customGenDrivenConfig(BitcoinSCryptoTest.NEW_CODE_EXECUTIONS)
+  }
+
+  def generatorDrivenConfigOldCode: PropertyCheckConfiguration = {
+    customGenDrivenConfig(BitcoinSCryptoTest.OLD_CODE_EXECUTIONS)
   }
 
   /** Sets the generator driven tests to perform the given amount of execs */
