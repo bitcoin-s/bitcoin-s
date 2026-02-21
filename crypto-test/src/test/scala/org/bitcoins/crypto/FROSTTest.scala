@@ -10,9 +10,6 @@ import scala.util.Random
 class FROSTTest extends BitcoinSCryptoAsyncTest {
   behavior of "FROST"
 
-  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
-    generatorDrivenConfigNewCode
-
   it must "create a vss commitment and verify it" in {
     val seed1 = ByteVector.fill(31)(0x00) ++ ByteVector(0x01)
     val id1 = 1L
