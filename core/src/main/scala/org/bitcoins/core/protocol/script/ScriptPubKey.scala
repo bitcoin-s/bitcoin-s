@@ -147,27 +147,7 @@ sealed trait MultiSignatureScriptPubKey extends RawScriptPubKey {
   }
 
   def maxSigsScriptNumber: ScriptNumber = {
-    if (checkMultiSigIndex == -1 || checkMultiSigIndex == 0) {
-      // means that we do not have a max signature requirement
-      OP_0
-    } else {
-      asm(checkMultiSigIndex - 1) match {
-        case x: ScriptNumber => x
-        case c: ScriptConstant =>
-          val maxSigs = ScriptNumber(c.bytes)
-          val inBounds =
-            maxSigs >= ScriptNumber.zero && maxSigs.toInt <= Consensus.maxPublicKeysPerMultiSig
-          if (inBounds) {
-            maxSigs
-          } else {
-            sys.error(
-              s"Negative maxSigs given for MultiSignatureSPK, got=$maxSigs")
-          }
-        case x =>
-          throw new RuntimeException(
-            "The element preceding a OP_CHECKMULTISIG operation in a  multisignature pubkey must be a script number operation, got: " + x)
-      }
-    }
+    MultiSignatureScriptPubKey.parseMaxSigs(asm.toVector, checkMultiSigIndex)
   }
 
   /** The maximum amount of signatures for this multisignature script pubkey
@@ -345,6 +325,32 @@ object MultiSignatureScriptPubKey
           None
         }
       case _: ScriptToken => None
+    }
+  }
+
+  def parseMaxSigs(
+      asm: Vector[ScriptToken],
+      checkMultiSigIndex: Int): ScriptNumber = {
+    if (checkMultiSigIndex == -1 || checkMultiSigIndex == 0) {
+      // means that we do not have a max signature requirement
+      OP_0
+    } else {
+      asm(checkMultiSigIndex - 1) match {
+        case x: ScriptNumber => x
+        case c: ScriptConstant =>
+          val maxSigs = ScriptNumber(c.bytes)
+          val inBounds =
+            maxSigs >= ScriptNumber.zero && maxSigs.toInt <= Consensus.maxPublicKeysPerMultiSig
+          if (inBounds) {
+            maxSigs
+          } else {
+            sys.error(
+              s"Negative maxSigs given for MultiSignatureSPK, got=$maxSigs")
+          }
+        case x =>
+          throw new RuntimeException(
+            "The element preceding a OP_CHECKMULTISIG operation in a  multisignature pubkey must be a script number operation, got: " + x)
+      }
     }
   }
 }
