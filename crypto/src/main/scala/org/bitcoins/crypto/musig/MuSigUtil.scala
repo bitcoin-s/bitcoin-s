@@ -1,6 +1,6 @@
 package org.bitcoins.crypto.musig
 
-import org.bitcoins.crypto._
+import org.bitcoins.crypto.*
 import scodec.bits.ByteVector
 
 // TODO test against secp256k1-zkp someday
@@ -56,7 +56,7 @@ object MuSigUtil {
       message: ByteVector,
       keySet: KeySet): (ECPublicKey, FieldElement) = {
     val pubKey = privKey.publicKey
-    val coef = keySet.keyAggCoef(pubKey.schnorrPublicKey)
+    val coef = keySet.keyAggCoef(pubKey)
     val SigningSession(b, aggNonce, e) =
       SigningSession(aggNoncePub, keySet, message)
 
@@ -80,7 +80,7 @@ object MuSigUtil {
 
     require(partialSigVerify(s,
                              noncePriv.toPublicNonces,
-                             pubKey.schnorrPublicKey,
+                             pubKey,
                              keySet,
                              b,
                              aggNonce,
@@ -111,7 +111,7 @@ object MuSigUtil {
       partialSig: FieldElement,
       noncePub: MuSigNoncePub,
       aggNoncePub: MuSigNoncePub,
-      pubKey: SchnorrPublicKey,
+      pubKey: ECPublicKey,
       keySet: KeySet,
       message: ByteVector): Boolean = {
     val SigningSession(b, aggNonce, e) =
@@ -123,7 +123,7 @@ object MuSigUtil {
   def partialSigVerify(
       partialSig: FieldElement,
       noncePub: MuSigNoncePub,
-      pubKey: SchnorrPublicKey,
+      pubKey: ECPublicKey,
       keySet: KeySet,
       b: FieldElement,
       aggNonce: ECPublicKey,
