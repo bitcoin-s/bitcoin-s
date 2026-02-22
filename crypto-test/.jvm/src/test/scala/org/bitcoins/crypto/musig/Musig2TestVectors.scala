@@ -5,25 +5,18 @@ import org.bitcoins.crypto.*
 import play.api.libs.json.*
 
 import scala.io.Source
+import scala.util.Using
 
 class Musig2TestVectors extends BitcoinSCryptoTest {
   behavior of "Musig2"
 
   it must "pass key_sort_vectors.json" in {
-    val stream = getClass.getClassLoader.getResourceAsStream(
-      "musig2/key_sort_vectors.json")
-    require(stream != null,
-            "Could not find musig2/key_sort_vectors.json in resources")
-    val rawText = Source.fromInputStream(stream).getLines().mkString("\n")
-    stream.close()
 
-    val json =
-      try Json.parse(rawText)
-      catch {
-        case e: Throwable =>
-          fail(
-            s"Failed to parse JSON musig2/key_sort_vectors.json: ${e.getMessage}\nContent:\n$rawText")
-      }
+    val fileName = "/musig2/key_sort_vectors.json"
+    val lines = Using(Source.fromURL(getClass.getResource(fileName))) {
+      source => source.mkString
+    }.get
+    val json = Json.parse(lines)
 
     val pubkeys: Vector[ECPublicKey] =
       (json \ "pubkeys").validate[Vector[ECPublicKey]].get
@@ -37,4 +30,40 @@ class Musig2TestVectors extends BitcoinSCryptoTest {
 
     assert(actualSorted.keys == sortedPubkeys)
   }
+
+  it must "pass key_agg_vectors.json" in {
+
+    val fileName = "/musig2/key_agg_vectors.json"
+    val lines = Using(Source.fromURL(getClass.getResource(fileName))) {
+      source => source.mkString
+    }.get
+    val json = Json.parse(lines)
+
+    val parsed = json.validate[Musig2Json.KeyAggVectors]
+    parsed.fold(
+      errs => fail(s"Failed to parse key_agg_vectors.json: $errs"),
+      vecs => {
+        // Check the valid test cases
+        vecs.valid_test_cases.foreach { tc =>
+          val keys = tc.key_indices.map(idx => vecs.pubkeys(idx)).toVector
+          val keySet = UnsortedKeySet(keys)
+          assert(keySet.aggPubKey.schnorrPublicKey == tc.expected)
+        }
+
+        // For error test cases we just ensure appropriate failures are raised
+        vecs.error_test_cases.foreach { etc =>
+          val keys = etc.key_indices.map(idx => vecs.pubkeys(idx)).toVector
+          val tweaks = etc.tweak_indices.map(i => vecs.tweaks(i)).toVector
+          // Build KeySet and expect either construction or aggPubKey to throw
+          intercept[Exception] {
+            val kset = UnsortedKeySet(keys).withTweaks(tweaks.map(t =>
+              MuSigTweak(t, isXOnlyT = true)))
+            // Force aggPubKey computation
+            kset.aggPubKey
+          }
+        }
+      }
+    )
+  }
+
 }
