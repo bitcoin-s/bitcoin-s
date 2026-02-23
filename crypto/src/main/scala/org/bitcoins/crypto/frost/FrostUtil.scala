@@ -205,8 +205,8 @@ object FrostUtil {
             s"My id $myId must be in the list of participant ids: $ids")
     require(ids.distinct.length == ids.length,
             s"ids must not contain duplicates, ids=$ids")
-    require(0 < myId && myId < 4294967296L,
-            s"myId must be in the range [1, 2^32 - 1], got: $myId")
+    require(0 <= myId && myId < 4294967296L,
+            s"myId must be in the range [0, 2^32 - 1], got: $myId")
     val initNum: FieldElement = FieldElement.one
     val initDenom: FieldElement = FieldElement.one
     val (num, denom) = ids.foldLeft((initNum, initDenom)) {
