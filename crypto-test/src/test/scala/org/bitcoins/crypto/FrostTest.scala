@@ -7,7 +7,7 @@ import scodec.bits.ByteVector
 import scala.concurrent.Future
 import scala.util.Random
 
-class FROSTTest extends BitcoinSCryptoAsyncTest {
+class FrostTest extends BitcoinSCryptoAsyncTest {
   behavior of "FROST"
 
   it must "create a vss commitment and verify it" in {

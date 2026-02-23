@@ -11,7 +11,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
   behavior of "FrostTestVectors"
 
   it should "pass nonce_gen_vectors.json" in {
-    val fileName = "/nonce_gen_vectors.json"
+    val fileName = "/frost/nonce_gen_vectors.json"
     val lines = Using(Source.fromURL(getClass.getResource(fileName))) {
       source => source.mkString
     }.get
@@ -39,7 +39,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
   }
 
   it must "pass nonce_agg_vectors.json" in {
-    val fileName = "/nonce_agg_vectors.json"
+    val fileName = "/frost/nonce_agg_vectors.json"
     val lines = Using(Source.fromURL(getClass.getResource(fileName))) {
       source => source.mkString
     }.get
@@ -80,7 +80,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
   }
 
   it should "pass tweak_vectors.json" in {
-    val fileName = "/tweak_vectors.json"
+    val fileName = "/frost/tweak_vectors.json"
     val lines = Using(Source.fromURL(getClass.getResource(fileName))) {
       source =>
         source.mkString
@@ -160,7 +160,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
   }
 
   it must "pass sign_verify_vectors.json" in {
-    val fileName = "/sign_verify_vectors.json"
+    val fileName = "/frost/sign_verify_vectors.json"
     val lines = Using(Source.fromURL(getClass.getResource(fileName))) {
       source =>
         source.mkString
@@ -325,7 +325,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
   }
 
   it must "pass sig_agg_vectors.json" in {
-    val fileName = "/sig_agg_vectors.json"
+    val fileName = "/frost/sig_agg_vectors.json"
     val lines = Using(Source.fromURL(getClass.getResource(fileName))) {
       source =>
         source.mkString
@@ -409,7 +409,7 @@ class FrostTestVectors extends BitcoinSCryptoTest {
   }
 
   it must "pass det_sign_vectors.json" in {
-    val fileName = "/det_sign_vectors.json"
+    val fileName = "/frost/det_sign_vectors.json"
     val lines = Using(Source.fromURL(getClass.getResource(fileName))) {
       source =>
         source.mkString
