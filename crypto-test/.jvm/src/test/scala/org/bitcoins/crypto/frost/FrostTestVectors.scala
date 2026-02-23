@@ -208,6 +208,15 @@ class FrostTestVectors extends BitcoinSCryptoTest {
       assert(
         s.bytes == t.expected,
         s"\nFailed test: ${t.comment.getOrElse("")} expected=${t.expected} got=${s.hex}")
+      val verify = FrostUtil.partialSigVerify(s,
+                                              pubnonces,
+                                              signingContext,
+                                              tweaks = Vector.empty,
+                                              isXonlyT = Vector.empty,
+                                              message = msg,
+                                              signerId =
+                                                participantIds(t.signer_index))
+      assert(verify, s"\nFailed test: ${t.comment.getOrElse("")}")
     }
 
     // Sign error test cases: ensure expected errors are raised
