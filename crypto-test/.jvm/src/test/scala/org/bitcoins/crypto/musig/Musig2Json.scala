@@ -3,10 +3,11 @@ package org.bitcoins.crypto.musig
 import org.bitcoins.crypto.*
 import play.api.libs.json.*
 import org.bitcoins.commons.serializers.JsonReaders.{
-  ECPublicKeyReads,
-  FieldElementReads,
-  SchnorrPublicKeyReads
+  ECPublicKeyBytesReads,
+  SchnorrPublicKeyReads,
+  byteVectorReads
 }
+import scodec.bits.ByteVector
 
 /** Test vector case classes and JSON parsing for musig2 key aggregation
   * vectors. Uses existing serializers from `app-commons` (JsonSerializers) for
@@ -33,8 +34,8 @@ object Musig2Json {
   )
 
   case class KeyAggVectors(
-      pubkeys: Vector[ECPublicKey],
-      tweaks: Vector[FieldElement],
+      pubkeys: Vector[ECPublicKeyBytes],
+      tweaks: Vector[ByteVector],
       valid_test_cases: Vector[ValidKeyAggTest],
       error_test_cases: Vector[ErrorKeyAggTest]
   )

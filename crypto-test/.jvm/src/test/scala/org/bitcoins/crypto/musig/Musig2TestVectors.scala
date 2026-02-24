@@ -46,7 +46,7 @@ class Musig2TestVectors extends BitcoinSCryptoTest {
         // Check the valid test cases
         vecs.valid_test_cases.foreach { tc =>
           val keys = tc.key_indices.map(idx => vecs.pubkeys(idx)).toVector
-          val keySet = UnsortedKeySet(keys)
+          val keySet = UnsortedKeySet(keys.map(_.toPublicKey))
           assert(keySet.aggPubKey.schnorrPublicKey == tc.expected)
         }
 
@@ -56,8 +56,12 @@ class Musig2TestVectors extends BitcoinSCryptoTest {
           val tweaks = etc.tweak_indices.map(i => vecs.tweaks(i)).toVector
           // Build KeySet and expect either construction or aggPubKey to throw
           intercept[Exception] {
-            val kset = UnsortedKeySet(keys).withTweaks(tweaks.map(t =>
-              MuSigTweak(t, isXOnlyT = true)))
+            val tweaksWXonly = tweaks.zip(etc.is_xonly)
+            val musigTweaks = tweaksWXonly.map(t =>
+              MuSigTweak(FieldElement.fromBytes(t._1), isXOnlyT = t._2))
+            val kset =
+              UnsortedKeySet(keys.map(_.toPublicKey))
+                .withTweaks(musigTweaks)
             // Force aggPubKey computation
             kset.aggPubKey
           }
