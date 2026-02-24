@@ -70,4 +70,30 @@ class Musig2TestVectors extends BitcoinSCryptoTest {
     )
   }
 
+  it must "pass nonce_gen_vectors.json" in {
+    val fileName = "/musig2/nonce_gen_vectors.json"
+    val lines = Using(Source.fromURL(getClass.getResource(fileName))) {
+      source => source.mkString
+    }.get
+    val json = Json.parse(lines)
+
+    val vecs = json.validate[Musig2Json.NonceGenVectors].get
+
+    vecs.test_cases.foreach { test =>
+      val preRand = test.rand_
+      println(
+        s"test test.sk${test.sk} test.pk${test.pk} test.aggpk${test.aggpk} test.msg${test.msg} test.extra_in${test.extra_in}")
+      val noncePriv =
+        MuSigNoncePriv.genInternal(
+          preRand,
+          test.sk.map(s => ECPrivateKey.fromBytes(s.bytes)),
+          test.aggpk,
+          test.extra_in)
+      val pubnonce = noncePriv.toPublicNonces
+
+      assert(noncePriv == test.expected_secnonce)
+      assert(pubnonce == test.expected_pubnonce)
+    }
+  }
+
 }

@@ -45,6 +45,7 @@ import org.bitcoins.core.script.ScriptType
 import org.bitcoins.core.wallet.fee.*
 import org.bitcoins.crypto.*
 import org.bitcoins.crypto.frost.{FrostNoncePriv, FrostNoncePub}
+import org.bitcoins.crypto.musig.{MuSigNoncePriv, MuSigNoncePub}
 import play.api.libs.json.*
 import ujson.{Num, Str, Value}
 import scodec.bits.ByteVector
@@ -402,6 +403,22 @@ object JsonReaders {
     override def reads(json: JsValue): JsResult[XOnlyPubKey] = {
       SerializerUtil.processJsString(XOnlyPubKey.fromHex)(json)
     }
+  }
+
+  implicit object MuSigNoncePrivReads extends Reads[MuSigNoncePriv] {
+
+    override def reads(json: JsValue): JsResult[MuSigNoncePriv] =
+      SerializerUtil.processJsString[MuSigNoncePriv](MuSigNoncePriv.fromHex)(
+        json
+      )
+  }
+
+  implicit object MuSigNoncePubReads extends Reads[MuSigNoncePub] {
+
+    override def reads(json: JsValue): JsResult[MuSigNoncePub] =
+      SerializerUtil.processJsString[MuSigNoncePub](MuSigNoncePub.fromHex)(
+        json
+      )
   }
 
   implicit object FrostNoncePrivReads extends Reads[FrostNoncePriv] {

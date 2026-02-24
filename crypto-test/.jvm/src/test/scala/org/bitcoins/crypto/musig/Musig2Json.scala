@@ -5,7 +5,11 @@ import play.api.libs.json.*
 import org.bitcoins.commons.serializers.JsonReaders.{
   ECPublicKeyBytesReads,
   SchnorrPublicKeyReads,
-  byteVectorReads
+  byteVectorReads,
+  ECPublicKeyReads,
+  FieldElementReads,
+  MuSigNoncePrivReads,
+  MuSigNoncePubReads
 }
 import scodec.bits.ByteVector
 
@@ -50,4 +54,23 @@ object Musig2Json {
   implicit val keyAggVectorsReads: Reads[KeyAggVectors] = {
     Json.reads[KeyAggVectors]
   }
+
+  // Nonce generation test vectors
+  case class NonceGenTestCase(
+      rand_ : ByteVector,
+      sk: Option[FieldElement],
+      pk: ECPublicKey,
+      aggpk: Option[SchnorrPublicKey],
+      msg: Option[ByteVector],
+      extra_in: Option[ByteVector],
+      expected_secnonce: MuSigNoncePriv,
+      expected_pubnonce: MuSigNoncePub
+  )
+
+  case class NonceGenVectors(test_cases: Vector[NonceGenTestCase])
+
+  implicit val nonceGenTestCaseReads: Reads[NonceGenTestCase] =
+    Json.reads[NonceGenTestCase]
+  implicit val nonceGenVectorsReads: Reads[NonceGenVectors] =
+    Json.reads[NonceGenVectors]
 }
