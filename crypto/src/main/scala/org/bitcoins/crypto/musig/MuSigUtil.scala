@@ -47,6 +47,75 @@ object MuSigUtil {
       ._2
   }
 
+  /** Generates a MuSigNoncePriv given 32 bytes of entropy from preRand, and
+    * possibly some other sources, as specified in the BIP.
+    */
+  def nonceGen(
+      preRand: ByteVector,
+      publicKey: ECPublicKey,
+      privKeyOpt: Option[ECPrivateKey],
+      aggPubKeyOpt: Option[SchnorrPublicKey],
+      msgOpt: Option[ByteVector],
+      extraInOpt: Option[ByteVector]): MuSigNoncePriv = {
+    require(preRand.length == 32,
+            s"32 bytes of entropy must be provided, found $preRand")
+    require(
+      extraInOpt.forall(_.length <= 4294967295L),
+      "extraIn too long, its length must be represented by at most four bytes")
+
+    def serializeWithLen(
+        bytesOpt: Option[ByteVector],
+        lengthSize: Int = 1): ByteVector = {
+      bytesOpt match {
+        case Some(bytes) =>
+          ByteVector.fromLong(bytes.length, lengthSize) ++ bytes
+        case None => ByteVector.fromLong(0, lengthSize)
+      }
+    }
+
+    val rand = privKeyOpt match {
+      case Some(privKey) => MuSigUtil.auxHash(preRand).xor(privKey.bytes)
+      case None          => preRand
+    }
+
+    val publicKeyBytes = serializeWithLen(Some(publicKey.bytes))
+    val aggPubKeyBytes = serializeWithLen(aggPubKeyOpt.map(_.bytes))
+    // Match the Python reference: None -> 0x00, Some(msg) -> 0x01 || len(msg,8) || msg
+    // Note: an explicit empty message (Some(ByteVector.empty)) must be encoded as
+    // 0x01 followed by 8 zero bytes (length 0), which differs from None.
+    val msgBytes = msgOpt match {
+      case Some(m) =>
+        ByteVector.fromByte(1) ++ ByteVector.fromLong(m.length, 8) ++ m
+      case None => ByteVector.fromByte(0)
+    }
+    val extraInBytes = serializeWithLen(extraInOpt, lengthSize = 4)
+
+    val privNonceKeys = 0.until(MuSigUtil.nonceNum).toVector.map { index =>
+      val indexByte = ByteVector.fromByte(index.toByte)
+      val preimage = rand ++ publicKeyBytes ++
+        aggPubKeyBytes ++ msgBytes ++ extraInBytes ++ indexByte
+      val noncePreBytes = MuSigUtil.nonHash(preimage)
+
+      FieldElement(noncePreBytes).toPrivateKey
+    }
+
+    MuSigNoncePriv(privNonceKeys(0), privNonceKeys(1), publicKey)
+  }
+
+  /** Generates 32 bytes of entropy and constructs a MuSigNoncePriv from this,
+    * and possibly some other sources, as specified in the BIP.
+    */
+  def nonceGen(
+      pk: ECPublicKey,
+      privKeyOpt: Option[ECPrivateKey] = None,
+      aggPubKeyOpt: Option[SchnorrPublicKey] = None,
+      msgOpt: Option[ByteVector] = None,
+      extraInOpt: Option[ByteVector] = None): MuSigNoncePriv = {
+    val preRand = CryptoUtil.randomBytes(32)
+
+    nonceGen(preRand, pk, privKeyOpt, aggPubKeyOpt, msgOpt, extraInOpt)
+  }
+
   /** Generates a MuSig partial signature, accompanied by the aggregate R value
     */
   def sign(

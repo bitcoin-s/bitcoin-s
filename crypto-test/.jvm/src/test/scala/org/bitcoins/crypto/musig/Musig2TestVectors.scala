@@ -81,18 +81,20 @@ class Musig2TestVectors extends BitcoinSCryptoTest {
 
     vecs.test_cases.foreach { test =>
       val preRand = test.rand_
-      println(
-        s"test test.sk${test.sk} test.pk${test.pk} test.aggpk${test.aggpk} test.msg${test.msg} test.extra_in${test.extra_in}")
       val noncePriv =
-        MuSigNoncePriv.genInternal(
-          preRand,
-          test.pk,
-          test.sk.map(s => ECPrivateKey.fromBytes(s.bytes)),
-          test.aggpk,
-          test.extra_in)
+        MuSigUtil.nonceGen(
+          preRand = preRand,
+          publicKey = test.pk,
+          privKeyOpt = test.sk.map(s => ECPrivateKey.fromBytes(s.bytes)),
+          aggPubKeyOpt = test.aggpk,
+          msgOpt = test.msg,
+          extraInOpt = test.extra_in
+        )
       val pubnonce = noncePriv.toNoncePub
 
-      assert(noncePriv == test.expected_secnonce)
+      assert(
+        noncePriv == test.expected_secnonce,
+        s"expected=${test.expected_secnonce.toStringSensitive} actual=${noncePriv.toStringSensitive}")
       assert(pubnonce == test.expected_pubnonce)
     }
   }

@@ -14,7 +14,7 @@ class MuSigTest extends BitcoinSCryptoTest {
     forAll(CryptoGenerators.privateKey, NumberGenerator.bytevector(32)) {
       case (privKey, msg) =>
         val pubKey = privKey.publicKey
-        val noncePriv: MuSigNoncePriv = MuSigNoncePriv.gen(pubKey)
+        val noncePriv: MuSigNoncePriv = MuSigUtil.nonceGen(pubKey)
         val noncePub: MuSigNoncePub = noncePriv.toNoncePub
         val keySet = KeySet(pubKey)
         val aggMuSigNoncePub = MuSigNoncePub.aggregate(Vector(noncePub))
@@ -61,10 +61,10 @@ class MuSigTest extends BitcoinSCryptoTest {
       NumberGenerator.bytevector(32)
     ) { case (priv1, priv2, msg) =>
       val pub1 = priv1.publicKey
-      val noncePriv1: MuSigNoncePriv = MuSigNoncePriv.gen(pub1)
+      val noncePriv1: MuSigNoncePriv = MuSigUtil.nonceGen(pub1)
       val noncePub1: MuSigNoncePub = noncePriv1.toNoncePub
       val pub2 = priv2.publicKey
-      val noncePriv2: MuSigNoncePriv = MuSigNoncePriv.gen(pub2)
+      val noncePriv2: MuSigNoncePriv = MuSigUtil.nonceGen(pub2)
       val noncePub2: MuSigNoncePub = noncePriv2.toNoncePub
       val keySet: KeySet = KeySet(pub1, pub2)
       val aggMuSigNoncePub =
@@ -116,7 +116,7 @@ class MuSigTest extends BitcoinSCryptoTest {
       val keySet: KeySet = KeySet(privKeysUnsorted.map(_.publicKey))
       val privKeys = keySet.keys.map(pubKey =>
         privKeysUnsorted.find(_.publicKey == pubKey).get)
-      val noncePrivs = privKeys.map(pk => MuSigNoncePriv.gen(pk.publicKey))
+      val noncePrivs = privKeys.map(pk => MuSigUtil.nonceGen(pk.publicKey))
       val noncePubs = noncePrivs.map(_.toNoncePub)
       val aggMuSigNoncePub = MuSigNoncePub.aggregate(noncePubs)
       val partialSigs: Vector[(ECPublicKey, FieldElement)] =
@@ -171,7 +171,7 @@ class MuSigTest extends BitcoinSCryptoTest {
         KeySet(privKeysUnsorted.map(_.publicKey), tweaks)
       val privKeys = keySet.keys.map(pubKey =>
         privKeysUnsorted.find(_.publicKey == pubKey).get)
-      val noncePrivs = privKeys.map(pk => MuSigNoncePriv.gen(pk.publicKey))
+      val noncePrivs = privKeys.map(pk => MuSigUtil.nonceGen(pk.publicKey))
       val noncePubs = noncePrivs.map(_.toNoncePub)
       val aggMuSigNoncePub = MuSigNoncePub.aggregate(noncePubs)
       val partialSigs: Vector[(ECPublicKey, FieldElement)] =
