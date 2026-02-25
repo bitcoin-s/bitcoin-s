@@ -3,7 +3,6 @@ package org.bitcoins.crypto.musig
 import org.bitcoins.crypto.*
 import org.bitcoins.crypto.musig.MuSigUtil.*
 import org.scalacheck.Gen
-import scodec.bits.ByteVector
 
 class MuSigTest extends BitcoinSCryptoTest {
   behavior of "MuSig2 Implementation"
@@ -15,8 +14,8 @@ class MuSigTest extends BitcoinSCryptoTest {
     forAll(CryptoGenerators.privateKey, NumberGenerator.bytevector(32)) {
       case (privKey, msg) =>
         val pubKey = privKey.publicKey
-        val noncePriv: MuSigNoncePriv = MuSigNoncePriv.gen()
-        val noncePub: MuSigNoncePub = noncePriv.toPublicNonces
+        val noncePriv: MuSigNoncePriv = MuSigNoncePriv.gen(pubKey)
+        val noncePub: MuSigNoncePub = noncePriv.toNoncePub
         val keySet = KeySet(pubKey)
         val aggMuSigNoncePub = MuSigNoncePub.aggregate(Vector(noncePub))
 
@@ -62,11 +61,11 @@ class MuSigTest extends BitcoinSCryptoTest {
       NumberGenerator.bytevector(32)
     ) { case (priv1, priv2, msg) =>
       val pub1 = priv1.publicKey
-      val noncePriv1: MuSigNoncePriv = MuSigNoncePriv.gen()
-      val noncePub1: MuSigNoncePub = noncePriv1.toPublicNonces
+      val noncePriv1: MuSigNoncePriv = MuSigNoncePriv.gen(pub1)
+      val noncePub1: MuSigNoncePub = noncePriv1.toNoncePub
       val pub2 = priv2.publicKey
-      val noncePriv2: MuSigNoncePriv = MuSigNoncePriv.gen()
-      val noncePub2: MuSigNoncePub = noncePriv2.toPublicNonces
+      val noncePriv2: MuSigNoncePriv = MuSigNoncePriv.gen(pub2)
+      val noncePub2: MuSigNoncePub = noncePriv2.toNoncePub
       val keySet: KeySet = KeySet(pub1, pub2)
       val aggMuSigNoncePub =
         MuSigNoncePub.aggregate(Vector(noncePub1, noncePub2))
@@ -117,8 +116,8 @@ class MuSigTest extends BitcoinSCryptoTest {
       val keySet: KeySet = KeySet(privKeysUnsorted.map(_.publicKey))
       val privKeys = keySet.keys.map(pubKey =>
         privKeysUnsorted.find(_.publicKey == pubKey).get)
-      val noncePrivs = privKeys.map(_ => MuSigNoncePriv.gen())
-      val noncePubs = noncePrivs.map(_.toPublicNonces)
+      val noncePrivs = privKeys.map(pk => MuSigNoncePriv.gen(pk.publicKey))
+      val noncePubs = noncePrivs.map(_.toNoncePub)
       val aggMuSigNoncePub = MuSigNoncePub.aggregate(noncePubs)
       val partialSigs: Vector[(ECPublicKey, FieldElement)] =
         privKeys.zipWithIndex.map { case (privKey, i) =>
@@ -172,8 +171,8 @@ class MuSigTest extends BitcoinSCryptoTest {
         KeySet(privKeysUnsorted.map(_.publicKey), tweaks)
       val privKeys = keySet.keys.map(pubKey =>
         privKeysUnsorted.find(_.publicKey == pubKey).get)
-      val noncePrivs = privKeys.map(_ => MuSigNoncePriv.gen())
-      val noncePubs = noncePrivs.map(_.toPublicNonces)
+      val noncePrivs = privKeys.map(pk => MuSigNoncePriv.gen(pk.publicKey))
+      val noncePubs = noncePrivs.map(_.toNoncePub)
       val aggMuSigNoncePub = MuSigNoncePub.aggregate(noncePubs)
       val partialSigs: Vector[(ECPublicKey, FieldElement)] =
         privKeys.zipWithIndex.map { case (privKey, i) =>
@@ -199,37 +198,6 @@ class MuSigTest extends BitcoinSCryptoTest {
 
       assert(aggPub.schnorrPublicKey.verify(msg, sig))
     }
-  }
-
-  // https://github.com/jonasnick/bips/blob/263a765a77e20efe883ed3b28dc155a0d8c7d61a/bip-musig2/reference.py#L436
-  it should "pass nonce generation test vectors" in {
-    val rand = ByteVector.fill(32)(0)
-    val msg = Some(ByteVector.fill(32)(1))
-    val sk = Some(ECPrivateKey(ByteVector.fill(32)(2)))
-    val aggpk = Some(SchnorrPublicKey(ByteVector.fill(32)(7)))
-    val extraIn = Some(ByteVector.fill(32)(8))
-
-    val expected = Vector(
-      "E8F2E103D86800F19A4E97338D371CB885DB2F19D08C0BD205BBA9B906C971D0" ++
-        "D786A17718AAFAD6DE025DDDD99DC823E2DFC1AE1DDFE920888AD53FFF423FC4",
-      "8A633F5EECBDB690A6BE4921426F41BE78D509DC1CE894C1215844C0E4C6DE7A" ++
-        "BC9A5BE0A3BF3FE312CCB7E4817D2CB17A7CEA8382B73A99A583E323387B3C32",
-      "7B3B5A002356471AF0E961DE2549C121BD0D48ABCEEDC6E034BDDF86AD3E0A18" ++
-        "7ECEE674CEF7364B0BC4BEEFB8B66CAD89F98DE2F8C5A5EAD5D1D1E4BD7D04CD"
-    ).map(MuSigNoncePriv.fromHex)
-
-    val nonce1 = MuSigNoncePriv.genInternal(rand, sk, aggpk, msg, extraIn)
-    // Vector 1
-    assert(nonce1 == expected(0))
-
-    val nonce2 =
-      MuSigNoncePriv.genInternal(rand, sk, aggpk, msgOpt = None, extraIn)
-    // Vector 2
-    assert(nonce2 == expected(1))
-
-    val nonce3 = MuSigNoncePriv.genInternal(rand)
-    // Vector 3
-    assert(nonce3 == expected(2))
   }
 
   // https://github.com/jonasnick/bips/blob/263a765a77e20efe883ed3b28dc155a0d8c7d61a/bip-musig2/reference.py#L461

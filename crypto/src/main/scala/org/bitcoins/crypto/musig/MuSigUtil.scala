@@ -78,14 +78,9 @@ object MuSigUtil {
 
     val s = adjustedPrivKey.multiply(e).multiply(coef).add(privNonceSum)
 
-    require(partialSigVerify(s,
-                             noncePriv.toPublicNonces,
-                             pubKey,
-                             keySet,
-                             b,
-                             aggNonce,
-                             e),
-            "Failed verification when generating signature.")
+    require(
+      partialSigVerify(s, noncePriv.toNoncePub, pubKey, keySet, b, aggNonce, e),
+      "Failed verification when generating signature.")
 
     (aggNonce, s)
   }

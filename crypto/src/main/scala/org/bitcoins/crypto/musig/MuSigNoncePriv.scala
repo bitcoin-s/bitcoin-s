@@ -33,6 +33,11 @@ case class MuSigNoncePriv(bytes: ByteVector)
     MuSigNoncePub(k1.publicKey, k2.publicKey)
   }
 
+  def negate: MuSigNoncePriv = {
+    // do i need to invert the public key here?
+    MuSigNoncePriv(k1.negate, k2.negate, publicKey)
+  }
+
   /** Collapses this into a single ephemeral private key */
   def sumToKey(b: FieldElement): FieldElement = {
     val fes = Vector(k1, k2).map(_.fieldElement)
@@ -110,12 +115,13 @@ object MuSigNoncePriv extends Factory[MuSigNoncePriv] {
     * and possibly some other sources, as specified in the BIP.
     */
   def gen(
+      pk: ECPublicKey,
       privKeyOpt: Option[ECPrivateKey] = None,
       aggPubKeyOpt: Option[SchnorrPublicKey] = None,
       msgOpt: Option[ByteVector] = None,
       extraInOpt: Option[ByteVector] = None): MuSigNoncePriv = {
     val preRand = CryptoUtil.randomBytes(32)
 
-    genInternal(preRand, privKeyOpt, aggPubKeyOpt, msgOpt, extraInOpt)
+    genInternal(preRand, pk, privKeyOpt, aggPubKeyOpt, msgOpt, extraInOpt)
   }
 }

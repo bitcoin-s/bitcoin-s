@@ -86,10 +86,11 @@ class Musig2TestVectors extends BitcoinSCryptoTest {
       val noncePriv =
         MuSigNoncePriv.genInternal(
           preRand,
+          test.pk,
           test.sk.map(s => ECPrivateKey.fromBytes(s.bytes)),
           test.aggpk,
           test.extra_in)
-      val pubnonce = noncePriv.toPublicNonces
+      val pubnonce = noncePriv.toNoncePub
 
       assert(noncePriv == test.expected_secnonce)
       assert(pubnonce == test.expected_pubnonce)
