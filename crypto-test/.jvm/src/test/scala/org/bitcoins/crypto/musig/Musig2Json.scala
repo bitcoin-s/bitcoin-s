@@ -73,4 +73,132 @@ object Musig2Json {
     Json.reads[NonceGenTestCase]
   implicit val nonceGenVectorsReads: Reads[NonceGenVectors] =
     Json.reads[NonceGenVectors]
+
+  // Nonce aggregation test vectors
+  case class NonceAggValidTest(
+      pnonce_indices: Vector[Int],
+      expected: MuSigNoncePub,
+      comment: Option[String]
+  )
+
+  case class NonceAggErrorTest(
+      pnonce_indices: Vector[Int],
+      error: KeyAggError,
+      comment: Option[String]
+  )
+
+  case class NonceAggVectors(
+      pnonces: Vector[ByteVector],
+      valid_test_cases: Vector[NonceAggValidTest],
+      error_test_cases: Vector[NonceAggErrorTest]
+  )
+
+  implicit val nonceAggValidTestReads: Reads[NonceAggValidTest] =
+    Json.reads[NonceAggValidTest]
+  implicit val nonceAggErrorTestReads: Reads[NonceAggErrorTest] =
+    Json.reads[NonceAggErrorTest]
+  implicit val nonceAggVectorsReads: Reads[NonceAggVectors] =
+    Json.reads[NonceAggVectors]
+
+  // Tweak vectors test structures
+  case class TweakValidTest(
+      key_indices: Vector[Int],
+      nonce_indices: Vector[Int],
+      tweak_indices: Vector[Int],
+      is_xonly: Vector[Boolean],
+      signer_index: Int,
+      expected: FieldElement,
+      comment: Option[String]
+  )
+
+  case class TweakErrorTest(
+      key_indices: Vector[Int],
+      nonce_indices: Vector[Int],
+      tweak_indices: Vector[Int],
+      is_xonly: Vector[Boolean],
+      signer_index: Int,
+      error: KeyAggError,
+      comment: Option[String]
+  )
+
+  case class TweakVectors(
+      sk: ByteVector,
+      pubkeys: Vector[ECPublicKeyBytes],
+      secnonce: MuSigNoncePriv,
+      pnonces: Vector[MuSigNoncePub],
+      aggnonce: MuSigNoncePub,
+      tweaks: Vector[ByteVector],
+      msg: ByteVector,
+      valid_test_cases: Vector[TweakValidTest],
+      error_test_cases: Vector[TweakErrorTest]
+  )
+
+  implicit val tweakValidTestReads: Reads[TweakValidTest] =
+    Json.reads[TweakValidTest]
+  implicit val tweakErrorTestReads: Reads[TweakErrorTest] =
+    Json.reads[TweakErrorTest]
+  implicit val tweakVectorsReads: Reads[TweakVectors] = Json.reads[TweakVectors]
+
+  // Sign / verify vectors
+  case class SignValidTest(
+      key_indices: Vector[Int],
+      nonce_indices: Vector[Int],
+      aggnonce_index: Int,
+      msg_index: Int,
+      signer_index: Int,
+      expected: FieldElement,
+      comment: Option[String]
+  )
+
+  case class SignErrorTest(
+      key_indices: Vector[Int],
+      aggnonce_index: Int,
+      msg_index: Int,
+      secnonce_index: Option[Int],
+      error: KeyAggError,
+      comment: Option[String]
+  )
+
+  case class VerifyFailTest(
+      sig: FieldElement,
+      key_indices: Vector[Int],
+      nonce_indices: Vector[Int],
+      msg_index: Int,
+      signer_index: Int,
+      comment: Option[String]
+  )
+
+  case class VerifyErrorTest(
+      sig: ByteVector,
+      key_indices: Vector[Int],
+      nonce_indices: Vector[Int],
+      msg_index: Int,
+      signer_index: Int,
+      error: KeyAggError,
+      comment: Option[String]
+  )
+
+  case class SignVerifyVectors(
+      sk: ByteVector,
+      pubkeys: Vector[ECPublicKeyBytes],
+      secnonces: Vector[ByteVector],
+      pnonces: Vector[ByteVector],
+      aggnonces: Vector[ByteVector],
+      msgs: Vector[ByteVector],
+      valid_test_cases: Vector[SignValidTest],
+      sign_error_test_cases: Vector[SignErrorTest],
+      verify_fail_test_cases: Vector[VerifyFailTest],
+      verify_error_test_cases: Vector[VerifyErrorTest]
+  )
+
+  implicit val signValidTestReads: Reads[SignValidTest] =
+    Json.reads[SignValidTest]
+  implicit val signErrorTestReads: Reads[SignErrorTest] =
+    Json.reads[SignErrorTest]
+  implicit val verifyFailTestReads: Reads[VerifyFailTest] =
+    Json.reads[VerifyFailTest]
+  implicit val verifyErrorTestReads: Reads[VerifyErrorTest] =
+    Json.reads[VerifyErrorTest]
+  implicit val signVerifyVectorsReads: Reads[SignVerifyVectors] =
+    Json.reads[SignVerifyVectors]
 }
