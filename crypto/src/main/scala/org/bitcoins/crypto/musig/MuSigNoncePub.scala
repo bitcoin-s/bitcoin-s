@@ -55,6 +55,14 @@ object MuSigNoncePub extends Factory[MuSigNoncePub] {
     MuSigNoncePub(pubs)
   }
 
+  def apply(r1: SecpPointFinite, r2: SecpPointFinite): MuSigNoncePub = {
+    MuSigNoncePub(Vector(r1, r2))
+  }
+  def apply(key1: ECPublicKey, key2: ECPublicKey): MuSigNoncePub = {
+    require(key1.isCompressed && key2.isCompressed)
+    MuSigNoncePub(key1.bytes ++ key2.bytes)
+  }
+
   /** Sums the given nonces and returns the aggregate MuSigNoncePub */
   def aggregate(nonces: Vector[MuSigNoncePub]): MuSigNoncePub = {
     val aggNonceKeys = 0.until(MuSigUtil.nonceNum).toVector.map { i =>
