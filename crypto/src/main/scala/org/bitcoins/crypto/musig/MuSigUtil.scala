@@ -130,8 +130,9 @@ object MuSigUtil {
       s"Nonce private key must be derived from the same public key, got ${pubKey} and ${noncePriv.publicKey}")
     val signingSession =
       MuSigSessionContext(aggNoncePub, keySet, message)
-    val coef = keySet.keyAggCoef(pubKey)
+
     val values = signingSession.getSessionValues
+    val coef = keySet.getSessionKeyAggCoef(signingSession, pubKey)
     val e = values.e
     val b = values.b
 

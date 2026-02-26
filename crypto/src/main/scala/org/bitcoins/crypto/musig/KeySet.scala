@@ -44,12 +44,11 @@ sealed trait KeySet {
   def getSessionKeyAggCoef(
       signingSession: MuSigSessionContext,
       key: ECPublicKey): FieldElement = {
-    if (secondKeyOpt.contains(key)) FieldElement.one
-    else {
-      val listHashBytes = MuSigUtil.aggListHash(serialize)
-      val bytes = MuSigUtil.aggCoefHash(listHashBytes ++ key.bytes)
-
-      FieldElement(new java.math.BigInteger(1, bytes.toArray))
+    if (signingSession.keySet.keys.contains(key)) {
+      keyAggCoef(key)
+    } else {
+      throw new IllegalArgumentException(
+        s"Key $key is not part of the signing session's key set")
     }
   }
 
