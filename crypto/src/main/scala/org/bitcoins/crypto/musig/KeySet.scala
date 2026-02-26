@@ -41,8 +41,24 @@ sealed trait KeySet {
     }
   }
 
-  private lazy val computeAggPubKeyAndTweakContext
-      : (ECPublicKey, MuSigTweakContext) = {
+  def getSessionKeyAggCoef(
+      signingSession: MuSigSessionContext,
+      key: ECPublicKey): FieldElement = {
+    if (secondKeyOpt.contains(key)) FieldElement.one
+    else {
+      val listHashBytes = MuSigUtil.aggListHash(serialize)
+      val bytes = MuSigUtil.aggCoefHash(listHashBytes ++ key.bytes)
+
+      FieldElement(new java.math.BigInteger(1, bytes.toArray))
+    }
+  }
+
+  /** The aggregate public key that represents the n-of-n signers */
+  lazy val aggPubKey: ECPublicKey =
+    tweakContext.Q.toPublicKey
+
+  /** Accumulated tweak information */
+  lazy val tweakContext: MuSigTweakContext = {
     val untweakedAggPubKey = keys
       .map { key =>
         val coef = keyAggCoef(key)
@@ -50,18 +66,11 @@ sealed trait KeySet {
       }
       .reduce(_.add(_))
 
-    tweaks.foldLeft((untweakedAggPubKey, MuSigTweakContext.empty)) {
-      case ((pubKeySoFar, context), tweak) =>
-        context.applyTweak(tweak, pubKeySoFar)
+    tweaks.foldLeft((MuSigTweakContext(untweakedAggPubKey))) {
+      case (context, tweak) =>
+        context.applyTweak(tweak)
     }
   }
-
-  /** The aggregate public key that represents the n-of-n signers */
-  lazy val aggPubKey: ECPublicKey = computeAggPubKeyAndTweakContext._1
-
-  /** Accumulated tweak information */
-  lazy val tweakContext: MuSigTweakContext =
-    computeAggPubKeyAndTweakContext._2
 
   /** The first key different from the keys.head, optimized MuSig2 allows this
     * key to have coefficient 1

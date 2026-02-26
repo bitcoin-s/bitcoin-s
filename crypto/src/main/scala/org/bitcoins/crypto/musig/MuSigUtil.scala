@@ -123,13 +123,19 @@ object MuSigUtil {
       aggNoncePub: MuSigNoncePub,
       privKey: ECPrivateKey,
       message: ByteVector,
-      keySet: KeySet): (ECPublicKey, FieldElement) = {
+      keySet: KeySet): FieldElement = {
     val pubKey = privKey.publicKey
+    require(
+      pubKey == noncePriv.publicKey,
+      s"Nonce private key must be derived from the same public key, got ${pubKey} and ${noncePriv.publicKey}")
+    val signingSession =
+      MuSigSessionContext(aggNoncePub, keySet, message)
     val coef = keySet.keyAggCoef(pubKey)
-    val SigningSession(b, aggNonce, e) =
-      SigningSession(aggNoncePub, keySet, message)
+    val values = signingSession.getSessionValues
+    val e = values.e
+    val b = values.b
 
-    val adjustedNoncePriv = aggNonce.parity match {
+    val adjustedNoncePriv = values.R.toPublicKey.parity match {
       case EvenParity => noncePriv
       case OddParity  => noncePriv.negate
     }
@@ -145,13 +151,23 @@ object MuSigUtil {
 
     val privNonceSum = adjustedNoncePriv.sumToKey(b)
 
-    val s = adjustedPrivKey.multiply(e).multiply(coef).add(privNonceSum)
+    val s = adjustedPrivKey
+      .multiply(e)
+      .multiply(coef)
+      .add(privNonceSum)
 
     require(
-      partialSigVerify(s, noncePriv.toNoncePub, pubKey, keySet, b, aggNonce, e),
-      "Failed verification when generating signature.")
+      partialSigVerify(partialSig = s,
+                       noncePub = noncePriv.toNoncePub,
+                       pubKey = pubKey,
+                       keySet = keySet,
+                       b = b,
+                       aggNonce = values.R.toPublicKey,
+                       e = e),
+      "Failed verification when generating signature."
+    )
 
-    (aggNonce, s)
+    s
   }
 
   def partialSigVerify(
@@ -178,10 +194,16 @@ object MuSigUtil {
       pubKey: ECPublicKey,
       keySet: KeySet,
       message: ByteVector): Boolean = {
-    val SigningSession(b, aggNonce, e) =
-      SigningSession(aggNoncePub, keySet, message)
-
-    partialSigVerify(partialSig, noncePub, pubKey, keySet, b, aggNonce, e)
+    val ctx =
+      MuSigSessionContext(aggNoncePub, keySet, message)
+    val values = ctx.getSessionValues
+    partialSigVerify(partialSig,
+                     noncePub,
+                     pubKey,
+                     keySet,
+                     values.b,
+                     values.Q.toPublicKey,
+                     values.e)
   }
 
   def partialSigVerify(
@@ -214,12 +236,13 @@ object MuSigUtil {
       aggNoncePub: MuSigNoncePub,
       keySet: KeySet,
       message: ByteVector): SchnorrDigitalSignature = {
-    val SigningSession(_, aggNonce, e) =
-      SigningSession(aggNoncePub, keySet, message)
-    val tweakData =
-      MuSigTweakData(keySet.tweakContext, keySet.aggPubKey.parity, e)
-
-    signAgg(sVals, aggNonce, Some(tweakData))
+//    val SessionContext(_, aggNonce, e) =
+//      SessionContext(aggNoncePub, keySet, message)
+//    val tweakData =
+//      MuSigTweakData(keySet.tweakContext, keySet.aggPubKey.parity, e)
+//
+//    signAgg(sVals, aggNonce, Some(tweakData))
+    ???
   }
 
   /** Aggregates MuSig partial signatures into a BIP340 SchnorrDigitalSignature

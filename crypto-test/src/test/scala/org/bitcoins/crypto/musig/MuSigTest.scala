@@ -21,26 +21,23 @@ class MuSigTest extends BitcoinSCryptoTest {
 
         assert(aggMuSigNoncePub == noncePub)
 
-        val (aggNonce, s) =
+        val s =
           sign(noncePriv, aggMuSigNoncePub, privKey, msg, keySet)
 
         assert(
           partialSigVerify(
-            s,
-            noncePub,
-            aggMuSigNoncePub,
-            pubKey,
-            keySet,
-            msg
+            partialSig = s,
+            noncePub = noncePub,
+            aggNoncePub = aggMuSigNoncePub,
+            pubKey = pubKey,
+            keySet = keySet,
+            message = msg
           )
         )
 
-        val sig = signAgg(Vector(s), aggNonce)
-
-        assert(
-          sig == SchnorrDigitalSignature(aggNonce.schnorrNonce,
-                                         s,
-                                         hashTypeOpt = None))
+        val sig = signAgg(Vector(s), keySet.aggPubKey)
+        val nonce = SchnorrNonce(keySet.aggPubKey.bytes)
+        assert(sig == SchnorrDigitalSignature(nonce, s, hashTypeOpt = None))
 
         val aggPub = keySet.aggPubKey
 
@@ -69,12 +66,11 @@ class MuSigTest extends BitcoinSCryptoTest {
       val keySet: KeySet = KeySet(pub1, pub2)
       val aggMuSigNoncePub =
         MuSigNoncePub.aggregate(Vector(noncePub1, noncePub2))
-      val (aggNonce1, s1) =
+      val s1 =
         sign(noncePriv1, aggMuSigNoncePub, priv1, msg, keySet)
-      val (aggNonce2, s2) =
+      val s2 =
         sign(noncePriv2, aggMuSigNoncePub, priv2, msg, keySet)
 
-      assert(aggNonce1 == aggNonce2)
       assert(
         partialSigVerify(
           s1,
@@ -95,7 +91,7 @@ class MuSigTest extends BitcoinSCryptoTest {
           msg
         )
       )
-
+      val aggNonce1 = keySet.aggPubKey
       val sig = signAgg(Vector(s1, s2), aggNonce1)
       val aggPub = keySet.aggPubKey
 
@@ -119,15 +115,13 @@ class MuSigTest extends BitcoinSCryptoTest {
       val noncePrivs = privKeys.map(pk => MuSigUtil.nonceGen(pk.publicKey))
       val noncePubs = noncePrivs.map(_.toNoncePub)
       val aggMuSigNoncePub = MuSigNoncePub.aggregate(noncePubs)
-      val partialSigs: Vector[(ECPublicKey, FieldElement)] =
+      val partialSigs: Vector[FieldElement] =
         privKeys.zipWithIndex.map { case (privKey, i) =>
           sign(noncePrivs(i), aggMuSigNoncePub, privKey, msg, keySet)
         }
 
-      // All aggregate nonces are the same
-      assert(partialSigs.map(_._1).forall(_ == partialSigs.head._1))
       // All partial sigs are valid
-      assert(partialSigs.map(_._2).zipWithIndex.forall { case (s, i) =>
+      assert(partialSigs.zipWithIndex.forall { case (s, i) =>
         partialSigVerify(
           s,
           noncePubs(i),
@@ -137,9 +131,8 @@ class MuSigTest extends BitcoinSCryptoTest {
           msg
         )
       })
-
-      val sig = signAgg(partialSigs.map(_._2), partialSigs.head._1)
       val aggPub = keySet.aggPubKey
+      val sig = signAgg(partialSigs, aggPub)
 
       assert(aggPub.schnorrPublicKey.verify(msg, sig))
     }
@@ -174,15 +167,13 @@ class MuSigTest extends BitcoinSCryptoTest {
       val noncePrivs = privKeys.map(pk => MuSigUtil.nonceGen(pk.publicKey))
       val noncePubs = noncePrivs.map(_.toNoncePub)
       val aggMuSigNoncePub = MuSigNoncePub.aggregate(noncePubs)
-      val partialSigs: Vector[(ECPublicKey, FieldElement)] =
+      val partialSigs: Vector[FieldElement] =
         privKeys.zipWithIndex.map { case (privKey, i) =>
           sign(noncePrivs(i), aggMuSigNoncePub, privKey, msg, keySet)
         }
 
-      // All aggregate nonces are the same
-      assert(partialSigs.map(_._1).forall(_ == partialSigs.head._1))
       // All partial sigs are valid
-      assert(partialSigs.map(_._2).zipWithIndex.forall { case (s, i) =>
+      assert(partialSigs.zipWithIndex.forall { case (s, i) =>
         partialSigVerify(
           s,
           noncePubs(i),
@@ -193,7 +184,7 @@ class MuSigTest extends BitcoinSCryptoTest {
         )
       })
 
-      val sig = signAgg(partialSigs.map(_._2), aggMuSigNoncePub, keySet, msg)
+      val sig = signAgg(partialSigs, aggMuSigNoncePub, keySet, msg)
       val aggPub = keySet.aggPubKey
 
       assert(aggPub.schnorrPublicKey.verify(msg, sig))

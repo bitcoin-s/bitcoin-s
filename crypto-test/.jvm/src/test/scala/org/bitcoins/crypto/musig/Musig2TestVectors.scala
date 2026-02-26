@@ -126,93 +126,93 @@ class Musig2TestVectors extends BitcoinSCryptoTest {
     }
   }
 
-//  it must "pass sign_verify_vectors.json" in {
-//    val fileName = "/musig2/sign_verify_vectors.json"
-//    val lines = Using(Source.fromURL(getClass.getResource(fileName))) {
-//      source => source.mkString
-//    }.get
-//    val json = Json.parse(lines)
-//
-//    val vecs = json.validate[Musig2Json.SignVerifyVectors].get
-//
-//    val signerPriv = ECPrivateKey.fromBytes(vecs.sk)
-//
-//    // Helper to get MuSigNoncePriv default secnonce
-//    def defaultSecNonce: MuSigNoncePriv =
-//      MuSigNoncePriv.fromBytes(vecs.secnonces.head)
-//
-//    // VALID sign tests
-//    vecs.valid_test_cases.foreach { tc =>
-//      val keys = tc.key_indices.map(i => vecs.pubkeys(i).toPublicKey).toVector
-//      val keySet = UnsortedKeySet(keys)
-//
-//      val pnonces = tc.nonce_indices
-//        .map(i => MuSigNoncePub.fromBytes(vecs.pnonces(i)))
-//        .toVector
-//      val aggPnonce = MuSigNoncePub.fromBytes(vecs.aggnonces(tc.aggnonce_index))
-//      val msg = vecs.msgs(tc.msg_index)
-//
-//      val secnonce = defaultSecNonce
-//
-//      val (_, s) = MuSigUtil.sign(secnonce, aggPnonce, signerPriv, msg, keySet)
-//      assert(
-//        s == tc.expected,
-//        s"Failed to produce signature for test=${tc.comment.getOrElse("")}")
-//      val verify = MuSigUtil.partialSigVerify(s,
-//                                              pnonces,
-//                                              keySet,
-//                                              msg,
-//                                              signerIndex = tc.signer_index)
-//      assert(verify,
-//             s"Failed to verify signature for test=${tc.comment.getOrElse("")}")
-//    }
-//
-//    // SIGN error tests
-//    vecs.sign_error_test_cases.foreach { etc =>
-//      intercept[Exception] {
-//        val keys =
-//          etc.key_indices.map(i => vecs.pubkeys(i).toPublicKey).toVector
-//        val keySet = UnsortedKeySet(keys)
-//        val aggPnonce =
-//          MuSigNoncePub.fromBytes(vecs.aggnonces(etc.aggnonce_index))
-//        MuSigNoncePub.fromBytes(vecs.aggnonces(etc.aggnonce_index))
-//        val msg = vecs.msgs(etc.msg_index)
-//        val secnonce = etc.secnonce_index match {
-//          case Some(idx) => MuSigNoncePriv.fromBytes(vecs.secnonces(idx))
-//          case None      => defaultSecNonce
-//        }
-//        MuSigUtil.sign(secnonce, aggPnonce, signerPriv, msg, keySet)
-//      }
-//    }
-//
-//    // VERIFY fail test cases (invalid signatures)
-//    vecs.verify_fail_test_cases.foreach { tc =>
-//      val keys = tc.key_indices.map(i => vecs.pubkeys(i).toPublicKey).toVector
-//      val keySet = UnsortedKeySet(keys)
-//      val pnonces = tc.nonce_indices
-//        .map(i => MuSigNoncePub.fromBytes(vecs.pnonces(i)))
-//        .toVector
-//      val msg = vecs.msgs(tc.msg_index)
-//      val s = tc.sig
-//
-//      assert(
-//        !MuSigUtil.partialSigVerify(s, pnonces, keySet, msg, tc.signer_index))
-//    }
-//
-//    // VERIFY error test cases (invalid contributions)
-//    vecs.verify_error_test_cases.foreach { tc =>
-//      intercept[Exception] {
-//        val keys = tc.key_indices.map(i => vecs.pubkeys(i).toPublicKey).toVector
-//        val keySet = UnsortedKeySet(keys)
-//        val pnonces = tc.nonce_indices
-//          .map(i => MuSigNoncePub.fromBytes(vecs.pnonces(i)))
-//          .toVector
-//        val msg = vecs.msgs(tc.msg_index)
-//        val s = FieldElement.fromBytes(tc.sig)
-//        MuSigUtil.partialSigVerify(s, pnonces, keySet, msg, tc.signer_index)
-//      }
-//    }
-//  }
+  it must "pass sign_verify_vectors.json" in {
+    val fileName = "/musig2/sign_verify_vectors.json"
+    val lines = Using(Source.fromURL(getClass.getResource(fileName))) {
+      source => source.mkString
+    }.get
+    val json = Json.parse(lines)
+
+    val vecs = json.validate[Musig2Json.SignVerifyVectors].get
+
+    val signerPriv = ECPrivateKey.fromBytes(vecs.sk)
+
+    // Helper to get MuSigNoncePriv default secnonce
+    def defaultSecNonce: MuSigNoncePriv =
+      MuSigNoncePriv.fromBytes(vecs.secnonces.head)
+
+    // VALID sign tests
+    vecs.valid_test_cases.foreach { tc =>
+      val keys = tc.key_indices.map(i => vecs.pubkeys(i).toPublicKey).toVector
+      val keySet = UnsortedKeySet(keys)
+
+      val pnonces = tc.nonce_indices
+        .map(i => MuSigNoncePub.fromBytes(vecs.pnonces(i)))
+        .toVector
+      val aggPnonce = MuSigNoncePub.fromBytes(vecs.aggnonces(tc.aggnonce_index))
+      val msg = vecs.msgs(tc.msg_index)
+
+      val secnonce = defaultSecNonce
+
+      val s = MuSigUtil.sign(secnonce, aggPnonce, signerPriv, msg, keySet)
+      assert(
+        s == tc.expected,
+        s"Failed to produce signature for test=${tc.comment.getOrElse("")}")
+      val verify = MuSigUtil.partialSigVerify(s,
+                                              pnonces,
+                                              keySet,
+                                              msg,
+                                              signerIndex = tc.signer_index)
+      assert(verify,
+             s"Failed to verify signature for test=${tc.comment.getOrElse("")}")
+    }
+
+    // SIGN error tests
+    vecs.sign_error_test_cases.foreach { etc =>
+      intercept[Exception] {
+        val keys =
+          etc.key_indices.map(i => vecs.pubkeys(i).toPublicKey).toVector
+        val keySet = UnsortedKeySet(keys)
+        val aggPnonce =
+          MuSigNoncePub.fromBytes(vecs.aggnonces(etc.aggnonce_index))
+        MuSigNoncePub.fromBytes(vecs.aggnonces(etc.aggnonce_index))
+        val msg = vecs.msgs(etc.msg_index)
+        val secnonce = etc.secnonce_index match {
+          case Some(idx) => MuSigNoncePriv.fromBytes(vecs.secnonces(idx))
+          case None      => defaultSecNonce
+        }
+        MuSigUtil.sign(secnonce, aggPnonce, signerPriv, msg, keySet)
+      }
+    }
+
+    // VERIFY fail test cases (invalid signatures)
+    vecs.verify_fail_test_cases.foreach { tc =>
+      val keys = tc.key_indices.map(i => vecs.pubkeys(i).toPublicKey).toVector
+      val keySet = UnsortedKeySet(keys)
+      val pnonces = tc.nonce_indices
+        .map(i => MuSigNoncePub.fromBytes(vecs.pnonces(i)))
+        .toVector
+      val msg = vecs.msgs(tc.msg_index)
+      val s = tc.sig
+
+      assert(
+        !MuSigUtil.partialSigVerify(s, pnonces, keySet, msg, tc.signer_index))
+    }
+
+    // VERIFY error test cases (invalid contributions)
+    vecs.verify_error_test_cases.foreach { tc =>
+      intercept[Exception] {
+        val keys = tc.key_indices.map(i => vecs.pubkeys(i).toPublicKey).toVector
+        val keySet = UnsortedKeySet(keys)
+        val pnonces = tc.nonce_indices
+          .map(i => MuSigNoncePub.fromBytes(vecs.pnonces(i)))
+          .toVector
+        val msg = vecs.msgs(tc.msg_index)
+        val s = FieldElement.fromBytes(tc.sig)
+        MuSigUtil.partialSigVerify(s, pnonces, keySet, msg, tc.signer_index)
+      }
+    }
+  }
 
 //  it must "pass tweak_vectors.json" in {
 //    val fileName = "/musig2/tweak_vectors.json"
