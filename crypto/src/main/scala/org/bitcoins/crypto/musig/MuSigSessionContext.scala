@@ -55,7 +55,6 @@ object MuSigSessionContext {
     val b = computeB(aggNoncePub, keySet, message)
     val aggNonce = aggNoncePub.sumToKey(b)
     val e = computeE(aggPubKey, aggNonce, message)
-
     MuSigSessionValues(keySet.tweakContext, b, aggNonce.toPoint, e)
   }
 }

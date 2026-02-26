@@ -132,13 +132,16 @@ object MuSigUtil {
       MuSigSessionContext(aggNoncePub, keySet, message)
 
     val values = signingSession.getSessionValues
-    val coef = keySet.getSessionKeyAggCoef(signingSession, pubKey)
+    val coef = keySet.getSessionKeyAggCoeff(signingSession, pubKey)
     val e = values.e
     val b = values.b
 
     val adjustedNoncePriv = values.R.toPublicKey.parity match {
       case EvenParity => noncePriv
-      case OddParity  => noncePriv.negate
+      case OddParity =>
+        println(
+          s"negating noncePriv because parity is odd: R=${values.R}, R parity=${values.R.toPublicKey.parity}")
+        noncePriv.negate
     }
 
     val g = ParityMultiplier.fromParity(values.Q.toPublicKey.parity)
@@ -161,7 +164,7 @@ object MuSigUtil {
 
     require(
       verified,
-      "Failed partialSigVerifyInternal when generating signature."
+      s"Failed partialSigVerifyInternal when generating signature for pubKey=$pubKey."
     )
 
     s
@@ -209,14 +212,17 @@ object MuSigUtil {
     val REPrime = aggNonce.sumToKey(b)
     val RE = REPrime.parity match {
       case EvenParity => REPrime
-      case OddParity  => REPrime.negate
+      case OddParity =>
+        println(s"negating REPrime because parity is odd: REPrime=$REPrime")
+        REPrime.negate
     }
-    val a = keySet.getSessionKeyAggCoef(sessionCtx, pubKey)
+    val expectedS = CryptoParams.getG.multiply(partialSig)
+
+    val a = keySet.getSessionKeyAggCoeff(sessionCtx, pubKey)
     val g = ParityMultiplier.fromParity(values.Q.toPublicKey.parity)
     // Match the sign computation: use values.gacc.multiply(g) so parity combination
     // is consistent with how the adjusted private key is computed in sign()
     val gPrime = values.gacc.multiply(g)
-    val expectedS = CryptoParams.getG.multiply(partialSig)
     val inner: ECPublicKey = gPrime.modify(pubKey).multiply(a).multiply(e)
     val actualS = RE.add(inner)
     expectedS == actualS

@@ -31,24 +31,26 @@ sealed trait KeySet {
   }
 
   /** Returns the coefficient of the given key in the aggPubKey sum */
-  def keyAggCoef(key: ECPublicKey): FieldElement = {
-    if (secondKeyOpt.contains(key)) FieldElement.one
+  def keyAggCoef(publicKeyI: ECPublicKey): FieldElement = {
+    if (secondKeyOpt.contains(publicKeyI)) FieldElement.one
     else {
       val listHashBytes = MuSigUtil.aggListHash(serialize)
-      val bytes = MuSigUtil.aggCoefHash(listHashBytes ++ key.bytes)
+      val bytes = MuSigUtil.aggCoefHash(listHashBytes ++ publicKeyI.bytes)
 
-      FieldElement(new java.math.BigInteger(1, bytes.toArray))
+      FieldElement.fromBytes(bytes)
     }
   }
 
-  def getSessionKeyAggCoef(
+  def getSessionKeyAggCoeff(
       signingSession: MuSigSessionContext,
       key: ECPublicKey): FieldElement = {
     if (signingSession.keySet.keys.contains(key)) {
-      keyAggCoef(key)
+      val coeff = keyAggCoef(key)
+      println(s"key=$key coeff=$coeff")
+      coeff
     } else {
       throw new IllegalArgumentException(
-        s"Key $key is not part of the signing session's key set")
+        s"Key ${key.hex} not found in signing session key set")
     }
   }
 
