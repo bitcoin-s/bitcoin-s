@@ -141,13 +141,10 @@ object MuSigUtil {
       case OddParity  => noncePriv.negate
     }
 
-    val gp = ParityMultiplier.fromParity(pubKey.parity)
+    val g = ParityMultiplier.fromParity(values.Q.toPublicKey.parity)
 
-    val g = ParityMultiplier.fromParity(keySet.aggPubKey.parity)
-
-    val adjustedPrivKey = gp
+    val adjustedPrivKey = values.gacc
       .multiply(g)
-      .multiply(keySet.tweakContext.parityAcc)
       .modify(privKey.fieldElement)
 
     val privNonceSum = adjustedNoncePriv.sumToKey(b)
@@ -157,15 +154,14 @@ object MuSigUtil {
       .multiply(coef)
       .add(privNonceSum)
 
+    val verified = partialSigVerifyInternal(s,
+                                            Vector(noncePriv.toNoncePub),
+                                            pubKey,
+                                            signingSession)
+
     require(
-      partialSigVerify(partialSig = s,
-                       noncePub = noncePriv.toNoncePub,
-                       pubKey = pubKey,
-                       keySet = keySet,
-                       b = b,
-                       aggNonce = values.R.toPublicKey,
-                       e = e),
-      "Failed verification when generating signature."
+      verified,
+      "Failed partialSigVerifyInternal when generating signature."
     )
 
     s
@@ -197,37 +193,33 @@ object MuSigUtil {
       message: ByteVector): Boolean = {
     val ctx =
       MuSigSessionContext(aggNoncePub, keySet, message)
-    val values = ctx.getSessionValues
-    partialSigVerify(partialSig,
-                     noncePub,
-                     pubKey,
-                     keySet,
-                     values.b,
-                     values.Q.toPublicKey,
-                     values.e)
+    partialSigVerifyInternal(partialSig, Vector(noncePub), pubKey, ctx)
   }
 
-  def partialSigVerify(
+  def partialSigVerifyInternal(
       partialSig: FieldElement,
-      noncePub: MuSigNoncePub,
+      noncePubs: Vector[MuSigNoncePub],
       pubKey: ECPublicKey,
-      keySet: KeySet,
-      b: FieldElement,
-      aggNonce: ECPublicKey,
-      e: FieldElement): Boolean = {
-    val nonceSum = noncePub.sumToKey(b)
-    val nonceSumAdjusted = aggNonce.parity match {
-      case EvenParity => nonceSum
-      case OddParity  => nonceSum.negate
+      sessionCtx: MuSigSessionContext): Boolean = {
+    val values = sessionCtx.getSessionValues
+    val keySet = sessionCtx.keySet
+    val b = values.b
+    val aggNonce = MuSigNoncePub.aggregate(noncePubs)
+    val e = values.e
+    val REPrime = aggNonce.sumToKey(b)
+    val RE = REPrime.parity match {
+      case EvenParity => REPrime
+      case OddParity  => REPrime.negate
     }
-
-    val g = ParityMultiplier.fromParity(keySet.aggPubKey.parity)
-    val aggKeyParity = g.multiply(keySet.tweakContext.parityAcc).toParity
-
-    val aggKey = pubKey.toXOnly.publicKey(aggKeyParity)
-    val a = keySet.keyAggCoef(pubKey)
-    partialSig.getPublicKey == nonceSumAdjusted.add(
-      aggKey.multiply(e.multiply(a)))
+    val a = keySet.getSessionKeyAggCoef(sessionCtx, pubKey)
+    val g = ParityMultiplier.fromParity(values.Q.toPublicKey.parity)
+    // Match the sign computation: use values.gacc.multiply(g) so parity combination
+    // is consistent with how the adjusted private key is computed in sign()
+    val gPrime = values.gacc.multiply(g)
+    val expectedS = CryptoParams.getG.multiply(partialSig)
+    val inner: ECPublicKey = gPrime.modify(pubKey).multiply(a).multiply(e)
+    val actualS = RE.add(inner)
+    expectedS == actualS
   }
 
   /** Aggregates MuSig partial signatures into a BIP340 SchnorrDigitalSignature

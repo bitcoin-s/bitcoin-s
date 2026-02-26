@@ -142,13 +142,15 @@ class Musig2TestVectors extends BitcoinSCryptoTest {
       MuSigNoncePriv.fromBytes(vecs.secnonces.head)
 
     // VALID sign tests
+    var counter = 0
     vecs.valid_test_cases.foreach { tc =>
+      println(s"counter=$counter comment=${tc.comment.getOrElse("")}")
+      counter += 1
       val keys = tc.key_indices.map(i => vecs.pubkeys(i).toPublicKey).toVector
       val keySet = UnsortedKeySet(keys)
 
       val pnonces = tc.nonce_indices
         .map(i => MuSigNoncePub.fromBytes(vecs.pnonces(i)))
-        .toVector
       val aggPnonce = MuSigNoncePub.fromBytes(vecs.aggnonces(tc.aggnonce_index))
       val msg = vecs.msgs(tc.msg_index)
 

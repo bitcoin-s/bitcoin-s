@@ -65,7 +65,7 @@ sealed trait KeySet {
       }
       .reduce(_.add(_))
 
-    tweaks.foldLeft((MuSigTweakContext(untweakedAggPubKey))) {
+    tweaks.foldLeft(MuSigTweakContext(untweakedAggPubKey)) {
       case (context, tweak) =>
         context.applyTweak(tweak)
     }

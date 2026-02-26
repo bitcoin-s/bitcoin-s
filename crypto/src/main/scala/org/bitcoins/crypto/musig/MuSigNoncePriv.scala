@@ -41,11 +41,11 @@ case class MuSigNoncePriv(override val bytes: ByteVector)
   /** Collapses this into a single ephemeral private key */
   def sumToKey(b: FieldElement): FieldElement = {
     val fes = Vector(k1, k2).map(_.fieldElement)
-    MuSigUtil.nonceSum[FieldElement](fes,
-                                     b,
-                                     _.add(_),
-                                     _.multiply(_),
-                                     FieldElement.zero)
+    MuSigUtil.nonceSum[FieldElement](nonces = fes,
+                                     b = b,
+                                     add = _.add(_),
+                                     multiply = _.multiply(_),
+                                     identity = FieldElement.zero)
   }
 }
 
