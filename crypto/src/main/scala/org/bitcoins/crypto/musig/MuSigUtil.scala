@@ -128,14 +128,21 @@ object MuSigUtil {
       privKey: ECPrivateKey,
       message: ByteVector,
       keySet: KeySet): FieldElement = {
+    val signingSession =
+      MuSigSessionContext(aggNoncePub, keySet, message)
+    sign(noncePriv, privKey, signingSession)
+  }
+
+  def sign(
+      noncePriv: MuSigNoncePriv,
+      privKey: ECPrivateKey,
+      signingSession: MuSigSessionContext): FieldElement = {
     val pubKey = privKey.publicKey
     require(
       pubKey == noncePriv.publicKey,
       s"Nonce private key must be derived from the same public key, got ${pubKey} and ${noncePriv.publicKey}")
-    val signingSession =
-      MuSigSessionContext(aggNoncePub, keySet, message)
-
     val values = signingSession.getSessionValues
+    val keySet = signingSession.keySet
     val coef = keySet.getSessionKeyAggCoeff(signingSession, pubKey)
     val e = values.e
     val b = values.b
@@ -264,7 +271,7 @@ object MuSigUtil {
       aggOtherNonce: MuSigNoncePub,
       keySet: KeySet,
       message: ByteVector,
-      auxRandOpt: Option[ByteVector]): SchnorrDigitalSignature = {
+      auxRandOpt: Option[ByteVector]): (MuSigNoncePub, FieldElement) = {
     require(
       auxRandOpt.forall(_.length == 32),
       s"auxRand must be 32 bytes if provided, got ${auxRandOpt.map(_.length)}")
@@ -280,7 +287,7 @@ object MuSigUtil {
       .map { i =>
         val bytes = secretKeyPrime ++ aggOtherNonce.bytes ++
           aggPubKey.toXOnly.bytes ++
-          ByteVector.fromLong(message.length, size = 1) ++
+          ByteVector.fromLong(message.length, size = 8) ++
           message ++
           ByteVector.fromByte(i.toByte)
         muSigDeterministicNonceHash(bytes)
@@ -299,7 +306,8 @@ object MuSigUtil {
     val secNonce = MuSigNoncePriv(secrets.head.toPrivateKey,
                                   secrets(1).toPrivateKey,
                                   secretKey.publicKey)
-
-    ???
+    val aggNonce = MuSigNoncePub.aggregate(Vector(pubNonce, aggOtherNonce))
+    val ctx = MuSigSessionContext(aggNonce, keySet, message)
+    (pubNonce, sign(secNonce, secretKey, ctx))
   }
 }

@@ -329,4 +329,66 @@ class Musig2TestVectors extends BitcoinSCryptoTest {
     }
   }
 
+  it must "pass det_sign_vectors.json" in {
+    val fileName = "/musig2/det_sign_vectors.json"
+    val lines = Using(Source.fromURL(getClass.getResource(fileName))) {
+      source => source.mkString
+    }.get
+    val json = Json.parse(lines)
+
+    val vecs = json.validate[Musig2Json.DetSignVectors].get
+
+    val signerPriv = ECPrivateKey.fromBytes(vecs.sk)
+
+    // VALID cases
+    vecs.valid_test_cases.foreach { tc =>
+      val keys = tc.key_indices.map(i => vecs.pubkeys(i).toPublicKey).toVector
+      var keySet: KeySet = UnsortedKeySet(keys)
+
+      // apply tweaks if any
+      if (tc.tweaks.nonEmpty) {
+        val musigTweaks = tc.tweaks.zip(tc.is_xonly).map { case (bytes, isX) =>
+          MuSigTweak(FieldElement.fromBytes(bytes), isXOnlyT = isX)
+        }
+        keySet = keySet.withTweaks(musigTweaks)
+      }
+
+      val aggOther = MuSigNoncePub.fromBytes(tc.aggothernonce)
+      val msg = vecs.msgs(tc.msg_index)
+      val auxRandOpt = tc.rand
+
+      val (pubnonce, s) =
+        MuSigUtil.deterministicSign(signerPriv,
+                                    aggOther,
+                                    keySet,
+                                    msg,
+                                    auxRandOpt)
+
+      // Expected: first element is pubnonce bytes (66 bytes), second is scalar s (32 bytes)
+      assert(pubnonce.bytes == tc.expected.head,
+             s"pubnonce mismatch for test=${tc.comment.getOrElse("")}")
+      assert(s.bytes == tc.expected(1),
+             s"signature scalar mismatch for test=${tc.comment.getOrElse("")}")
+    }
+
+    // ERROR cases
+    vecs.error_test_cases.foreach { etc =>
+      intercept[Exception] {
+        val keys =
+          etc.key_indices.map(i => vecs.pubkeys(i).toPublicKey).toVector
+        var keySet: KeySet = UnsortedKeySet(keys)
+        if (etc.tweaks.nonEmpty) {
+          val musigTweaks =
+            etc.tweaks.zip(etc.is_xonly).map { case (bytes, isX) =>
+              MuSigTweak(FieldElement.fromBytes(bytes), isXOnlyT = isX)
+            }
+          keySet = keySet.withTweaks(musigTweaks)
+        }
+        val aggOther = MuSigNoncePub.fromBytes(etc.aggothernonce)
+        val msg = vecs.msgs(etc.msg_index)
+        MuSigUtil.deterministicSign(signerPriv, aggOther, keySet, msg, etc.rand)
+      }
+    }
+  }
+
 }

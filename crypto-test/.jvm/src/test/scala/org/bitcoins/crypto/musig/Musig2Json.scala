@@ -242,4 +242,44 @@ object Musig2Json {
     Json.reads[SigAggErrorTest]
   implicit val sigAggVectorsReads: Reads[SigAggVectors] =
     Json.reads[SigAggVectors]
+
+  // --- det_sign_vectors.json structures ---
+  case class DetSignValidTest(
+      rand: Option[ByteVector],
+      aggothernonce: ByteVector,
+      key_indices: Vector[Int],
+      tweaks: Vector[ByteVector],
+      is_xonly: Vector[Boolean],
+      msg_index: Int,
+      signer_index: Int,
+      expected: Vector[ByteVector],
+      comment: Option[String]
+  )
+
+  case class DetSignErrorTest(
+      rand: Option[ByteVector],
+      aggothernonce: ByteVector,
+      key_indices: Vector[Int],
+      tweaks: Vector[ByteVector],
+      is_xonly: Vector[Boolean],
+      msg_index: Int,
+      signer_index: Int,
+      error: KeyAggError,
+      comment: Option[String]
+  )
+
+  case class DetSignVectors(
+      sk: ByteVector,
+      pubkeys: Vector[ECPublicKeyBytes],
+      msgs: Vector[ByteVector],
+      valid_test_cases: Vector[DetSignValidTest],
+      error_test_cases: Vector[DetSignErrorTest]
+  )
+
+  implicit val detSignValidTestReads: Reads[DetSignValidTest] =
+    Json.reads[DetSignValidTest]
+  implicit val detSignErrorTestReads: Reads[DetSignErrorTest] =
+    Json.reads[DetSignErrorTest]
+  implicit val detSignVectorsReads: Reads[DetSignVectors] =
+    Json.reads[DetSignVectors]
 }
