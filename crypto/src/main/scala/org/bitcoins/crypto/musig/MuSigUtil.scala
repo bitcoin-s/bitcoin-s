@@ -31,6 +31,10 @@ object MuSigUtil {
     CryptoUtil.taggedSha256(bytes, "MuSig/aux").bytes
   }
 
+  def muSigDeterministicNonceHash(bytes: ByteVector): ByteVector = {
+    CryptoUtil.taggedSha256(bytes, "MuSig/deterministic/nonce").bytes
+  }
+
   /** nonces(0) + nonces(1)*b + nonces(2)*b*b + ... */
   private[musig] def nonceSum[T](
       nonces: Vector[T],
@@ -253,5 +257,49 @@ object MuSigUtil {
         .multiply(e))
 
     SchnorrDigitalSignature(aggPubNonce.schnorrNonce, s, hashTypeOpt = None)
+  }
+
+  def deterministicSign(
+      secretKey: ECPrivateKey,
+      aggOtherNonce: MuSigNoncePub,
+      keySet: KeySet,
+      message: ByteVector,
+      auxRandOpt: Option[ByteVector]): SchnorrDigitalSignature = {
+    require(
+      auxRandOpt.forall(_.length == 32),
+      s"auxRand must be 32 bytes if provided, got ${auxRandOpt.map(_.length)}")
+    val secretKeyPrime = auxRandOpt match {
+      case Some(auxRand) =>
+        val auxHash = MuSigUtil.auxHash(auxRand)
+        secretKey.bytes.xor(auxHash)
+      case None => secretKey.bytes
+    }
+    val aggPubKey = keySet.aggPubKey
+    val secrets: Vector[FieldElement] = 0
+      .to(1)
+      .map { i =>
+        val bytes = secretKeyPrime ++ aggOtherNonce.bytes ++
+          aggPubKey.toXOnly.bytes ++
+          ByteVector.fromLong(message.length, size = 1) ++
+          message ++
+          ByteVector.fromByte(i.toByte)
+        muSigDeterministicNonceHash(bytes)
+      }
+      .toVector
+      .map(FieldElement.fromBytes)
+
+    require(!secrets.contains(FieldElement.zero),
+            "Derived nonce secrets cannot be zero")
+    val r1: ECPublicKey = CryptoParams.getG.multiply(secrets.head)
+    val r2: ECPublicKey = CryptoParams.getG.multiply(secrets(1))
+    require(CryptoUtil.decodePoint(r1) != SecpPointInfinity)
+    require(CryptoUtil.decodePoint(r2) != SecpPointInfinity)
+    val pubNonce = MuSigNoncePub(r1.bytes ++ r2.bytes)
+
+    val secNonce = MuSigNoncePriv(secrets.head.toPrivateKey,
+                                  secrets(1).toPrivateKey,
+                                  secretKey.publicKey)
+
+    ???
   }
 }
