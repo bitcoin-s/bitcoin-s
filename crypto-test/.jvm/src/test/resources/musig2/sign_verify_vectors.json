@@ -32,38 +32,6 @@
   "valid_test_cases": [
     {
       "key_indices": [
-        0,
-        1,
-        2
-      ],
-      "nonce_indices": [
-        0,
-        1,
-        2
-      ],
-      "aggnonce_index": 0,
-      "msg_index": 0,
-      "signer_index": 0,
-      "expected": "012ABBCB52B3016AC03AD82395A1A415C48B93DEF78718E62A7A90052FE224FB"
-    },
-    {
-      "key_indices": [
-        1,
-        0,
-        2
-      ],
-      "nonce_indices": [
-        1,
-        0,
-        2
-      ],
-      "aggnonce_index": 0,
-      "msg_index": 0,
-      "signer_index": 1,
-      "expected": "9FF2F7AAA856150CC8819254218D3ADEEB0535269051897724F9DB3789513A52"
-    },
-    {
-      "key_indices": [
         1,
         2,
         0

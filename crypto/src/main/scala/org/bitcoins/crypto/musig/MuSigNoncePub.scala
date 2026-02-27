@@ -66,9 +66,10 @@ object MuSigNoncePub extends Factory[MuSigNoncePub] {
   /** Sums the given nonces and returns the aggregate MuSigNoncePub */
   def aggregate(nonces: Vector[MuSigNoncePub]): MuSigNoncePub = {
     val aggNonceKeys = 0.until(MuSigUtil.nonceNum).toVector.map { i =>
-      nonces.map(multiNonce => multiNonce(i)).reduce(_.add(_))
+      nonces
+        .map(multiNonce => multiNonce(i))
+        .reduce(_.add(_))
     }
-
     MuSigNoncePub(aggNonceKeys)
   }
 }

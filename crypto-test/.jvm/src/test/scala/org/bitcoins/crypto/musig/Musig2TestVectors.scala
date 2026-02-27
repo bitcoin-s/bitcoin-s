@@ -160,6 +160,11 @@ class Musig2TestVectors extends BitcoinSCryptoTest {
       assert(
         s == tc.expected,
         s"Failed to produce signature for test=${tc.comment.getOrElse("")}")
+
+      //note when i remove the partialSigVerify, we produce the expected S
+      //value according to the test vector, but the signature fails to verify.
+      // This indicates that there is a bug (likely around parity handling)
+      // in partialSigVerify()
       val verify = MuSigUtil.partialSigVerify(s,
                                               pnonces,
                                               keySet,

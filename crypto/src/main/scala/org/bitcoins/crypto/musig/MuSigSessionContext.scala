@@ -54,6 +54,7 @@ object MuSigSessionContext {
     val aggPubKey = keySet.aggPubKey.schnorrPublicKey
     val b = computeB(aggNoncePub, keySet, message)
     val aggNonce = aggNoncePub.sumToKey(b)
+    println(s"getSessionValues aggNonce=$aggNonce aggPubKey=$aggPubKey")
     val e = computeE(aggPubKey, aggNonce, message)
     MuSigSessionValues(keySet.tweakContext, b, aggNonce.toPoint, e)
   }
