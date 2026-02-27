@@ -139,8 +139,6 @@ object MuSigUtil {
     val adjustedNoncePriv = values.R.toPublicKey.parity match {
       case EvenParity => noncePriv
       case OddParity =>
-        println(
-          s"negating noncePriv because parity is odd: R=${values.R}, R parity=${values.R.toPublicKey.parity}")
         noncePriv.negate
     }
 
@@ -157,15 +155,15 @@ object MuSigUtil {
       .multiply(coef)
       .add(privNonceSum)
 
-//    val verified = partialSigVerifyInternal(s,
-//                                            Vector(noncePriv.toNoncePub),
-//                                            pubKey,
-//                                            signingSession)
-//
-//    require(
-//      verified,
-//      s"Failed partialSigVerifyInternal when generating signature for pubKey=$pubKey."
-//    )
+    val verified = partialSigVerifyInternal(s,
+                                            Vector(noncePriv.toNoncePub),
+                                            pubKey,
+                                            signingSession)
+
+    require(
+      verified,
+      s"Failed partialSigVerifyInternal when generating signature for pubKey=$pubKey."
+    )
 
     s
   }
@@ -207,18 +205,12 @@ object MuSigUtil {
     val values = sessionCtx.getSessionValues
     val keySet = sessionCtx.keySet
     val b = values.b
-
     val aggNonce = MuSigNoncePub.aggregate(noncePubs)
-    require(aggNonce == noncePubs.head)
-    println(
-      s"noncePubs=${noncePubs.flatMap(_.pubNonces).map(_.asInstanceOf[SecpPointFinite].toPublicKey)} aggNonce=$aggNonce")
     val e = values.e
     val REPrime = aggNonce.sumToKey(b)
-    println(s"recomputed R' from noncePubs: RE'=$REPrime")
-    val RE = REPrime.parity match {
+    val RE = values.R.toPublicKey.parity match {
       case EvenParity => REPrime
       case OddParity =>
-        println(s"negating REPrime because parity is odd: REPrime=$REPrime")
         REPrime.negate
     }
     val expectedS = CryptoParams.getG.multiply(partialSig)

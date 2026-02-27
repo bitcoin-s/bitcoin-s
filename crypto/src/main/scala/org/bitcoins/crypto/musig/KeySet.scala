@@ -46,7 +46,6 @@ sealed trait KeySet {
       key: ECPublicKey): FieldElement = {
     if (signingSession.keySet.keys.contains(key)) {
       val coeff = keyAggCoef(key)
-      println(s"key=$key coeff=$coeff")
       coeff
     } else {
       throw new IllegalArgumentException(
