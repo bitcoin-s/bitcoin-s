@@ -234,12 +234,12 @@ object MuSigUtil {
       message: ByteVector): SchnorrDigitalSignature = {
     val ctx = MuSigSessionContext(aggNoncePub, keySet, message)
 
-    signAgg(sVals, ctx)
+    partialSigAgg(sVals, ctx)
   }
 
   /** Aggregates MuSig partial signatures into a BIP340 SchnorrDigitalSignature
     */
-  def signAgg(
+  def partialSigAgg(
       sVals: Vector[FieldElement],
       ctx: MuSigSessionContext): SchnorrDigitalSignature = {
     val values = ctx.getSessionValues
