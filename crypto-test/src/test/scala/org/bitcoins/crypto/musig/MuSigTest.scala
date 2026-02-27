@@ -17,7 +17,7 @@ class MuSigTest extends BitcoinSCryptoTest {
         val noncePriv: MuSigNoncePriv = MuSigUtil.nonceGen(pubKey)
         val noncePub: MuSigNoncePub = noncePriv.toNoncePub
         val keySet = KeySet(pubKey)
-        val aggMuSigNoncePub = MuSigNoncePub.aggregate(Vector(noncePub))
+        val aggMuSigNoncePub = MuSigUtil.aggregateNonces(Vector(noncePub))
 
         assert(aggMuSigNoncePub == noncePub)
 
@@ -63,7 +63,7 @@ class MuSigTest extends BitcoinSCryptoTest {
       val noncePub2: MuSigNoncePub = noncePriv2.toNoncePub
       val keySet: KeySet = KeySet(pub1, pub2)
       val aggMuSigNoncePub =
-        MuSigNoncePub.aggregate(Vector(noncePub1, noncePub2))
+        MuSigUtil.aggregateNonces(Vector(noncePub1, noncePub2))
       val s1 =
         sign(noncePriv1, aggMuSigNoncePub, priv1, msg, keySet)
       val s2 =
@@ -112,7 +112,7 @@ class MuSigTest extends BitcoinSCryptoTest {
         privKeysUnsorted.find(_.publicKey == pubKey).get)
       val noncePrivs = privKeys.map(pk => MuSigUtil.nonceGen(pk.publicKey))
       val noncePubs = noncePrivs.map(_.toNoncePub)
-      val aggMuSigNoncePub = MuSigNoncePub.aggregate(noncePubs)
+      val aggMuSigNoncePub = MuSigUtil.aggregateNonces(noncePubs)
       val partialSigs: Vector[FieldElement] =
         privKeys.zipWithIndex.map { case (privKey, i) =>
           sign(noncePrivs(i), aggMuSigNoncePub, privKey, msg, keySet)
@@ -158,7 +158,7 @@ class MuSigTest extends BitcoinSCryptoTest {
         UnsortedKeySet(privKeys.map(_.publicKey), tweaks)
       val noncePrivs = privKeys.map(pk => MuSigUtil.nonceGen(pk.publicKey))
       val noncePubs = noncePrivs.map(_.toNoncePub)
-      val aggMuSigNoncePub = MuSigNoncePub.aggregate(noncePubs)
+      val aggMuSigNoncePub = MuSigUtil.aggregateNonces(noncePubs)
       val partialSigs: Vector[FieldElement] =
         privKeys.zipWithIndex.map { case (privKey, i) =>
           MuSigUtil.sign(noncePrivs(i), aggMuSigNoncePub, privKey, msg, keySet)
@@ -198,7 +198,7 @@ class MuSigTest extends BitcoinSCryptoTest {
     )
 
     // Vector 1
-    assert(MuSigNoncePub.aggregate(pnonce) == expected)
+    assert(MuSigUtil.aggregateNonces(pnonce) == expected)
 
     // The following errors must be handled by the caller as we can't even represent them
     // Vector 2
@@ -230,6 +230,6 @@ class MuSigTest extends BitcoinSCryptoTest {
     val pnonce2 = MuSigNoncePub(Vector(pnonce.last.pubNonces.head, negG))
     val expected5 =
       MuSigNoncePub(expected.bytes.take(33) ++ MuSigNoncePub.infPtBytes)
-    assert(MuSigNoncePub.aggregate(Vector(pnonce1, pnonce2)) == expected5)
+    assert(MuSigUtil.aggregateNonces(Vector(pnonce1, pnonce2)) == expected5)
   }
 }

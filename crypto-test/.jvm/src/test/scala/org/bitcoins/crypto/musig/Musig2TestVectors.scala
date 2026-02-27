@@ -112,7 +112,7 @@ class Musig2TestVectors extends BitcoinSCryptoTest {
     vecs.valid_test_cases.foreach { tc =>
       val pnonces =
         tc.pnonce_indices.map(i => MuSigNoncePub.fromBytes(vecs.pnonces(i)))
-      val agg = MuSigNoncePub.aggregate(pnonces)
+      val agg = MuSigUtil.aggregateNonces(pnonces)
       assert(agg == tc.expected)
     }
 
@@ -121,7 +121,7 @@ class Musig2TestVectors extends BitcoinSCryptoTest {
       intercept[Exception] {
         val pnonces =
           etc.pnonce_indices.map(i => MuSigNoncePub.fromBytes(vecs.pnonces(i)))
-        MuSigNoncePub.aggregate(pnonces)
+        MuSigUtil.aggregateNonces(pnonces)
       }
     }
   }
@@ -245,7 +245,7 @@ class Musig2TestVectors extends BitcoinSCryptoTest {
 
       // Build pnonces list and aggregate
       val pnonces = tc.nonce_indices.map(i => vecs.pnonces(i)).toVector
-      val aggPnonce = MuSigNoncePub.aggregate(pnonces)
+      val aggPnonce = MuSigUtil.aggregateNonces(pnonces)
 
       val s =
         MuSigUtil.sign(vecs.secnonce, aggPnonce, signerPriv, vecs.msg, keySet)
@@ -267,7 +267,7 @@ class Musig2TestVectors extends BitcoinSCryptoTest {
           }
         val keySet = keySetBase.withTweaks(musigTweaks)
         val pnonces = etc.nonce_indices.map(i => vecs.pnonces(i)).toVector
-        val aggPnonce = MuSigNoncePub.aggregate(pnonces)
+        val aggPnonce = MuSigUtil.aggregateNonces(pnonces)
         MuSigUtil.sign(vecs.secnonce, aggPnonce, signerPriv, vecs.msg, keySet)
       }
     }

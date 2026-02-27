@@ -190,7 +190,7 @@ object MuSigUtil {
 
     partialSigVerify(partialSig,
                      pubNonces(signerIndex),
-                     MuSigNoncePub.aggregate(pubNonces),
+                     aggregateNonces(pubNonces),
                      keySet(signerIndex),
                      keySet,
                      message)
@@ -216,7 +216,7 @@ object MuSigUtil {
     val values = sessionCtx.getSessionValues
     val keySet = sessionCtx.keySet
     val b = values.b
-    val aggNonce = MuSigNoncePub.aggregate(noncePubs)
+    val aggNonce = aggregateNonces(noncePubs)
     val e = values.e
     val REPrime = aggNonce.sumToKey(b)
     val RE = values.R.toPublicKey.parity match {
@@ -306,8 +306,24 @@ object MuSigUtil {
     val secNonce = MuSigNoncePriv(secrets.head.toPrivateKey,
                                   secrets(1).toPrivateKey,
                                   secretKey.publicKey)
-    val aggNonce = MuSigNoncePub.aggregate(Vector(pubNonce, aggOtherNonce))
+    val aggNonce = aggregateNonces(Vector(pubNonce, aggOtherNonce))
     val ctx = MuSigSessionContext(aggNonce, keySet, message)
     (pubNonce, sign(secNonce, secretKey, ctx))
+  }
+
+  /** Sums the given nonces and returns the aggregate MuSigNoncePub */
+  def aggregateNonces(nonces: Vector[MuSigNoncePub]): MuSigNoncePub = {
+    val aggNonceKeys = 0.until(MuSigUtil.nonceNum).toVector.map { i =>
+      nonces.zipWithIndex
+        .map { case (multiNonce, idx) =>
+          val nonce = multiNonce(i)
+          require(
+            nonce != SecpPointInfinity,
+            s"Nonce $i of signer ${idx + 1} is the point at infinity, which is not allowed in MuSig2")
+          nonce
+        }
+        .reduce(_.add(_))
+    }
+    MuSigNoncePub(aggNonceKeys)
   }
 }
