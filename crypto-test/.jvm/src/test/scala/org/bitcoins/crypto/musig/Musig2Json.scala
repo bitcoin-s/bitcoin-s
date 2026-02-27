@@ -9,7 +9,8 @@ import org.bitcoins.commons.serializers.JsonReaders.{
   ECPublicKeyReads,
   FieldElementReads,
   MuSigNoncePrivReads,
-  MuSigNoncePubReads
+  MuSigNoncePubReads,
+  SchnorrDigitalSignatureReads
 }
 import scodec.bits.ByteVector
 
@@ -201,4 +202,44 @@ object Musig2Json {
     Json.reads[VerifyErrorTest]
   implicit val signVerifyVectorsReads: Reads[SignVerifyVectors] =
     Json.reads[SignVerifyVectors]
+
+  // --- sig_agg_vectors.json structures ---
+  case class SigAggValidTest(
+      aggnonce: ByteVector,
+      nonce_indices: Vector[Int],
+      key_indices: Vector[Int],
+      tweak_indices: Vector[Int],
+      is_xonly: Vector[Boolean],
+      psig_indices: Vector[Int],
+      expected: SchnorrDigitalSignature,
+      comment: Option[String]
+  )
+
+  case class SigAggErrorTest(
+      aggnonce: ByteVector,
+      nonce_indices: Vector[Int],
+      key_indices: Vector[Int],
+      tweak_indices: Vector[Int],
+      is_xonly: Vector[Boolean],
+      psig_indices: Vector[Int],
+      error: KeyAggError,
+      comment: Option[String]
+  )
+
+  case class SigAggVectors(
+      pubkeys: Vector[ECPublicKeyBytes],
+      pnonces: Vector[ByteVector],
+      tweaks: Vector[ByteVector],
+      psigs: Vector[ByteVector],
+      msg: ByteVector,
+      valid_test_cases: Vector[SigAggValidTest],
+      error_test_cases: Vector[SigAggErrorTest]
+  )
+
+  implicit val sigAggValidTestReads: Reads[SigAggValidTest] =
+    Json.reads[SigAggValidTest]
+  implicit val sigAggErrorTestReads: Reads[SigAggErrorTest] =
+    Json.reads[SigAggErrorTest]
+  implicit val sigAggVectorsReads: Reads[SigAggVectors] =
+    Json.reads[SigAggVectors]
 }

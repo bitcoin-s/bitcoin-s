@@ -232,26 +232,24 @@ object MuSigUtil {
       aggNoncePub: MuSigNoncePub,
       keySet: KeySet,
       message: ByteVector): SchnorrDigitalSignature = {
-//    val SessionContext(_, aggNonce, e) =
-//      SessionContext(aggNoncePub, keySet, message)
-//    val tweakData =
-//      MuSigTweakData(keySet.tweakContext, keySet.aggPubKey.parity, e)
-//
-//    signAgg(sVals, aggNonce, Some(tweakData))
-    ???
+    val ctx = MuSigSessionContext(aggNoncePub, keySet, message)
+
+    signAgg(sVals, ctx)
   }
 
   /** Aggregates MuSig partial signatures into a BIP340 SchnorrDigitalSignature
     */
   def signAgg(
       sVals: Vector[FieldElement],
-      aggPubNonce: ECPublicKey,
-      tweakDataOpt: Option[MuSigTweakData] = None): SchnorrDigitalSignature = {
+      ctx: MuSigSessionContext): SchnorrDigitalSignature = {
+    val values = ctx.getSessionValues
+    val e = values.e
+    val aggPubNonce = values.R.toPublicKey
     val sSum = sVals.reduce(_.add(_))
-    val s = tweakDataOpt match {
-      case Some(tweakData) => sSum.add(tweakData.additiveTweak)
-      case None            => sSum
-    }
+    val s = sSum.add(
+      values.gacc
+        .modify(e)
+        .multiply(values.tacc))
 
     SchnorrDigitalSignature(aggPubNonce.schnorrNonce, s, hashTypeOpt = None)
   }

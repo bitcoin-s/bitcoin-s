@@ -218,60 +218,116 @@ class Musig2TestVectors extends BitcoinSCryptoTest {
     }
   }
 
-//  it must "pass tweak_vectors.json" in {
-//    val fileName = "/musig2/tweak_vectors.json"
-//    val lines = Using(Source.fromURL(getClass.getResource(fileName))) {
-//      source => source.mkString
-//    }.get
-//    val json = Json.parse(lines)
-//
-//    val vecs = json.validate[Musig2Json.TweakVectors].get
-//
-//    val signerPriv = ECPrivateKey.fromBytes(vecs.sk)
-//
-//    // For each valid test case, construct keyset, apply tweaks and sign
-//    vecs.valid_test_cases.foreach { tc =>
-//      val keys = tc.key_indices.map(i => vecs.pubkeys(i).toPublicKey).toVector
-//      val keySetBase = UnsortedKeySet(keys)
-//
-//      val tweaksVec = tc.tweak_indices.map(i => vecs.tweaks(i)).toVector
-//      val musigTweaks = tweaksVec.zip(tc.is_xonly).map { case (feBytes, isX) =>
-//        // parse FieldElement here to allow invalid tweaks to be caught per-test
-//        val fe = FieldElement.fromBytes(feBytes)
-//        MuSigTweak(fe, isXOnlyT = isX)
-//      }
-//
-//      val keySet = keySetBase.withTweaks(musigTweaks)
-//
-//      // Build pnonces list and aggregate
-//      val pnonces = tc.nonce_indices.map(i => vecs.pnonces(i)).toVector
-//      val aggPnonce = MuSigNoncePub.aggregate(pnonces)
-//
-//      val (_, s) =
-//        MuSigUtil.sign(vecs.secnonce, aggPnonce, signerPriv, vecs.msg, keySet)
-//
-//      assert(s == tc.expected)
-//    }
-//
-//    // For error cases, ensure exception is thrown
-//    vecs.error_test_cases.foreach { etc =>
-//      intercept[Exception] {
-//        val keys =
-//          etc.key_indices.map(i => vecs.pubkeys(i).toPublicKey).toVector
-//        val keySetBase = UnsortedKeySet(keys)
-//        val tweaksVec = etc.tweak_indices.map(i => vecs.tweaks(i)).toVector
-//        val musigTweaks =
-//          tweaksVec.zip(etc.is_xonly).map { case (feBytes, isX) =>
-//            val fe = FieldElement.fromBytes(feBytes)
-//            MuSigTweak(fe, isXOnlyT = isX)
-//          }
-//        val keySet = keySetBase.withTweaks(musigTweaks)
-//        val pnonces = etc.nonce_indices.map(i => vecs.pnonces(i)).toVector
-//        val aggPnonce = MuSigNoncePub.aggregate(pnonces)
-//        MuSigUtil.sign(vecs.secnonce, aggPnonce, signerPriv, vecs.msg, keySet)
-//      }
-//    }
-//
-//  }
+  it must "pass tweak_vectors.json" in {
+    val fileName = "/musig2/tweak_vectors.json"
+    val lines = Using(Source.fromURL(getClass.getResource(fileName))) {
+      source => source.mkString
+    }.get
+    val json = Json.parse(lines)
+
+    val vecs = json.validate[Musig2Json.TweakVectors].get
+
+    val signerPriv = ECPrivateKey.fromBytes(vecs.sk)
+
+    // For each valid test case, construct keyset, apply tweaks and sign
+    vecs.valid_test_cases.foreach { tc =>
+      val keys = tc.key_indices.map(i => vecs.pubkeys(i).toPublicKey)
+      val keySetBase = UnsortedKeySet(keys)
+
+      val tweaksVec = tc.tweak_indices.map(i => vecs.tweaks(i))
+      val musigTweaks = tweaksVec.zip(tc.is_xonly).map { case (feBytes, isX) =>
+        // parse FieldElement here to allow invalid tweaks to be caught per-test
+        val fe = FieldElement.fromBytes(feBytes)
+        MuSigTweak(fe, isXOnlyT = isX)
+      }
+
+      val keySet = keySetBase.withTweaks(musigTweaks)
+
+      // Build pnonces list and aggregate
+      val pnonces = tc.nonce_indices.map(i => vecs.pnonces(i)).toVector
+      val aggPnonce = MuSigNoncePub.aggregate(pnonces)
+
+      val s =
+        MuSigUtil.sign(vecs.secnonce, aggPnonce, signerPriv, vecs.msg, keySet)
+
+      assert(s == tc.expected)
+    }
+
+    // For error cases, ensure exception is thrown
+    vecs.error_test_cases.foreach { etc =>
+      intercept[Exception] {
+        val keys =
+          etc.key_indices.map(i => vecs.pubkeys(i).toPublicKey).toVector
+        val keySetBase = UnsortedKeySet(keys)
+        val tweaksVec = etc.tweak_indices.map(i => vecs.tweaks(i)).toVector
+        val musigTweaks =
+          tweaksVec.zip(etc.is_xonly).map { case (feBytes, isX) =>
+            val fe = FieldElement.fromBytes(feBytes)
+            MuSigTweak(fe, isXOnlyT = isX)
+          }
+        val keySet = keySetBase.withTweaks(musigTweaks)
+        val pnonces = etc.nonce_indices.map(i => vecs.pnonces(i)).toVector
+        val aggPnonce = MuSigNoncePub.aggregate(pnonces)
+        MuSigUtil.sign(vecs.secnonce, aggPnonce, signerPriv, vecs.msg, keySet)
+      }
+    }
+  }
+
+  it must "pass sig_agg_vectors.json" in {
+    val fileName = "/musig2/sig_agg_vectors.json"
+    val lines = Using(Source.fromURL(getClass.getResource(fileName))) {
+      source => source.mkString
+    }.get
+    val json = Json.parse(lines)
+
+    val vecs = json.validate[Musig2Json.SigAggVectors].get
+
+    // VALID test cases
+    vecs.valid_test_cases.foreach { tc =>
+      // Build keyset
+      val keys = tc.key_indices.map(i => vecs.pubkeys(i).toPublicKey).toVector
+      var keySet: KeySet = UnsortedKeySet(keys)
+
+      // Apply tweaks if present
+      if (tc.tweak_indices.nonEmpty) {
+        val tweaks = tc.tweak_indices.map(i => vecs.tweaks(i)).toVector
+        val isXonly = tc.is_xonly
+        val musigTweaks = tweaks.zip(isXonly).map { case (feBytes, isX) =>
+          val fe = FieldElement.fromBytes(feBytes)
+          MuSigTweak(fe, isXOnlyT = isX)
+        }
+        keySet = keySet.withTweaks(musigTweaks)
+      }
+
+      // Collect partial signatures referenced by psig_indices
+      val sVals: Vector[FieldElement] = tc.psig_indices.map { idx =>
+        FieldElement.fromBytes(vecs.psigs(idx))
+      }.toVector
+
+      // Aggregate the provided aggnonce bytes into MuSigNoncePub then get ECPublicKey
+      val aggPnonce = MuSigNoncePub.fromBytes(tc.aggnonce)
+
+      // Use signAgg that takes ECPublicKey
+      val signature = MuSigUtil.signAgg(sVals, aggPnonce, keySet, vecs.msg)
+
+      assert(signature == tc.expected,
+             s"Sig agg test failed for comment=${tc.comment.getOrElse("")}")
+    }
+
+    // Error test cases
+    vecs.error_test_cases.foreach { etc =>
+      intercept[Exception] {
+        val keys =
+          etc.key_indices.map(i => vecs.pubkeys(i).toPublicKey).toVector
+        val keySet = UnsortedKeySet(keys)
+        val sVals = etc.psig_indices
+          .map(idx => FieldElement.fromBytes(vecs.psigs(idx)))
+          .toVector
+        val aggPnonce = MuSigNoncePub.fromBytes(etc.aggnonce)
+        // attempt to aggregate into signature - expecting failure per test
+        MuSigUtil.signAgg(sVals, aggPnonce, keySet, vecs.msg)
+      }
+    }
+  }
 
 }
