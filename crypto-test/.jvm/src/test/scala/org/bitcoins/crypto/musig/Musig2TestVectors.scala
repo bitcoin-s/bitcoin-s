@@ -302,7 +302,7 @@ class Musig2TestVectors extends BitcoinSCryptoTest {
       // Collect partial signatures referenced by psig_indices
       val sVals: Vector[FieldElement] = tc.psig_indices.map { idx =>
         FieldElement.fromBytes(vecs.psigs(idx))
-      }.toVector
+      }
 
       // Aggregate the provided aggnonce bytes into MuSigNoncePub then get ECPublicKey
       val aggPnonce = MuSigNoncePub.fromBytes(tc.aggnonce)
@@ -318,11 +318,10 @@ class Musig2TestVectors extends BitcoinSCryptoTest {
     vecs.error_test_cases.foreach { etc =>
       intercept[Exception] {
         val keys =
-          etc.key_indices.map(i => vecs.pubkeys(i).toPublicKey).toVector
+          etc.key_indices.map(i => vecs.pubkeys(i).toPublicKey)
         val keySet = UnsortedKeySet(keys)
         val sVals = etc.psig_indices
           .map(idx => FieldElement.fromBytes(vecs.psigs(idx)))
-          .toVector
         val aggPnonce = MuSigNoncePub.fromBytes(etc.aggnonce)
         // attempt to aggregate into signature - expecting failure per test
         MuSigUtil.signAgg(sVals, aggPnonce, keySet, vecs.msg)

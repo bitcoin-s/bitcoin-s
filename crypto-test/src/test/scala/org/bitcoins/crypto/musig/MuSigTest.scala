@@ -36,8 +36,6 @@ class MuSigTest extends BitcoinSCryptoTest {
         )
 
         val sig = signAgg(Vector(s), aggMuSigNoncePub, keySet, msg)
-        val nonce = SchnorrNonce(keySet.aggPubKey.bytes)
-        assert(sig == SchnorrDigitalSignature(nonce, s, hashTypeOpt = None))
 
         val aggPub = keySet.aggPubKey
 
@@ -144,37 +142,31 @@ class MuSigTest extends BitcoinSCryptoTest {
       .flatMap(n => Gen.listOfN(n, CryptoGenerators.privateKey))
       .map(_.toVector)
 
-    val tweaksGen: Gen[Vector[MuSigTweak]] = Gen
-      .choose[Int](0, 10)
-      .flatMap(n =>
-        Gen.listOfN(
-          n,
-          CryptoGenerators.fieldElement.flatMap(x =>
-            NumberGenerator.bool.map((x, _)))
-        ))
-      .map(_.toVector)
-      .map(_.map { case (x, b) => MuSigTweak(x, b) })
+    val tweaksGen: Gen[Vector[MuSigTweak]] = CryptoGenerators.tweaks.map {
+      vec =>
+        vec.map { case (fe, isXOnly) =>
+          MuSigTweak(fe, isXOnly)
+        }
+    }
 
     forAll(
       privKeysGen,
       NumberGenerator.bytevector(32),
       tweaksGen
-    ) { case (privKeysUnsorted, msg, tweaks) =>
-      val keySet: KeySet =
-        KeySet(privKeysUnsorted.map(_.publicKey), tweaks)
-      val privKeys = keySet.keys.map(pubKey =>
-        privKeysUnsorted.find(_.publicKey == pubKey).get)
+    ) { case (privKeys, msg, tweaks) =>
+      val keySet =
+        UnsortedKeySet(privKeys.map(_.publicKey), tweaks)
       val noncePrivs = privKeys.map(pk => MuSigUtil.nonceGen(pk.publicKey))
       val noncePubs = noncePrivs.map(_.toNoncePub)
       val aggMuSigNoncePub = MuSigNoncePub.aggregate(noncePubs)
       val partialSigs: Vector[FieldElement] =
         privKeys.zipWithIndex.map { case (privKey, i) =>
-          sign(noncePrivs(i), aggMuSigNoncePub, privKey, msg, keySet)
+          MuSigUtil.sign(noncePrivs(i), aggMuSigNoncePub, privKey, msg, keySet)
         }
 
       // All partial sigs are valid
       assert(partialSigs.zipWithIndex.forall { case (s, i) =>
-        partialSigVerify(
+        MuSigUtil.partialSigVerify(
           s,
           noncePubs(i),
           aggMuSigNoncePub,

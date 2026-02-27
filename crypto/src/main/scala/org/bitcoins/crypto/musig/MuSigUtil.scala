@@ -246,10 +246,11 @@ object MuSigUtil {
     val e = values.e
     val aggPubNonce = values.R.toPublicKey
     val sSum = sVals.reduce(_.add(_))
+    val g = ParityMultiplier.fromParity(values.Q.toPublicKey.parity)
     val s = sSum.add(
-      values.gacc
-        .modify(e)
-        .multiply(values.tacc))
+      g
+        .modify(values.tacc)
+        .multiply(e))
 
     SchnorrDigitalSignature(aggPubNonce.schnorrNonce, s, hashTypeOpt = None)
   }
