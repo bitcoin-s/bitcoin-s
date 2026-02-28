@@ -158,10 +158,6 @@ class Musig2TestVectors extends BitcoinSCryptoTest {
         s == tc.expected,
         s"Failed to produce signature for test=${tc.comment.getOrElse("")}")
 
-      // note when i remove the partialSigVerify, we produce the expected S
-      // value according to the test vector, but the signature fails to verify.
-      // This indicates that there is a bug (likely around parity handling)
-      // in partialSigVerify()
       val verify = MuSigUtil.partialSigVerify(s,
                                               pnonces,
                                               keySet,
@@ -179,7 +175,7 @@ class Musig2TestVectors extends BitcoinSCryptoTest {
         val keySet = UnsortedKeySet(keys)
         val aggPnonce =
           MuSigNoncePub.fromBytes(vecs.aggnonces(etc.aggnonce_index))
-        MuSigNoncePub.fromBytes(vecs.aggnonces(etc.aggnonce_index))
+
         val msg = vecs.msgs(etc.msg_index)
         val secnonce = etc.secnonce_index match {
           case Some(idx) => MuSigNoncePriv.fromBytes(vecs.secnonces(idx))

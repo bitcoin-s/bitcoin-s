@@ -66,7 +66,7 @@ object MuSigUtil {
     require(
       extraInOpt.forall(_.length <= 4294967295L),
       "extraIn too long, its length must be represented by at most four bytes")
-
+    require(publicKey.isCompressed, s"PublicKey must be compressed for MuSig2")
     def serializeWithLen(
         bytesOpt: Option[ByteVector],
         lengthSize: Int = 1): ByteVector = {

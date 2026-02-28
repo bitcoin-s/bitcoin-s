@@ -34,7 +34,6 @@ case class MuSigNoncePriv(override val bytes: ByteVector)
   }
 
   def negate: MuSigNoncePriv = {
-    // do i need to invert the public key here?
     MuSigNoncePriv(k1.negate, k2.negate, publicKey)
   }
 

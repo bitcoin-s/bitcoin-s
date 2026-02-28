@@ -40,7 +40,7 @@ object MuSigTweakContext {
     MuSigTweakContext(
       Q = pubKey.toPoint,
       parityAcc =
-        Pos, // why default to Pos here? Should it bet the given keys parity?
+        Pos,
       tweakAcc = FieldElement.zero
     )
   }
