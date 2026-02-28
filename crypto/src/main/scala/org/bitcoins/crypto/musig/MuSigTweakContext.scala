@@ -39,8 +39,7 @@ object MuSigTweakContext {
   def apply(pubKey: ECPublicKey): MuSigTweakContext = {
     MuSigTweakContext(
       Q = pubKey.toPoint,
-      parityAcc =
-        Pos,
+      parityAcc = Pos,
       tweakAcc = FieldElement.zero
     )
   }

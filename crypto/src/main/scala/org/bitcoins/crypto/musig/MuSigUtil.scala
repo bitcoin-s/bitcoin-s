@@ -316,14 +316,14 @@ object MuSigUtil {
     val aggNonceKeys = 0.until(MuSigUtil.nonceNum).toVector.map { i =>
       nonces.zipWithIndex
         .map { case (multiNonce, idx) =>
-          val nonce = multiNonce(i)
+          val nonce = if (i == 0) multiNonce.r1 else multiNonce.r2
           require(
             nonce != SecpPointInfinity,
-            s"Nonce $i of signer ${idx + 1} is the point at infinity, which is not allowed in MuSig2")
+            s"Nonce $i of signer ${idx + 1} of a nonce pair cannot be the point at infinity")
           nonce
         }
         .reduce(_.add(_))
     }
-    MuSigNoncePub(aggNonceKeys)
+    MuSigNoncePub(aggNonceKeys(0), aggNonceKeys(1))
   }
 }

@@ -206,7 +206,7 @@ class MuSigTest extends BitcoinSCryptoTest {
       MuSigNoncePub(
         "04FF406FFD8ADB9CD29877E4985014F66A59F6CD01C0E88CAA8E5F3166B1F676A6" ++
           "0248C264CDD57D3C24D79990B0F865674EB62A0F9018277A95011B41BFC193B833"
-      )
+      ).r1
     )
     // Vector 3
     assertThrows[IllegalArgumentException](
@@ -225,9 +225,10 @@ class MuSigTest extends BitcoinSCryptoTest {
 
     // Vector 5
     val g = CryptoParams.getG.toPoint
-    val negG = g.multiply(FieldElement.orderMinusOne)
-    val pnonce1 = MuSigNoncePub(Vector(pnonce.head.pubNonces.head, g))
-    val pnonce2 = MuSigNoncePub(Vector(pnonce.last.pubNonces.head, negG))
+    val negG =
+      g.multiply(FieldElement.orderMinusOne).asInstanceOf[SecpPointFinite]
+    val pnonce1 = MuSigNoncePub(pnonce.head.r1, g)
+    val pnonce2 = MuSigNoncePub(pnonce.last.r1, negG)
     val expected5 =
       MuSigNoncePub(expected.bytes.take(33) ++ MuSigNoncePub.infPtBytes)
     assert(MuSigUtil.aggregateNonces(Vector(pnonce1, pnonce2)) == expected5)
