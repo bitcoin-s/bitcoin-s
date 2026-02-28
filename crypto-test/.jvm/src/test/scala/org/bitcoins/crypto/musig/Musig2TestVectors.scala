@@ -308,7 +308,8 @@ class Musig2TestVectors extends BitcoinSCryptoTest {
       val aggPnonce = MuSigNoncePub.fromBytes(tc.aggnonce)
 
       // Use signAgg that takes ECPublicKey
-      val signature = MuSigUtil.signAgg(sVals, aggPnonce, keySet, vecs.msg)
+      val signature =
+        MuSigUtil.partialSigAgg(sVals, aggPnonce, keySet, vecs.msg)
 
       assert(signature == tc.expected,
              s"Sig agg test failed for comment=${tc.comment.getOrElse("")}")
@@ -324,7 +325,7 @@ class Musig2TestVectors extends BitcoinSCryptoTest {
           .map(idx => FieldElement.fromBytes(vecs.psigs(idx)))
         val aggPnonce = MuSigNoncePub.fromBytes(etc.aggnonce)
         // attempt to aggregate into signature - expecting failure per test
-        MuSigUtil.signAgg(sVals, aggPnonce, keySet, vecs.msg)
+        MuSigUtil.partialSigAgg(sVals, aggPnonce, keySet, vecs.msg)
       }
     }
   }

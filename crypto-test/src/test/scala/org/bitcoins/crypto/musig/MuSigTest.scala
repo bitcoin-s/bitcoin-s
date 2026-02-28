@@ -35,7 +35,7 @@ class MuSigTest extends BitcoinSCryptoTest {
           )
         )
 
-        val sig = signAgg(Vector(s), aggMuSigNoncePub, keySet, msg)
+        val sig = partialSigAgg(Vector(s), aggMuSigNoncePub, keySet, msg)
 
         val aggPub = keySet.aggPubKey
 
@@ -90,7 +90,7 @@ class MuSigTest extends BitcoinSCryptoTest {
         )
       )
 
-      val sig = signAgg(Vector(s1, s2), aggMuSigNoncePub, keySet, msg)
+      val sig = partialSigAgg(Vector(s1, s2), aggMuSigNoncePub, keySet, msg)
       val aggPub = keySet.aggPubKey
 
       assert(aggPub.schnorrPublicKey.verify(msg, sig))
@@ -130,7 +130,7 @@ class MuSigTest extends BitcoinSCryptoTest {
         )
       })
       val aggPub = keySet.aggPubKey
-      val sig = signAgg(partialSigs, aggMuSigNoncePub, keySet, msg)
+      val sig = partialSigAgg(partialSigs, aggMuSigNoncePub, keySet, msg)
 
       assert(aggPub.schnorrPublicKey.verify(msg, sig))
     }
@@ -176,7 +176,7 @@ class MuSigTest extends BitcoinSCryptoTest {
         )
       })
 
-      val sig = signAgg(partialSigs, aggMuSigNoncePub, keySet, msg)
+      val sig = partialSigAgg(partialSigs, aggMuSigNoncePub, keySet, msg)
       val aggPub = keySet.aggPubKey
 
       assert(aggPub.schnorrPublicKey.verify(msg, sig))

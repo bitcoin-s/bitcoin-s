@@ -238,7 +238,7 @@ object MuSigUtil {
 
   /** Aggregates MuSig partial signatures into a BIP340 SchnorrDigitalSignature
     */
-  def signAgg(
+  def partialSigAgg(
       sVals: Vector[FieldElement],
       aggNoncePub: MuSigNoncePub,
       keySet: KeySet,
