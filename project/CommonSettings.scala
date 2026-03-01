@@ -313,13 +313,9 @@ object CommonSettings {
       "waffle.jaas" -> "java.security.acl",
       // no native image support for now
       // https://github.com/xerial/sqlite-jdbc/commit/6f426839c56f3924be6cad8920d9192400a37d5f#diff-b335630551682c19a781afebcf4d07bf978fb1f8ac04c6bf87428ed5106870f5R117
-<<<<<<< HEAD
       "org.sqlite.nativeimage" -> "org.graalvm.nativeimage.hosted",
       // we use slf4j, not apache commons so ignore it
       "org.flywaydb.core.internal.logging.apachecommons" -> "org.apache.commons.logging"
-=======
-      "org.sqlite.nativeimage" -> "org.graalvm.nativeimage.hosted"
->>>>>>> 3cf2e0fbef5 (Run -rewrite -source 3.7-migration)
     )
   }
 
