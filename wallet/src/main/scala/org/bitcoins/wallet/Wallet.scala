@@ -40,7 +40,7 @@ case class Wallet(
     val walletConfig: WalletAppConfig
 ) extends NeutrinoHDWalletApi
     with WalletLogger {
-  def keyManager: BIP39KeyManager = {
+  lazy val keyManager: BIP39KeyManager = {
     walletConfig.kmConf.toBip39KeyManager
   }
   def feeRateApi: FeeRateApi = walletConfig.feeRateApi
