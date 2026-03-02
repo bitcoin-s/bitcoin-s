@@ -59,4 +59,20 @@ object HDPurpose extends StringFactory[HDPurpose] {
       sys.error(s"Cannot create HDPurpose from string=$string")
     }
   }
+
+  def toString(purpose: HDPurpose): String = {
+    if (purpose == Legacy) {
+      "legacy"
+    } else if (purpose == SegWit) {
+      "segwit"
+    } else if (purpose == NestedSegWit) {
+      "nested-segwit"
+    } else if (purpose == Taproot) {
+      "taproot"
+    } else if (purpose == Multisig) {
+      "multisig"
+    } else {
+      "unknown"
+    }
+  }
 }

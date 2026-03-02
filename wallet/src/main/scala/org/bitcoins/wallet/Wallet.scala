@@ -1,5 +1,6 @@
 package org.bitcoins.wallet
 
+import com.typesafe.config.ConfigFactory
 import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
@@ -241,7 +242,9 @@ case class Wallet(
     for {
       addressCount <- addressDAO.count()
       spendingInfoCount <- spendingInfoDAO.count()
-    } yield addressCount == 0 && spendingInfoCount == 0
+    } yield {
+      addressCount == 0 && spendingInfoCount == 0
+    }
 
   override def getBalance()(implicit
       ec: ExecutionContext
@@ -345,9 +348,10 @@ object Wallet extends WalletLogger {
   /** Creates the level 0 account for the given HD purpose, if the root account
     * exists do nothing
     */
-  private def createRootAccount(wallet: Wallet, keyManager: BIP39KeyManager)(
-      implicit ec: ExecutionContext
+  private def createRootAccount(wallet: Wallet)(implicit
+      ec: ExecutionContext
   ): DBIOAction[AccountDb, NoStream, Effect.Read & Effect.Write] = {
+    val keyManager = wallet.keyManager
     val coinType = HDUtil.getCoinType(keyManager.kmParams.network)
     val coin =
       HDCoin(purpose = keyManager.kmParams.purpose, coinType = coinType)
@@ -388,40 +392,41 @@ object Wallet extends WalletLogger {
       accountHandling: AccountHandlingApi,
       bip39PasswordOpt: Option[String]
   ): Future[Wallet] = {
-    implicit val walletAppConfig: WalletAppConfig = wallet.walletConfig
-    import walletAppConfig.ec
-    val passwordOpt = walletAppConfig.aesPasswordOpt
+    import wallet.walletConfig.ec
+    val passwordOpt = wallet.walletConfig.aesPasswordOpt
 
-    val createMasterXpubF = createMasterXPub(wallet.keyManager)
+    val createMasterXpubF =
+      createMasterXPub(wallet.keyManager)(wallet.walletConfig)
     // We want to make sure all level 0 accounts are created,
     // so the user can change the default account kind later
     // and still have their wallet work
     val createAccountActions: Vector[
-      DBIOAction[AccountDb, NoStream, Effect.Read & Effect.Write]
+      DBIOAction[(Wallet, AccountDb), NoStream, Effect.Read & Effect.Write]
     ] = {
       val accounts = HDPurpose.singleSigPurposes.map { purpose =>
         // we need to create key manager params for each purpose
         // and then initialize a key manager to derive the correct xpub
-        val kmParams = wallet.keyManager.kmParams.copy(purpose = purpose)
-        val kmE = {
-          BIP39KeyManager.fromParams(
-            kmParams = kmParams,
-            passwordOpt = passwordOpt,
-            bip39PasswordOpt = bip39PasswordOpt
-          )
-        }
-        kmE match {
-          case Right(km) =>
-            createRootAccount(wallet = wallet, keyManager = km)
-          case Left(err) =>
-            // probably means you haven't initialized the key manager via the
-            // 'CreateKeyManagerApi'
-            DBIOAction.failed(
-              new RuntimeException(
-                s"Failed to create keymanager with params=$kmParams err=$err"
-              )
-            )
-        }
+        val wAppConfig = wallet.walletConfig
+        val aesPwConfig =
+          passwordOpt
+            .map(p => s"bitcoin-s.keymanager.aesPassword=$p")
+            .getOrElse("")
+        val bip39PwConfig = bip39PasswordOpt
+          .map(p => s"bitcoin-s.keymanager.bip39password=$p")
+          .getOrElse("")
+        val purposeConfig =
+          s"bitcoin-s.wallet.purpose=${HDPurpose.toString(purpose)}"
+        val conf =
+          ConfigFactory.parseString(
+            Vector(aesPwConfig, bip39PwConfig, purposeConfig)
+              .filter(_.nonEmpty)
+              .mkString("\n"))
+        val kmAppConfig = wallet.walletConfig.kmConf.withOverrides(conf)
+        val walletAppConfig = wallet.walletConfig.copy(kmConfOpt =
+          Some(kmAppConfig))(wAppConfig.system)
+        val w = Wallet(nodeApi = wallet.nodeApi,
+                       chainQueryApi = wallet.chainQueryApi)(walletAppConfig)
+        createRootAccount(w).map((w, _))
 
       }
       accounts
@@ -429,23 +434,29 @@ object Wallet extends WalletLogger {
     for {
       _ <- createMasterXpubF
       actions = createAccountActions
-      accounts <- wallet.accountDAO.safeDatabase.runVec(
+      walletAndAccounts <- wallet.accountDAO.safeDatabase.runVec(
         DBIOAction.sequence(actions)
       )
+      accounts = walletAndAccounts.map(_._2)
+      initializedWallet = walletAndAccounts
+        .map(_._1)
+        .find(
+          _.walletConfig.defaultPurpose == wallet.walletConfig.defaultPurpose)
+        .get
       _ = accounts.foreach { a =>
         logger.info(s"Created account=${a} to DB")
       }
       _ <- {
         // check if creationTime is well in the past, if so generate a pool of addresses
         // see: https://github.com/bitcoin-s/bitcoin-s/issues/5033
-        val creationTime = wallet.keyManager.creationTime
+        val creationTime = initializedWallet.keyManager.creationTime
         val threshold = Instant.now().minus(1, ChronoUnit.HOURS)
         val isOldCreationTime = creationTime.compareTo(threshold) <= 0
         if (isOldCreationTime) {
           accountHandling
             .generateScriptPubKeys(
-              account = walletAppConfig.defaultAccount,
-              addressBatchSize = walletAppConfig.discoveryBatchSize,
+              account = wallet.walletConfig.defaultAccount,
+              addressBatchSize = wallet.walletConfig.discoveryBatchSize,
               forceGenerateSpks = true
             )
             .map(_ => ())
@@ -455,8 +466,9 @@ object Wallet extends WalletLogger {
         }
       }
     } yield {
-      logger.debug(s"Created root level accounts for wallet")
-      wallet
+      logger.debug(
+        s"Created root level accounts for wallet=${initializedWallet.walletConfig.walletName}")
+      initializedWallet
     }
   }
 }
