@@ -37,7 +37,8 @@
       "crypto/crypto-intro",
       "crypto/sign",
       "crypto/adaptor-signatures",
-      "crypto/musig"
+      "crypto/musig",
+      "crypto/frost"
     ],
     "Fee Provider": [
       "fee-provider/fee-provider"
