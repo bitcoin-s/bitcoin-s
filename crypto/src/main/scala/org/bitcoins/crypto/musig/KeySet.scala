@@ -1,18 +1,13 @@
 package org.bitcoins.crypto.musig
 
-import org.bitcoins.crypto.{
-  ECPublicKey,
-  FieldElement,
-  NetworkElement,
-  SchnorrPublicKey
-}
+import org.bitcoins.crypto.{ECPublicKey, FieldElement, NetworkElement}
 import scodec.bits.ByteVector
 
 /** Represents an ordered set of MuSig signers and their tweaks. This is the
   * data required to (non-interactively) compute the aggPubKey.
   */
 sealed trait KeySet {
-  def keys: Vector[SchnorrPublicKey]
+  def keys: Vector[ECPublicKey]
 
   def tweaks: Vector[MuSigTweak]
 
@@ -27,7 +22,7 @@ sealed trait KeySet {
 
   def length: Int = keys.length
 
-  def apply(i: Int): SchnorrPublicKey = {
+  def apply(i: Int): ECPublicKey = {
     keys(i)
   }
 
@@ -36,68 +31,90 @@ sealed trait KeySet {
   }
 
   /** Returns the coefficient of the given key in the aggPubKey sum */
-  def keyAggCoef(key: SchnorrPublicKey): FieldElement = {
-    if (secondKeyOpt.contains(key)) FieldElement.one
+  def keyAggCoef(publicKeyI: ECPublicKey): FieldElement = {
+    if (secondKeyOpt.contains(publicKeyI)) FieldElement.one
     else {
       val listHashBytes = MuSigUtil.aggListHash(serialize)
-      val bytes = MuSigUtil.aggCoefHash(listHashBytes ++ key.bytes)
+      val bytes = MuSigUtil.aggCoefHash(listHashBytes ++ publicKeyI.bytes)
 
-      FieldElement(new java.math.BigInteger(1, bytes.toArray))
+      FieldElement.fromBytes(bytes)
     }
   }
 
-  private lazy val computeAggPubKeyAndTweakContext
-      : (ECPublicKey, MuSigTweakContext) = {
-    val untweakedAggPubKey = keys
-      .map { key =>
-        val coef = keyAggCoef(key)
-        key.publicKey.multiply(coef)
-      }
-      .reduce(_.add(_))
-
-    tweaks.foldLeft((untweakedAggPubKey, MuSigTweakContext.empty)) {
-      case ((pubKeySoFar, context), tweak) =>
-        context.applyTweak(tweak, pubKeySoFar)
+  def getSessionKeyAggCoeff(
+      signingSession: MuSigSessionContext,
+      key: ECPublicKey): FieldElement = {
+    if (signingSession.keySet.keys.contains(key)) {
+      val coeff = keyAggCoef(key)
+      coeff
+    } else {
+      throw new IllegalArgumentException(
+        s"Key ${key.hex} not found in signing session key set")
     }
   }
 
   /** The aggregate public key that represents the n-of-n signers */
-  lazy val aggPubKey: ECPublicKey = computeAggPubKeyAndTweakContext._1
+  lazy val aggPubKey: ECPublicKey =
+    tweakContext.Q.toPublicKey
 
   /** Accumulated tweak information */
-  lazy val tweakContext: MuSigTweakContext =
-    computeAggPubKeyAndTweakContext._2
+  lazy val tweakContext: MuSigTweakContext = {
+    val untweakedAggPubKey = keys
+      .map { key =>
+        val coef = keyAggCoef(key)
+        key.multiply(coef)
+      }
+      .reduce(_.add(_))
+
+    tweaks.foldLeft(MuSigTweakContext(untweakedAggPubKey)) {
+      case (context, tweak) =>
+        context.applyTweak(tweak)
+    }
+  }
 
   /** The first key different from the keys.head, optimized MuSig2 allows this
     * key to have coefficient 1
     */
-  lazy val secondKeyOpt: Option[SchnorrPublicKey] = {
+  lazy val secondKeyOpt: Option[ECPublicKey] = {
     keys.find(_ != keys.head)
   }
 }
 
 object KeySet {
 
-  def apply(keys: Vector[SchnorrPublicKey]): LexicographicKeySet = {
-    val sortedKeys = keys.sorted(NetworkElement.lexicographicalOrdering)
-    LexicographicKeySet(sortedKeys)
+  def apply(keys: Vector[ECPublicKey]): LexicographicKeySet = {
+    fromUnsorted(keys)
   }
 
-  def apply(keys: SchnorrPublicKey*): LexicographicKeySet = {
+  def apply(keys: ECPublicKey*): LexicographicKeySet = {
     KeySet(keys.toVector)
   }
 
   def apply(
-      keys: Vector[SchnorrPublicKey],
+      keys: Vector[ECPublicKey],
+      tweaks: Vector[MuSigTweak]): LexicographicKeySet = {
+    fromUnsorted(keys, tweaks)
+  }
+
+  def fromUnsorted(keys: Vector[ECPublicKey]): LexicographicKeySet = {
+    fromUnsorted(keys, Vector.empty)
+  }
+
+  def fromUnsorted(
+      keys: Vector[ECPublicKey],
       tweaks: Vector[MuSigTweak]): LexicographicKeySet = {
     val sortedKeys = keys.sorted(NetworkElement.lexicographicalOrdering)
     LexicographicKeySet(sortedKeys, tweaks)
+  }
+
+  def fromUnsorted(unsortedKeySet: UnsortedKeySet): LexicographicKeySet = {
+    fromUnsorted(unsortedKeySet.keys, unsortedKeySet.tweaks)
   }
 }
 
 /** The default way of ordering a KeySet is lexicographically */
 case class LexicographicKeySet(
-    override val keys: Vector[SchnorrPublicKey],
+    override val keys: Vector[ECPublicKey],
     override val tweaks: Vector[MuSigTweak] = Vector.empty)
     extends KeySet {
   keys.init.zip(keys.tail).foreach { case (key1, key2) =>
@@ -110,6 +127,8 @@ case class LexicographicKeySet(
   * non-lexicographical order, extend KeySet.
   */
 case class UnsortedKeySet(
-    override val keys: Vector[SchnorrPublicKey],
+    override val keys: Vector[ECPublicKey],
     override val tweaks: Vector[MuSigTweak] = Vector.empty)
-    extends KeySet
+    extends KeySet {
+  def toSorted: LexicographicKeySet = KeySet.fromUnsorted(this)
+}

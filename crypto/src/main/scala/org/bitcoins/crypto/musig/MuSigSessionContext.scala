@@ -9,12 +9,19 @@ import org.bitcoins.crypto.{
 import scodec.bits.ByteVector
 
 /** The data relevant to computing and verifying MuSig partial signatures */
-case class SigningSession(
-    b: FieldElement,
-    aggNonce: ECPublicKey,
-    e: FieldElement)
+case class MuSigSessionContext(
+    aggNonce: MuSigNoncePub,
+    keySet: KeySet,
+    message: ByteVector) {
+  def pubKeys: Vector[ECPublicKey] = keySet.keys
+  def tweaks: Vector[MuSigTweak] = keySet.tweaks
 
-object SigningSession {
+  def getSessionValues: MuSigSessionValues = {
+    MuSigSessionContext.getSessionValues(aggNonce, keySet, message)
+  }
+}
+
+object MuSigSessionContext {
 
   def computeB(
       aggNoncePub: MuSigNoncePub,
@@ -43,19 +50,11 @@ object SigningSession {
   def getSessionValues(
       aggNoncePub: MuSigNoncePub,
       keySet: KeySet,
-      message: ByteVector): SigningSession = {
+      message: ByteVector): MuSigSessionValues = {
     val aggPubKey = keySet.aggPubKey.schnorrPublicKey
     val b = computeB(aggNoncePub, keySet, message)
     val aggNonce = aggNoncePub.sumToKey(b)
     val e = computeE(aggPubKey, aggNonce, message)
-
-    SigningSession(b, aggNonce, e)
-  }
-
-  def apply(
-      aggNoncePub: MuSigNoncePub,
-      keySet: KeySet,
-      message: ByteVector): SigningSession = {
-    getSessionValues(aggNoncePub, keySet, message)
+    MuSigSessionValues(keySet.tweakContext, b, aggNonce.toPoint, e)
   }
 }

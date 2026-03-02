@@ -566,7 +566,7 @@ object FrostUtil {
       signersContext.thresholdPubKey,
       tweaks,
       isXOnly)
-    val preimages: Vector[FieldElement] = 0
+    val secrets: Vector[FieldElement] = 0
       .to(1)
       .map { i =>
         hashFrostDeterministicNonce(secsharePrime,
@@ -577,15 +577,15 @@ object FrostUtil {
       }
       .toVector
       .map(FieldElement.fromBytes)
-    require(!preimages.contains(FieldElement.zero),
-            "Derived nonce preimage cannot be zero")
-    val r1: ECPublicKey = CryptoParams.getG.multiply(preimages.head)
-    val r2: ECPublicKey = CryptoParams.getG.multiply(preimages(1))
+    require(!secrets.contains(FieldElement.zero),
+            "Derived nonce secrets cannot be zero")
+    val r1: ECPublicKey = CryptoParams.getG.multiply(secrets.head)
+    val r2: ECPublicKey = CryptoParams.getG.multiply(secrets(1))
     require(CryptoUtil.decodePoint(r1) != SecpPointInfinity)
     require(CryptoUtil.decodePoint(r2) != SecpPointInfinity)
     val pubNonce = FrostNoncePub(r1.bytes ++ r2.bytes)
 
-    val secNonce = FrostNoncePriv(preimages.head.bytes ++ preimages(1).bytes)
+    val secNonce = FrostNoncePriv(secrets.head.bytes ++ secrets(1).bytes)
     val aggNonce = aggregateNonces(Vector(pubNonce, aggOtherNonce),
                                    Vector(signerId, COORDINATOR_ID))
     val sessionCtx = FrostSessionContext(

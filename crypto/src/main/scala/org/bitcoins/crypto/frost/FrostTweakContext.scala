@@ -97,14 +97,13 @@ object FrostTweakContext {
       tweak = tweak,
       isXOnlyT = isXOnlyTweak
     )
-    val (aggKey, musigTweak) = MuSigTweakContext
-      .apply(parityAcc = tweakCtx.gacc, tweakAcc = tweakCtx.tacc)
+    val musigTweak = MuSigTweakContext
+      .apply(tweakCtx.Q, parityAcc = tweakCtx.gacc, tweakAcc = tweakCtx.tacc)
       .applyTweak(
-        tweak = initTweak,
-        aggPubKey = tweakCtx.getPlainPubKey
+        tweak = initTweak
       )
     FrostTweakContext(
-      Q = aggKey.toPoint,
+      Q = musigTweak.Q,
       tacc = musigTweak.tweakAcc,
       gacc = musigTweak.parityAcc
     )

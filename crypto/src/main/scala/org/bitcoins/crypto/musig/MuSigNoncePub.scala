@@ -4,28 +4,41 @@ import org.bitcoins.crypto._
 import scodec.bits.ByteVector
 
 /** Wraps the ephemeral points making up a MuSig2 nonce */
-case class MuSigNoncePub(pubNonces: Vector[SecpPoint]) extends NetworkElement {
-  require(pubNonces.length == MuSigUtil.nonceNum,
-          s"Exactly ${MuSigUtil.nonceNum} keys are expected, found $pubNonces")
+case class MuSigNoncePub(bytes: ByteVector) extends NetworkElement {
+  require(bytes.length == 66,
+          s"FrostNoncePub must be 66 bytes, got: ${bytes.length}")
 
-  def apply(i: Int): SecpPoint = {
-    pubNonces(i)
+  private def isValidPubKeys: Boolean = {
+    bytes
+      .grouped(33)
+      .forall(b =>
+        b == SecpPointInfinity.bytes || CryptoUtil.isValidPubKey(
+          ECPublicKeyBytes(b)))
+
   }
 
-  def length: Int = pubNonces.length
+  /** Helper function to parse [[SecpPointInfinity]] case as that is not a valid
+    * public key
+    */
+  require(
+    isValidPubKeys,
+    s"Each 33-byte slice of MuSigNoncePub must be either the point at infinity or a valid compressed public key, got: ${bytes.grouped(33).toVector.map(_.toHex)}"
+  )
 
-  override def bytes: ByteVector = {
-    pubNonces
-      .map {
-        case SecpPointInfinity  => MuSigNoncePub.infPtBytes
-        case p: SecpPointFinite => p.toPublicKey.bytes
-      }
-      .reduce(_ ++ _)
+  private def parse(bytes: ByteVector): SecpPoint = {
+    SecpPoint.fromBytes(bytes)
+  }
+  val r1: SecpPoint = {
+    parse(bytes.take(33))
+  }
+
+  val r2: SecpPoint = {
+    parse(bytes.takeRight(33))
   }
 
   /** Collapses this into a single ephemeral public key */
   def sumToKey(b: FieldElement): ECPublicKey = {
-    MuSigUtil.nonceSum[SecpPoint](pubNonces,
+    MuSigUtil.nonceSum[SecpPoint](Vector(r1, r2),
                                   b,
                                   _.add(_),
                                   _.multiply(_),
@@ -42,25 +55,15 @@ object MuSigNoncePub extends Factory[MuSigNoncePub] {
   val infPtBytes: ByteVector = ByteVector.low(33)
 
   override def fromBytes(bytes: ByteVector): MuSigNoncePub = {
-    val pubs =
-      bytes.toArray
-        .grouped(33)
-        .toVector
-        .map(ByteVector(_))
-        .map { b =>
-          if (b == infPtBytes) SecpPointInfinity
-          else ECPublicKey.fromBytes(b).toPoint
-        }
-
-    MuSigNoncePub(pubs)
+    new MuSigNoncePub(bytes)
   }
 
-  /** Sums the given nonces and returns the aggregate MuSigNoncePub */
-  def aggregate(nonces: Vector[MuSigNoncePub]): MuSigNoncePub = {
-    val aggNonceKeys = 0.until(MuSigUtil.nonceNum).toVector.map { i =>
-      nonces.map(multiNonce => multiNonce(i)).reduce(_.add(_))
-    }
+  def apply(r1: SecpPoint, r2: SecpPoint): MuSigNoncePub = {
+    MuSigNoncePub(r1.bytes ++ r2.bytes)
+  }
 
-    MuSigNoncePub(aggNonceKeys)
+  def apply(key1: ECPublicKey, key2: ECPublicKey): MuSigNoncePub = {
+    require(key1.isCompressed && key2.isCompressed)
+    MuSigNoncePub(key1.bytes ++ key2.bytes)
   }
 }
