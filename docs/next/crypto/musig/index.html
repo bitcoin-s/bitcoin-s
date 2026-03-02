@@ -70,7 +70,7 @@
 <ul>
 <li>This is a member of <code>KeySet</code> and returns the aggregate public key for this set of signers, including the tweaks provided. In most uses, a subsequent call to <code>schnorrPublicKey</code> is required for Bitcoin applications.</li>
 </ul></li>
-<li><code>MuSigNoncePub.aggregate</code>
+<li><code>MuSigUtil.aggregateNonces</code>
 <ul>
 <li>Given a <code>Vector[MuSigNoncePub]</code> of the signer's nonces, returns the aggregate <code>MuSigNoncePub</code>. This aggregation can be done before the message, or even the <code>KeySet</code> is known.</li>
 </ul></li>
@@ -85,22 +85,27 @@
 <ul>
 <li>This function validates a single partial signature against that signer's public key and <code>MuSigNoncePub</code>.</li>
 </ul></li>
-<li><code>MuSigUtil.signAgg</code>
+<li><code>MuSigUtil.partialSigAgg</code>
 <ul>
 <li>This function aggregates all of the <code>s</code> values into a single valid <code>SchnorrDigitalSignature</code> (using the aggregate nonce key <code>R</code>).</li>
 </ul></li>
 </ul>
 <p>Note that no new function is required for aggregate verification as <code>SchnorrPublicKey</code>'s <code>verify</code> function is to be used.</p>
-<p>Lastly, it should be mentioned that <code>MuSigNoncePriv</code>s must be constructed using either <code>MuSigNoncePriv.gen</code> or <code>MuSigNoncePriv.genInternal</code> (the latter should only be used with 32 bytes of secure random entropy). These generation functions take as input any context information that is available at nonce generation time, namely your signing key, aggregate public key, message, and any extra bytes you may have available. Including these optional inputs improves the security of nonce generation (which must be absolutely secure).</p>
+<p>Lastly, it should be mentioned that <code>MuSigNoncePriv</code>s must be constructed using either <code>MuSigUtil.nonceGen</code>.</p>
 <p>The following code shows a two-party MuSig execution:</p>
-<pre><code class="hljs css language-scala"><span class="hljs-comment">// Alice and Bob generate and exchange nonce data (new nonces for every sig)</span>
-<span class="hljs-keyword">val</span> aliceNoncePriv = <span class="hljs-type">MuSigNoncePriv</span>.gen()
-<span class="hljs-keyword">val</span> aliceNonce = aliceNoncePriv.toPublicNonces <span class="hljs-comment">// Alice sends this to Bob</span>
-<span class="hljs-keyword">val</span> bobNoncePriv = <span class="hljs-type">MuSigNoncePriv</span>.gen()
-<span class="hljs-keyword">val</span> bobNonce = bobNoncePriv.toPublicNonces <span class="hljs-comment">// Bob sends this to Alice</span>
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">val</span> alicePrivKey = <span class="hljs-type">ECPrivateKey</span>.freshPrivateKey
+<span class="hljs-keyword">val</span> alicePubKey = alicePrivKey.publicKey
+<span class="hljs-comment">// Alice and Bob generate and exchange nonce data (new nonces for every sig)</span>
+<span class="hljs-keyword">val</span> aliceNoncePriv = <span class="hljs-type">MuSigUtil</span>.nonceGen(alicePubKey)
+<span class="hljs-keyword">val</span> aliceNonce = aliceNoncePriv.toNoncePub <span class="hljs-comment">// Alice sends this to Bob</span>
+
+<span class="hljs-keyword">val</span> bobPrivKey = <span class="hljs-type">ECPrivateKey</span>.freshPrivateKey
+<span class="hljs-keyword">val</span> bobPubKey = bobPrivKey.publicKey
+<span class="hljs-keyword">val</span> bobNoncePriv = <span class="hljs-type">MuSigUtil</span>.nonceGen(bobPubKey)
+<span class="hljs-keyword">val</span> bobNonce = bobNoncePriv.toNoncePub <span class="hljs-comment">// Bob sends this to Alice</span>
 
 <span class="hljs-comment">// The aggregate musig nonce can be computed from Alice's and Bob's</span>
-<span class="hljs-keyword">val</span> aggMuSigNonce = <span class="hljs-type">MuSigNoncePub</span>.aggregate(<span class="hljs-type">Vector</span>(aliceNonce, bobNonce))
+<span class="hljs-keyword">val</span> aggMuSigNonce = <span class="hljs-type">MuSigUtil</span>.aggregateNonces(<span class="hljs-type">Vector</span>(aliceNonce, bobNonce))
 
 <span class="hljs-comment">// Any party can (non-interactively) compute the aggregate public key</span>
 <span class="hljs-keyword">val</span> pubKeys = <span class="hljs-type">Vector</span>(alicePubKey, bobPubKey)
@@ -108,13 +113,11 @@
 <span class="hljs-keyword">val</span> aggPubKey = keySet.aggPubKey.schnorrPublicKey
 
 <span class="hljs-comment">// Alice generates a partial signature for the message</span>
-<span class="hljs-keyword">val</span> (aliceR, aliceSig) = 
+<span class="hljs-keyword">val</span> aliceSig = 
     <span class="hljs-type">MuSigUtil</span>.sign(aliceNoncePriv, aggMuSigNonce, alicePrivKey, msg, keySet)
 <span class="hljs-comment">// Bob generates a partial signature for the message</span>
-<span class="hljs-keyword">val</span> (bobR, bobSig) =
+<span class="hljs-keyword">val</span> bobSig =
     <span class="hljs-type">MuSigUtil</span>.sign(bobNoncePriv, aggMuSigNonce, bobPrivKey, msg, keySet)
-require(aliceR == bobR)
-<span class="hljs-keyword">val</span> <span class="hljs-type">R</span> = aliceR
 
 <span class="hljs-comment">// Alice and Bob exchange and verify each other's sigs (s values)</span>
 require(
@@ -133,11 +136,10 @@ require(
                                    msg))
 
 <span class="hljs-comment">// In the case that the aggregator is not Alice or Bob, R can be computed as follows</span>
-<span class="hljs-keyword">val</span> <span class="hljs-type">R2</span> = <span class="hljs-type">SigningSession</span>(aggMuSigNonce, keySet, msg).aggNonce
-require(<span class="hljs-type">R2</span> == <span class="hljs-type">R</span>)
+<span class="hljs-keyword">val</span> ctx = <span class="hljs-type">MuSigSessionContext</span>(aggMuSigNonce, keySet, msg)
 
 <span class="hljs-comment">// Finally, any party can aggregate the partial signatures</span>
-<span class="hljs-keyword">val</span> sig = <span class="hljs-type">MuSigUtil</span>.signAgg(<span class="hljs-type">Vector</span>(aliceSig, bobSig), <span class="hljs-type">R</span>)
+<span class="hljs-keyword">val</span> sig = <span class="hljs-type">MuSigUtil</span>.partialSigAgg(<span class="hljs-type">Vector</span>(aliceSig, bobSig), ctx)
 
 <span class="hljs-comment">// This signature can now be validated as a normal BIP340 Schnorr signature</span>
 require(aggPubKey.verify(msg, sig))
