@@ -417,8 +417,8 @@ sealed abstract class NumberUtil extends CryptoNumberUtil {
     else {
       val idx = from + (to - from - 1) / 2
       math.signum(ord.compare(elem, unwrap(seq(idx)))) match {
-        case -1 => search(seq, elem, from, idx, unwrap)(ord)
-        case 1  => search(seq, elem, idx + 1, to, unwrap)(ord)
+        case -1 => search(seq, elem, from, idx, unwrap)(using ord)
+        case 1  => search(seq, elem, idx + 1, to, unwrap)(using ord)
         case _  => idx
       }
     }

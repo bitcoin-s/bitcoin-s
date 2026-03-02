@@ -43,7 +43,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
     val outcome: Future[Outcome] = for {
       bitcoind <- cachedBitcoindWithFundsF
       outcome = withNeutrinoNodeConnectedToBitcoindCached(test, bitcoind)(
-        system,
+        using system,
         getFreshConfig
       )
       f <- outcome.toFuture
@@ -65,7 +65,11 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
           peerManagerApi = peerManager,
           paramPeers = Vector.empty,
           queue = node
-        )(system.dispatcher, system, node.nodeAppConfig, node.chainAppConfig)
+        )(
+          using system.dispatcher,
+          system,
+          node.nodeAppConfig,
+          node.chainAppConfig)
         dataMessageHandler = DataMessageHandler(
           chainApi = chainApi,
           walletCreationTimeOpt = None,
@@ -77,7 +81,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
             peerFinder = peerFinder,
             sentQuery = Instant.now()
           )
-        )(node.executionContext, node.nodeAppConfig, node.chainAppConfig)
+        )(using node.executionContext, node.nodeAppConfig, node.chainAppConfig)
 
         // Use signet genesis block header, this should be invalid for regtest
         invalidPayload =
@@ -210,7 +214,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
         peer = peerManager.peers.head
         chainApi = ChainHandler.fromDatabase()(
-          executionContext,
+          using executionContext,
           node.chainAppConfig
         )
         _ = require(peerManager.getPeerData(peer).isDefined)
@@ -218,7 +222,11 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
           peerManagerApi = peerManager,
           paramPeers = Vector.empty,
           queue = node
-        )(system.dispatcher, system, node.nodeAppConfig, node.chainAppConfig)
+        )(
+          using system.dispatcher,
+          system,
+          node.nodeAppConfig,
+          node.chainAppConfig)
         dataMessageHandler = DataMessageHandler(
           chainApi = chainApi,
           walletCreationTimeOpt = None,
@@ -230,7 +238,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
             peerFinder = peerFinder,
             sentQuery = Instant.now()
           )
-        )(node.executionContext, node.nodeAppConfig, node.chainAppConfig)
+        )(using node.executionContext, node.nodeAppConfig, node.chainAppConfig)
 
         // disconnect our node from bitcoind, then
         // use bitcoind to generate 2 blocks, and then try to send the headers
@@ -273,7 +281,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
         peer = peerManager.peers.head
         chainApi = ChainHandler.fromDatabase()(
-          executionContext,
+          using executionContext,
           node.chainAppConfig
         )
         _ = require(peerManager.getPeerData(peer).isDefined)
@@ -281,7 +289,11 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
           peerManagerApi = peerManager,
           paramPeers = Vector.empty,
           queue = node
-        )(system.dispatcher, system, node.nodeAppConfig, node.chainAppConfig)
+        )(
+          using system.dispatcher,
+          system,
+          node.nodeAppConfig,
+          node.chainAppConfig)
         sentQuery0 = Instant.now()
         dataMessageHandler = DataMessageHandler(
           chainApi = chainApi,
@@ -294,7 +306,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
             peerFinder = peerFinder,
             sentQuery = sentQuery0
           )
-        )(node.executionContext, node.nodeAppConfig, node.chainAppConfig)
+        )(using node.executionContext, node.nodeAppConfig, node.chainAppConfig)
 
         // disconnect our node from bitcoind, then
         // use bitcoind to generate 2,000 blocks, and then try to send the headers

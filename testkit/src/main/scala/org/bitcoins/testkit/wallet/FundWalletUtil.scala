@@ -248,7 +248,7 @@ object FundWalletUtil extends FundWalletUtil {
         bitcoind,
         tmp,
         None
-      )(system)
+      )(using system)
       funded1 <- fundAccountForWalletWithBitcoind(
         BitcoinSWalletTest.defaultAcctAmts,
         wallet.walletConfig.defaultAccount,

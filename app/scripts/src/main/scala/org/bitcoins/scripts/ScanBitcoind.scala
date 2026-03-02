@@ -46,7 +46,7 @@ class ScanBitcoind()(implicit
         def reads(json: JsValue): JsResult[(DoubleSha256DigestBE, String)] =
           for {
             digest <- (json \ "txid").validate[DoubleSha256DigestBE](
-              JsonReaders.DoubleSha256DigestBEReads)
+              using JsonReaders.DoubleSha256DigestBEReads)
             str <- (json \ "tx").validate[String]
           } yield (digest, str)
       }
@@ -335,8 +335,8 @@ class ScanBitcoind()(implicit
       source <- sourceF
       sink = Flow[Vector[NegativeNumberResult]]
         .mapConcat(identity)
-        .map(
-          Json.toJson(_)(ReadNegativeNumberResult.negativeNumberResultWrites))
+        .map(Json.toJson(_)(
+          using ReadNegativeNumberResult.negativeNumberResultWrites))
         .map(b => Json.stringify(b) + "\n")
         .batch(50_000, { t => Vector(t) }) { (vec, t) => vec.appended(t) }
         .map(batch => ByteString(batch.mkString))
@@ -425,7 +425,7 @@ object ScanBitcoind extends BitcoinSAppScalaDaemon {
   override val customFinalDirOpt = None
 
   implicit val rpcAppConfig: BitcoindRpcAppConfig =
-    BitcoindRpcAppConfig.fromDefaultDatadir()(system)
+    BitcoindRpcAppConfig.fromDefaultDatadir()(using system)
 
   new ScanBitcoind().run()
 }

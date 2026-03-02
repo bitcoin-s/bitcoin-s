@@ -148,7 +148,7 @@ case class DLCAppConfig(
     DLCAppConfig.createDLCWallet(
       nodeApi = nodeApi,
       chainQueryApi = chainQueryApi
-    )(walletConf, this)
+    )(using walletConf, this)
   }
 
   private val callbacks = new Mutable(DLCWalletCallbacks.empty)
@@ -169,7 +169,7 @@ case class DLCAppConfig(
     */
   private def deleteAlphaVersionDLCs(): Future[Unit] = {
     logger.info(s"Deleting alpha version DLCs")
-    val dlcManagement = DLCDataManagement.fromDbAppConfig()(this, ec)
+    val dlcManagement = DLCDataManagement.fromDbAppConfig()(using this, ec)
     val dlcDAO = dlcManagement.dlcDAO
     val alphaDLCsF =
       dlcDAO
@@ -199,7 +199,7 @@ case class DLCAppConfig(
     */
   private def serializationVersionMigration(): Future[Unit] = {
     logger.info(s"Fixing serialization version for false positive Beta DLCs")
-    val dlcManagement = DLCDataManagement.fromDbAppConfig()(this, ec)
+    val dlcManagement = DLCDataManagement.fromDbAppConfig()(using this, ec)
     val dlcDAO = dlcManagement.dlcDAO
     // read all existing DLCs
     val allDlcsF = dlcDAO.findAll()
@@ -208,7 +208,7 @@ case class DLCAppConfig(
     val walletAppConfig =
       WalletAppConfig(baseDatadir, configOverrides)
     val txDAO: TransactionDAO =
-      TransactionDAO()(ec = ec, appConfig = walletAppConfig)
+      TransactionDAO()(using ec = ec, appConfig = walletAppConfig)
     // get the offers so we can figure out what the serialization version is
     val dlcDbContractInfoOfferF: Future[Vector[DLCSetupDbState]] = {
       for {

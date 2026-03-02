@@ -228,7 +228,7 @@ case class ValidTestInputs(
 object ValidTestInputs {
 
   def fromJson(json: JsValue): JsResult[ValidTestInputs] = {
-    Json.fromJson(json)(SuccessTestVector.validTestInputsFormat)
+    Json.fromJson(json)(using SuccessTestVector.validTestInputsFormat)
   }
 }
 
@@ -248,7 +248,7 @@ case class SuccessTestVector(
 ) extends DLCTestVector {
 
   override def toJson: JsValue = {
-    Json.toJson(this)(SuccessTestVector.successTestVectorFormat)
+    Json.toJson(this)(using SuccessTestVector.successTestVectorFormat)
   }
 }
 

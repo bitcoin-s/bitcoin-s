@@ -15,43 +15,43 @@ trait WalletDbManagement extends DbManagement {
   def ec: ExecutionContext
 
   private lazy val accountTable: TableQuery[Table[?]] = {
-    AccountDAO()(ec, appConfig).table
+    AccountDAO()(using ec, appConfig).table
   }
 
   private lazy val addressTable: TableQuery[Table[?]] = {
-    AddressDAO()(ec, appConfig).table
+    AddressDAO()(using ec, appConfig).table
   }
 
   private lazy val addressTagTable: TableQuery[Table[?]] = {
-    AddressTagDAO()(ec, appConfig).table
+    AddressTagDAO()(using ec, appConfig).table
   }
 
   private lazy val utxoTable: TableQuery[Table[?]] = {
-    SpendingInfoDAO()(ec, appConfig).table
+    SpendingInfoDAO()(using ec, appConfig).table
   }
 
   private lazy val txTable: TableQuery[Table[?]] = {
-    TransactionDAO()(ec, appConfig).table
+    TransactionDAO()(using ec, appConfig).table
   }
 
   private lazy val incomingTxTable: TableQuery[Table[?]] = {
-    IncomingTransactionDAO()(ec, appConfig).table
+    IncomingTransactionDAO()(using ec, appConfig).table
   }
 
   private lazy val outgoingTxTable: TableQuery[Table[?]] = {
-    OutgoingTransactionDAO()(ec, appConfig).table
+    OutgoingTransactionDAO()(using ec, appConfig).table
   }
 
   private lazy val spkTable: TableQuery[Table[?]] = {
-    ScriptPubKeyDAO()(ec, appConfig).table
+    ScriptPubKeyDAO()(using ec, appConfig).table
   }
 
   private lazy val stateDescriptorTable: TableQuery[Table[?]] = {
-    WalletStateDescriptorDAO()(ec, appConfig).table
+    WalletStateDescriptorDAO()(using ec, appConfig).table
   }
 
   private lazy val masterXPubTable: TableQuery[Table[?]] = {
-    MasterXPubDAO()(ec, appConfig).table
+    MasterXPubDAO()(using ec, appConfig).table
   }
 
   // Ordering matters here, tables with a foreign key should be listed after

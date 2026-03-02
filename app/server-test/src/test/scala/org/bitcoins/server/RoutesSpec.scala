@@ -130,7 +130,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
   }
 
   val walletRoutes: WalletRoutes =
-    WalletRoutes(walletLoader)(system, conf.walletConf)
+    WalletRoutes(walletLoader)(using system, conf.walletConf)
 
   val coreRoutes: CoreRoutes = CoreRoutes()
 
@@ -375,7 +375,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
     "return the wallet's balance" in {
       (mockWalletApi
-        .getBalance()(_: ExecutionContext))
+        .getBalance()(using _: ExecutionContext))
         .expects(executor)
         .returning(Future.successful(Bitcoins(50)))
 
@@ -392,7 +392,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
 
     "return the wallet's balance in sats" in {
       (mockWalletApi
-        .getBalance()(_: ExecutionContext))
+        .getBalance()(using _: ExecutionContext))
         .expects(executor)
         .returning(Future.successful(Bitcoins(50)))
 
@@ -1972,7 +1972,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
           _: CurrencyUnit,
           _: Option[FeeUnit],
           _: CoinSelectionAlgo
-        )(_: ExecutionContext))
+        )(using _: ExecutionContext))
         .expects(
           testAddress,
           Bitcoins(100),
@@ -2096,7 +2096,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .anyNumberOfTimes()
 
       (mockWalletApi.sendFundsHandling
-        .signPSBT(_: PSBT)(_: ExecutionContext))
+        .signPSBT(_: PSBT)(using _: ExecutionContext))
         .expects(PSBT.empty, executor)
         .returning(Future.successful(PSBT.fromUnsignedTx(tx)))
         .anyNumberOfTimes()

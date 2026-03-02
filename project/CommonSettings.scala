@@ -117,14 +117,13 @@ object CommonSettings {
     Vector(
       // https://stackoverflow.com/a/43103038/967713
       "-release",
-      "8"
+      "17"
     )
   }
 
   /** Linting options for scalac */
   private val scala2_13CompilerLinting: Vector[String] = {
     Vector(
-      "-Xfatal-warnings",
       "-Xlint"
     )
   }

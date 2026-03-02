@@ -18,7 +18,7 @@ object OrderedSchnorrSignatures
 
   def fromUnsorted(
       vec: Vector[SchnorrDigitalSignature]): OrderedSchnorrSignatures = {
-    val sorted = vec.sorted(org.bitcoins.core.schnorrSignatureOrdering)
+    val sorted = vec.sorted(using org.bitcoins.core.schnorrSignatureOrdering)
     OrderedSchnorrSignatures(sorted)
   }
 }

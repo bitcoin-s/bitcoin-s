@@ -729,7 +729,7 @@ trait BitcoindRpcTestUtil extends BitcoinSLogger {
     createNodePair[T](BitcoindVersion.newest).map { pair =>
       clientAccum.++=(Vector(pair._1, pair._2))
       pair
-    }(system.dispatcher)
+    }(using system.dispatcher)
 
   def createNodePair[T <: BitcoindRpcClient](
       version: BitcoindVersion
