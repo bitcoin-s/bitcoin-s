@@ -171,8 +171,6 @@ case class PeerConnection(
                       Future.successful(ByteString.empty)
                   }
               }
-              .groupedWithin(16, 100.millis)
-              .map(seq => seq.fold(ByteString.empty)(_ ++ _))
               .viaMat(PeerConnection.parseToNetworkMsgFlow)(Keep.left)
               .toMat(handleNetworkMsgSink)(Keep.right)
 
@@ -412,7 +410,12 @@ object PeerConnection extends BitcoinSLogger {
 
   val parseToNetworkMsgFlow
       : Flow[ByteString, Vector[NetworkMessage], NotUsed] = {
+    // Batch small/fragmented ByteString chunks before parsing. This reduces
+    // allocations and improves throughput when upstream emits many small
+    // ByteStrings. Both socks5 and non-socks5 branches use this flow.
     Flow[ByteString]
+      .groupedWithin(16, 100.millis)
+      .map(seq => seq.fold(ByteString.empty)(_ ++ _))
       .statefulMap(() => ByteString.empty)(
         parseHelper,
         { (_: ByteString) => None }
