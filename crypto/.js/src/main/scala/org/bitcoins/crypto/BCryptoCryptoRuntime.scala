@@ -276,7 +276,7 @@ trait BCryptoCryptoRuntime extends CryptoRuntime {
   }
 
   override def decodePoint(bytes: ByteVector): SecpPoint = {
-    if (bytes.size == 1 && bytes(0) == 0x00) {
+    if (bytes == SecpPointInfinity.bytes) {
       SecpPointInfinity
     } else {
       val decoded = SECP256k1.curve
