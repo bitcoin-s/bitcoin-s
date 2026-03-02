@@ -389,7 +389,6 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
         }
         _ = wallet.walletConfig.migrate()
-        // initialize it
         initOldWallet <- Wallet.initialize(
           wallet = wallet,
           accountHandling = wallet.accountHandling,
