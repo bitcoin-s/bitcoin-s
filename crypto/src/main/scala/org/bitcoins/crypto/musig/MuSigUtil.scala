@@ -3,39 +3,86 @@ package org.bitcoins.crypto.musig
 import org.bitcoins.crypto.*
 import scodec.bits.ByteVector
 
-// TODO test against secp256k1-zkp someday
-/** Contains constants, hash functions, and signing/verification functionality
-  * for MuSig
+/**
+  * Utilities for MuSig2 operations and BIP-0327-related behaviour.
+  *
+  * This object implements nonce generation, nonce aggregation, partial
+  * signature generation and verification, and deterministic signing helpers
+  * used by the MuSig2 protocol. The implementation follows the BIP-0327
+  * ("MuSig2") reference where applicable; see:
+  *
+  *  - BIP-0327: https://github.com/bitcoin/bips/blob/master/bip-0327.mediawiki
+  *
+  * Important details and conventions implemented here:
+  *  - Nonces are represented as pairs (r1, r2) and are collapsed using a
+  *    polynomial sum with a session scalar b as described in the BIP.
+  *  - The point-at-infinity serialization is encoded as 33 zero bytes in
+  *    `MuSigNoncePub` (see `MuSigNoncePub.infPtBytes`).
+  *  - Parity handling for public keys and the aggregated nonce R is handled
+  *    via `ParityMultiplier` and conditional negation when required. This
+  *    matches the reference implementation behavior where sign adjustments
+  *    are applied during both signing and verification so that stored
+  *    original public keys remain unmodified.
+  *  - The functions here are low-level helpers; higher-level session
+  *    construction and key-aggregation logic is in `MuSigSessionContext` and
+  *    `KeySet`.
   */
 object MuSigUtil {
 
+  /** Number of nonce components used per signer. MuSig2 uses two
+    *  independent ephemeral nonces per signer (r1, r2). */
   val nonceNum: Int = 2
 
+  /** Tagged hash for key aggregation list digest used when computing key
+    * aggregation coefficients (BIP-0327: "KeyAgg list"). */
   def aggListHash(bytes: ByteVector): ByteVector = {
     CryptoUtil.taggedSha256(bytes, "KeyAgg list").bytes
   }
 
+  /** Tagged hash used to derive the per-key coefficient in key aggregation
+    * (BIP-0327: "KeyAgg coefficient"). */
   def aggCoefHash(bytes: ByteVector): ByteVector = {
     CryptoUtil.taggedSha256(bytes, "KeyAgg coefficient").bytes
   }
 
+  /** Tagged hash for MuSig nonce derivation (BIP-0327: "MuSig/nonce"). */
   def nonHash(bytes: ByteVector): ByteVector = {
     CryptoUtil.taggedSha256(bytes, "MuSig/nonce").bytes
   }
 
+  /** Tagged hash for nonce coefficient derivation (BIP-0327: "MuSig/noncecoef"). */
   def nonCoefHash(bytes: ByteVector): ByteVector = {
     CryptoUtil.taggedSha256(bytes, "MuSig/noncecoef").bytes
   }
 
+  /** Tagged hash for auxiliary randomness used in nonce generation
+    *  (BIP-0327: "MuSig/aux"). */
   def auxHash(bytes: ByteVector): ByteVector = {
     CryptoUtil.taggedSha256(bytes, "MuSig/aux").bytes
   }
 
+  /** Deterministic nonce hash used by the deterministic signing helper
+    *  (BIP-0327 reference tag "MuSig/deterministic/nonce"). */
   def muSigDeterministicNonceHash(bytes: ByteVector): ByteVector = {
     CryptoUtil.taggedSha256(bytes, "MuSig/deterministic/nonce").bytes
   }
 
-  /** nonces(0) + nonces(1)*b + nonces(2)*b*b + ... */
+  /**
+    * Generic polynomial summation of nonce components.
+    *
+    * The nonce pair (r0, r1, ..., rN) is collapsed to a single point or
+    * scalar by summing `r_i * b^i` for i from 0 to N-1 as described in
+    * BIP-0327. This helper abstracts the accumulation pattern and is
+    * parameterized over the element type T (which may be a field element
+    * or an EC point representation).
+    *
+    * @param nonces the vector of nonces to sum (length must equal nonceNum)
+    * @param b session scalar used as the polynomial base
+    * @param add function to add two T elements
+    * @param multiply function to multiply a T by a FieldElement
+    * @param identity additive identity for T
+    * @return resulting collapsed T (e.g., a FieldElement or SecpPoint)
+    */
   private[musig] def nonceSum[T](
       nonces: Vector[T],
       b: FieldElement,
@@ -51,8 +98,27 @@ object MuSigUtil {
       ._2
   }
 
-  /** Generates a MuSigNoncePriv given 32 bytes of entropy from preRand, and
-    * possibly some other sources, as specified in the BIP.
+  /**
+    * Generate a MuSig nonce private pair deterministically from the
+    * provided entropy and optional contextual inputs.
+    *
+    * This function implements the nonce derivation described in BIP-0327
+    * where the nonce generation input includes: per-signer randomness
+    * (preRand), the signer's compressed public key, optionally the
+    * aggregated public key, an optional message, and optional extra input.
+    * If a `privKeyOpt` is provided, aux hashing is XORed with the private
+    * key bytes to provide domain separation as in the reference.
+    *
+    * The returned `MuSigNoncePriv` contains two private nonces (k1,k2)
+    * and the signer's compressed public key (so the nonce packet is
+    * self-contained for verification/tweaks).
+    *
+    * @param preRand 32 bytes of entropy (must be length 32)
+    * @param publicKey signer's compressed public key (must be compressed)
+    * @param privKeyOpt optional signer's private key used to mix into aux
+    * @param aggPubKeyOpt optional aggregated public key for session binding
+    * @param msgOpt optional message to bind to the nonce (encoded lengthwise)
+    * @param extraInOpt optional additional bytes (maximum length = 4294967295 bytes)
     */
   def nonceGen(
       preRand: ByteVector,
@@ -106,8 +172,9 @@ object MuSigUtil {
     MuSigNoncePriv(privNonceKeys(0), privNonceKeys(1), publicKey)
   }
 
-  /** Generates 32 bytes of entropy and constructs a MuSigNoncePriv from this,
-    * and possibly some other sources, as specified in the BIP.
+  /**
+    * Convenience overload of `nonceGen` that generates 32 bytes of
+    * randomness internally.
     */
   def nonceGen(
       pk: ECPublicKey,
@@ -120,7 +187,24 @@ object MuSigUtil {
     nonceGen(preRand, pk, privKeyOpt, aggPubKeyOpt, msgOpt, extraInOpt)
   }
 
-  /** Generates a MuSig partial signature, accompanied by the aggregate R value
+  /**
+    * Produce a MuSig partial signature for a given signer using the
+    * provided nonce pair, aggregate nonce, and private key. Returns the
+    * scalar partial signature `s` (a FieldElement) corresponding to
+    * this signer's contribution.
+    *
+    * The function performs the parity and coefficient adjustments described
+    * in BIP-0327, including:
+    *  - conditional negation of nonce private components when the final
+    *    aggregated R requires it,
+    *  - application of the session parity multiplier to the signer's
+    *    private key contribution, and
+    *  - verification of the generated partial signature via
+    *    `partialSigVerifyInternal` as an internal consistency check.
+    *
+    * Note: this is a low-level helper that expects the `aggNoncePub` to be
+    * the aggregated public nonces for the session and `keySet` to represent
+    * the signers participating in the session.
     */
   def sign(
       noncePriv: MuSigNoncePriv,
@@ -133,14 +217,23 @@ object MuSigUtil {
     sign(noncePriv, privKey, signingSession)
   }
 
+  /**
+    * Core signing routine used by the deterministic and non-deterministic
+    * sign helpers. Implements the signing arithmetic from BIP-0327 while
+    * leaving session construction to the caller.
+    *
+    * Preconditions:
+    *  - the provided `noncePriv.publicKey` must equal `privKey.publicKey` as
+    *    the nonce must be bound to the signer key used for signing.
+    */
   def sign(
       noncePriv: MuSigNoncePriv,
       privKey: ECPrivateKey,
       signingSession: MuSigSessionContext): FieldElement = {
     val pubKey = privKey.publicKey
-    require(
-      pubKey == noncePriv.publicKey,
-      s"Nonce private key must be derived from the same public key, got ${pubKey} and ${noncePriv.publicKey}")
+    if (pubKey != noncePriv.publicKey) {
+      throw new IllegalArgumentException("Nonce private key must be derived from the same public key, got " + pubKey.toString + " and " + noncePriv.publicKey.toString)
+    }
     val values = signingSession.getSessionValues
     val keySet = signingSession.keySet
     val coef = keySet.getSessionKeyAggCoeff(signingSession, pubKey)
@@ -179,6 +272,11 @@ object MuSigUtil {
     s
   }
 
+  /**
+    * Verify a single signer partial signature with a vector of per-signer
+    * nonce public pairs. This convenience overload selects the signer's
+    * nonce pair using `signerIndex` from the provided `pubNonces` vector.
+    */
   def partialSigVerify(
       partialSig: FieldElement,
       pubNonces: Vector[MuSigNoncePub],
@@ -196,6 +294,11 @@ object MuSigUtil {
                      message)
   }
 
+  /**
+    * Verify a single partial signature for a signer given the signer's
+    * nonce pair, the aggregated nonce, the signer's public key, the
+    * key-set and message. This wraps to `partialSigVerifyInternal`.
+    */
   def partialSigVerify(
       partialSig: FieldElement,
       noncePub: MuSigNoncePub,
@@ -208,6 +311,25 @@ object MuSigUtil {
     partialSigVerifyInternal(partialSig, Vector(noncePub), pubKey, ctx)
   }
 
+  /**
+    * Internal verification routine implementing the MuSig2 partial
+    * signature verification equation per BIP-0327.
+    *
+    * The check performed is:
+    *   G * s == RE + g' * (a * e * P)
+    * where:
+    *  - s is the partial signature scalar (FieldElement)
+    *  - RE is the (possibly parity-negated) aggregated nonce point
+    *  - g' is the parity-multiplied group coefficient applied to the
+    *    signer public key (matching the signer's adjusted private key)
+    *  - a is the session key aggregation coefficient for the signer
+    *  - e is the challenge scalar for the session
+    *  - P is the signer's public key
+    *
+    * The implementation uses `nonceSum` to collapse the per-signer nonce
+    * pair and applies parity adjustments to both R and the public-key
+    * multiplier to match the sign() implementation.
+    */
   def partialSigVerifyInternal(
       partialSig: FieldElement,
       noncePubs: Vector[MuSigNoncePub],
@@ -236,7 +358,12 @@ object MuSigUtil {
     expectedS == actualS
   }
 
-  /** Aggregates MuSig partial signatures into a BIP340 SchnorrDigitalSignature
+  /**
+    * Aggregate a set of signer partial signature scalars into a BIP340
+    * Schnorr signature. This performs the final adjustments required by
+    * MuSig2 where the sum of partial s values is further adjusted by
+    * the aggregated tweak accumulator `tacc` multiplied by the session
+    * challenge e (and parity multiplier g).
     */
   def partialSigAgg(
       sVals: Vector[FieldElement],
@@ -248,7 +375,9 @@ object MuSigUtil {
     partialSigAgg(sVals, ctx)
   }
 
-  /** Aggregates MuSig partial signatures into a BIP340 SchnorrDigitalSignature
+  /**
+    * Internal aggregation helper which computes the final Schnorr signature
+    * from individual s values and session context.
     */
   def partialSigAgg(
       sVals: Vector[FieldElement],
@@ -266,6 +395,14 @@ object MuSigUtil {
     SchnorrDigitalSignature(aggPubNonce.schnorrNonce, s, hashTypeOpt = None)
   }
 
+  /**
+    * Deterministic signing helper that produces a deterministic nonce pair
+    * and corresponding partial signature following the reference
+    * deterministic construction in the BIP. This is useful for
+    * reproducible tests or for deterministic wallets.
+    *
+    * Returns the public nonce pair and the scalar partial signature.
+    */
   def deterministicSign(
       secretKey: ECPrivateKey,
       aggOtherNonce: MuSigNoncePub,
@@ -311,7 +448,11 @@ object MuSigUtil {
     (pubNonce, sign(secNonce, secretKey, ctx))
   }
 
-  /** Sums the given nonces and returns the aggregate MuSigNoncePub */
+  /**
+    * Aggregate per-signer nonce pairs into a single aggregated nonce pair
+    * by point-wise addition. The returned `MuSigNoncePub` contains the
+    * summed r1 and r2 values respectively.
+    */
   def aggregateNonces(nonces: Vector[MuSigNoncePub]): MuSigNoncePub = {
     val aggNonceKeys = 0.until(MuSigUtil.nonceNum).toVector.map { i =>
       nonces.zipWithIndex
