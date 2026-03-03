@@ -180,7 +180,7 @@ object AsyncUtil extends AsyncUtil {
   ) extends Exception(message) {
 
     /*
-    Someone who calls a method in this class will be interested
+     * Someone who calls a method in this class will be interested
      * in where the call was made (and the stack trace from there
      * backwards) and what happens between their call and the failure,
      * i.e. the internal calls of this class, are not of interest.
