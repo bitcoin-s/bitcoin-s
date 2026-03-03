@@ -61,7 +61,7 @@ case class DLCAppConfig(
   override protected[bitcoins] def newConfigOfType(
       configs: Vector[Config]
   ): DLCAppConfig =
-    DLCAppConfig(baseDatadir, configs)
+    DLCAppConfig(baseDatadir, configs, walletConfigOpt = walletConfigOpt)
 
   override def appConfig: DLCAppConfig = this
 
