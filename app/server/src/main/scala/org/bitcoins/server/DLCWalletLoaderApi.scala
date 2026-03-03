@@ -74,7 +74,7 @@ sealed trait DLCWalletLoaderApi
         nodeApi = nodeApi,
         chainQueryApi = chainQueryApi
       )(walletConfig)
-    } yield (dlcWallet, walletConfig, dlcConfig)
+    } yield (dlcWallet, dlcWallet.walletConfig, dlcWallet.dlcConfig)
   }
 
   protected def updateWalletConfigs(
