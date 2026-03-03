@@ -178,11 +178,12 @@ class WalletUnitTest extends BitcoinSWalletTest {
           .initialize(wallet, wallet.accountHandling)
           .flatMap { _ =>
             // use a BIP39 password to make the key-managers different
-            val wConfig = wallet.walletConfig.withOverrides(
+            val kmConf = wallet.walletConfig.kmConf.withOverrides(
               ConfigFactory.parseString(
-                s"bitcoin-s.keymanager.bip39Password=random-password-to-make-key-managers-different"
+                s"bitcoin-s.keymanager.bip39password=random-password-to-make-key-managers-different"
               )
             )
+            val wConfig = wallet.walletConfig.copy(kmConfOpt = Some(kmConf))
             val walletBadPw =
               Wallet(wallet.nodeApi, wallet.chainQueryApi)(wConfig)
             Wallet.initialize(
@@ -200,7 +201,9 @@ class WalletUnitTest extends BitcoinSWalletTest {
       val config = ConfigFactory.parseString(
         s"bitcoin-s.keymanager.entropy=${CryptoUtil.randomBytes(16).toHex}"
       )
-      val uniqueEntropyWalletConfig = wallet.walletConfig.withOverrides(config)
+      val kmConf = wallet.walletConfig.kmConf.withOverrides(config)
+      val uniqueEntropyWalletConfig =
+        wallet.walletConfig.copy(kmConfOpt = Some(kmConf))
       val startedF = uniqueEntropyWalletConfig.start()
       val walletDiffKeyManagerF: Future[Wallet] = for {
         _ <- startedF
