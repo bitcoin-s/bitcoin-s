@@ -281,9 +281,7 @@ object BitcoinSWalletTest extends WalletLogger {
       walletConfig.start().flatMap { _ =>
         val wallet =
           Wallet(nodeApi, chainQueryApi)(walletConfig)
-        Wallet.initialize(wallet,
-                          wallet.accountHandling,
-                          walletConfig.bip39PasswordOpt)
+        Wallet.initialize(wallet, wallet.accountHandling)
       }
     }
   }
@@ -307,9 +305,7 @@ object BitcoinSWalletTest extends WalletLogger {
       val wallet = Wallet(nodeApi, chainQueryApi)(config.walletConf)
 
       Wallet
-        .initialize(wallet,
-                    wallet.accountHandling,
-                    config.walletConf.bip39PasswordOpt)
+        .initialize(wallet, wallet.accountHandling)
         .map(w =>
           DLCWallet(w)(
             config.dlcConf,

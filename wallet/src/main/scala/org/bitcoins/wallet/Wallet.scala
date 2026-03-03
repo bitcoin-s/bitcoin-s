@@ -1,6 +1,6 @@
 package org.bitcoins.wallet
 
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
@@ -389,11 +389,9 @@ object Wallet extends WalletLogger {
 
   def initialize(
       wallet: Wallet,
-      accountHandling: AccountHandlingApi,
-      bip39PasswordOpt: Option[String]
+      accountHandling: AccountHandlingApi
   ): Future[Wallet] = {
     import wallet.walletConfig.ec
-    val passwordOpt = wallet.walletConfig.aesPasswordOpt
 
     val createMasterXpubF =
       createMasterXPub(wallet.keyManager)(wallet.walletConfig)
@@ -407,21 +405,28 @@ object Wallet extends WalletLogger {
         // we need to create key manager params for each purpose
         // and then initialize a key manager to derive the correct xpub
         val wAppConfig = wallet.walletConfig
-        val aesPwConfig =
-          passwordOpt
-            .map(p => s"bitcoin-s.keymanager.aesPassword=$p")
-            .getOrElse("")
-        val bip39PwConfig = bip39PasswordOpt
-          .map(p => s"bitcoin-s.keymanager.bip39password=$p")
-          .getOrElse("")
+//        val aesPwConfig =
+//          passwordOpt
+//            .map(p => s"bitcoin-s.keymanager.aesPassword=$p")
+//            .getOrElse("")
+//        val bip39PwConfig = bip39PasswordOpt
+//          .map(p => s"bitcoin-s.keymanager.bip39password=$p")
+//          .getOrElse("")
         val purposeConfig =
           s"bitcoin-s.wallet.purpose=${HDPurpose.toString(purpose)}"
-        val conf =
-          ConfigFactory.parseString(
-            Vector(aesPwConfig, bip39PwConfig, purposeConfig)
-              .filter(_.nonEmpty)
-              .mkString("\n"))
-        val kmAppConfig = wallet.walletConfig.kmConf.withOverrides(conf)
+
+        val walletConf: Config =
+          ConfigFactory
+            .parseString(
+              Vector(purposeConfig)
+                .filter(_.nonEmpty)
+                .mkString("\n"))
+
+        val overrides =
+          (walletConf +: wallet.walletConfig.configOverrides)
+            .foldLeft(ConfigFactory.empty())(_.withFallback(_))
+        val kmAppConfig =
+          wallet.walletConfig.kmConf.withOverrides(Vector(overrides.resolve()))
         val walletAppConfig = wallet.walletConfig.copy(kmConfOpt =
           Some(kmAppConfig))(wAppConfig.system)
         val w = Wallet(nodeApi = wallet.nodeApi,

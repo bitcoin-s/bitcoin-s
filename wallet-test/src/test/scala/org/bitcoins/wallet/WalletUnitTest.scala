@@ -160,15 +160,11 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
   it must "be able to call initialize twice without throwing an exception if we have the same key manager" in {
     (wallet: Wallet) =>
-      val bip39PasswordOpt = wallet.walletConfig.bip39PasswordOpt
       val twiceF = Wallet
-        .initialize(wallet = wallet,
-                    accountHandling = wallet.accountHandling,
-                    bip39PasswordOpt = bip39PasswordOpt)
+        .initialize(wallet = wallet, accountHandling = wallet.accountHandling)
         .flatMap { _ =>
           Wallet.initialize(wallet = wallet,
-                            accountHandling = wallet.accountHandling,
-                            bip39PasswordOpt = bip39PasswordOpt)
+                            accountHandling = wallet.accountHandling)
         }
 
       twiceF.map(_ => succeed)
@@ -177,16 +173,21 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
   it must "be able to detect an incompatible key manager with a wallet" in {
     (wallet: Wallet) =>
-      val bip39PasswordOpt = wallet.walletConfig.bip39PasswordOpt
       recoverToSucceededIf[RuntimeException] {
         Wallet
-          .initialize(wallet, wallet.accountHandling, bip39PasswordOpt)
+          .initialize(wallet, wallet.accountHandling)
           .flatMap { _ =>
             // use a BIP39 password to make the key-managers different
+            val wConfig = wallet.walletConfig.withOverrides(
+              ConfigFactory.parseString(
+                s"bitcoin-s.keymanager.bip39Password=random-password-to-make-key-managers-different"
+              )
+            )
+            val walletBadPw =
+              Wallet(wallet.nodeApi, wallet.chainQueryApi)(wConfig)
             Wallet.initialize(
-              wallet,
-              wallet.accountHandling,
-              Some("random-password-to-make-key-managers-different")
+              walletBadPw,
+              wallet.accountHandling
             )
           }
       }
@@ -211,7 +212,8 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
       recoverToSucceededIf[IllegalArgumentException] {
         walletDiffKeyManagerF.flatMap { walletDiffKeyManager =>
-          Wallet.initialize(walletDiffKeyManager, wallet.accountHandling, None)
+          Wallet.initialize(walletDiffKeyManager,
+                            walletDiffKeyManager.accountHandling)
         }
       }
   }
@@ -391,8 +393,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
         _ = wallet.walletConfig.migrate()
         initOldWallet <- Wallet.initialize(
           wallet = wallet,
-          accountHandling = wallet.accountHandling,
-          bip39PasswordOpt = wallet.walletConfig.bip39PasswordOpt
+          accountHandling = wallet.accountHandling
         )
         isOldWalletEmpty <- initOldWallet.isEmpty()
       } yield assert(!isOldWalletEmpty)
