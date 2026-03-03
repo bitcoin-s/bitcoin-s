@@ -226,11 +226,10 @@ object FundWalletUtil extends FundWalletUtil {
         nodeApi = nodeApi,
         chainQueryApi = chainQueryApi
       )
-      funded <- FundWalletUtil.fundWallet(wallet, config.walletConf)
+      funded <- FundWalletUtil.fundWallet(wallet, wallet.walletConfig)
     } yield {
-      FundedDLCWallet(funded.wallet.asInstanceOf[DLCWallet],
-                      config.walletConf,
-                      config.dlcConf)
+      val d = funded.wallet.asInstanceOf[DLCWallet]
+      FundedDLCWallet(d, d.walletConfig, d.dlcConfig)
     }
   }
 

@@ -308,8 +308,9 @@ object BitcoinSWalletTest extends WalletLogger {
         .initialize(wallet, wallet.accountHandling)
         .map(w =>
           DLCWallet(w)(
-            config.dlcConf,
-            config.walletConf
+            config.dlcConf.copy(walletConfigOpt = Some(w.walletConfig))(
+              w.system),
+            w.walletConfig
           ))
     }
   }
