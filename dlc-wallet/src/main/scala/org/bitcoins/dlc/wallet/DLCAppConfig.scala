@@ -150,7 +150,6 @@ object DLCAppConfig
       dlcConf: DLCAppConfig
   ): Future[DLCWallet] = {
     import dlcConf.ec
-    val bip39PasswordOpt = walletConf.bip39PasswordOpt
     walletConf.hasWallet().flatMap { walletExists =>
       if (walletExists) {
         logger.info(s"Using pre-existing wallet")
@@ -164,8 +163,7 @@ object DLCAppConfig
         Wallet
           .initialize(
             wallet = unInitializedWallet,
-            accountHandling = unInitializedWallet.accountHandling,
-            bip39PasswordOpt = bip39PasswordOpt
+            accountHandling = unInitializedWallet.accountHandling
           )
           .map(DLCWallet.apply)
       }

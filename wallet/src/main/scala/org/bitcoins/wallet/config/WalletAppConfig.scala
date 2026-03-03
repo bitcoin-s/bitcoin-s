@@ -435,8 +435,6 @@ object WalletAppConfig
   ): Future[Wallet] = {
     import system.dispatcher
     val walletF = walletConf.hasWallet().flatMap { walletExists =>
-      val bip39PasswordOpt = walletConf.bip39PasswordOpt
-
       if (walletExists) {
         logger.info(s"Using pre-existing wallet")
         val wallet =
@@ -449,8 +447,7 @@ object WalletAppConfig
 
         Wallet.initialize(
           wallet = unInitializedWallet,
-          accountHandling = unInitializedWallet.accountHandling,
-          bip39PasswordOpt = bip39PasswordOpt
+          accountHandling = unInitializedWallet.accountHandling
         )
       }
     }

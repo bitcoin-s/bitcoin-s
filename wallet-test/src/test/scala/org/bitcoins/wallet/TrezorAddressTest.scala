@@ -144,7 +144,6 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
   }
 
   private def getWallet(config: WalletAppConfig): Future[Wallet] = {
-    val bip39PasswordOpt = None
     val startedF = config.start()
     for {
       _ <- startedF
@@ -155,8 +154,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
         )(config)
       init <- Wallet.initialize(
         wallet = wallet,
-        accountHandling = wallet.accountHandling,
-        bip39PasswordOpt = bip39PasswordOpt
+        accountHandling = wallet.accountHandling
       )
     } yield init
   }
