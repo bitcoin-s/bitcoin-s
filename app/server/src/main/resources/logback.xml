@@ -1,4 +1,4 @@
-<configuration scan="true" scanPeriod="15 seconds">
+<configuration scan="true" scanPeriod="15 seconds" >
     <appender name="STDOUT" target="System.out" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%date{ISO8601,UTC}UTC %level [%logger{0}] %msg%n</pattern>
@@ -7,7 +7,7 @@
 
     <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
         <queueSize>8192</queueSize>
-        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="STDOUT" />
     </appender>
 
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
@@ -16,9 +16,9 @@
             <!-- monthly rollover -->
             <fileNamePattern>${bitcoins.log.location}/logs/bitcoin-s-%d{yyyy/MM}.%i.log.zip</fileNamePattern>
             <!-- each file should be at most 100MB, keep 12 months of history, and at most 5GB in the archive -->
-            <maxFileSize>100GB</maxFileSize>
+            <maxFileSize>100MB</maxFileSize>
             <maxHistory>12</maxHistory>
-            <totalSizeCap>100GB</totalSizeCap>
+            <totalSizeCap>5GB</totalSizeCap>
         </rollingPolicy>
         <encoder>
             <pattern>%date{ISO8601,UTC}UTC %level [%logger{0}] %msg%n</pattern>
@@ -27,7 +27,7 @@
 
     <appender name="ASYNC-FILE" class="ch.qos.logback.classic.AsyncAppender">
         <queueSize>8192</queueSize>
-        <appender-ref ref="FILE"/>
+        <appender-ref ref="FILE" />
     </appender>
 
     <root level="INFO">
@@ -35,7 +35,7 @@
         <appender-ref ref="ASYNC-FILE"/>
     </root>
 
-    <logger name="org.bitcoins.node" level="DEBUG"/>
+    <logger name="org.bitcoins.node" level="INFO"/>
 
     <logger name="org.bitcoins.chain" level="INFO"/>
 
