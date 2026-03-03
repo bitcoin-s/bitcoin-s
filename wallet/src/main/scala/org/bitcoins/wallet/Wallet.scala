@@ -392,7 +392,6 @@ object Wallet extends WalletLogger {
       accountHandling: AccountHandlingApi
   ): Future[Wallet] = {
     import wallet.walletConfig.ec
-
     val createMasterXpubF =
       createMasterXPub(wallet.keyManager)(wallet.walletConfig)
     // We want to make sure all level 0 accounts are created,
@@ -405,13 +404,6 @@ object Wallet extends WalletLogger {
         // we need to create key manager params for each purpose
         // and then initialize a key manager to derive the correct xpub
         val wAppConfig = wallet.walletConfig
-//        val aesPwConfig =
-//          passwordOpt
-//            .map(p => s"bitcoin-s.keymanager.aesPassword=$p")
-//            .getOrElse("")
-//        val bip39PwConfig = bip39PasswordOpt
-//          .map(p => s"bitcoin-s.keymanager.bip39password=$p")
-//          .getOrElse("")
         val purposeConfig =
           s"bitcoin-s.wallet.purpose=${HDPurpose.toString(purpose)}"
 
@@ -448,6 +440,9 @@ object Wallet extends WalletLogger {
         .find(
           _.walletConfig.defaultPurpose == wallet.walletConfig.defaultPurpose)
         .get
+      // start the config we are actually using
+      // we need this for fee rate scheduler
+      _ <- initializedWallet.walletConfig.start()
       _ = accounts.foreach { a =>
         logger.info(s"Created account=${a} to DB")
       }

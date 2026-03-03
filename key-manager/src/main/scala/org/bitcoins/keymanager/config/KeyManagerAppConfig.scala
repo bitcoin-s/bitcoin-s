@@ -30,7 +30,11 @@ case class KeyManagerAppConfig(
   override type ConfigType = KeyManagerAppConfig
 
   override def newConfigOfType(configs: Vector[Config]): KeyManagerAppConfig =
-    KeyManagerAppConfig(baseDatadir, configs)
+    KeyManagerAppConfig(baseDatadir,
+                        configs,
+                        walletNameOverride,
+                        aesPasswordOverride,
+                        bip39PasswordOverride)
 
   override def moduleName: String = KeyManagerAppConfig.moduleName
 
