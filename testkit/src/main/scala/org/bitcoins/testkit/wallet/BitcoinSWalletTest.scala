@@ -68,15 +68,15 @@ trait BitcoinSWalletTest
         BitcoinSWalletTest.buildBip39PasswordConfig(bip39PasswordOpt)
 
       val mergedConfig = bip39PasswordConfig.withFallback(walletConfig)
-      implicit val newWalletConf =
+      implicit val newWalletConf: WalletAppConfig =
         getFreshWalletAppConfig.withOverrides(mergedConfig)
 
       makeDependentFixture[Wallet](
         build =
           createNewWallet(nodeApi = nodeApi, chainQueryApi = chainQueryApi),
-        destroy = { (_: WalletApi) =>
+        destroy = { (w: Wallet) =>
           for {
-            _ <- destroyWalletAppConfig(newWalletConf)
+            _ <- destroyWalletAppConfig(w.walletConfig)
           } yield ()
         }
       )
