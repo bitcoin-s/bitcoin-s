@@ -444,6 +444,7 @@ object Wallet extends WalletLogger {
         .get
       // start the config we are actually using
       // we need this for fee rate scheduler
+      _ <- wallet.walletConfig.stop()
       _ <- initializedWallet.walletConfig.start()
       _ = accounts.foreach { a =>
         logger.info(s"Created account=${a} to DB")

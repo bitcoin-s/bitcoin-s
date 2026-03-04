@@ -301,12 +301,19 @@ object BitcoinSWalletTest extends WalletLogger {
 
       Wallet
         .initialize(wallet, wallet.accountHandling)
-        .map(w =>
-          DLCWallet(w)(
-            config.dlcConf.copy(walletConfigOpt = Some(w.walletConfig))(
-              w.system),
-            w.walletConfig
-          ))
+        .flatMap { w =>
+          val newDLCConf = config.dlcConf.copy(walletConfigOpt =
+            Some(w.walletConfig))(w.system)
+
+          // stop old DLC config as a new one is created in
+          // in Wallet.initalize()
+          config.dlcConf.stop().map { _ =>
+            DLCWallet(w)(
+              newDLCConf,
+              w.walletConfig
+            )
+          }
+        }
     }
   }
 
