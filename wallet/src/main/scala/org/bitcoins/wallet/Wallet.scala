@@ -414,11 +414,13 @@ object Wallet extends WalletLogger {
                 .filter(_.nonEmpty)
                 .mkString("\n"))
 
+        val kmConf = wallet.walletConfig.kmConf
+        val kmConfOverrides = kmConf.configOverrides
         val overrides =
-          (walletConf +: wallet.walletConfig.configOverrides)
+          (walletConf +: (wallet.walletConfig.configOverrides ++ kmConfOverrides))
             .foldLeft(ConfigFactory.empty())(_.withFallback(_))
         val kmAppConfig =
-          wallet.walletConfig.kmConf.withOverrides(Vector(overrides.resolve()))
+          kmConf.withOverrides(Vector(overrides.resolve()))
         val walletAppConfig = wallet.walletConfig.copy(kmConfOpt =
           Some(kmAppConfig))(wAppConfig.system)
         val w = Wallet(nodeApi = wallet.nodeApi,
