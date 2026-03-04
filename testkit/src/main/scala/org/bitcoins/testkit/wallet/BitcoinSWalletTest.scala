@@ -63,17 +63,12 @@ trait BitcoinSWalletTest
   /** Lets you customize the parameters for the created wallet */
   val withNewConfiguredWallet: Config => OneArgAsyncTest => FutureOutcome = {
     walletConfig =>
-      val bip39PasswordOpt = KeyManagerTestUtil.bip39PasswordOpt
-      val bip39PasswordConfig: Config =
-        BitcoinSWalletTest.buildBip39PasswordConfig(bip39PasswordOpt)
-
-      val mergedConfig = bip39PasswordConfig.withFallback(walletConfig)
-      implicit val newWalletConf: WalletAppConfig =
-        getFreshWalletAppConfig.withOverrides(mergedConfig)
+      val newWalletConf: WalletAppConfig =
+        getFreshWalletAppConfig.withOverrides(walletConfig)
 
       makeDependentFixture[Wallet](
-        build =
-          createNewWallet(nodeApi = nodeApi, chainQueryApi = chainQueryApi),
+        build = createNewWallet(nodeApi = nodeApi,
+                                chainQueryApi = chainQueryApi)(newWalletConf),
         destroy = { (w: Wallet) =>
           for {
             _ <- destroyWalletAppConfig(w.walletConfig)
