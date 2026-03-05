@@ -16,7 +16,13 @@ abstract class DbAppConfig extends AppConfig {
 
   /** Releases the thread pool associated with this AppConfig's DB */
   override def stop(): Future[Unit] = {
-    Future.successful(slickDbConfig.db.close())
+    logger.info(s"Stopping DbAppConfig for module=${moduleName}")
+    slickDbConfigOpt match {
+      case None => Future.unit
+      case Some(c) =>
+        slickDbConfigOpt = None
+        Future.successful(c.db.close())
+    }
   }
 
   lazy val dbUsername: String =
@@ -95,39 +101,46 @@ abstract class DbAppConfig extends AppConfig {
       None
   }
 
-  lazy val slickDbConfig: DatabaseConfig[JdbcProfile] = {
-    // Create overrides if modules want to change their path or db name
-    val overrideConf = ConfigFactory.parseString {
-      s"""
-         |bitcoin-s {
-         |  $moduleName {
-         |     db {
-         |        path = ${AppConfig.safePathToString(dbPath)}
-         |        name = $dbName
-         |        user = "$dbUsername"
-         |        password = "$dbPassword"
-         |        url = $jdbcUrl
-         |     }
-         |  }
-         |}
+  private var slickDbConfigOpt: Option[DatabaseConfig[JdbcProfile]] = None
+  def slickDbConfig: DatabaseConfig[JdbcProfile] = {
+    if (slickDbConfigOpt.isEmpty) {
+      // Create overrides if modules want to change their path or db name
+      val overrideConf = ConfigFactory.parseString {
+        s"""
+           |bitcoin-s {
+           |  $moduleName {
+           |     db {
+           |        path = ${AppConfig.safePathToString(dbPath)}
+           |        name = $dbName
+           |        user = "$dbUsername"
+           |        password = "$dbPassword"
+           |        url = $jdbcUrl
+           |     }
+           |  }
+           |}
       """.stripMargin
-    }
+      }
 
-    val usedConf = overrideConf.withFallback(config)
-    Try {
-      val c = DatabaseConfig.forConfig[JdbcProfile](path =
-                                                      s"bitcoin-s.$moduleName",
-                                                    config = usedConf)
+      val usedConf = overrideConf.withFallback(config)
+      Try {
+        val c =
+          DatabaseConfig.forConfig[JdbcProfile](path = s"bitcoin-s.$moduleName",
+                                                config = usedConf)
 
-      logger.trace(s"Resolved DB config: ${ConfigOps(c.config).asReadableJson}")
-      c
-    } match {
-      case Success(value) =>
-        value
-      case Failure(exception) =>
-        logger.error(s"Error when loading database from config: $exception")
-        logger.error(s"Configuration: ${usedConf.asReadableJson}")
-        throw exception
+        logger.trace(
+          s"Resolved DB config: ${ConfigOps(c.config).asReadableJson}")
+        slickDbConfigOpt = Some(c)
+        slickDbConfigOpt.get
+      } match {
+        case Success(value) =>
+          value
+        case Failure(exception) =>
+          logger.error(s"Error when loading database from config: $exception")
+          logger.error(s"Configuration: ${usedConf.asReadableJson}")
+          throw exception
+      }
+    } else {
+      slickDbConfigOpt.get
     }
   }
 
