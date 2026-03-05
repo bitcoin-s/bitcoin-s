@@ -63,20 +63,15 @@ trait BitcoinSWalletTest
   /** Lets you customize the parameters for the created wallet */
   val withNewConfiguredWallet: Config => OneArgAsyncTest => FutureOutcome = {
     walletConfig =>
-      val bip39PasswordOpt = KeyManagerTestUtil.bip39PasswordOpt
-      val bip39PasswordConfig: Config =
-        BitcoinSWalletTest.buildBip39PasswordConfig(bip39PasswordOpt)
-
-      val mergedConfig = bip39PasswordConfig.withFallback(walletConfig)
-      implicit val newWalletConf =
-        getFreshWalletAppConfig.withOverrides(mergedConfig)
+      val newWalletConf: WalletAppConfig =
+        getFreshWalletAppConfig.withOverrides(walletConfig)
 
       makeDependentFixture[Wallet](
-        build =
-          createNewWallet(nodeApi = nodeApi, chainQueryApi = chainQueryApi),
-        destroy = { (_: WalletApi) =>
+        build = createNewWallet(nodeApi = nodeApi,
+                                chainQueryApi = chainQueryApi)(newWalletConf),
+        destroy = { (w: Wallet) =>
           for {
-            _ <- destroyWalletAppConfig(newWalletConf)
+            _ <- destroyWalletAppConfig(w.walletConfig)
           } yield ()
         }
       )
@@ -281,9 +276,7 @@ object BitcoinSWalletTest extends WalletLogger {
       walletConfig.start().flatMap { _ =>
         val wallet =
           Wallet(nodeApi, chainQueryApi)(walletConfig)
-        Wallet.initialize(wallet,
-                          wallet.accountHandling,
-                          walletConfig.bip39PasswordOpt)
+        Wallet.initialize(wallet, wallet.accountHandling)
       }
     }
   }
@@ -307,14 +300,20 @@ object BitcoinSWalletTest extends WalletLogger {
       val wallet = Wallet(nodeApi, chainQueryApi)(config.walletConf)
 
       Wallet
-        .initialize(wallet,
-                    wallet.accountHandling,
-                    config.walletConf.bip39PasswordOpt)
-        .map(w =>
-          DLCWallet(w)(
-            config.dlcConf,
-            config.walletConf
-          ))
+        .initialize(wallet, wallet.accountHandling)
+        .flatMap { w =>
+          val newDLCConf = config.dlcConf.copy(walletConfigOpt =
+            Some(w.walletConfig))(w.system)
+
+          // stop old DLC config as a new one is created in
+          // in Wallet.initalize()
+          config.dlcConf.stop().map { _ =>
+            DLCWallet(w)(
+              newDLCConf,
+              w.walletConfig
+            )
+          }
+        }
     }
   }
 

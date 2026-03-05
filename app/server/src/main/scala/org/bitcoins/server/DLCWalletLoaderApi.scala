@@ -74,7 +74,7 @@ sealed trait DLCWalletLoaderApi
         nodeApi = nodeApi,
         chainQueryApi = chainQueryApi
       )(walletConfig)
-    } yield (dlcWallet, walletConfig, dlcConfig)
+    } yield (dlcWallet, dlcWallet.walletConfig, dlcWallet.dlcConfig)
   }
 
   protected def updateWalletConfigs(
@@ -103,6 +103,10 @@ sealed trait DLCWalletLoaderApi
 
       walletConfig = conf.walletConf.copy(kmConfOpt = Some(kmConfig))
       dlcConfig = conf.dlcConf.copy(walletConfigOpt = Some(walletConfig))
+      _ = require(
+        walletConfig.walletName == dlcConfig.walletName,
+        s"Wallet name in wallet config and dlc config must match, got walletConfig=${walletConfig.walletName} dlcConfig=${dlcConfig.walletName}"
+      )
     } yield (walletConfig, dlcConfig))
   }
 
@@ -295,8 +299,8 @@ sealed trait DLCWalletLoaderApi
         walletNameOpt = walletNameOpt,
         aesPasswordOpt = aesPasswordOpt
       )
-      _ <- stopOldWalletAppConfig(walletConfig)
-      _ <- stopOldDLCAppConfig(dlcConfig)
+      _ <- stopOldWalletAppConfig(newWalletConfig = walletConfig)
+      _ <- stopOldDLCAppConfig(newDlcConfig = dlcConfig)
       nodeCallbacks <- createCallbacks(dlcWallet)
       _ = conf.replaceCallbacks(nodeCallbacks)
       _ <- walletHolder.replaceWallet(dlcWallet)

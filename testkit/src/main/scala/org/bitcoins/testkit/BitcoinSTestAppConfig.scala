@@ -77,6 +77,13 @@ object BitcoinSTestAppConfig {
       config: Vector[Config],
       forceNamedWallet: Boolean = false
   )(implicit system: ActorSystem): BitcoinSAppConfig = {
+    // don't want to duplicate walletName
+    // shouldn't there be a way to automatically handle this
+    // with the typesafe config library?
+    val walletNameConfig =
+      if (config.exists(_.hasPath("bitcoin-s.wallet.walletName")))
+        ConfigFactory.empty
+      else genWalletNameConf(forceNamedWallet)
     val overrideConf = ConfigFactory
       .parseString {
         s"""
@@ -93,7 +100,7 @@ object BitcoinSTestAppConfig {
            |}
       """.stripMargin
       }
-      .withFallback(genWalletNameConf(forceNamedWallet))
+      .withFallback(walletNameConfig)
       .withFallback(BaseWalletTest.randomAccountTypeConfig)
 
     BitcoinSAppConfig(

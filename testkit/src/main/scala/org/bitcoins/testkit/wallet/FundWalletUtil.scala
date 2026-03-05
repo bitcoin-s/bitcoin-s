@@ -181,6 +181,7 @@ object FundWalletUtil extends FundWalletUtil {
 
   trait FundedTestWallet {
     def wallet: WalletApi
+    def walletConfig: WalletAppConfig
   }
 
   /** This is a wallet that was two funded accounts Account 0 (default account)
@@ -211,8 +212,8 @@ object FundWalletUtil extends FundWalletUtil {
         nodeApi = nodeApi,
         chainQueryApi = chainQueryApi
       )
-      funded <- FundWalletUtil.fundWallet(wallet, config)
-    } yield FundedWallet(funded.wallet, config)
+      funded <- FundWalletUtil.fundWallet(wallet, wallet.walletConfig)
+    } yield FundedWallet(funded.wallet, funded.walletConfig)
   }
 
   def createFundedDLCWallet(nodeApi: NodeApi, chainQueryApi: ChainQueryApi)(
@@ -226,11 +227,10 @@ object FundWalletUtil extends FundWalletUtil {
         nodeApi = nodeApi,
         chainQueryApi = chainQueryApi
       )
-      funded <- FundWalletUtil.fundWallet(wallet, config.walletConf)
+      funded <- FundWalletUtil.fundWallet(wallet, wallet.walletConfig)
     } yield {
-      FundedDLCWallet(funded.wallet.asInstanceOf[DLCWallet],
-                      config.walletConf,
-                      config.dlcConf)
+      val d = funded.wallet.asInstanceOf[DLCWallet]
+      FundedDLCWallet(d, d.walletConfig, d.dlcConfig)
     }
   }
 
