@@ -133,7 +133,7 @@ class WalletAppConfigTest extends BitcoinSWalletTest {
         _ = assert(!hasWallet)
         _ <- config.stop()
         // fails because db connection pool not started
-        _ <- assertThrows[RuntimeException](config.hasWallet())
+        _ = assertThrows[RuntimeException](config.hasWallet())
         _ <- config.start() // restart so fixture can tear it down correctly
       } yield {}
 
