@@ -9,23 +9,13 @@ import org.bitcoins.testkit.BitcoinSTestAppConfig.ProjectType
 import org.bitcoins.testkit.util.{BitcoinSAsyncTest, FileUtil}
 import org.bitcoins.wallet.config.WalletAppConfig
 
-import java.io.File
-import java.nio.file._
+import java.nio.file.*
+import scala.concurrent.Future
 
 class DBConfigTest extends BitcoinSAsyncTest {
 
   it should "use sqlite as default database and set its connection pool size to 1" in {
     withTempDir { dataDir =>
-      val bytes = Files.readAllBytes(
-        new File("db-commons/src/main/resources/reference.conf").toPath
-      )
-      Files.write(
-        dataDir.resolve("bitcoin-s.conf"),
-        bytes,
-        StandardOpenOption.CREATE_NEW,
-        StandardOpenOption.WRITE
-      )
-
       val chainConfig = ChainAppConfig(dataDir, Vector.empty)
       val nodeConfig = NodeAppConfig(dataDir, Vector.empty)
       val walletConfig = WalletAppConfig(dataDir, Vector.empty)
@@ -122,6 +112,6 @@ class DBConfigTest extends BitcoinSAsyncTest {
     assert(mainNetChainAppConfig.network == MainNet)
   }
 
-  def withTempDir[T](f: Path => T): T =
+  def withTempDir[T](f: Path => Future[T]): Future[T] =
     FileUtil.withTempDir(getClass.getName)(f)
 }
