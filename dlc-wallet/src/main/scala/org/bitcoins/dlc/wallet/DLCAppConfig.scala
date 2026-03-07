@@ -5,18 +5,7 @@ import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.commons.config.{AppConfigFactoryBase, ConfigOps}
 import org.bitcoins.core.api.CallbackConfig
 import org.bitcoins.core.api.chain.ChainQueryApi
-import org.bitcoins.core.api.dlc.wallet.db.DLCDb
 import org.bitcoins.core.api.node.NodeApi
-import org.bitcoins.core.protocol.dlc.models.DLCState.{
-  AdaptorSigComputationState,
-  ClosedState
-}
-import org.bitcoins.core.protocol.dlc.models.{
-  DLCState,
-  EnumContractDescriptor,
-  NumericContractDescriptor
-}
-import org.bitcoins.core.protocol.tlv.DLCSerializationVersion
 import org.bitcoins.core.util.Mutable
 import org.bitcoins.db.DatabaseDriver._
 import org.bitcoins.db._
@@ -24,15 +13,9 @@ import org.bitcoins.dlc.wallet.callback.{
   DLCWalletCallbackStreamManager,
   DLCWalletCallbacks
 }
-import org.bitcoins.dlc.wallet.internal.DLCDataManagement
-import org.bitcoins.dlc.wallet.models.{
-  DLCSetupDbState,
-  OfferedDbState,
-  SetupCompleteDLCDbState
-}
+
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.models.TransactionDAO
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 
 import java.nio.file._
@@ -67,36 +50,14 @@ case class DLCAppConfig(
 
   override def start(): Future[Unit] = {
     logger.debug(s"Initializing dlc setup")
+    super.start().map { _ =>
+      val numMigrations = migrate()
 
-    if (Files.notExists(datadir)) {
-      Files.createDirectories(datadir)
+      logger.info(
+        s"Applied ${numMigrations.migrationsExecuted} to the dlc project"
+      )
     }
 
-    // get migrations applied the last time the wallet was started
-    val initMigrations = migrationsApplied()
-
-    val numMigrations = {
-      migrate()
-    }
-
-    val f = if (initMigrations != 0 && initMigrations <= 9) {
-      // means we have an old wallet that we need to migrate
-
-      serializationVersionMigration()
-        .flatMap { _ =>
-          deleteAlphaVersionDLCs()
-        }
-    } else {
-      // the wallet is new enough where we cannot have any old
-      // DLCs in the database with a broken contractId
-      Future.unit
-    }
-
-    logger.info(
-      s"Applied ${numMigrations.migrationsExecuted} to the dlc project. Started with initMigrations=$initMigrations"
-    )
-
-    f
   }
 
   override def stop(): Future[Unit] = {
@@ -164,147 +125,6 @@ case class DLCAppConfig(
   override lazy val callbackFactory: DLCWalletCallbacks.type =
     DLCWalletCallbacks
 
-  /** Delete alpha version DLCs, these are old protocol format DLCs that cannot
-    * be safely updated to the new protocol version of DLCs
-    */
-  private def deleteAlphaVersionDLCs(): Future[Unit] = {
-    logger.info(s"Deleting alpha version DLCs")
-    val dlcManagement = DLCDataManagement.fromDbAppConfig()(this, ec)
-    val dlcDAO = dlcManagement.dlcDAO
-    val alphaDLCsF =
-      dlcDAO
-        .findAll()
-        .map(_.filter(_.serializationVersion == DLCSerializationVersion.Alpha))
-    for {
-      alphaDLCs <- alphaDLCsF
-      _ <- Future.traverse(alphaDLCs) { dlc =>
-        dlc.state match {
-          case _: ClosedState | DLCState.Offered | DLCState.Accepted |
-              _: AdaptorSigComputationState | DLCState.Signed =>
-            logger.info(
-              s"Deleting alpha version of a dlcId=${dlc.dlcId.hex} dlc=$dlc"
-            )
-            dlcManagement.deleteByDLCId(dlc.dlcId)
-          case DLCState.Broadcasted | DLCState.Confirmed =>
-            sys.error(
-              s"Cannot upgrade our DLC wallet as we have DLCs in progress using an ancient format of DLCs, dlcId=${dlc.dlcId.hex}"
-            )
-        }
-      }
-    } yield ()
-  }
-
-  /** Correctly populates the serialization version for existing DLCs in our
-    * wallet database
-    */
-  private def serializationVersionMigration(): Future[Unit] = {
-    logger.info(s"Fixing serialization version for false positive Beta DLCs")
-    val dlcManagement = DLCDataManagement.fromDbAppConfig()(this, ec)
-    val dlcDAO = dlcManagement.dlcDAO
-    // read all existing DLCs
-    val allDlcsF = dlcDAO.findAll()
-
-    // ugh, this is kinda nasty, idk how to make better though
-    val walletAppConfig =
-      WalletAppConfig(baseDatadir, configOverrides)
-    val txDAO: TransactionDAO =
-      TransactionDAO()(ec = ec, appConfig = walletAppConfig)
-    // get the offers so we can figure out what the serialization version is
-    val dlcDbContractInfoOfferF: Future[Vector[DLCSetupDbState]] = {
-      for {
-        allDlcs <- allDlcsF
-        nestedOfferAndAccept = allDlcs.map { a =>
-          val setupDbOptF =
-            dlcManagement.getDLCFundingData(a.dlcId, txDAO = txDAO)
-
-          setupDbOptF.foreach {
-            case Some(_) => // happy path, do nothing
-            case None =>
-              logger.warn(
-                s"Corrupted dlcId=${a.dlcId.hex} state=${a.state}, " +
-                  s"this is likely because of issue 4001 https://github.com/bitcoin-s/bitcoin-s/issues/4001 . " +
-                  s"This DLC will not have its contractId migrated to DLSerializationVersion.Beta"
-              )
-          }
-          setupDbOptF
-        }
-        offerAndAccepts <- Future.sequence(nestedOfferAndAccept)
-      } yield {
-        offerAndAccepts.flatten
-      }
-    }
-
-    // now we need to insert the serialization type
-    // into global_dlc_data
-    val updatedDLCDbsF = for {
-      dlcDbContractInfoOffer <- dlcDbContractInfoOfferF
-    } yield setSerializationVersions(dlcDbContractInfoOffer)
-
-    val updatedInDbF = updatedDLCDbsF.flatMap(dlcDAO.updateAll)
-
-    updatedInDbF.map(_ => ())
-  }
-
-  /** Sets serialization versions on [[DLCDb]] based on the corresponding
-    * [[ContractInfo]]
-    */
-  private def setSerializationVersions(
-      vec: Vector[DLCSetupDbState]
-  ): Vector[DLCDb] = {
-    vec.map { case state: DLCSetupDbState =>
-      val updatedDlcDb: DLCDb = state match {
-        case acceptDbState: SetupCompleteDLCDbState =>
-          val offer = acceptDbState.offer
-          val dlcDb = acceptDbState.dlcDb
-          offer.contractInfo.contractDescriptors.head match {
-            case _: EnumContractDescriptor =>
-              dlcDb.copy(
-                tempContractId = offer.tempContractId,
-                serializationVersion = DLCSerializationVersion.Beta
-              )
-            case numeric: NumericContractDescriptor =>
-              val version = numeric.outcomeValueFunc.serializationVersion
-              if (version != dlcDb.serializationVersion) {
-                logger.info(
-                  s"Updating serializationVersion for dlcId=${dlcDb.dlcId.hex} old version=${dlcDb.serializationVersion} new version=${version}"
-                )
-                dlcDb.copy(
-                  tempContractId = offer.tempContractId,
-                  serializationVersion = version
-                )
-              } else {
-                dlcDb
-              }
-          }
-        case offerDbState: OfferedDbState =>
-          // if we don't have an accept message, we can only calculate tempContractId
-          val dlcDb = offerDbState.dlcDb
-          val offer = offerDbState.offer
-
-          offer.contractInfo.contractDescriptors.head match {
-            case _: EnumContractDescriptor =>
-              dlcDb.copy(
-                tempContractId = offer.tempContractId,
-                serializationVersion = DLCSerializationVersion.Beta
-              )
-            case numeric: NumericContractDescriptor =>
-              val version = numeric.outcomeValueFunc.serializationVersion
-              if (version != dlcDb.serializationVersion) {
-                logger.info(
-                  s"Updating serializationVersion for dlcId=${dlcDb.dlcId.hex} old version=${dlcDb.serializationVersion} new version=${version}"
-                )
-                dlcDb.copy(
-                  tempContractId = offer.tempContractId,
-                  serializationVersion = version
-                )
-              } else {
-                dlcDb
-              }
-          }
-      }
-      updatedDlcDb
-    }
-  }
 }
 
 object DLCAppConfig

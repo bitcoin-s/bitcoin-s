@@ -90,13 +90,16 @@ case class WalletAppConfig(
   lazy val torConf: TorAppConfig =
     TorAppConfig(baseDatadir, Some(moduleName), configOverrides)
 
-  private[wallet] lazy val scheduler: ScheduledExecutorService = {
+  private var schedulerOpt: Option[ScheduledExecutorService] = None
+  private def makeScheduler: ScheduledExecutorService =
     Executors.newScheduledThreadPool(
       1,
       AsyncUtil.getNewThreadFactory(
         s"bitcoin-s-wallet-scheduler-${System.currentTimeMillis()}"
       )
     )
+  private[wallet] def scheduler: ScheduledExecutorService = {
+    schedulerOpt.get
   }
 
   override lazy val callbackFactory: WalletCallbacks.type = WalletCallbacks
@@ -207,13 +210,13 @@ case class WalletAppConfig(
         None
     }
   }
-  private val masterXPubDAO: MasterXPubDAO = MasterXPubDAO()(ec, this)
+  private def masterXPubDAO: MasterXPubDAO = MasterXPubDAO()(ec, this)
 
   override def start(): Future[Unit] = {
-    startFeeRateCallbackScheduler()
-
+    logger.info(s"WalletAppConfig.start()")
     for {
       _ <- super.start()
+      _ = logger.info(s"Done super.start()")
       _ <- kmConf.start()
       masterXpub = kmConf.toBip39KeyManager.getRootXPub
       numMigrations = migrate()
@@ -230,6 +233,8 @@ case class WalletAppConfig(
           MasterXPubUtil.checkMasterXPub(masterXpub, masterXPubDAO)
         }
       }
+      _ = logger.info(s"Done checking seed and master xpub")
+      _ = startFeeRateCallbackScheduler()
     } yield {
       logger.debug(s"Initializing wallet setup")
       if (isHikariLoggingEnabled) {
@@ -257,7 +262,8 @@ case class WalletAppConfig(
       // this eagerly shuts down all scheduled tasks on the scheduler
       // in the future, we should actually cancel all things that are scheduled
       // manually, and then shutdown the scheduler
-      scheduler.shutdownNow()
+      schedulerOpt.map(_.shutdownNow())
+      schedulerOpt = None
       super.stop()
     }
 
@@ -272,22 +278,22 @@ case class WalletAppConfig(
   /** Checks if the following exist
     *   1. A seed exists 2. wallet exists 3. The account exists
     */
-  def hasWallet()(implicit
-      walletConf: WalletAppConfig,
-      ec: ExecutionContext
-  ): Future[Boolean] = {
+  def hasWallet(): Future[Boolean] = {
     if (kmConf.seedExists()) {
-      val hdCoin = walletConf.defaultAccount.coin
-      val walletDB = walletConf.dbPath `resolve` walletConf.dbName
-      walletConf.driver match {
+      val hdCoin = defaultAccount.coin
+      val walletDB = dbPath `resolve` dbName
+      driver match {
         case PostgreSQL =>
-          AccountDAO().read((hdCoin, 0)).map(_.isDefined)
+          logger.info(s"Reading postgres wallet database for account existence")
+          AccountDAO()(ec, this).read((hdCoin, 0)).map(_.isDefined)
         case SQLite =>
           if (Files.exists(walletDB))
-            AccountDAO().read((hdCoin, 0)).map(_.isDefined)
+            AccountDAO()(ec, this).read((hdCoin, 0)).map(_.isDefined)
           else Future.successful(false)
       }
     } else {
+      logger.info(
+        s"Seed file does not exist at path=${kmConf.seedPath}, wallet is not setup")
       Future.successful(false)
     }
   }
@@ -365,33 +371,41 @@ case class WalletAppConfig(
   }
 
   private def startFeeRateCallbackScheduler(): Unit = {
-    val feeRateChangedRunnable = new Runnable {
-      override def run(): Unit = {
-        feeRateApi
-          .getFeeRate()
-          .map(feeRate => Some(feeRate))
-          .recover { case NonFatal(_) =>
-            // logger.error("Cannot get fee rate ", ex)
-            None
-          }
-          .foreach { feeRateOpt =>
-            callBacks.executeOnFeeRateChanged(
-              feeRateOpt.getOrElse(SatoshisPerVirtualByte.negativeOne)
-            )
-          }
-        ()
+    if (schedulerOpt.isEmpty) {
+      logger.info(s"Starting wallet fee rate callback scheduler")
+      schedulerOpt = Some(makeScheduler)
+      val feeRateChangedRunnable = new Runnable {
+        override def run(): Unit = {
+          feeRateApi
+            .getFeeRate()
+            .map(feeRate => Some(feeRate))
+            .recover { case NonFatal(_) =>
+              // logger.error("Cannot get fee rate ", ex)
+              None
+            }
+            .foreach { feeRateOpt =>
+              callBacks.executeOnFeeRateChanged(
+                feeRateOpt.getOrElse(SatoshisPerVirtualByte.negativeOne)
+              )
+            }
+          ()
+        }
       }
+
+      val cancel: ScheduledFuture[?] = scheduler.scheduleAtFixedRate(
+        feeRateChangedRunnable,
+        feeRatePollDelay.toSeconds,
+        feeRatePollInterval.toSeconds,
+        TimeUnit.SECONDS
+      )
+      feeRateCancelOpt = Some(cancel)
+    } else {
+      logger.warn(
+        s"Wallet fee rate callback scheduler is already running, not starting another one")
+      ()
     }
-
-    val cancel: ScheduledFuture[?] = scheduler.scheduleAtFixedRate(
-      feeRateChangedRunnable,
-      feeRatePollDelay.toSeconds,
-      feeRatePollInterval.toSeconds,
-      TimeUnit.SECONDS
-    )
-    feeRateCancelOpt = Some(cancel)
-
   }
+
 }
 
 object WalletAppConfig

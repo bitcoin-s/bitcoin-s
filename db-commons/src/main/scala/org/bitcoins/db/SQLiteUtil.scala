@@ -80,6 +80,8 @@ object SQLiteUtil extends BitcoinSLogger {
         logger.debug(s"Creating database file=$dbFilePath")
         Files.createFile(dbFilePath)
       }
+    } else {
+      logger.debug(s"Database file already exists: $dbPath")
     }
   }
 }

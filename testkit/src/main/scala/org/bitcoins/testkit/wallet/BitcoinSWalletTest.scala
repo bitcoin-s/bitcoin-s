@@ -44,16 +44,14 @@ trait BitcoinSWalletTest
   }
 
   override def beforeAll(): Unit = {
-    AppConfig.throwIfDefaultDatadir(getFreshConfig.walletConf)
-    AppConfig.throwIfDefaultDatadir(getFreshConfig.dlcConf)
     super[PostgresTestDatabase].beforeAll()
   }
 
   override def afterAll(): Unit = {
-    Await.result(getFreshConfig.chainConf.stop(), 1.minute)
-    Await.result(getFreshConfig.nodeConf.stop(), 1.minute)
-    Await.result(getFreshConfig.walletConf.stop(), 1.minute)
-    Await.result(getFreshConfig.dlcConf.stop(), 1.minute)
+//    Await.result(getFreshConfig.chainConf.stop(), 1.minute)
+//    Await.result(getFreshConfig.nodeConf.stop(), 1.minute)
+//    Await.result(getFreshConfig.walletConf.stop(), 1.minute)
+//    Await.result(getFreshConfig.dlcConf.stop(), 1.minute)
     super[PostgresTestDatabase].afterAll()
     super[BitcoinSFixture].afterAll()
   }

@@ -27,7 +27,7 @@ class AccountDAOTest extends WalletDAOFixture {
   it must "find an account by HdAccount" in { daos =>
     val accountDAO = daos.accountDAO
     val account =
-      WalletTestUtil.getHdAccount1(walletAppConfig = config)
+      WalletTestUtil.getHdAccount1(walletAppConfig = daos.walletConfig)
     for {
       created <- {
 

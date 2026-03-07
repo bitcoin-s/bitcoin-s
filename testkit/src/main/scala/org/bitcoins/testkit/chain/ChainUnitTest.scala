@@ -81,8 +81,8 @@ trait ChainUnitTest extends BitcoinSFixture {
   def withChainAppConfig(test: OneArgAsyncTest): FutureOutcome = {
     makeDependentFixture(
       build = () => {
-        Future.successful(
-          BitcoinSTestAppConfig.getNeutrinoTestConfig().chainConf)
+        val c = BitcoinSTestAppConfig.getNeutrinoTestConfig().chainConf
+        chainAppConfig.start().map(_ => c)
       },
       destroy = (chainAppConfig: ChainAppConfig) =>
         ChainUnitTest.destroyChainApi()(system, chainAppConfig)
