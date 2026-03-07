@@ -164,9 +164,9 @@ class DbManagementTest extends BitcoinSAsyncTest with PostgresTestDatabase {
         BitcoinSTestAppConfig.tmpDir(),
         Vector(dbConfig(ProjectType.Oracle))
       )
-    val resultF = oracleAppConfig.start()
-    resultF.map { _ =>
-      oracleAppConfig.driver match {
+    for {
+      _ <- oracleAppConfig.start()
+      _ = oracleAppConfig.driver match {
         case SQLite =>
           val expected = 6
           val flywayInfo = oracleAppConfig.info()
@@ -181,7 +181,9 @@ class DbManagementTest extends BitcoinSAsyncTest with PostgresTestDatabase {
           assert(flywayInfo.applied().length == expected)
           assert(flywayInfo.pending().length == 0)
       }
+      _ <- oracleAppConfig.stop()
+    } yield {
+      succeed
     }
-
   }
 }

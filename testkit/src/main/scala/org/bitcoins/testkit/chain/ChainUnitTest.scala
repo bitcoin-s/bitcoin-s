@@ -82,7 +82,7 @@ trait ChainUnitTest extends BitcoinSFixture {
     makeDependentFixture(
       build = () => {
         val c = BitcoinSTestAppConfig.getNeutrinoTestConfig().chainConf
-        chainAppConfig.start().map(_ => c)
+        c.start().map(_ => c)
       },
       destroy = (chainAppConfig: ChainAppConfig) =>
         ChainUnitTest.destroyChainApi()(system, chainAppConfig)
