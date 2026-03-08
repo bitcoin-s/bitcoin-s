@@ -304,7 +304,6 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         _ <- NodeTestUtil.disconnectNode(bitcoind, node)
         // fully functioning node no longer needed so shut it down
         _ <- node.stop()
-        _ <- node.nodeAppConfig.stop()
         hashes <- bitcoind.generate(2000)
         blockHeaders <- Source(hashes)
           .mapAsync(FutureUtil.getParallelism)(bitcoind.getBlockHeaderRaw)

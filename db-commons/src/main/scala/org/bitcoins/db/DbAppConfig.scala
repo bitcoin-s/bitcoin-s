@@ -1,22 +1,51 @@
 package org.bitcoins.db
 
-import com.typesafe.config._
-import org.bitcoins.commons.config._
+import com.typesafe.config.*
+import org.bitcoins.commons.config.*
 import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
 import slick.basic.DatabaseConfig
 import slick.jdbc.JdbcProfile
 
 import java.nio.file.{Path, Paths}
 import java.util.concurrent.TimeUnit
-import scala.concurrent.Future
+import java.util.concurrent.atomic.AtomicBoolean
+import scala.concurrent.{ExecutionContext, Future, blocking}
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.{Failure, Success, Try}
 
 abstract class DbAppConfig extends AppConfig {
+  implicit def ec: ExecutionContext
+  private val isStarted: AtomicBoolean = new AtomicBoolean(false)
+
+  override def start(): Future[Unit] = {
+    super.start().map { _ =>
+      logger.info(s"Done super.start() DbAppConfig")
+      if (isStarted.compareAndSet(false, true)) {
+        logger.info(s"Starting DbAppConfig for module=${moduleName}")
+        // initialize the database connection pool
+        slickDbConfig
+      } else {
+        logger.info(s"${getClass.getSimpleName} was already started")
+      }
+    }
+  }
 
   /** Releases the thread pool associated with this AppConfig's DB */
   override def stop(): Future[Unit] = {
-    Future.successful(slickDbConfig.db.close())
+    if (isStarted.compareAndSet(true, false)) {
+      logger.info(s"Stopping DbAppConfig for module=${moduleName}")
+      slickDbConfigOpt match {
+        case None => Future.unit
+        case Some(c) =>
+          slickDbConfigOpt = None
+          Future {
+            blocking { c.db.close() }
+          }
+      }
+    } else {
+      logger.info(s"${getClass.getSimpleName} was already stopped")
+      Future.unit
+    }
   }
 
   lazy val dbUsername: String =
@@ -95,39 +124,50 @@ abstract class DbAppConfig extends AppConfig {
       None
   }
 
-  lazy val slickDbConfig: DatabaseConfig[JdbcProfile] = {
-    // Create overrides if modules want to change their path or db name
-    val overrideConf = ConfigFactory.parseString {
-      s"""
-         |bitcoin-s {
-         |  $moduleName {
-         |     db {
-         |        path = ${AppConfig.safePathToString(dbPath)}
-         |        name = $dbName
-         |        user = "$dbUsername"
-         |        password = "$dbPassword"
-         |        url = $jdbcUrl
-         |     }
-         |  }
-         |}
+  private var slickDbConfigOpt: Option[DatabaseConfig[JdbcProfile]] = None
+  def slickDbConfig: DatabaseConfig[JdbcProfile] = {
+    if (slickDbConfigOpt.isEmpty && isStarted.get()) {
+      logger.info(s"Starting database connection pool for module=$moduleName")
+      // Create overrides if modules want to change their path or db name
+      val overrideConf = ConfigFactory.parseString {
+        s"""
+           |bitcoin-s {
+           |  $moduleName {
+           |     db {
+           |        path = ${AppConfig.safePathToString(dbPath)}
+           |        name = $dbName
+           |        user = "$dbUsername"
+           |        password = "$dbPassword"
+           |        url = $jdbcUrl
+           |     }
+           |  }
+           |}
       """.stripMargin
-    }
+      }
 
-    val usedConf = overrideConf.withFallback(config)
-    Try {
-      val c = DatabaseConfig.forConfig[JdbcProfile](path =
-                                                      s"bitcoin-s.$moduleName",
-                                                    config = usedConf)
+      val usedConf = overrideConf.withFallback(config)
+      Try {
+        val c =
+          DatabaseConfig.forConfig[JdbcProfile](path = s"bitcoin-s.$moduleName",
+                                                config = usedConf)
 
-      logger.trace(s"Resolved DB config: ${ConfigOps(c.config).asReadableJson}")
-      c
-    } match {
-      case Success(value) =>
-        value
-      case Failure(exception) =>
-        logger.error(s"Error when loading database from config: $exception")
-        logger.error(s"Configuration: ${usedConf.asReadableJson}")
-        throw exception
+        logger.trace(
+          s"Resolved DB config: ${ConfigOps(c.config).asReadableJson}")
+        slickDbConfigOpt = Some(c)
+        slickDbConfigOpt.get
+      } match {
+        case Success(value) =>
+          value
+        case Failure(exception) =>
+          logger.error(s"Error when loading database from config: $exception")
+          logger.error(s"Configuration: ${usedConf.asReadableJson}")
+          throw exception
+      }
+    } else if (slickDbConfigOpt.isDefined && isStarted.get()) {
+      slickDbConfigOpt.get
+    } else {
+      sys.error(
+        s"Cannot get slickDbConfig for module=$moduleName because the config is not started yet")
     }
   }
 

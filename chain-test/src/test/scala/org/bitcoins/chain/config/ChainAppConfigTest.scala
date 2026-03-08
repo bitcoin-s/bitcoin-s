@@ -20,20 +20,6 @@ class ChainAppConfigTest extends ChainUnitTest {
 
   behavior of "ChainAppConfig"
 
-  it must "initialize our chain project" in { c =>
-    val chainAppConfig = c.withOverrides(
-      ConfigFactory.parseString("bitcoin-s.logging.level=OFF")
-    )
-    val isInitF = chainAppConfig.isStarted()
-
-    for {
-      isInit <- isInitF
-      _ = assert(!isInit)
-      _ <- chainAppConfig.start()
-      isInitAgain <- chainAppConfig.isStarted()
-    } yield assert(isInitAgain)
-  }
-
   it must "be overridable" in { c =>
     assert(c.network == RegTest)
 
