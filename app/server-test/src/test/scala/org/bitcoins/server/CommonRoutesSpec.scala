@@ -11,6 +11,7 @@ import org.scalamock.scalatest.MockFactory
 import org.scalatest.wordspec.AnyWordSpec
 
 import java.nio.file.Files
+import scala.concurrent.Future
 
 class CommonRoutesSpec
     extends AnyWordSpec
@@ -58,10 +59,12 @@ class CommonRoutesSpec
           )
 
         Post() ~> route ~> check {
-          assert(contentType == ContentTypes.`application/json`)
-          val actualJson = ujson.read(responseAs[String])
-          assert(actualJson == expectedJson)
-          assert(Files.exists(target))
+          Future {
+            assert(contentType == ContentTypes.`application/json`)
+            val actualJson = ujson.read(responseAs[String])
+            assert(actualJson == expectedJson)
+            assert(Files.exists(target))
+          }
         }
       }
     }
