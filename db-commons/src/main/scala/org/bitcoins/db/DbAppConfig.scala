@@ -113,7 +113,7 @@ abstract class DbAppConfig extends AppConfig {
          |        user = "$dbUsername"
          |        password = "$dbPassword"
          |        url = $jdbcUrl
-         |        # cannot put in testkit/reference.conf due to https://github.com/bitcoin-s/bitcoin-s/issues/5391
+         |        # cannot put in testkit/reference.conf due to issue 5391
          |        registerMbeans = false
          |     }
          |  }
