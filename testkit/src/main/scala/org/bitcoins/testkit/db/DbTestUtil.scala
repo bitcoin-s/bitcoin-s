@@ -65,6 +65,7 @@ case class TestAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
     }
     for {
       _ <- super.start()
+      _ = migrate()
       _ = logger.debug(s"Initializing test setup")
       _ <- createTable(TestDAO()(ec, this).table)
     } yield ()

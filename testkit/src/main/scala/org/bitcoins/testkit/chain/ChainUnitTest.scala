@@ -676,11 +676,9 @@ object ChainUnitTest extends ChainVerificationLogger {
   def destroyAllTables()(implicit
       appConfig: ChainAppConfig,
       ec: ExecutionContext
-  ): Future[Unit] =
-    for {
-      _ <- appConfig.dropTable("flyway_schema_history")
-      _ <- appConfig.dropAll()
-    } yield ()
+  ): Future[Unit] = {
+    Future { appConfig.clean() }
+  }
 
   def setupHeaderTableWithGenesisHeader()(implicit
       ec: ExecutionContext,

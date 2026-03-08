@@ -39,9 +39,8 @@ trait TestAppConfigFixture
   }
 
   def destroyTestConfig(testConfig: TestAppConfig): Future[Unit] = {
+    testConfig.clean()
     for {
-      _ <- testConfig.dropTable("flyway_schema_history")
-      _ <- testConfig.dropAll()
       _ <- testConfig.stop()
     } yield ()
   }

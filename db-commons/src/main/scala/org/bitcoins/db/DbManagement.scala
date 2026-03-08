@@ -1,7 +1,6 @@
 package org.bitcoins.db
 
 import org.bitcoins.commons.util.BitcoinSLogger
-import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.db.DatabaseDriver.*
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.output.{CleanResult, MigrateResult}
@@ -79,18 +78,6 @@ trait DbManagement extends BitcoinSLogger {
 
   def allTables: List[TableQuery[Table[?]]]
 
-  def dropAll()(implicit ec: ExecutionContext): Future[Unit] = {
-    val result =
-      FutureUtil
-        .foldLeftAsync((), allTables.reverse) { (_, table) =>
-          dropTable(table)
-        }
-    result.failed.foreach { e =>
-      e.printStackTrace()
-    }
-    result
-  }
-
   /** The query needed to create the given table */
   private def createTableQuery(
       table: TableQuery[? <: Table[?]],
@@ -121,32 +108,6 @@ trait DbManagement extends BitcoinSLogger {
     val result = database.run(query)
     result
   }
-
-  def dropTable(tableName: String)(implicit
-      ec: ExecutionContext): Future[Int] = {
-    val fullTableName =
-      appConfig.schemaName.map(_ + ".").getOrElse("") + tableName
-    val sql = sqlu"""DROP TABLE IF EXISTS #$fullTableName"""
-    val result = database.run(sql)
-    result.failed.foreach { ex =>
-      ex.printStackTrace()
-    }
-    result
-  }
-
-  def createSchema(createIfNotExists: Boolean = true)(implicit
-      ec: ExecutionContext): Future[Unit] =
-    appConfig.schemaName match {
-      case None =>
-        Future.unit
-      case Some(schema) =>
-        val sql =
-          if (createIfNotExists)
-            sqlu"""CREATE SCHEMA IF NOT EXISTS #$schema"""
-          else
-            sqlu"""CREATE SCHEMA #$schema"""
-        database.run(sql).map(_ => ())
-    }
 
   /** Returns flyway information about the state of migrations
     * @see

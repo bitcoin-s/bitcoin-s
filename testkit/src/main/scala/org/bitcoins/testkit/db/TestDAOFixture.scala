@@ -37,18 +37,16 @@ sealed trait TestDAOFixture
     super.afterAll()
   }
 
-  def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
     makeFixture(
       build = () => testConfig.start().map(_ => TestDAO()),
       destroy = () => dropAll()
     )(test)
   }
 
-  def dropAll(): Future[Unit] =
-    for {
-      _ <- testConfig.dropTable("flyway_schema_history")
-      _ <- testConfig.dropAll()
-    } yield ()
+  def dropAll(): Future[Unit] = Future {
+    testConfig.clean()
+  }
 
   val testDb: TestDb = TestDb("abc", hex"0054")
 

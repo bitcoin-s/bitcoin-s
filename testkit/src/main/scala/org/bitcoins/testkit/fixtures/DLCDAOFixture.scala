@@ -53,9 +53,8 @@ trait DLCDAOFixture extends BitcoinSFixture with PostgresTestDatabase {
       },
       destroy = { (daos: DLCDAOs) =>
         val config = daos.dlcConf
+        val _ = config.clean()
         for {
-          _ <- config.dropAll()
-          _ <- config.dropTable("flyway_schema_history")
           _ <- config.stop()
         } yield ()
       }

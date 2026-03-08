@@ -296,11 +296,9 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
       assertions
     }
 
-    assertionsF.flatMap { _ =>
-      for {
-        _ <- conf.dropAll()
-        _ = conf.clean()
-      } yield succeed
+    assertionsF.map { _ =>
+      conf.clean()
+      succeed
     }
   }
 
