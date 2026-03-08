@@ -97,6 +97,16 @@ abstract class DbAppConfig extends AppConfig {
 
   lazy val slickDbConfig: DatabaseConfig[JdbcProfile] = {
     // Create overrides if modules want to change their path or db name
+
+    // For SQLite, set WAL journal mode on every new HikariCP connection.
+    // connectionInitSql must NOT be set for PostgreSQL — PRAGMA is
+    // SQLite-only syntax and Postgres will reject it with a syntax error,
+    // causing every new pool connection to fail.
+    val connectionInitSqlLine = driver match {
+      case SQLite     => """connectionInitSql = "PRAGMA journal_mode=WAL;""""
+      case PostgreSQL => ""
+    }
+
     val overrideConf = ConfigFactory.parseString {
       s"""
          |bitcoin-s {
@@ -107,6 +117,9 @@ abstract class DbAppConfig extends AppConfig {
          |        user = "$dbUsername"
          |        password = "$dbPassword"
          |        url = $jdbcUrl
+         |        # cannot put in testkit/reference.conf due to https://github.com/bitcoin-s/bitcoin-s/issues/5391
+         |        registerMbeans = false
+         |        $connectionInitSqlLine
          |     }
          |  }
          |}

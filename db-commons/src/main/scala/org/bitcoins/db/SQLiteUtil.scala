@@ -61,16 +61,6 @@ object SQLiteUtil extends BitcoinSLogger {
     } finally conn.close()
   }
 
-  def setJournalMode(jdbcUrl: String, mode: String): Unit = {
-    val conn = java.sql.DriverManager.getConnection(jdbcUrl)
-    try {
-      val _ =
-        conn
-          .createStatement()
-          .executeUpdate(s"PRAGMA journal_mode=${mode.toUpperCase}")
-    } finally conn.close()
-  }
-
   def createDbFileIfDNE(dbPath: Path, dbName: String): Unit = {
     if (!Files.exists(dbPath)) {
       val _ = {
