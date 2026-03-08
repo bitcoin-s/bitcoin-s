@@ -81,8 +81,8 @@ trait ChainUnitTest extends BitcoinSFixture {
   def withChainAppConfig(test: OneArgAsyncTest): FutureOutcome = {
     makeDependentFixture(
       build = () => {
-        Future.successful(
-          BitcoinSTestAppConfig.getNeutrinoTestConfig().chainConf)
+        val c = BitcoinSTestAppConfig.getNeutrinoTestConfig().chainConf
+        c.start().map(_ => c)
       },
       destroy = (chainAppConfig: ChainAppConfig) =>
         ChainUnitTest.destroyChainApi()(system, chainAppConfig)
@@ -676,11 +676,9 @@ object ChainUnitTest extends ChainVerificationLogger {
   def destroyAllTables()(implicit
       appConfig: ChainAppConfig,
       ec: ExecutionContext
-  ): Future[Unit] =
-    for {
-      _ <- appConfig.dropTable("flyway_schema_history")
-      _ <- appConfig.dropAll()
-    } yield ()
+  ): Future[Unit] = {
+    Future { appConfig.clean() }
+  }
 
   def setupHeaderTableWithGenesisHeader()(implicit
       ec: ExecutionContext,
