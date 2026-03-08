@@ -112,8 +112,7 @@ abstract class DbAppConfig extends AppConfig {
          |        name = $dbName
          |        user = "$dbUsername"
          |        password = "$dbPassword"
-         |        url = "$jdbcUrl"
-         |        # cannot put in testkit/reference.conf due to issue 5391
+         |        url = $jdbcUrl
          |        registerMbeans = false
          |     }
          |  }

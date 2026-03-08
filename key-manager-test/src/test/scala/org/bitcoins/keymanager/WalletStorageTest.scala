@@ -12,12 +12,12 @@ import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.testkitcore.Implicits._
 import org.bitcoins.testkitcore.gen.CryptoGenerators
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.scalatest.{BeforeAndAfterEach, FutureOutcome}
+import org.scalatest.FutureOutcome
 
 import java.nio.file.{Files, Path}
 import java.util.UUID
 
-class WalletStorageTest extends BitcoinSWalletTest with BeforeAndAfterEach {
+class WalletStorageTest extends BitcoinSWalletTest {
 
   override type FixtureParam = WalletAppConfig
 
