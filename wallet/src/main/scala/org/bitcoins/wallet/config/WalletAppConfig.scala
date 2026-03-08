@@ -207,7 +207,7 @@ case class WalletAppConfig(
         None
     }
   }
-  private val masterXPubDAO: MasterXPubDAO = MasterXPubDAO()(ec, this)
+  private def masterXPubDAO: MasterXPubDAO = MasterXPubDAO()(ec, this)
 
   override def start(): Future[Unit] = {
     startFeeRateCallbackScheduler()

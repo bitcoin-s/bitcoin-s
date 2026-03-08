@@ -20,8 +20,6 @@ trait DbManagement extends BitcoinSLogger {
     appConfig.driver match {
       case SQLite =>
         SQLiteUtil.createDbFileIfDNE(appConfig.dbPath, appConfig.dbName)
-        val jdbcUrl = appConfig.jdbcUrl.replace("\"", "")
-        SQLiteUtil.setJournalMode(jdbcUrl, "WAL")
       case PostgreSQL =>
         ()
     }

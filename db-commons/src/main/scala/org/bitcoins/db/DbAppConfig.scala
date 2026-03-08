@@ -40,7 +40,15 @@ abstract class DbAppConfig extends AppConfig {
   lazy val jdbcUrl: String = {
     driver match {
       case SQLite =>
-        s""""jdbc:sqlite:"${AppConfig.safePathToString(dbPath)}/$dbName"""
+        // journal_mode=WAL is set in the URL so it applies at the JDBC driver
+        // level on every connection, regardless of whether HikariCP or Slick's
+        // disabled connection pool (plain JDBC) is in use.
+        // connectionInitSql is HikariCP-specific and has no effect when
+        // connectionPool = disabled.
+
+        s""""jdbc:sqlite:${AppConfig
+            .safePathToString(dbPath)
+            .replace("\"", "")}/$dbName?journal_mode=WAL""""
       case PostgreSQL =>
         s""""jdbc:postgresql://$dbHost:$dbPort/$dbName""""
     }
@@ -96,7 +104,9 @@ abstract class DbAppConfig extends AppConfig {
   }
 
   lazy val slickDbConfig: DatabaseConfig[JdbcProfile] = {
-    // Create overrides if modules want to change their path or db name
+    // Create overrides if modules want to change their path or db name.
+    // safePathToString returns a quoted, forward-slash-normalised string
+    // safe for embedding directly into HOCON on all platforms.
     val overrideConf = ConfigFactory.parseString {
       s"""
          |bitcoin-s {
@@ -107,6 +117,7 @@ abstract class DbAppConfig extends AppConfig {
          |        user = "$dbUsername"
          |        password = "$dbPassword"
          |        url = $jdbcUrl
+         |        registerMbeans = false
          |     }
          |  }
          |}
