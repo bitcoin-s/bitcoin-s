@@ -168,7 +168,7 @@ case class DLCOracleAppConfig(
     initF
   }
 
-  private val masterXPubDAO: MasterXPubDAO = MasterXPubDAO()(ec, this)
+  private def masterXPubDAO: MasterXPubDAO = MasterXPubDAO()(ec, this)
 
   private lazy val masterXPubTable: TableQuery[Table[?]] = {
     masterXPubDAO.table

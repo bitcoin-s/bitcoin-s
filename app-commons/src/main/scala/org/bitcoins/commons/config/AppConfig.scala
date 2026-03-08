@@ -161,7 +161,9 @@ abstract class AppConfig extends StartStopAsync[Unit] with BitcoinSLogger {
 object AppConfig extends BitcoinSLogger {
 
   def safePathToString(path: Path): String = {
-    val pathStr = path.toString.replace("\\", "/")
+    val pathStr = path.toString
+      .replace("\\", "/")
+      .replace("\\", "\\\\")
 
     s""""$pathStr"""" // Add quotes around it
   }
