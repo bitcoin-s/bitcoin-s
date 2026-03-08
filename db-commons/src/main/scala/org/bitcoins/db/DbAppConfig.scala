@@ -45,10 +45,10 @@ abstract class DbAppConfig extends AppConfig {
         // disabled connection pool (plain JDBC) is in use.
         // connectionInitSql is HikariCP-specific and has no effect when
         // connectionPool = disabled.
-        // Backslashes in Windows paths must be escaped for HOCON embedding.
-        val escapedPath =
-          AppConfig.safePathToString(dbPath)
-        s""""jdbc:sqlite:$escapedPath/$dbName?journal_mode=WAL""""
+
+        s""""jdbc:sqlite:${AppConfig
+            .safePathToString(dbPath)
+            .replace("\"", "")}/$dbName?journal_mode=WAL""""
       case PostgreSQL =>
         s""""jdbc:postgresql://$dbHost:$dbPort/$dbName""""
     }
@@ -104,17 +104,15 @@ abstract class DbAppConfig extends AppConfig {
   }
 
   lazy val slickDbConfig: DatabaseConfig[JdbcProfile] = {
-    // Create overrides if modules want to change their path or db name
-    // On Windows, Path.toString uses backslashes which are HOCON escape
-    // characters. We must escape them (\ → \\) before embedding in the
-    // config string, otherwise HOCON rejects sequences like \U, \A, \R etc.
-    val safePath = AppConfig.safePathToString(dbPath)
+    // Create overrides if modules want to change their path or db name.
+    // safePathToString returns a quoted, forward-slash-normalised string
+    // safe for embedding directly into HOCON on all platforms.
     val overrideConf = ConfigFactory.parseString {
       s"""
          |bitcoin-s {
          |  $moduleName {
          |     db {
-         |        path = "$safePath"
+         |        path = ${AppConfig.safePathToString(dbPath)}
          |        name = $dbName
          |        user = "$dbUsername"
          |        password = "$dbPassword"
