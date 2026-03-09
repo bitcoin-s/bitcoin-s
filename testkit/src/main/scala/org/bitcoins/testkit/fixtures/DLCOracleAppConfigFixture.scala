@@ -17,8 +17,7 @@ trait DLCOracleAppConfigFixture
     val builder: () => Future[DLCOracleAppConfig] = () => {
       val conf: DLCOracleAppConfig =
         BitcoinSTestAppConfig.getDLCOracleWithEmbeddedDbTestConfig(postgresOpt)
-      val _ = conf.migrate()
-      Future.successful(conf)
+      conf.start().map(_ => conf)
     }
 
     val destroy: DLCOracleAppConfig => Future[Unit] = dlcOracleAppConfig => {

@@ -1,23 +1,15 @@
 package org.bitcoins.testkit.fixtures
 
-import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.testkit.{BitcoinSTestAppConfig, PostgresTestDatabase}
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest
+import org.bitcoins.testkit.PostgresTestDatabase
 import org.bitcoins.wallet.config.WalletAppConfig
-import org.bitcoins.wallet.models._
-import org.scalatest._
-
-import scala.concurrent.{Await, Future}
-
-trait WalletDAOFixture extends BitcoinSFixture with PostgresTestDatabase {
-
-  implicit protected val config: WalletAppConfig =
-    BitcoinSTestAppConfig
-      .getNeutrinoWithEmbeddedDbTestConfig(postgresOpt, Vector.empty)
-      .walletConf
+import org.bitcoins.wallet.models.*
+import org.scalatest.*
+trait WalletDAOFixture extends BitcoinSWalletTest with PostgresTestDatabase {
 
   final override type FixtureParam = WalletDAOs
 
-  private lazy val daos: WalletDAOs = {
+  private def daos(implicit config: WalletAppConfig): WalletDAOs = {
     val account = AccountDAO()
     val address = AddressDAO()
     val tags = AddressTagDAO()
@@ -41,26 +33,17 @@ trait WalletDAOFixture extends BitcoinSFixture with PostgresTestDatabase {
   }
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    makeFixture(
-      build = () => {
-        Future(config.migrate()).map(_ => daos)
+    makeDependentFixture[WalletDAOs](
+      () => {
+        BitcoinSWalletTest
+          .createWalletAppConfig(postgresOpt, Vector.empty)
+          .map { wAppConfig =>
+            daos(wAppConfig)
+          }
       },
-      destroy = () => dropAll()
+      { (daos: WalletDAOs) =>
+        BitcoinSWalletTest.destroyWalletAppConfig(daos.walletConfig)
+      }
     )(test)
-  }
-
-  private def dropAll(): Future[Unit] = {
-    val res = for {
-      _ <- FutureUtil.sequentially(daos.list.reverse)(dao => dao.deleteAll())
-      _ = config.clean()
-    } yield ()
-    res.failed.foreach(_.printStackTrace())
-    res
-  }
-
-  override def afterAll(): Unit = {
-    val stoppedF = config.stop()
-    val _ = Await.ready(stoppedF, akkaTimeout.duration)
-    super[PostgresTestDatabase].afterAll()
   }
 }
