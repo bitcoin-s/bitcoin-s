@@ -84,16 +84,19 @@ called [flyway](https://flywaydb.org/). To find your projects migraitons, you ne
 the path `chain/src/main/resources/chaindb/migration/V1__chain_db_baseline.sql`.
 
 Migrations can be executed by calling
-the [`DbManagement.migrate()`](https://github.com/bitcoin-s/bitcoin-s/blob/e387d075b0ff2e0a0fec15788fcb48e4ddc4d9d5/db-commons/src/main/scala/org/bitcoins/db/DbManagement.scala#L92)
+the [
+`DbManagement.migrate()`](https://github.com/bitcoin-s/bitcoin-s/blob/e387d075b0ff2e0a0fec15788fcb48e4ddc4d9d5/db-commons/src/main/scala/org/bitcoins/db/DbManagement.scala#L92)
 method. Migrations are applied by default on server startup, via
-the [`AppConfig.start()`](https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/scala/org/bitcoins/db/AppConfig.scala#L49)
+the [
+`AppConfig.start()`](https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/scala/org/bitcoins/db/AppConfig.scala#L49)
 method.
 
 These migrations are setup so that project's databases and migrations are independent of each other. Therefore if you
 want to use the `bitcoin-s-chain` project, but not the `bitcoin-s-wallet` project, wallet migrations are not applied. It
 should be noted if you are using a module as a library, you are responsible for configuring the database via
 [slick's configuration](https://scala-slick.org/doc/3.3.1/database.html#using-typesafe-config) and calling
-[`AppConfig.start()`](https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/scala/org/bitcoins/db/AppConfig.scala#L49)
+[
+`AppConfig.start()`](https://github.com/bitcoin-s/bitcoin-s/blob/master/db-commons/src/main/scala/org/bitcoins/db/AppConfig.scala#L49)
 to ensure the entire module is initialized correctly.
 
 ## Example Configuration File
@@ -391,6 +394,10 @@ bitcoin-s {
         queueSize=5000
         connectionPool = "HikariCP"
         registerMbeans = true
+        
+      # timeout for waiting for the database to be free
+      # only applies to sqlite databases, as they do not support concurrent database operations
+        busy-timeout = 5s
       }
       hikari-logging = false
       hikari-logging-interval = 10 minute

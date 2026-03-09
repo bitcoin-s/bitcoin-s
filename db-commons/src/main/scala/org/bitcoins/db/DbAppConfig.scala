@@ -25,6 +25,15 @@ abstract class DbAppConfig extends AppConfig {
   lazy val dbPassword: String =
     config.getString(s"bitcoin-s.$moduleName.db.password")
 
+  private lazy val busyTimeout: FiniteDuration = {
+    val durationOpt =
+      config.getDurationOpt(s"bitcoin-s.$moduleName.db.busy-timeout")
+    durationOpt match {
+      case Some(d) => FiniteDuration(d.toMillis, TimeUnit.MILLISECONDS)
+      case None    => FiniteDuration(5, TimeUnit.SECONDS)
+    }
+  }
+
   lazy val driver: DatabaseDriver = {
     val driverStr =
       getConfigString(s"bitcoin-s.$moduleName.db.driver").toLowerCase
@@ -48,7 +57,9 @@ abstract class DbAppConfig extends AppConfig {
 
         s""""jdbc:sqlite:${AppConfig
             .safePathToString(dbPath)
-            .replace("\"", "")}/$dbName?journal_mode=WAL""""
+            .replace(
+              "\"",
+              "")}/$dbName?journal_mode=WAL&busy_timeout=${busyTimeout.toMillis}""""
       case PostgreSQL =>
         s""""jdbc:postgresql://$dbHost:$dbPort/$dbName""""
     }
