@@ -1,4 +1,5 @@
 package org.bitcoins.dlc.wallet.models
+import org.bitcoins.dlc.wallet.DLCAppConfig
 
 case class DLCDAOs(
     announcementDAO: OracleAnnouncementDataDAO,
@@ -14,7 +15,7 @@ case class DLCDAOs(
     dlcRemoteTxDAO: DLCRemoteTxDAO,
     incomingDLCOfferDAO: IncomingDLCOfferDAO,
     contactDAO: DLCContactDAO
-) {
+)(implicit val dlcConf: DLCAppConfig) {
 
   val list = Vector(
     announcementDAO,

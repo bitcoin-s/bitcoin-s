@@ -12,7 +12,7 @@ case class WalletDAOs(
     outgoingTxDAO: OutgoingTransactionDAO,
     scriptPubKeyDAO: ScriptPubKeyDAO,
     stateDescriptorDAO: WalletStateDescriptorDAO
-) {
+)(implicit val walletConfig: WalletAppConfig) {
 
   val list = Vector(
     scriptPubKeyDAO,
@@ -56,6 +56,6 @@ object WalletDAOs {
                incomingTxDAO,
                outgoingTxDAO,
                scriptPubKeyDAO,
-               stateDescriptorDAO)
+               stateDescriptorDAO)(walletConfig)
   }
 }

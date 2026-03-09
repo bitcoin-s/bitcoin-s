@@ -1,17 +1,17 @@
 package org.bitcoins.testkit.fixtures
 
-import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
 import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.dlc.wallet.models.*
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, PostgresTestDatabase}
-import org.scalatest._
+import org.scalatest.*
 
-import scala.concurrent.{Await, Future}
+import java.nio.file.Files
 
 trait DLCDAOFixture extends BitcoinSFixture with PostgresTestDatabase {
 
-  private lazy val daos: DLCDAOs = {
+  private def daos()(implicit dlcAppConfig: DLCAppConfig): DLCDAOs = {
     val announcementDAO = OracleAnnouncementDataDAO()
     val nonceDAO = OracleNonceDAO()
     val dlcAnnouncementDAO = DLCAnnouncementDAO()
@@ -44,31 +44,32 @@ trait DLCDAOFixture extends BitcoinSFixture with PostgresTestDatabase {
 
   final override type FixtureParam = DLCDAOs
 
-  implicit protected val config: BitcoinSAppConfig =
+  def config: BitcoinSAppConfig =
     BitcoinSTestAppConfig
       .getNeutrinoWithEmbeddedDbTestConfig(postgresOpt, Vector.empty)
 
-  implicit private val dlcConfig: DLCAppConfig = config.dlcConf
-
-  override def afterAll(): Unit = {
-    val stoppedF = config.stop()
-    val _ = Await.ready(stoppedF, akkaTimeout.duration)
-    super[PostgresTestDatabase].afterAll()
-  }
-
   def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    makeFixture(
-      build = () => Future(dlcConfig.migrate()).map(_ => daos),
-      destroy = () => dropAll()
+    makeDependentFixture[DLCDAOs](
+      build = () => {
+        val c = config.dlcConf
+        c.start().map(_ => daos()(c))
+      },
+      destroy = { (daos: DLCDAOs) =>
+        val config = daos.dlcConf
+        for {
+          _ <- config.stop()
+          _ = config.driver match {
+            case SQLite =>
+              val dbFile = config.dbPath.resolve(config.dbName)
+              Files.deleteIfExists(dbFile)
+              Files.deleteIfExists(
+                config.dbPath.resolve(config.dbName + "-wal"))
+              Files.deleteIfExists(
+                config.dbPath.resolve(config.dbName + "-shm"))
+            case PostgreSQL =>
+              config.clean()
+          }
+        } yield ()
+      }
     )(test)
-
-  private def dropAll(): Future[Unit] = {
-    val res = for {
-      _ <- FutureUtil.sequentially(daos.list.reverse)(dao => dao.deleteAll())
-    } yield ()
-    res.failed.foreach { ex =>
-      ex.printStackTrace()
-    }
-    res
-  }
 }
