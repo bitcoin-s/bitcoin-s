@@ -129,11 +129,12 @@ class WalletAppConfigTest extends BitcoinSWalletTest {
   it must "be able to reuse database connections across after starting/stopping the app config" in {
     (config: WalletAppConfig) =>
       val stoppedF = for {
-        hasWallet <- config.hasWallet()
+        hasWallet <- config.hasWallet()(config, executionContext)
         _ = assert(!hasWallet)
         _ <- config.stop()
         // fails because db connection pool not started
-        _ = assertThrows[RuntimeException](config.hasWallet())
+        _ = assertThrows[RuntimeException](
+          config.hasWallet()(config, executionContext))
         _ <- config.start() // restart so fixture can tear it down correctly
       } yield {}
 
