@@ -228,9 +228,8 @@ object FundWalletUtil extends FundWalletUtil {
       )
       funded <- FundWalletUtil.fundWallet(wallet, config.walletConf)
     } yield {
-      FundedDLCWallet(funded.wallet.asInstanceOf[DLCWallet],
-                      config.walletConf,
-                      config.dlcConf)
+      val dlcWallet = funded.wallet.asInstanceOf[DLCWallet]
+      FundedDLCWallet(dlcWallet, dlcWallet.walletConfig, dlcWallet.dlcConfig)
     }
   }
 
