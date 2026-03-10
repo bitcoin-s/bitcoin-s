@@ -14,7 +14,7 @@ import scala.concurrent.Future
 
 class DBConfigTest extends BitcoinSAsyncTest {
 
-  it should "use sqlite as default database and set its connection pool size to 1" in {
+  it should "use sqlite as default database with a connection pool for tests" in {
     withTempDir { dataDir =>
       val chainConfig = ChainAppConfig(dataDir, Vector.empty)
       val nodeConfig = NodeAppConfig(dataDir, Vector.empty)
@@ -25,65 +25,22 @@ class DBConfigTest extends BitcoinSAsyncTest {
         _ <- walletConfig.start()
         slickChainConfig = chainConfig.slickDbConfig
         _ = assert(slickChainConfig.profileName == "slick.jdbc.SQLiteProfile")
-        _ = assert(slickChainConfig.config.hasPath("db.numThreads"))
-        _ = assert(slickChainConfig.config.getInt("db.numThreads") == 1)
-        _ = assert(slickChainConfig.config.getInt("db.queueSize") == 5000)
-
-        slickNodeConfig = nodeConfig.slickDbConfig
-        _ = assert(slickNodeConfig.profileName == "slick.jdbc.SQLiteProfile")
-        _ = assert(slickNodeConfig.config.hasPath("db.numThreads"))
-        _ = assert(slickNodeConfig.config.getInt("db.numThreads") == 1)
-        _ = assert(slickNodeConfig.config.getInt("db.queueSize") == 5000)
-
-        slickWalletConfig = walletConfig.slickDbConfig
-        _ = assert(slickWalletConfig.profileName == "slick.jdbc.SQLiteProfile")
-        _ = assert(slickWalletConfig.config.hasPath("db.numThreads"))
-        _ = assert(slickWalletConfig.config.getInt("db.numThreads") == 1)
-        _ = assert(slickWalletConfig.config.getInt("db.queueSize") == 5000)
-
-        _ <- chainConfig.stop()
-        _ <- nodeConfig.stop()
-        _ <- walletConfig.stop()
-      } yield {
-        succeed
-      }
-
-    }
-  }
-
-  it should "use sqlite as default database and disable connection pool for tests" in {
-    withTempDir { dataDir =>
-      val chainConfig = ChainAppConfig(dataDir, Vector.empty)
-      val nodeConfig = NodeAppConfig(dataDir, Vector.empty)
-      val walletConfig = WalletAppConfig(dataDir, Vector.empty)
-      for {
-        _ <- chainConfig.start()
-        _ <- nodeConfig.start()
-        _ <- walletConfig.start()
-        slickChainConfig = chainConfig.slickDbConfig
-        _ = assert(slickChainConfig.profileName == "slick.jdbc.SQLiteProfile")
-        _ = assert(slickChainConfig.config.hasPath("db.numThreads"))
-        _ = assert(slickChainConfig.config.getInt("db.numThreads") == 1)
         _ = assert(
-          slickChainConfig.config.getString("db.connectionPool") == "disabled"
+          slickChainConfig.config.getString("db.connectionPool") == "HikariCP"
         )
         _ = assert(slickChainConfig.config.getInt("db.queueSize") == 5000)
 
         slickNodeConfig = nodeConfig.slickDbConfig
         _ = assert(slickNodeConfig.profileName == "slick.jdbc.SQLiteProfile")
-        _ = assert(slickNodeConfig.config.hasPath("db.numThreads"))
-        _ = assert(slickNodeConfig.config.getInt("db.numThreads") == 1)
         _ = assert(
-          slickNodeConfig.config.getString("db.connectionPool") == "disabled"
+          slickNodeConfig.config.getString("db.connectionPool") == "HikariCP"
         )
         _ = assert(slickNodeConfig.config.getInt("db.queueSize") == 5000)
 
         slickWalletConfig = walletConfig.slickDbConfig
         _ = assert(slickWalletConfig.profileName == "slick.jdbc.SQLiteProfile")
-        _ = assert(slickWalletConfig.config.hasPath("db.numThreads"))
-        _ = assert(slickWalletConfig.config.getInt("db.numThreads") == 1)
         _ = assert(
-          slickWalletConfig.config.getString("db.connectionPool") == "disabled"
+          slickWalletConfig.config.getString("db.connectionPool") == "HikariCP"
         )
         _ = assert(slickWalletConfig.config.getInt("db.queueSize") == 5000)
         _ <- chainConfig.stop()
