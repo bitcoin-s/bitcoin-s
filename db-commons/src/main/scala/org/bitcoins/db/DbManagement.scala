@@ -2,10 +2,12 @@ package org.bitcoins.db
 
 import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.db.DatabaseDriver._
+import org.bitcoins.db.DatabaseDriver.*
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.output.{CleanResult, MigrateResult}
 import org.flywaydb.core.api.{FlywayException, MigrationInfoService}
+import slick.jdbc.JdbcDataSource
+import slick.jdbc.hikaricp.HikariCPJdbcDataSource
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -45,10 +47,30 @@ trait DbManagement extends BitcoinSLogger {
     }
 
     // Remove "s needed for config
-    val url = appConfig.jdbcUrl.replace("\"", "")
-    config
-      .dataSource(url, appConfig.dbUsername, appConfig.dbPassword)
-      .load
+    val jdbcUrl = appConfig.jdbcUrl.replace("\"", "")
+    // Reuse the already-running HikariCP DataSource from Slick rather than
+    // creating a second connection pool via .dataSource(url, user, password).
+    // slickDbConfig.db.source is a HikariCPJdbcDataSource whose .ds field is
+    // a com.zaxxer.hikari.HikariDataSource (extends javax.sql.DataSource).
+    appConfig.slickDbConfig.db.source match {
+      case h: HikariCPJdbcDataSource if h.ds.getMaximumPoolSize > 1 =>
+        config
+          .dataSource(h.ds)
+          .load()
+      case h: HikariCPJdbcDataSource =>
+        logger.warn(
+          s"Hikari pool size is too small (${h.ds.getMaximumPoolSize}) for Flyway to run with the pool (needs > 1). Falling back to adhoc connections.")
+        config
+          .dataSource(jdbcUrl, appConfig.dbUsername, appConfig.dbPassword)
+          .load()
+      case j: JdbcDataSource =>
+        logger.warn(
+          s"No connection pool found in slickDbConfig, falling back to adhoc connections for flyway ${j.getClass.getSimpleName}")
+        config
+          .dataSource(jdbcUrl, appConfig.dbUsername, appConfig.dbPassword)
+          .load()
+    }
+
   }
 
   /** Internally, slick defines the schema member as
