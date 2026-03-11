@@ -48,6 +48,7 @@ trait DbManagement extends BitcoinSLogger {
 
     // Remove "s needed for config
     val jdbcUrl = appConfig.jdbcUrl.replace("\"", "")
+
     // Reuse the already-running HikariCP DataSource from Slick rather than
     // creating a second connection pool via .dataSource(url, user, password).
     // slickDbConfig.db.source is a HikariCPJdbcDataSource whose .ds field is
@@ -58,13 +59,13 @@ trait DbManagement extends BitcoinSLogger {
           .dataSource(h.ds)
           .load()
       case h: HikariCPJdbcDataSource =>
-        logger.warn(
+        logger.debug(
           s"Hikari pool size is too small (${h.ds.getMaximumPoolSize}) for Flyway to run with the pool (needs > 1). Falling back to adhoc connections.")
         config
           .dataSource(jdbcUrl, appConfig.dbUsername, appConfig.dbPassword)
           .load()
       case j: JdbcDataSource =>
-        logger.warn(
+        logger.debug(
           s"No connection pool found in slickDbConfig, falling back to adhoc connections for flyway ${j.getClass.getSimpleName}")
         config
           .dataSource(jdbcUrl, appConfig.dbUsername, appConfig.dbPassword)
