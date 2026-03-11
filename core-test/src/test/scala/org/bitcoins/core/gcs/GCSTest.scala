@@ -145,7 +145,7 @@ class GCSTest extends BitcoinSUnitTest {
   it must "encode and decode an arbitrary item for an arbitrary p" in {
 
     def delta: Gen[UInt64] = {
-      // what is a reasonable delta? This is means the delta
+      // what is a reasonable delta? This means the delta
       // can be 1 - 16384
       // if we do a full uint64 it takes forever to encode it
       Gen
