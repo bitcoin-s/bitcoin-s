@@ -59,7 +59,7 @@ abstract class DbAppConfig extends AppConfig {
             .safePathToString(dbPath)
             .replace(
               "\"",
-              "")}/$dbName?journal_mode=WAL&busy_timeout=${busyTimeout.toMillis}""""
+              "")}/$dbName?journal_mode=WAL&transaction_mode=IMMEDIATE&busy_timeout=${busyTimeout.toMillis}""""
       case PostgreSQL =>
         s""""jdbc:postgresql://$dbHost:$dbPort/$dbName""""
     }

@@ -191,13 +191,13 @@ object NodeUnitTest extends P2PLogger {
   def destroyNode(node: Node, appConfig: BitcoinSAppConfig)(implicit
       ec: ExecutionContext
   ): Future[Unit] = {
-
     for {
       _ <- node.stop()
+      _ = cleanTables(appConfig)
       _ <- node.nodeAppConfig.stop()
       _ <- node.chainAppConfig.stop()
     } yield {
-      cleanTables(appConfig)
+      ()
     }
   }
 
