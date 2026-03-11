@@ -331,7 +331,7 @@ abstract class NodeTestUtil extends P2PLogger {
   ): Future[NeutrinoNode] = {
     val stoppedConfigF = for {
       _ <- initNode.stop()
-      _ <- initNode.nodeAppConfig.stop()
+//      _ <- initNode.nodeAppConfig.stop()
     } yield ()
     val newNodeAppConfigF =
       stoppedConfigF.map(_ => initNode.nodeAppConfig.withOverrides(config))

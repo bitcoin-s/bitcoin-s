@@ -8,7 +8,7 @@ import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.wallet.WalletApi
 import org.bitcoins.core.currency.*
-import org.bitcoins.dlc.wallet.{DLCAppConfig, DLCWallet}
+import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.node.NodeCallbacks
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.server.{BitcoinSAppConfig, BitcoindRpcBackendUtil}
@@ -39,13 +39,7 @@ trait BitcoinSWalletTest
     with PostgresTestDatabase {
   import BitcoinSWalletTest._
 
-  implicit protected def getFreshDLCAppConfig: DLCAppConfig = {
-    getFreshConfig.dlcConf
-  }
-
   override def beforeAll(): Unit = {
-    AppConfig.throwIfDefaultDatadir(getFreshConfig.walletConf)
-    AppConfig.throwIfDefaultDatadir(getFreshConfig.dlcConf)
     super[PostgresTestDatabase].beforeAll()
   }
 
@@ -522,9 +516,8 @@ object BitcoinSWalletTest extends WalletLogger {
   def destroyWalletAppConfig(
       walletAppConfig: WalletAppConfig
   )(implicit ec: ExecutionContext): Future[Unit] = {
+    walletAppConfig.clean()
     for {
-      _ <- walletAppConfig.dropTable("flyway_schema_history")
-      _ <- walletAppConfig.dropAll()
       _ <- walletAppConfig.stop()
     } yield ()
   }

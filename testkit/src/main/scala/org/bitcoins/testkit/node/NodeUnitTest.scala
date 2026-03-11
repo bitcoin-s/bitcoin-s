@@ -519,7 +519,7 @@ object NodeUnitTest extends P2PLogger {
     */
   private def cleanTables(appConfig: BitcoinSAppConfig): Unit = {
     appConfig.nodeConf.clean()
-    appConfig.walletConf.clean()
+    // appConfig.walletConf.clean()
     appConfig.chainConf.clean()
     ()
   }

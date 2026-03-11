@@ -6,7 +6,6 @@ import org.bitcoins.dlc.wallet.models.*
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, PostgresTestDatabase}
 import org.scalatest.*
-
 import java.nio.file.Files
 
 trait DLCDAOFixture extends BitcoinSFixture with PostgresTestDatabase {
@@ -56,6 +55,7 @@ trait DLCDAOFixture extends BitcoinSFixture with PostgresTestDatabase {
       },
       destroy = { (daos: DLCDAOs) =>
         val config = daos.dlcConf
+        val _ = config.clean()
         for {
           _ <- config.stop()
           _ = config.driver match {
@@ -67,7 +67,7 @@ trait DLCDAOFixture extends BitcoinSFixture with PostgresTestDatabase {
               Files.deleteIfExists(
                 config.dbPath.resolve(config.dbName + "-shm"))
             case PostgreSQL =>
-              config.clean()
+              ()
           }
         } yield ()
       }

@@ -1,11 +1,12 @@
 package org.bitcoins.db
 
 import org.bitcoins.commons.util.BitcoinSLogger
-import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.db.DatabaseDriver._
+import org.bitcoins.db.DatabaseDriver.*
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.output.{CleanResult, MigrateResult}
 import org.flywaydb.core.api.{FlywayException, MigrationInfoService}
+import slick.jdbc.JdbcDataSource
+import slick.jdbc.hikaricp.HikariCPJdbcDataSource
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -15,7 +16,8 @@ trait DbManagement extends BitcoinSLogger {
 
   import scala.language.implicitConversions
 
-  protected lazy val flyway: Flyway = {
+  protected def flyway: Flyway = {
+    val jdbcUrl = appConfig.jdbcUrl.replace("\"", "")
     // create the database if it doesn't exist yet in sqlite3
     appConfig.driver match {
       case SQLite =>
@@ -44,11 +46,26 @@ trait DbManagement extends BitcoinSLogger {
       }
     }
 
-    // Remove "s needed for config
-    val url = appConfig.jdbcUrl.replace("\"", "")
-    config
-      .dataSource(url, appConfig.dbUsername, appConfig.dbPassword)
-      .load
+    // Reuse the already-running HikariCP DataSource from Slick rather than
+    // creating a second connection pool via .dataSource(url, user, password).
+    // slickDbConfig.db.source is a HikariCPJdbcDataSource whose .ds field is
+    // a com.zaxxer.hikari.HikariDataSource (extends javax.sql.DataSource).
+    appConfig.slickDbConfig.db.source match {
+      case h: HikariCPJdbcDataSource if h.ds.getMaximumPoolSize > 1 =>
+        // flyway requires 2 database connections to run migrations
+        logger.debug(
+          s"Using existing HikariCP connection pool for flyway with ${h.getClass.getSimpleName}")
+        config
+          .dataSource(h.ds)
+          .load()
+      case j: JdbcDataSource =>
+        logger.debug(
+          s"No connection pool found in slickDbConfig, falling back to adhoc connections for flyway ${j.getClass.getSimpleName}")
+        config
+          .dataSource(jdbcUrl, appConfig.dbUsername, appConfig.dbPassword)
+          .load()
+    }
+
   }
 
   /** Internally, slick defines the schema member as
@@ -76,18 +93,6 @@ trait DbManagement extends BitcoinSLogger {
   }
 
   def allTables: List[TableQuery[Table[?]]]
-
-  def dropAll()(implicit ec: ExecutionContext): Future[Unit] = {
-    val result =
-      FutureUtil
-        .foldLeftAsync((), allTables.reverse) { (_, table) =>
-          dropTable(table)
-        }
-    result.failed.foreach { e =>
-      e.printStackTrace()
-    }
-    result
-  }
 
   /** The query needed to create the given table */
   private def createTableQuery(
@@ -119,32 +124,6 @@ trait DbManagement extends BitcoinSLogger {
     val result = database.run(query)
     result
   }
-
-  def dropTable(tableName: String)(implicit
-      ec: ExecutionContext): Future[Int] = {
-    val fullTableName =
-      appConfig.schemaName.map(_ + ".").getOrElse("") + tableName
-    val sql = sqlu"""DROP TABLE IF EXISTS #$fullTableName"""
-    val result = database.run(sql)
-    result.failed.foreach { ex =>
-      ex.printStackTrace()
-    }
-    result
-  }
-
-  def createSchema(createIfNotExists: Boolean = true)(implicit
-      ec: ExecutionContext): Future[Unit] =
-    appConfig.schemaName match {
-      case None =>
-        Future.unit
-      case Some(schema) =>
-        val sql =
-          if (createIfNotExists)
-            sqlu"""CREATE SCHEMA IF NOT EXISTS #$schema"""
-          else
-            sqlu"""CREATE SCHEMA #$schema"""
-        database.run(sql).map(_ => ())
-    }
 
   /** Returns flyway information about the state of migrations
     * @see
@@ -183,6 +162,7 @@ trait DbManagement extends BitcoinSLogger {
         flyway.baseline()
         flyway.migrate()
     }
+
   }
 
   /** Runs flyway clean

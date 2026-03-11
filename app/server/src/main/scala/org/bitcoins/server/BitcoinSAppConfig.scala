@@ -8,7 +8,6 @@ import org.bitcoins.commons.config.{AppConfig, ConfigOps}
 import org.bitcoins.commons.util.{BitcoinSLogger, ServerArgParser}
 import org.bitcoins.core.config.NetworkParameters
 import org.bitcoins.core.util.{StartStopAsync, TimeUtil}
-import org.bitcoins.db.DbManagement
 import org.bitcoins.dlc.node.config.DLCNodeAppConfig
 import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.keymanager.config.KeyManagerAppConfig
@@ -85,20 +84,8 @@ case class BitcoinSAppConfig(
     val torDependentConfigs: Vector[AppConfig] =
       Vector(nodeConf, bitcoindRpcConf, dlcNodeConf)
 
-    val dbConfigsDependentOnTor: Vector[DbManagement] =
-      Vector(nodeConf)
-
-    // run migrations here to avoid issues like: https://github.com/bitcoin-s/bitcoin-s/issues/4606
-    // since we don't require tor dependent configs
-    // to be fully started before completing the Future returned by this
-    // method, we need to run them on their own
-    val migrateTorDependentDbConfigsF =
-      Future.traverse(dbConfigsDependentOnTor)(dbConfig =>
-        Future(dbConfig.migrate()))
-
     val startedTorDependentConfigsF = for {
       _ <- torConfig
-      _ <- migrateTorDependentDbConfigsF
       _ <- Future.traverse(torDependentConfigs)(_.start())
     } yield ()
 
@@ -109,7 +96,7 @@ case class BitcoinSAppConfig(
     }
 
     for {
-      _ <- migrateTorDependentDbConfigsF
+      _ <- startedTorDependentConfigsF
       _ <- startedNonTorConfigsF
     } yield {
       logger.info(

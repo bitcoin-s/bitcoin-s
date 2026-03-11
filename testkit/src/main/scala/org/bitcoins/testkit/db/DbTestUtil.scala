@@ -7,7 +7,7 @@ import org.bitcoins.db.models.MasterXPubDAO
 import scodec.bits.ByteVector
 import slick.lifted.ProvenShape
 
-import java.nio.file.{Files, Path}
+import java.nio.file.{Path}
 import scala.concurrent.{ExecutionContext, Future}
 
 object DbTestUtil {
@@ -60,11 +60,9 @@ case class TestAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
   override def appConfig: TestAppConfig = this
 
   override def start(): Future[Unit] = {
-    if (Files.notExists(datadir)) {
-      Files.createDirectories(datadir)
-    }
     for {
       _ <- super.start()
+      _ = migrate()
       _ = logger.debug(s"Initializing test setup")
       _ <- createTable(TestDAO()(ec, this).table)
     } yield ()

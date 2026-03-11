@@ -16,7 +16,6 @@ trait DLCOracleFixture extends BitcoinSFixture with PostgresTestDatabase {
     val builder: () => Future[DLCOracle] = () => {
       val conf: DLCOracleAppConfig =
         BitcoinSTestAppConfig.getDLCOracleWithEmbeddedDbTestConfig(postgresOpt)
-      val _ = conf.migrate()
 
       val oracleConfF: Future[Unit] = conf.start()
 
