@@ -390,14 +390,14 @@ bitcoin-s {
   
         # this needs to be set to 1 for SQLITE as it does not support concurrent database operations
         # see: https://github.com/bitcoin-s/bitcoin-s/pull/1840
-        numThreads = 1
+        numThreads = 4
         queueSize=5000
         connectionPool = "HikariCP"
         registerMbeans = true
         
-      # timeout for waiting for the database to be free
-      # only applies to sqlite databases, as they do not support concurrent database operations
-        busy-timeout = 5s
+        # timeout for waiting for the database to be free
+        # only applies to sqlite databases, as they do not support concurrent database operations
+        busy-timeout = 30s
       }
       hikari-logging = false
       hikari-logging-interval = 10 minute
