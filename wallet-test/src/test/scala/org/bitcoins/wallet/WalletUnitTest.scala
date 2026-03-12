@@ -381,21 +381,36 @@ class WalletUnitTest extends BitcoinSWalletTest {
             // cannot delete database file if using postgres
             ()
           } else {
-            val path = wallet.walletConfig.datadir
+            val dbPath = wallet.walletConfig.datadir
               .resolve(wallet.walletConfig.walletName)
-              .resolve("walletdb.sqlite")
-            Files.delete(path)
+            val path = dbPath.resolve("walletdb.sqlite")
+            val walPath = dbPath.resolve("walletdb.sqlite-wal")
+            val shmPath = dbPath.resolve("walletdb.sqlite-shm")
+            Files.deleteIfExists(path)
+            Files.deleteIfExists(walPath)
+            Files.deleteIfExists(shmPath)
           }
 
         }
-        _ = wallet.walletConfig.migrate()
+
+        // create a new wallet config so we get a fresh connection pool
+        // we should be able to remove this once we have #6245
+        newWalletConfig = wallet.walletConfig.copy()
+
+        _ = newWalletConfig.migrate()
+
+        // create a new wallet using the new config with refreshed connection pool
+        newWallet = Wallet(wallet.nodeApi, wallet.chainQueryApi)(
+          newWalletConfig)
+
         // initialize it
         initOldWallet <- Wallet.initialize(
-          wallet = wallet,
-          accountHandling = wallet.accountHandling,
-          bip39PasswordOpt = wallet.walletConfig.bip39PasswordOpt
+          wallet = newWallet,
+          accountHandling = newWallet.accountHandling,
+          bip39PasswordOpt = newWalletConfig.bip39PasswordOpt
         )
         isOldWalletEmpty <- initOldWallet.isEmpty()
+        _ <- newWalletConfig.stop()
       } yield assert(!isOldWalletEmpty)
 
   }
