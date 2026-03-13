@@ -395,22 +395,17 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
         // create a new wallet config so we get a fresh connection pool
         // we should be able to remove this once we have #6245
-        newWalletConfig = wallet.walletConfig.copy()
-
-        _ = newWalletConfig.migrate()
-
-        // create a new wallet using the new config with refreshed connection pool
-        newWallet = Wallet(wallet.nodeApi, wallet.chainQueryApi)(
-          newWalletConfig)
+        walletConfig = wallet.walletConfig
+        _ <- walletConfig.stop().flatMap(_ => walletConfig.start())
 
         // initialize it
         initOldWallet <- Wallet.initialize(
-          wallet = newWallet,
-          accountHandling = newWallet.accountHandling,
-          bip39PasswordOpt = newWalletConfig.bip39PasswordOpt
+          wallet = wallet,
+          accountHandling = wallet.accountHandling,
+          bip39PasswordOpt = wallet.walletConfig.bip39PasswordOpt
         )
         isOldWalletEmpty <- initOldWallet.isEmpty()
-        _ <- newWalletConfig.stop()
+//        _ <- initOldWallet.stop()
       } yield assert(!isOldWalletEmpty)
 
   }

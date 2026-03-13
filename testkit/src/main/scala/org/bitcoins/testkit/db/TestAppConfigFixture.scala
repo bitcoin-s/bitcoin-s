@@ -32,16 +32,14 @@ trait TestAppConfigFixture
     val config =
       TestAppConfig(BitcoinSTestAppConfig.tmpDir(), Vector(configOverride))
 
-    val _ = config.migrate()
     config.start().map { _ =>
       config
     }
   }
 
   def destroyTestConfig(testConfig: TestAppConfig): Future[Unit] = {
+    testConfig.clean()
     for {
-      _ <- testConfig.dropTable("flyway_schema_history")
-      _ <- testConfig.dropAll()
       _ <- testConfig.stop()
     } yield ()
   }

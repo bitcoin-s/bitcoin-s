@@ -62,14 +62,18 @@ object SQLiteUtil extends BitcoinSLogger {
   }
 
   def createDbFileIfDNE(dbPath: Path, dbName: String): Unit = {
+    // Ensure the database directory exists
     if (!Files.exists(dbPath)) {
-      val _ = {
-        logger.debug(s"Creating database directory=${dbPath}")
-        Files.createDirectories(dbPath)
-        val dbFilePath = dbPath.resolve(dbName)
-        logger.debug(s"Creating database file=$dbFilePath")
-        Files.createFile(dbFilePath)
-      }
+      logger.debug(s"Creating database directory=$dbPath")
+      Files.createDirectories(dbPath)
+    }
+
+    val dbFilePath = dbPath.resolve(dbName)
+    if (!Files.exists(dbFilePath)) {
+      logger.debug(s"Creating database file=$dbFilePath")
+      Files.createFile(dbFilePath)
+    } else {
+      logger.debug(s"Database file already exists: $dbFilePath")
     }
   }
 }

@@ -41,6 +41,7 @@ trait DLCOracleDAOFixture extends BitcoinSFixture with PostgresTestDatabase {
   }
 
   private def dropAll(config: DLCOracleAppConfig): Future[Unit] = {
+    config.clean()
     for {
       _ <- config.stop()
       _ = config.driver match {
@@ -49,7 +50,7 @@ trait DLCOracleDAOFixture extends BitcoinSFixture with PostgresTestDatabase {
           Files.deleteIfExists(config.dbPath.resolve(config.dbName + "-wal"))
           Files.deleteIfExists(config.dbPath.resolve(config.dbName + "-shm"))
         case PostgreSQL =>
-          config.clean()
+          ()
       }
     } yield ()
   }

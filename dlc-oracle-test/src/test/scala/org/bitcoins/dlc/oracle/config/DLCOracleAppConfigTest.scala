@@ -49,6 +49,8 @@ class DLCOracleAppConfigTest extends DLCOracleAppConfigFixture {
       for {
         _ <- stoppedF
         pubKey2 <- dlcOracle2F.map(_.publicKey())
+        // start the old app config for fixture tear down
+        _ <- dlcOracleAppConfig.start()
       } yield {
         assert(pubKey1 == pubKey2)
       }

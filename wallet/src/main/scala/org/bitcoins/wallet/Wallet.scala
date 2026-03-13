@@ -54,27 +54,27 @@ case class Wallet(
 
   val networkParameters: BitcoinNetwork = walletConfig.network
 
-  private[bitcoins] val walletDAOs: WalletDAOs =
+  private[bitcoins] def walletDAOs: WalletDAOs =
     WalletDAOs.fromWalletConfig(walletConfig)
 
-  private[bitcoins] val addressDAO: AddressDAO = walletDAOs.addressDAO
-  private[bitcoins] val accountDAO: AccountDAO = walletDAOs.accountDAO
-  private[bitcoins] val spendingInfoDAO: SpendingInfoDAO = walletDAOs.utxoDAO
-  private[bitcoins] val transactionDAO: TransactionDAO =
+  private[bitcoins] def addressDAO: AddressDAO = walletDAOs.addressDAO
+  private[bitcoins] def accountDAO: AccountDAO = walletDAOs.accountDAO
+  private[bitcoins] def spendingInfoDAO: SpendingInfoDAO = walletDAOs.utxoDAO
+  private[bitcoins] def transactionDAO: TransactionDAO =
     walletDAOs.transactionDAO
-  private[bitcoins] val scriptPubKeyDAO: ScriptPubKeyDAO =
+  private[bitcoins] def scriptPubKeyDAO: ScriptPubKeyDAO =
     walletDAOs.scriptPubKeyDAO
 
-  private[bitcoins] val incomingTxDAO: IncomingTransactionDAO =
+  private[bitcoins] def incomingTxDAO: IncomingTransactionDAO =
     walletDAOs.incomingTxDAO
 
-  private[bitcoins] val outgoingTxDAO: OutgoingTransactionDAO =
+  private[bitcoins] def outgoingTxDAO: OutgoingTransactionDAO =
     walletDAOs.outgoingTxDAO
-  private[bitcoins] val addressTagDAO: AddressTagDAO = walletDAOs.addressTagDAO
+  private[bitcoins] def addressTagDAO: AddressTagDAO = walletDAOs.addressTagDAO
 
-  private[bitcoins] val stateDescriptorDAO: WalletStateDescriptorDAO =
+  private[bitcoins] def stateDescriptorDAO: WalletStateDescriptorDAO =
     walletDAOs.stateDescriptorDAO
-  protected lazy val safeDatabase: SafeDatabase = spendingInfoDAO.safeDatabase
+  protected def safeDatabase: SafeDatabase = spendingInfoDAO.safeDatabase
 
   val creationTime: Instant = keyManager.creationTime
 
