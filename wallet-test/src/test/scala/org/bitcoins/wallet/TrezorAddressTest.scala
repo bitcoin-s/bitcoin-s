@@ -129,12 +129,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
     vectors.filter(_.pathType == HDPurpose.NestedSegWit)
 
   def configForPurposeAndSeed(purpose: HDPurpose): Config = {
-    val purposeStr = purpose match {
-      case HDPurpose.Legacy       => "legacy"
-      case HDPurpose.SegWit       => "segwit"
-      case HDPurpose.NestedSegWit => "nested-segwit"
-      case other                  => fail(s"unexpected purpose: $other")
-    }
+    val purposeStr = HDPurpose.toString(purpose)
     val entropy = mnemonic.toEntropy.toHex
     val confStr = s"""bitcoin-s.wallet.purpose = $purposeStr
                      |bitcoin-s.network = mainnet
@@ -144,7 +139,6 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
   }
 
   private def getWallet(config: WalletAppConfig): Future[Wallet] = {
-    val bip39PasswordOpt = None
     val startedF = config.start()
     for {
       _ <- startedF
@@ -154,9 +148,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
           MockChainQueryApi
         )(config)
       init <- Wallet.initialize(
-        wallet = wallet,
-        accountHandling = wallet.accountHandling,
-        bip39PasswordOpt = bip39PasswordOpt
+        wallet = wallet
       )
     } yield init
   }

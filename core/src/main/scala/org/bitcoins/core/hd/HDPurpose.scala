@@ -59,4 +59,21 @@ object HDPurpose extends StringFactory[HDPurpose] {
       sys.error(s"Cannot create HDPurpose from string=$string")
     }
   }
+
+  def toString(purpose: HDPurpose): String = {
+    purpose match {
+      case Legacy =>
+        "legacy"
+      case SegWit =>
+        "segwit"
+      case NestedSegWit =>
+        "nested-segwit"
+      case Taproot =>
+        "taproot"
+      case Multisig =>
+        "multisig"
+      case other =>
+        sys.error(s"Unsupported HDPurpose: $other (constant=${other.constant})")
+    }
+  }
 }
