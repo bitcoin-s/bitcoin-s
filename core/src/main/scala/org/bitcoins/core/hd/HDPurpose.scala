@@ -61,18 +61,19 @@ object HDPurpose extends StringFactory[HDPurpose] {
   }
 
   def toString(purpose: HDPurpose): String = {
-    if (purpose == Legacy) {
-      "legacy"
-    } else if (purpose == SegWit) {
-      "segwit"
-    } else if (purpose == NestedSegWit) {
-      "nested-segwit"
-    } else if (purpose == Taproot) {
-      "taproot"
-    } else if (purpose == Multisig) {
-      "multisig"
-    } else {
-      "unknown"
+    purpose match {
+      case Legacy =>
+        "legacy"
+      case SegWit =>
+        "segwit"
+      case NestedSegWit =>
+        "nested-segwit"
+      case Taproot =>
+        "taproot"
+      case Multisig =>
+        "multisig"
+      case other =>
+        sys.error(s"Unsupported HDPurpose: $other (constant=${other.constant})")
     }
   }
 }
