@@ -1,6 +1,5 @@
 package org.bitcoins.wallet
 
-import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.pekko.actor.ActorSystem
 import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.feeprovider.FeeRateApi
@@ -348,13 +347,10 @@ object Wallet extends WalletLogger {
   /** Creates the level 0 account for the given HD purpose, if the root account
     * exists do nothing
     */
-  private def createRootAccount(wallet: Wallet)(implicit
+  private def createRootAccount(wallet: Wallet, coin: HDCoin)(implicit
       ec: ExecutionContext
   ): DBIOAction[AccountDb, NoStream, Effect.Read & Effect.Write] = {
     val keyManager = wallet.keyManager
-    val coinType = HDUtil.getCoinType(keyManager.kmParams.network)
-    val coin =
-      HDCoin(purpose = keyManager.kmParams.purpose, coinType = coinType)
     val account = HDAccount(coin = coin, index = 0)
     // safe since we're deriving from a priv
     val xpub = keyManager.deriveXPub(account).get
@@ -388,8 +384,7 @@ object Wallet extends WalletLogger {
   }
 
   def initialize(
-      wallet: Wallet,
-      accountHandling: AccountHandlingApi
+      wallet: Wallet
   ): Future[Wallet] = {
     import wallet.walletConfig.ec
     val createMasterXpubF =
@@ -403,29 +398,20 @@ object Wallet extends WalletLogger {
       val accounts = HDPurpose.singleSigPurposes.map { purpose =>
         // we need to create key manager params for each purpose
         // and then initialize a key manager to derive the correct xpub
-        val wAppConfig = wallet.walletConfig
-        val purposeConfig =
-          s"bitcoin-s.wallet.purpose=${HDPurpose.toString(purpose)}"
-
-        val walletConf: Config =
-          ConfigFactory
-            .parseString(
-              Vector(purposeConfig)
-                .filter(_.nonEmpty)
-                .mkString("\n"))
-
-        val kmConf = wallet.walletConfig.kmConf
-        val kmConfOverrides = kmConf.configOverrides
-        val overrides =
-          (walletConf +: (wallet.walletConfig.configOverrides ++ kmConfOverrides))
-            .foldLeft(ConfigFactory.empty())(_.withFallback(_))
-        val kmAppConfig =
-          kmConf.withOverrides(Vector(overrides.resolve()))
-        val walletAppConfig = wallet.walletConfig.copy(kmConfOpt =
-          Some(kmAppConfig))(wAppConfig.system)
-        val w = Wallet(nodeApi = wallet.nodeApi,
-                       chainQueryApi = wallet.chainQueryApi)(walletAppConfig)
-        createRootAccount(w).map((w, _))
+        val keyManager = wallet.keyManager
+        val coinType = HDUtil.getCoinType(keyManager.kmParams.network)
+        val coin =
+          HDCoin(purpose = purpose, coinType = coinType)
+        createRootAccount(wallet, coin).map { account =>
+          // need to re-create the wallet object
+          // because keymanager is cached at the wallet level
+          // see: https://github.com/bitcoin-s/bitcoin-s/pull/6242
+          val w = Wallet(
+            nodeApi = wallet.nodeApi,
+            chainQueryApi = wallet.chainQueryApi
+          )(wallet.walletConfig)
+          (w, account)
+        }
 
       }
       accounts
@@ -444,7 +430,7 @@ object Wallet extends WalletLogger {
         .get
       // start the config we are actually using
       // we need this for fee rate scheduler
-      _ <- initializedWallet.walletConfig.start()
+      // _ <- initializedWallet.walletConfig.start()
       _ = accounts.foreach { a =>
         logger.info(s"Created account=${a} to DB")
       }
@@ -455,7 +441,7 @@ object Wallet extends WalletLogger {
         val threshold = Instant.now().minus(1, ChronoUnit.HOURS)
         val isOldCreationTime = creationTime.compareTo(threshold) <= 0
         if (isOldCreationTime) {
-          accountHandling
+          wallet.accountHandling
             .generateScriptPubKeys(
               account = wallet.walletConfig.defaultAccount,
               addressBatchSize = wallet.walletConfig.discoveryBatchSize,

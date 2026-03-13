@@ -162,8 +162,7 @@ object DLCAppConfig
 
         Wallet
           .initialize(
-            wallet = unInitializedWallet,
-            accountHandling = unInitializedWallet.accountHandling
+            wallet = unInitializedWallet
           )
           .map(w => DLCWallet(w)(dlcConf, w.walletConfig))
       }

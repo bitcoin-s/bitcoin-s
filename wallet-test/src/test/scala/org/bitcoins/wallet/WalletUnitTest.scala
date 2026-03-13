@@ -161,10 +161,9 @@ class WalletUnitTest extends BitcoinSWalletTest {
   it must "be able to call initialize twice without throwing an exception if we have the same key manager" in {
     (wallet: Wallet) =>
       val twiceF = Wallet
-        .initialize(wallet = wallet, accountHandling = wallet.accountHandling)
+        .initialize(wallet = wallet)
         .flatMap { _ =>
-          Wallet.initialize(wallet = wallet,
-                            accountHandling = wallet.accountHandling)
+          Wallet.initialize(wallet = wallet)
         }
 
       twiceF.map(_ => succeed)
@@ -175,7 +174,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
     (wallet: Wallet) =>
       recoverToSucceededIf[RuntimeException] {
         Wallet
-          .initialize(wallet, wallet.accountHandling)
+          .initialize(wallet)
           .flatMap { _ =>
             // use a BIP39 password to make the key-managers different
             val kmConf = wallet.walletConfig.kmConf.withOverrides(
@@ -187,8 +186,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
             val walletBadPw =
               Wallet(wallet.nodeApi, wallet.chainQueryApi)(wConfig)
             Wallet.initialize(
-              walletBadPw,
-              wallet.accountHandling
+              walletBadPw
             )
           }
       }
@@ -215,8 +213,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
       recoverToSucceededIf[IllegalArgumentException] {
         walletDiffKeyManagerF.flatMap { walletDiffKeyManager =>
-          Wallet.initialize(walletDiffKeyManager,
-                            walletDiffKeyManager.accountHandling)
+          Wallet.initialize(walletDiffKeyManager)
         }
       }
   }
@@ -398,15 +395,9 @@ class WalletUnitTest extends BitcoinSWalletTest {
 
         }
 
-        // create a new wallet config so we get a fresh connection pool
-        // we should be able to remove this once we have #6245
-        walletConfig = wallet.walletConfig
-        _ <- walletConfig.stop().flatMap(_ => walletConfig.start())
-
         // initialize it
         initOldWallet <- Wallet.initialize(
-          wallet = wallet,
-          accountHandling = wallet.accountHandling
+          wallet = wallet
         )
         isOldWalletEmpty <- initOldWallet.isEmpty()
 //        _ <- initOldWallet.stop()

@@ -213,10 +213,8 @@ case class WalletAppConfig(
   private def masterXPubDAO: MasterXPubDAO = MasterXPubDAO()(ec, this)
 
   override def start(): Future[Unit] = {
-    logger.info(s"WalletAppConfig.start()")
     for {
       _ <- super.start()
-      _ = logger.info(s"Done super.start()")
       _ <- kmConf.start()
       masterXpub = kmConf.toBip39KeyManager.getRootXPub
       numMigrations = migrate()
@@ -233,7 +231,6 @@ case class WalletAppConfig(
           MasterXPubUtil.checkMasterXPub(masterXpub, masterXPubDAO)
         }
       }
-      _ = logger.info(s"Done checking seed and master xpub")
       _ = startFeeRateCallbackScheduler()
     } yield {
       logger.debug(s"Initializing wallet setup")
@@ -446,8 +443,7 @@ object WalletAppConfig
           Wallet(nodeApi, chainQueryApi)
 
         Wallet.initialize(
-          wallet = unInitializedWallet,
-          accountHandling = unInitializedWallet.accountHandling
+          wallet = unInitializedWallet
         )
       }
     }
