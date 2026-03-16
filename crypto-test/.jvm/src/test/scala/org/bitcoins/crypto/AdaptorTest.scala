@@ -13,24 +13,38 @@ class AdaptorTest extends BitcoinSCryptoTest {
     val source = Source.fromInputStream(stream)
     val lines = source.getLines().drop(2) // Skip header and comment line
 
-    val vectors = lines.take(3).map(PresigVector.fromCsvLine).toVector
+    val vectors = lines.map(PresigVector.fromCsvLine).toVector
 
     vectors.foreach { t =>
-      if (t.secretKey.isDefined) {
+      if (
+        t.secretKey.isDefined && t.publicKey.isSuccess && t.preSignature.isSuccess && t.adaptor.isSuccess
+      ) {
         val presig = AdaptorUtil.schnorrAdaptorSign(t.secretKey.get,
-                                                    t.adaptor,
+                                                    t.adaptor.get,
                                                     t.message.get,
                                                     t.auxRand)
-        assert(presig == t.preSignature)
-      } else {
-        val result = AdaptorUtil.schnorrAdaptorVerify(
-          t.preSignature,
-          t.publicKey,
-          t.message.getOrElse(ByteVector.empty),
-          t.adaptor)
-        assert(result == t.result)
-      }
+        assert(presig == t.preSignature.get)
+      } else if (
+        t.publicKey.isSuccess && t.preSignature.isSuccess && t.adaptor.isSuccess
+      ) {
+        try {
+          val result = AdaptorUtil.schnorrAdaptorVerify(
+            t.preSignature.get,
+            t.publicKey.get,
+            t.message.getOrElse(ByteVector.empty),
+            t.adaptor.get)
+          assert(result == t.result)
+        } catch {
+          case scala.util.control.NonFatal(_) =>
+            // make sure we expected test case to fail
+            // if an exception is thrown
+            assert(!t.result)
+        }
 
+      } else {
+        // means we failed to parse the test vector, make sure we expected that to happen
+        assert(!t.result)
+      }
     }
   }
 }

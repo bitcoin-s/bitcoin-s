@@ -254,7 +254,7 @@ object AdaptorUtil {
         .sha256SchnorrChallenge(
           R0.toPublicKey.toXOnly.bytes ++ pubKey.bytes ++ data)
         .bytes)
-    val eNegate = FieldElement.apply(CryptoParams.getN.subtract(e.toBigInteger))
+    val eNegate = FieldElement(CryptoParams.getN.subtract(e.toBigInteger))
     val R =
       P.multiply(eNegate).add(CryptoParams.getG.multiply(s0).toPoint) match {
         case f: SecpPointFinite => f

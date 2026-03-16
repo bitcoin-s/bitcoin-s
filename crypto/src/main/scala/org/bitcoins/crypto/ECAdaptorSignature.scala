@@ -54,8 +54,8 @@ case class SchnorrAdaptorSignature(bytes: ByteVector) extends AdaptorSignature {
   require(bytes.length == 65,
           s"Schnorr adaptor signature must be 65 bytes, got $bytes")
 
-  def R: ECPublicKey = ECPublicKey.fromBytes(bytes.take(33))
-  def s: FieldElement = FieldElement.fromBytes(bytes.takeRight(32))
+  val R: ECPublicKey = ECPublicKey.fromBytes(bytes.take(33))
+  val s: FieldElement = FieldElement.fromBytes(bytes.takeRight(32))
 }
 
 object SchnorrAdaptorSignature extends Factory[SchnorrAdaptorSignature] {
