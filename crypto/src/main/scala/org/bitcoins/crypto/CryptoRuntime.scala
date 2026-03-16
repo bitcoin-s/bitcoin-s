@@ -122,6 +122,14 @@ trait CryptoRuntime {
     sha256(ecdsaAdaptorNonceTagBytes ++ bytes)
   }
 
+  def sha256SchnorrAdaptorNonce(bytes: ByteVector): Sha256Digest = {
+    taggedSha256(bytes, "SchnorrAdaptor/nonce")
+  }
+
+  def sha256SchnorrAdaptorAux(bytes: ByteVector): Sha256Digest = {
+    taggedSha256(bytes, "SchnorrAdaptor/aux")
+  }
+
   // The tag "DLC/oracle/attestation/v0"
   private val dlcAttestationTagBytes = {
     ByteVector

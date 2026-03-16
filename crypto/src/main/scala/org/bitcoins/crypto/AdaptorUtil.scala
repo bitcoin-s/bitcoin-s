@@ -178,4 +178,113 @@ object AdaptorUtil {
     }
   }
 
+  /** https://github.com/ZhePang/Python_Specification_for_Schnorr_Adaptor/blob/51aa10bd6785d22d8fe4de85a4ecd2200efe1ef3/reference.py#L162
+    * @param privateKey
+    * @param adaptorPoint
+    * @param dataToSign
+    * @param auxRand
+    * @return
+    */
+  def schnorrAdaptorSign(
+      privateKey: ECPrivateKey,
+      adaptorPoint: ECPublicKey,
+      dataToSign: ByteVector,
+      auxRand: Option[ByteVector]): SchnorrAdaptorSignature = {
+    val pubKey = privateKey.publicKey
+    val d = pubKey.parity match {
+      case EvenParity => privateKey.fieldElement
+      case OddParity  => privateKey.fieldElement.negate
+    }
+    val t = d.bytes.xor(
+      CryptoUtil
+        .sha256SchnorrAdaptorAux(auxRand.getOrElse(ByteVector.empty))
+        .bytes)
+    val k0 = FieldElement.fromBytes(
+      CryptoUtil
+        .sha256SchnorrAdaptorNonce(
+          t ++ adaptorPoint.bytes ++ pubKey.toXOnly.bytes ++ dataToSign)
+        .bytes)
+    require(!k0.isZero, s"Cannot have zero nonce")
+    val R = CryptoParams.getG.multiply(k0)
+
+    val R0: SecpPointFinite = R.toPoint.add(adaptorPoint.toPoint) match {
+      case f: SecpPointFinite => f
+      case SecpPointInfinity =>
+        throw new IllegalArgumentException(
+          s"Cannot have point at infinity for nonce")
+    }
+
+    val k = R0.toPublicKey.parity match {
+      case EvenParity => k0
+      case OddParity  => k0.negate
+    }
+    val e = FieldElement.fromBytes(
+      CryptoUtil
+        .sha256SchnorrChallenge(
+          R0.toPublicKey.toXOnly.bytes ++ pubKey.toXOnly.bytes ++ dataToSign)
+        .bytes)
+    val s = k.add(e.multiply(d))
+    val adaptorSig = SchnorrAdaptorSignature(R0.toPublicKey, s)
+    require(schnorrAdaptorVerify(adaptorSig,
+                                 pubKey.toXOnly,
+                                 dataToSign,
+                                 adaptorPoint),
+            s"Adaptor signature did not verify, got $adaptorSig")
+    adaptorSig
+  }
+
+  def schnorrAdaptorVerify(
+      adaptorSig: SchnorrAdaptorSignature,
+      pubKey: XOnlyPubKey,
+      data: ByteVector,
+      adaptor: ECPublicKey): Boolean = {
+    val adaptorExpected = schnorrExtractAdaptor(data, pubKey, adaptorSig)
+    adaptorExpected == adaptor
+  }
+
+  def schnorrExtractAdaptor(
+      data: ByteVector,
+      pubKey: XOnlyPubKey,
+      adaptorSig: SchnorrAdaptorSignature): ECPublicKey = {
+    val P = pubKey.publicKey.toPoint
+    val s0 = adaptorSig.s
+    val R0 = adaptorSig.R.toPoint
+    val e = FieldElement.fromBytes(
+      CryptoUtil
+        .sha256SchnorrChallenge(
+          R0.toPublicKey.toXOnly.bytes ++ pubKey.bytes ++ data)
+        .bytes)
+    val eNegate = FieldElement.apply(CryptoParams.getN.subtract(e.toBigInteger))
+    val R =
+      P.multiply(eNegate).add(CryptoParams.getG.multiply(s0).toPoint) match {
+        case f: SecpPointFinite => f
+        case SecpPointInfinity =>
+          throw new IllegalArgumentException(
+            s"Cannot have point at infinity for nonce")
+      }
+    val T = R0.toPublicKey.parity match {
+      case EvenParity => R0.add(R.negate)
+      case OddParity  => R0.add(R)
+    }
+    T match {
+      case f: SecpPointFinite => f.toPublicKey
+      case SecpPointInfinity =>
+        throw new IllegalArgumentException(
+          s"Cannot have point at infinity for adaptor point")
+    }
+  }
+
+  def schnorrAdaptorComplete(
+      adaptorSecret: ECPrivateKey,
+      adaptorSig: SchnorrAdaptorSignature): SchnorrDigitalSignature = {
+    ???
+  }
+
+  def schnorrExtractSecret(
+      sig: SchnorrDigitalSignature,
+      adaptorSig: SchnorrAdaptorSignature,
+      adaptor: ECPublicKey): ECPrivateKey = {
+    ???
+  }
+
 }
