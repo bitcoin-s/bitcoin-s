@@ -77,7 +77,7 @@ val msg = scodec.bits.ByteVector.fromValidHex("010101010101")
 val auxRand = scodec.bits.ByteVector.fill(32)(0x55)
 
 // Alice generates an adaptor signature using her private key and the adaptor point
-val adaptorSig = AdaptorUtil.schnorrAdaptorSign(privKey, adaptorPoint, msg, Some(auxRand))
+val adaptorSig = AdaptorUtil.schnorrAdaptorSign(privKey, adaptorPoint, msg, auxRand)
 
 // Bob verifies this adaptor signature using Alice's public key from the schnorr public key
 // Note: verify uses XOnlyPubKey
