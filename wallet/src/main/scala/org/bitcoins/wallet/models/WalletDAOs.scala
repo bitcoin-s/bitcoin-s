@@ -58,6 +58,6 @@ object WalletDAOs {
                incomingTxDAO,
                outgoingTxDAO,
                scriptPubKeyDAO,
-               stateDescriptorDAO)(walletConfig)
+               stateDescriptorDAO)(using walletConfig)
   }
 }
