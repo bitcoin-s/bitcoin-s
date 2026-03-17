@@ -71,4 +71,39 @@ class AdaptorTest extends BitcoinSCryptoTest {
       }
     }
   }
+
+  it must "pass secadaptor_vectors.csv" in {
+    val stream =
+      getClass.getResourceAsStream(
+        "/adaptor-sigs/schnorr/secadaptor_vectors.csv")
+    val source = Source.fromInputStream(stream)
+    val lines = source.getLines().drop(2) // Skip header and comment line
+
+    val vectors = lines.map(SecAdaptorVector.fromCsvLine).toVector
+
+    vectors.foreach { t =>
+      if (
+        t.preSignature.isSuccess && t.signature.isSuccess && t.adaptorSecret.isSuccess
+      ) {
+        val adaptorPub = t.adaptorSecret.get.publicKey
+
+        try {
+          val extracted = AdaptorUtil.schnorrExtractSecret(t.signature.get,
+                                                           t.preSignature.get,
+                                                           adaptorPub)
+          assert(t.result, s"Expected failure but succeeded for ${t.comment}")
+          assert(extracted == t.adaptorSecret.get)
+        } catch {
+          case scala.util.control.NonFatal(e) =>
+            if (t.result) fail(s"Failed to extract secret: ${e.getMessage}")
+            else {
+              assert(!t.result)
+            }
+        }
+      } else {
+        // If parsing failed, and result is TRUE, that is fail.
+        assert(!t.result, s"Parsing failed for valid vector: ${t.comment}")
+      }
+    }
+  }
 }

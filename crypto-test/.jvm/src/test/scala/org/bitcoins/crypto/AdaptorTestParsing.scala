@@ -83,3 +83,31 @@ object AdaptVector {
                 comment)
   }
 }
+
+case class SecAdaptorVector(
+    preSignature: Try[SchnorrAdaptorSignature],
+    signature: Try[SchnorrDigitalSignature],
+    adaptorSecret: Try[ECPrivateKey],
+    result: Boolean,
+    comment: String
+)
+
+object SecAdaptorVector {
+  def fromCsvLine(line: String): SecAdaptorVector = {
+    val split = line.split(",", -1)
+    val preSignatureStr = split(1)
+    val signatureStr = split(2)
+    val adaptorSecretStr = split(3)
+    val resultStr = split(4)
+    val comment = if (split.length > 5) split(5) else ""
+
+    val preSignature =
+      Try(SchnorrAdaptorSignature(ByteVector.fromValidHex(preSignatureStr)))
+    val signature =
+      Try(SchnorrDigitalSignature(ByteVector.fromValidHex(signatureStr)))
+    val adaptorSecret = Try(ECPrivateKey(adaptorSecretStr))
+    val result = resultStr.toUpperCase == "TRUE"
+
+    SecAdaptorVector(preSignature, signature, adaptorSecret, result, comment)
+  }
+}

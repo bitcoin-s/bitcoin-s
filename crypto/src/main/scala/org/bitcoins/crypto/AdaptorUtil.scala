@@ -293,7 +293,24 @@ object AdaptorUtil {
       sig: SchnorrDigitalSignature,
       adaptorSig: SchnorrAdaptorSignature,
       adaptor: ECPublicKey): ECPrivateKey = {
-    ???
+    require(sig.rx.bytes == adaptorSig.R.toXOnly.bytes,
+            "Nonce mismatch between signature and adaptor signature")
+
+    val sPrime = sig.sig
+    val s = adaptorSig.s
+
+    val t = adaptorSig.R.parity match {
+      case EvenParity => sPrime.subtract(s)
+      case OddParity  => s.subtract(sPrime)
+    }
+
+    val secret = ECPrivateKey(t.bytes)
+
+    require(
+      secret.publicKey == adaptor,
+      s"Extracted secret does not match adaptor public key. Extracted: ${secret.publicKey}, Expected: $adaptor")
+
+    secret
   }
 
 }
