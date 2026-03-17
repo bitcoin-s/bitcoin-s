@@ -3,6 +3,7 @@ package org.bitcoins.crypto
 import scodec.bits.ByteVector
 
 import scala.io.Source
+import scala.util.Using
 
 class AdaptorTest extends BitcoinSCryptoTest {
   behavior of "AdaptorUtil"
@@ -10,10 +11,10 @@ class AdaptorTest extends BitcoinSCryptoTest {
   it must "pass presig_vectors.csv" in {
     val stream =
       getClass.getResourceAsStream("/adaptor-sigs/schnorr/presig_vectors.csv")
-    val source = Source.fromInputStream(stream)
-    val lines = source.getLines().drop(2) // Skip header and comment line
-
-    val vectors = lines.map(PresigVector.fromCsvLine).toVector
+    val vectors = Using.resource(Source.fromInputStream(stream)) { source =>
+      val lines = source.getLines().drop(2) // Skip header and comment line
+      lines.map(PresigVector.fromCsvLine).toVector
+    }
 
     vectors.foreach { t =>
       if (
@@ -22,7 +23,7 @@ class AdaptorTest extends BitcoinSCryptoTest {
         val presig = AdaptorUtil.schnorrAdaptorSign(t.secretKey.get,
                                                     t.adaptor.get,
                                                     t.message.get,
-                                                    t.auxRand)
+                                                    t.auxRand.get)
         assert(presig == t.preSignature.get)
       } else if (
         t.publicKey.isSuccess && t.preSignature.isSuccess && t.adaptor.isSuccess
@@ -51,10 +52,10 @@ class AdaptorTest extends BitcoinSCryptoTest {
   it must "pass adapt_vectors.csv" in {
     val stream =
       getClass.getResourceAsStream("/adaptor-sigs/schnorr/adapt_vectors.csv")
-    val source = Source.fromInputStream(stream)
-    val lines = source.getLines().drop(2) // Skip header and comment line
-
-    val vectors = lines.map(AdaptVector.fromCsvLine).toVector
+    val vectors = Using.resource(Source.fromInputStream(stream)) { source =>
+      val lines = source.getLines().drop(2) // Skip header and comment line
+      lines.map(AdaptVector.fromCsvLine).toVector
+    }
 
     vectors.foreach { t =>
       if (
@@ -67,7 +68,7 @@ class AdaptorTest extends BitcoinSCryptoTest {
         val verifies = t.publicKey.get.verify(t.message, adaptedSig)
         assert(verifies == t.result, s"Verification mismatch: ${t.comment}")
       } else {
-        fail(s"Need to implement ${t.comment}")
+        assert(!t.result, s"Parsing failed for valid vector: ${t.comment}")
       }
     }
   }
@@ -76,10 +77,10 @@ class AdaptorTest extends BitcoinSCryptoTest {
     val stream =
       getClass.getResourceAsStream(
         "/adaptor-sigs/schnorr/secadaptor_vectors.csv")
-    val source = Source.fromInputStream(stream)
-    val lines = source.getLines().drop(2) // Skip header and comment line
-
-    val vectors = lines.map(SecAdaptorVector.fromCsvLine).toVector
+    val vectors = Using.resource(Source.fromInputStream(stream)) { source =>
+      val lines = source.getLines().drop(2) // Skip header and comment line
+      lines.map(SecAdaptorVector.fromCsvLine).toVector
+    }
 
     vectors.foreach { t =>
       if (

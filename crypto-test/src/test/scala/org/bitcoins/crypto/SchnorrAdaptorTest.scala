@@ -1,7 +1,5 @@
 package org.bitcoins.crypto
 
-import org.scalacheck.Gen
-
 class SchnorrAdaptorTest extends BitcoinSCryptoTest {
   behavior of "SchnorrAdaptorSignature"
 
@@ -9,14 +7,14 @@ class SchnorrAdaptorTest extends BitcoinSCryptoTest {
     forAll(CryptoGenerators.nonZeroPrivKey,
            CryptoGenerators.nonZeroPrivKey,
            NumberGenerator.bytevector(32),
-           Gen.some(NumberGenerator.bytevector(32))) {
-      case (privateKey, adaptorSecret, dataToSign, auxRandOpt) =>
+           NumberGenerator.bytevector(32)) {
+      case (privateKey, adaptorSecret, dataToSign, auxRand) =>
         val adaptorPoint = adaptorSecret.publicKey
         val adaptorSig = AdaptorUtil.schnorrAdaptorSign(privateKey = privateKey,
                                                         adaptorPoint =
                                                           adaptorPoint,
                                                         dataToSign = dataToSign,
-                                                        auxRandOpt = auxRandOpt)
+                                                        auxRand = auxRand)
         val verify =
           AdaptorUtil.schnorrAdaptorVerify(adaptorSig = adaptorSig,
                                            pubKey =

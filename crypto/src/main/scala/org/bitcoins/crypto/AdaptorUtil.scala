@@ -197,9 +197,9 @@ object AdaptorUtil {
       privateKey: ECPrivateKey,
       adaptorPoint: ECPublicKey,
       dataToSign: ByteVector,
-      auxRandOpt: Option[ByteVector]): SchnorrAdaptorSignature = {
-    require(auxRandOpt.forall(_.size == 32),
-            s"auxRand must be 32 bytes, got ${auxRandOpt.map(_.size)}")
+      auxRand: ByteVector): SchnorrAdaptorSignature = {
+    require(auxRand.size == 32,
+            s"auxRand must be 32 bytes, got ${auxRand.size}")
     val pubKey = privateKey.publicKey
     val d = pubKey.parity match {
       case EvenParity => privateKey.fieldElement
@@ -207,7 +207,7 @@ object AdaptorUtil {
     }
     val t = d.bytes.xor(
       CryptoUtil
-        .sha256SchnorrAdaptorAux(auxRandOpt.getOrElse(ByteVector.empty))
+        .sha256SchnorrAdaptorAux(auxRand)
         .bytes)
     val k0 = FieldElement.fromBytes(
       CryptoUtil
