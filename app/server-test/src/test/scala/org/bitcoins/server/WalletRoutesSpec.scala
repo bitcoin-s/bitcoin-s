@@ -55,7 +55,7 @@ class WalletRoutesSpec
     )
 
   val walletRoutes: WalletRoutes =
-    WalletRoutes(walletLoader)(system, conf.walletConf)
+    WalletRoutes(walletLoader)(using system, conf.walletConf)
   "WalletRoutes" should {
     "estimatefee" in {
 

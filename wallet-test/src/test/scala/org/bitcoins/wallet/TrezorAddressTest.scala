@@ -146,7 +146,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
         Wallet(
           MockNodeApi,
           MockChainQueryApi
-        )(config)
+        )(using config)
       init <- Wallet.initialize(
         wallet = wallet
       )
