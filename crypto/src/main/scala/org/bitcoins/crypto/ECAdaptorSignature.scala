@@ -2,7 +2,9 @@ package org.bitcoins.crypto
 
 import scodec.bits.ByteVector
 
-sealed abstract class AdaptorSignature extends NetworkElement
+sealed abstract class AdaptorSignature extends NetworkElement {
+  def adaptedS: FieldElement
+}
 
 /** An Adaptor signature that corresponds to bitcoin ECDSA */
 case class ECAdaptorSignature(bytes: ByteVector) extends AdaptorSignature {
@@ -55,7 +57,8 @@ case class SchnorrAdaptorSignature(bytes: ByteVector) extends AdaptorSignature {
           s"Schnorr adaptor signature must be 65 bytes, got $bytes")
 
   val R: ECPublicKey = ECPublicKey.fromBytes(bytes.take(33))
-  val s: FieldElement = FieldElement.fromBytes(bytes.takeRight(32))
+  val adaptedS: FieldElement = FieldElement.fromBytes(bytes.takeRight(32))
+  require(!adaptedS.isZero, "Adapted signature cannot be zero.")
 }
 
 object SchnorrAdaptorSignature extends Factory[SchnorrAdaptorSignature] {
