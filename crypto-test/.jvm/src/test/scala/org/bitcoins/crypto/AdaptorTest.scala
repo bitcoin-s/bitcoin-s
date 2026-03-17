@@ -47,4 +47,28 @@ class AdaptorTest extends BitcoinSCryptoTest {
       }
     }
   }
+
+  it must "pass adapt_vectors.csv" in {
+    val stream =
+      getClass.getResourceAsStream("/adaptor-sigs/schnorr/adapt_vectors.csv")
+    val source = Source.fromInputStream(stream)
+    val lines = source.getLines().drop(2) // Skip header and comment line
+
+    val vectors = lines.map(AdaptVector.fromCsvLine).toVector
+
+    vectors.foreach { t =>
+      if (
+        t.publicKey.isSuccess && t.adaptorSecret.isSuccess && t.preSignature.isSuccess && t.signature.isSuccess
+      ) {
+        val adaptedSig = AdaptorUtil.schnorrAdaptorComplete(t.adaptorSecret.get,
+                                                            t.preSignature.get)
+        assert(adaptedSig == t.signature.get,
+               s"Signature mismatch: ${t.comment}")
+        val verifies = t.publicKey.get.verify(t.message, adaptedSig)
+        assert(verifies == t.result, s"Verification mismatch: ${t.comment}")
+      } else {
+        fail(s"Need to implement ${t.comment}")
+      }
+    }
+  }
 }

@@ -42,3 +42,44 @@ object PresigVector {
                  comment)
   }
 }
+
+case class AdaptVector(
+    publicKey: Try[SchnorrPublicKey],
+    message: ByteVector,
+    adaptorSecret: Try[ECPrivateKey],
+    preSignature: Try[SchnorrAdaptorSignature],
+    signature: Try[SchnorrDigitalSignature],
+    result: Boolean,
+    comment: String
+)
+
+object AdaptVector {
+  def fromCsvLine(line: String): AdaptVector = {
+    val split = line.split(",", -1)
+    // index,pubkey,message,secadaptor,pre-signature,BIP340 signature,result,comment
+    val publicKeyStr = split(1)
+    val messageStr = split(2)
+    val adaptorSecretStr = split(3)
+    val preSignatureStr = split(4)
+    val signatureStr = split(5)
+    val resultStr = split(6)
+    val comment = if (split.length > 7) split(7) else ""
+
+    val publicKey = Try(SchnorrPublicKey(publicKeyStr))
+    val message = ByteVector.fromValidHex(messageStr)
+    val adaptorSecret = Try(ECPrivateKey(adaptorSecretStr))
+    val preSignature =
+      Try(SchnorrAdaptorSignature(ByteVector.fromValidHex(preSignatureStr)))
+    val signature =
+      Try(SchnorrDigitalSignature(ByteVector.fromValidHex(signatureStr)))
+    val result = resultStr.toUpperCase == "TRUE"
+
+    AdaptVector(publicKey,
+                message,
+                adaptorSecret,
+                preSignature,
+                signature,
+                result,
+                comment)
+  }
+}

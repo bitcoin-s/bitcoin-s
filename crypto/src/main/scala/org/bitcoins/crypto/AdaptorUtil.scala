@@ -277,7 +277,16 @@ object AdaptorUtil {
   def schnorrAdaptorComplete(
       adaptorSecret: ECPrivateKey,
       adaptorSig: SchnorrAdaptorSignature): SchnorrDigitalSignature = {
-    ???
+    val s = adaptorSig.s
+    val t = adaptorSecret.fieldElement
+    val sPrime = adaptorSig.R.parity match {
+      case EvenParity => s.add(t)
+      case OddParity  => s.subtract(t)
+    }
+
+    val rXOnly = adaptorSig.R.toXOnly
+    val nonce = SchnorrNonce(rXOnly.bytes)
+    SchnorrDigitalSignature(nonce, sPrime, None)
   }
 
   def schnorrExtractSecret(
