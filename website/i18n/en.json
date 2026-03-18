@@ -74,6 +74,9 @@
       "crypto/crypto-intro": {
         "title": "Crypto Module"
       },
+      "crypto/frost": {
+        "title": "FROST"
+      },
       "crypto/musig": {
         "title": "MuSig"
       },
@@ -1031,6 +1034,117 @@
       "version-1.9.1/wallet/version-1.9.1-wallet-rpc": {
         "title": "Wallet RPC Examples"
       },
+      "version-1.9.10/applications/version-1.9.10-server": {
+        "title": "Application Server"
+      },
+      "version-1.9.10/chain/version-1.9.10-chain-query-api": {
+        "title": "Chain Query API"
+      },
+      "version-1.9.10/chain/version-1.9.10-chain": {
+        "title": "Blockchain Verification"
+      },
+      "version-1.9.10/core/version-1.9.10-adding-spks": {
+        "title": "Adding New Script Types"
+      },
+      "version-1.9.10/core/version-1.9.10-addresses": {
+        "title": "Generating Addresses"
+      },
+      "version-1.9.10/core/version-1.9.10-dlc": {
+        "title": "Discreet Log Contract Data Structures"
+      },
+      "version-1.9.10/core/version-1.9.10-hd-keys": {
+        "title": "HD Key Generation"
+      },
+      "version-1.9.10/core/version-1.9.10-psbts": {
+        "title": "Partially Signed Bitcoin Transactions"
+      },
+      "version-1.9.10/core/version-1.9.10-txbuilder": {
+        "title": "TxBuilder Example"
+      },
+      "version-1.9.10/crypto/version-1.9.10-adaptor-signatures": {
+        "title": "Adaptor Signatures"
+      },
+      "version-1.9.10/crypto/version-1.9.10-sign": {
+        "title": "Sign API"
+      },
+      "version-1.9.10/version-1.9.10-getting-started": {
+        "title": "Intro and Getting Started"
+      },
+      "version-1.9.10/key-manager/version-1.9.10-key-manager": {
+        "title": "Key Manager"
+      },
+      "version-1.9.10/node/version-1.9.10-node-api title: Node API": {
+        "title": "node-api title: Node API"
+      },
+      "version-1.9.10/rpc/version-1.9.10-rpc-bitcoind": {
+        "title": "bitcoind/Bitcoin Core"
+      },
+      "version-1.9.10/rpc/version-1.9.10-rpc-clients-intro": {
+        "title": "Introduction"
+      },
+      "version-1.9.10/secp256k1/version-1.9.10-secp256k1": {
+        "title": "Secp256k1"
+      },
+      "version-1.9.10/testkit/version-1.9.10-testkit": {
+        "title": "Testkit"
+      },
+      "version-1.9.10/version-1.9.10-ui-setup": {
+        "title": "Installing the DLC Wallet UI"
+      },
+      "version-1.9.10/wallet/version-1.9.10-wallet-callbacks": {
+        "title": "Wallet Callbacks"
+      },
+      "version-1.9.10/wallet/version-1.9.10-wallet-sync": {
+        "title": "Wallet Sync"
+      },
+      "version-1.9.10/wallet/version-1.9.10-wallet": {
+        "title": "Wallet"
+      },
+      "version-1.9.11/applications/version-1.9.11-server": {
+        "title": "Application Server"
+      },
+      "version-1.9.11/config/version-1.9.11-configuration": {
+        "title": "Application Configuration"
+      },
+      "version-1.9.11/core/version-1.9.11-addresses": {
+        "title": "Generating Addresses"
+      },
+      "version-1.9.11/core/version-1.9.11-core-intro": {
+        "title": "Core Module"
+      },
+      "version-1.9.11/core/version-1.9.11-dlc": {
+        "title": "Discreet Log Contract Data Structures"
+      },
+      "version-1.9.11/core/version-1.9.11-hd-keys": {
+        "title": "HD Key Generation"
+      },
+      "version-1.9.11/core/version-1.9.11-txbuilder": {
+        "title": "TxBuilder Example"
+      },
+      "version-1.9.11/crypto/version-1.9.11-sign": {
+        "title": "Sign API"
+      },
+      "version-1.9.11/version-1.9.11-getting-started": {
+        "title": "Intro and Getting Started"
+      },
+      "version-1.9.11/key-manager/version-1.9.11-key-manager": {
+        "title": "Key Manager"
+      },
+      "version-1.9.11/rpc/version-1.9.11-rpc-bitcoind": {
+        "title": "bitcoind/Bitcoin Core"
+      },
+      "version-1.9.11/secp256k1/version-1.9.11-secp256k1": {
+        "title": "Secp256k1"
+      },
+      "version-1.9.11/testkit/version-1.9.11-testkit": {
+        "title": "Testkit"
+      },
+      "version-1.9.11/wallet/version-1.9.11-wallet-get-address": {
+        "title": "Wallet Get Address APIs"
+      },
+      "version-1.9.11/wallet/version-1.9.11-wallet-rpc": {
+        "title": "Wallet RPC Examples"
+      },
       "version-1.9.2/applications/version-1.9.2-cli": {
         "title": "CLI"
       },
@@ -1326,6 +1440,66 @@
         "title": "Wallet Callbacks"
       },
       "version-1.9.8/wallet/version-1.9.8-wallet": {
+        "title": "Wallet"
+      },
+      "version-1.9.9/chain/version-1.9.9-chain": {
+        "title": "Blockchain Verification"
+      },
+      "version-1.9.9/chain/version-1.9.9-filter-sync": {
+        "title": "Syncing Blockfilters"
+      },
+      "version-1.9.9/config/version-1.9.9-configuration": {
+        "title": "Application Configuration"
+      },
+      "version-1.9.9/core/version-1.9.9-adding-spks": {
+        "title": "Adding New Script Types"
+      },
+      "version-1.9.9/core/version-1.9.9-addresses": {
+        "title": "Generating Addresses"
+      },
+      "version-1.9.9/core/version-1.9.9-dlc": {
+        "title": "Discreet Log Contract Data Structures"
+      },
+      "version-1.9.9/core/version-1.9.9-hd-keys": {
+        "title": "HD Key Generation"
+      },
+      "version-1.9.9/core/version-1.9.9-txbuilder": {
+        "title": "TxBuilder Example"
+      },
+      "version-1.9.9/crypto/version-1.9.9-sign": {
+        "title": "Sign API"
+      },
+      "version-1.9.9/version-1.9.9-getting-started": {
+        "title": "Intro and Getting Started"
+      },
+      "version-1.9.9/key-manager/version-1.9.9-key-manager": {
+        "title": "Key Manager"
+      },
+      "version-1.9.9/node/version-1.9.9-node": {
+        "title": "Light Client"
+      },
+      "version-1.9.9/rpc/version-1.9.9-rpc-bitcoind": {
+        "title": "bitcoind/Bitcoin Core"
+      },
+      "version-1.9.9/rpc/version-1.9.9-rpc-eclair": {
+        "title": "Eclair"
+      },
+      "version-1.9.9/rpc/version-1.9.9-lnd-rpc": {
+        "title": "LND"
+      },
+      "version-1.9.9/secp256k1/version-1.9.9-secp256k1": {
+        "title": "Secp256k1"
+      },
+      "version-1.9.9/testkit/version-1.9.9-testkit": {
+        "title": "Testkit"
+      },
+      "version-1.9.9/wallet/version-1.9.9-address-tagging": {
+        "title": "Address and UTXO tagging"
+      },
+      "version-1.9.9/wallet/version-1.9.9-wallet-sync": {
+        "title": "Wallet Sync"
+      },
+      "version-1.9.9/wallet/version-1.9.9-wallet": {
         "title": "Wallet"
       }
     },
