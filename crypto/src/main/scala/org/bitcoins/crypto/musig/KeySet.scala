@@ -81,7 +81,7 @@ sealed trait KeySet {
 }
 
 object KeySet {
-  
+
   def apply(
       keys: Vector[ECPublicKey],
       tweaks: Vector[MuSigTweak]): LexicographicKeySet = {
