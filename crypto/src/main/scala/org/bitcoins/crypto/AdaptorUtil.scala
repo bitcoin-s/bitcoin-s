@@ -178,4 +178,199 @@ object AdaptorUtil {
     }
   }
 
+  /** Signs a message using the Schnorr signature scheme with an adaptor
+    * signature.
+    *
+    * https://github.com/ZhePang/Python_Specification_for_Schnorr_Adaptor/blob/51aa10bd6785d22d8fe4de85a4ecd2200efe1ef3/reference.py#L162
+    * @param privateKey
+    *   The private key of the signer
+    * @param adaptorPoint
+    *   The adaptor point (public key of the adaptor secret)
+    * @param dataToSign
+    *   The message to sign
+    * @param auxRandOpt
+    *   Optional auxiliary random data for nonce generation
+    * @return
+    *   The Schnorr adaptor signature
+    */
+  def schnorrAdaptorSign(
+      privateKey: ECPrivateKey,
+      adaptorPoint: ECPublicKey,
+      dataToSign: ByteVector,
+      auxRand: ByteVector): SchnorrAdaptorSignature = {
+    require(auxRand.size == 32,
+            s"auxRand must be 32 bytes, got ${auxRand.size}")
+    val pubKey = privateKey.publicKey
+    val d = pubKey.parity match {
+      case EvenParity => privateKey.fieldElement
+      case OddParity  => privateKey.fieldElement.negate
+    }
+    val t = d.bytes.xor(
+      CryptoUtil
+        .sha256SchnorrAdaptorAux(auxRand)
+        .bytes)
+    val k0 = FieldElement.fromBytes(
+      CryptoUtil
+        .sha256SchnorrAdaptorNonce(
+          t ++ adaptorPoint.bytes ++ pubKey.toXOnly.bytes ++ dataToSign)
+        .bytes)
+    require(!k0.isZero, s"Cannot have zero nonce")
+    val R = CryptoParams.getG.multiply(k0)
+
+    val R0: SecpPointFinite = R.toPoint.add(adaptorPoint.toPoint) match {
+      case f: SecpPointFinite => f
+      case SecpPointInfinity =>
+        throw new IllegalArgumentException(
+          s"Cannot have point at infinity for nonce")
+    }
+
+    val k = R0.toPublicKey.parity match {
+      case EvenParity => k0
+      case OddParity  => k0.negate
+    }
+    val e = FieldElement.fromBytes(
+      CryptoUtil
+        .sha256SchnorrChallenge(
+          R0.toPublicKey.toXOnly.bytes ++ pubKey.toXOnly.bytes ++ dataToSign)
+        .bytes)
+    val s = k.add(e.multiply(d))
+    val adaptorSig = SchnorrAdaptorSignature(R0.toPublicKey, s)
+    require(schnorrAdaptorVerify(adaptorSig,
+                                 pubKey.toXOnly,
+                                 dataToSign,
+                                 adaptorPoint),
+            s"Adaptor signature did not verify, got $adaptorSig")
+    adaptorSig
+  }
+
+  /** Verifies a Schnorr adaptor signature.
+    *
+    * https://github.com/ZhePang/Python_Specification_for_Schnorr_Adaptor/blob/51aa10bd6785d22d8fe4de85a4ecd2200efe1ef3/reference.py#L192
+    * @param adaptorSig
+    *   The adaptor signature to verify
+    * @param pubKey
+    *   The public key of the signer
+    * @param data
+    *   The message that was signed
+    * @param adaptor
+    *   The expected adaptor point
+    * @return
+    *   True if the signature is valid, false otherwise
+    */
+  def schnorrAdaptorVerify(
+      adaptorSig: SchnorrAdaptorSignature,
+      pubKey: XOnlyPubKey,
+      data: ByteVector,
+      adaptor: ECPublicKey): Boolean = {
+    val adaptorExpected = schnorrExtractAdaptor(data, pubKey, adaptorSig)
+    adaptorExpected == adaptor
+  }
+
+  /** Extracts the adaptor point from a Schnorr adaptor signature.
+    *
+    * https://github.com/ZhePang/Python_Specification_for_Schnorr_Adaptor/blob/51aa10bd6785d22d8fe4de85a4ecd2200efe1ef3/reference.py#L204
+    * @param data
+    *   The message that was signed
+    * @param pubKey
+    *   The public key of the signer
+    * @param adaptorSig
+    *   The adaptor signature
+    * @return
+    *   The extracted adaptor point
+    */
+  def schnorrExtractAdaptor(
+      data: ByteVector,
+      pubKey: XOnlyPubKey,
+      adaptorSig: SchnorrAdaptorSignature): ECPublicKey = {
+    val P = pubKey.publicKey.toPoint
+    val s0 = adaptorSig.adaptedS
+    val R0 = adaptorSig.R.toPoint
+    val e = FieldElement.fromBytes(
+      CryptoUtil
+        .sha256SchnorrChallenge(
+          R0.toPublicKey.toXOnly.bytes ++ pubKey.bytes ++ data)
+        .bytes)
+    val eNegate = FieldElement(CryptoParams.getN.subtract(e.toBigInteger))
+    val R =
+      P.multiply(eNegate).add(CryptoParams.getG.multiply(s0).toPoint) match {
+        case f: SecpPointFinite => f
+        case SecpPointInfinity =>
+          throw new IllegalArgumentException(
+            s"Cannot have point at infinity for nonce")
+      }
+    val T = R0.toPublicKey.parity match {
+      case EvenParity => R0.add(R.negate)
+      case OddParity  => R0.add(R)
+    }
+    T match {
+      case f: SecpPointFinite => f.toPublicKey
+      case SecpPointInfinity =>
+        throw new IllegalArgumentException(
+          s"Cannot have point at infinity for adaptor point")
+    }
+  }
+
+  /** Completes a Schnorr adaptor signature using the adaptor secret to create a
+    * valid Schnorr signature.
+    *
+    * https://github.com/ZhePang/Python_Specification_for_Schnorr_Adaptor/blob/51aa10bd6785d22d8fe4de85a4ecd2200efe1ef3/reference.py#L229
+    * @param adaptorSecret
+    *   The secret key corresponding to the adaptor point
+    * @param adaptorSig
+    *   The adaptor signature to complete
+    * @return
+    *   The valid Schnorr digital signature
+    */
+  def schnorrAdaptorComplete(
+      adaptorSecret: ECPrivateKey,
+      adaptorSig: SchnorrAdaptorSignature): SchnorrDigitalSignature = {
+    val s = adaptorSig.adaptedS
+    val t = adaptorSecret.fieldElement
+    val sPrime = adaptorSig.R.parity match {
+      case EvenParity => s.add(t)
+      case OddParity  => s.subtract(t)
+    }
+
+    val rXOnly = adaptorSig.R.toXOnly
+    val nonce = SchnorrNonce(rXOnly.bytes)
+    SchnorrDigitalSignature(nonce, sPrime, None)
+  }
+
+  /** Extracts the adaptor secret from a valid Schnorr signature and its
+    * corresponding adaptor signature.
+    *
+    * https://github.com/ZhePang/Python_Specification_for_Schnorr_Adaptor/blob/51aa10bd6785d22d8fe4de85a4ecd2200efe1ef3/reference.py#L246
+    * @param sig
+    *   The valid Schnorr digital signature
+    * @param adaptorSig
+    *   The adaptor signature
+    * @param adaptor
+    *   The adaptor point (public key of the secret)
+    * @return
+    *   The extracted adaptor secret
+    */
+  def schnorrExtractSecret(
+      sig: SchnorrDigitalSignature,
+      adaptorSig: SchnorrAdaptorSignature,
+      adaptor: ECPublicKey): ECPrivateKey = {
+    require(sig.rx.bytes == adaptorSig.R.toXOnly.bytes,
+            "Nonce mismatch between signature and adaptor signature")
+
+    val sPrime = sig.sig
+    val s = adaptorSig.adaptedS
+
+    val t = adaptorSig.R.parity match {
+      case EvenParity => sPrime.subtract(s)
+      case OddParity  => s.subtract(sPrime)
+    }
+
+    val secret = ECPrivateKey(t.bytes)
+
+    require(
+      secret.publicKey == adaptor,
+      s"Extracted secret does not match adaptor public key. Extracted: ${secret.publicKey}, Expected: $adaptor")
+
+    secret
+  }
+
 }
