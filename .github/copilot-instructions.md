@@ -2,7 +2,10 @@
 
 ## Project Overview
 
-Bitcoin-S is a feature-rich toolkit for building Bitcoin and Lightning applications on the JVM. The project is written in Scala and uses SBT (Scala Build Tool) as its build system. It provides modular libraries for Bitcoin protocol implementation, wallet functionality, blockchain operations, Lightning Network integration, and DLC (Discreet Log Contract) support.
+Bitcoin-S is a feature-rich toolkit for building Bitcoin and Lightning applications on the JVM. The project is written
+in Scala and uses SBT (Scala Build Tool) as its build system. It provides modular libraries for Bitcoin protocol
+implementation, wallet functionality, blockchain operations, Lightning Network integration, and DLC (Discreet Log
+Contract) support.
 
 ## Technology Stack
 
@@ -90,6 +93,7 @@ sbt "testOnly *TestClassName -- -z test name pattern"
 ### Adding a New Module
 
 Modules are defined in `build.sbt`. Each module typically has:
+
 - A main source directory: `<module>/src/main/scala`
 - A test module: `<module>-test/src/test/scala`
 - Dependencies defined in `project/Deps.scala`
@@ -111,6 +115,7 @@ Modules are defined in `build.sbt`. Each module typically has:
 ### Working with RPC Clients
 
 Each RPC client (bitcoind, eclair, lnd, c-lightning) has its own module with:
+
 - JSON-RPC implementations
 - Strongly-typed request/response models
 - Async API using Futures
@@ -140,6 +145,8 @@ Each RPC client (bitcoind, eclair, lnd, c-lightning) has its own module with:
 - Some modules (crypto, core) support both JVM and JavaScript platforms
 - Use `crossProject` in build.sbt for platform-agnostic code
 - Platform-specific dependencies in `.jvmSettings` and `.jsSettings`
+- Testing is also cross-platform where applicable (i.e. `cryptoTestJVM/test` and `cryptoTestJS/test`)
+- Cross-platform modules cannot be tested with the normal syntax (i.e. `cryptoTest/test`)
 
 ## Troubleshooting
 
