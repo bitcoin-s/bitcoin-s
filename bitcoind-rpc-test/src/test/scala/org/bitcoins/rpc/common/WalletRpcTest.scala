@@ -176,7 +176,7 @@ class WalletRpcTest extends BitcoindFixturesCachedPairNewest {
     } yield succeed
   }
 
-  it should "be able to get the amount recieved by some address" in {
+  it should "be able to get the amount received by some address" in {
     nodePair =>
       val client = nodePair.node1
       for {

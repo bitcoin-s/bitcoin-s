@@ -161,7 +161,7 @@ class MultiWalletRpcTest extends BitcoindFixturesCachedPairNewest {
     Future.sequence(addrFuts).map(_ => succeed)
   }
 
-  it should "be able to get the amount recieved by some address" in {
+  it should "be able to get the amount received by some address" in {
     nodePair =>
       val client = nodePair.node2
       for {
