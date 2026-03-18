@@ -15,7 +15,7 @@ class WalletAppConfigTest extends BitcoinSWalletTest {
     withWalletConfig(test)
   }
 
-  it must "be overridable" in { (config: WalletAppConfig) =>
+  it must "be overridable" in { config =>
     assert(config.network == RegTest)
 
     val otherConf = ConfigFactory.parseString("bitcoin-s.network = testnet3")
@@ -27,58 +27,54 @@ class WalletAppConfigTest extends BitcoinSWalletTest {
     assert(mainnet.network == MainNet)
   }
 
-  it should "not matter how the overrides are passed in" in {
-    (config: WalletAppConfig) =>
-      val overrider = ConfigFactory.parseString(s"""
+  it should "not matter how the overrides are passed in" in { config =>
+    val overrider = ConfigFactory.parseString(s"""
                                                  |bitcoin-s {
                                                  |  network = mainnet
                                                  |}
                                                  |""".stripMargin)
 
-      val throughConstructor =
-        WalletAppConfig(config.datadir, Vector(overrider))
-      val throughWithOverrides = config.withOverrides(overrider)
-      assert(throughWithOverrides.network == MainNet)
-      assert(throughWithOverrides.network == throughConstructor.network)
+    val throughConstructor =
+      WalletAppConfig(config.datadir, Vector(overrider))
+    val throughWithOverrides = config.withOverrides(overrider)
+    assert(throughWithOverrides.network == MainNet)
+    assert(throughWithOverrides.network == throughConstructor.network)
 
-      // assert(throughWithOverrides.datadir == throughConstructor.datadir)
+    // assert(throughWithOverrides.datadir == throughConstructor.datadir)
 
   }
 
-  it must "be overridable without screwing up other options" in {
-    (config: WalletAppConfig) =>
-      val otherConf = ConfigFactory.parseString(
-        s"bitcoin-s.wallet.purpose = segwit"
-      )
-      val thirdConf = ConfigFactory.parseString(
-        s"bitcoin-s.wallet.purpose = nested-segwit"
-      )
+  it must "be overridable without screwing up other options" in { config =>
+    val otherConf = ConfigFactory.parseString(
+      s"bitcoin-s.wallet.purpose = segwit"
+    )
+    val thirdConf = ConfigFactory.parseString(
+      s"bitcoin-s.wallet.purpose = nested-segwit"
+    )
 
-      val overriden = config.withOverrides(otherConf)
+    val overriden = config.withOverrides(otherConf)
 
-      val twiceOverriden = overriden.withOverrides(thirdConf)
+    val twiceOverriden = overriden.withOverrides(thirdConf)
 
-      assert(overriden.defaultPurpose == HDPurpose.SegWit)
-      assert(twiceOverriden.defaultPurpose == HDPurpose.NestedSegWit)
+    assert(overriden.defaultPurpose == HDPurpose.SegWit)
+    assert(twiceOverriden.defaultPurpose == HDPurpose.NestedSegWit)
 
-      assert(config.datadir == overriden.datadir)
-      assert(twiceOverriden.datadir == overriden.datadir)
+    assert(config.datadir == overriden.datadir)
+    assert(twiceOverriden.datadir == overriden.datadir)
   }
 
-  it must "be overridable with multiple levels" in {
-    (config: WalletAppConfig) =>
-      val testnet = ConfigFactory.parseString("bitcoin-s.network = testnet3")
-      val mainnet = ConfigFactory.parseString("bitcoin-s.network = mainnet")
-      val overriden: WalletAppConfig =
-        config.withOverrides(Vector(testnet, mainnet))
-      assert(overriden.network == MainNet)
+  it must "be overridable with multiple levels" in { config =>
+    val testnet = ConfigFactory.parseString("bitcoin-s.network = testnet3")
+    val mainnet = ConfigFactory.parseString("bitcoin-s.network = mainnet")
+    val overriden: WalletAppConfig =
+      config.withOverrides(Vector(testnet, mainnet))
+    assert(overriden.network == MainNet)
   }
 
-  it must "have user data directory configuration take precedence" in {
-    (_: WalletAppConfig) =>
-      val tempDir = Files.createTempDirectory("bitcoin-s")
-      val tempFile = Files.createFile(tempDir.resolve("bitcoin-s.conf"))
-      val confStr = """
+  it must "have user data directory configuration take precedence" in { _ =>
+    val tempDir = Files.createTempDirectory("bitcoin-s")
+    val tempFile = Files.createFile(tempDir.resolve("bitcoin-s.conf"))
+    val confStr = """
                     | bitcoin-s {
                     |   network = testnet3
                     |
@@ -89,16 +85,16 @@ class WalletAppConfigTest extends BitcoinSWalletTest {
                     |   }
                     | }
     """.stripMargin
-      val _ = Files.write(tempFile, confStr.getBytes())
+    val _ = Files.write(tempFile, confStr.getBytes())
 
-      val appConfig = WalletAppConfig(baseDatadir = tempDir, Vector.empty)
+    val appConfig = WalletAppConfig(baseDatadir = tempDir, Vector.empty)
 
-      assert(appConfig.datadir == tempDir.resolve("testnet3"))
-      assert(appConfig.network == TestNet3)
+    assert(appConfig.datadir == tempDir.resolve("testnet3"))
+    assert(appConfig.network == TestNet3)
   }
 
   it must "fail to start the wallet app config if we have different seeds" in {
-    (config: WalletAppConfig) =>
+    config =>
       val seedFile = config.seedPath
       val startedF = config.start()
 
@@ -127,7 +123,7 @@ class WalletAppConfigTest extends BitcoinSWalletTest {
   }
 
   it must "be able to reuse database connections across after starting/stopping the app config" in {
-    (config: WalletAppConfig) =>
+    config =>
       val stoppedF = for {
         hasWallet <- config.hasWallet()
         _ = assert(!hasWallet)

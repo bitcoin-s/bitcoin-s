@@ -29,7 +29,7 @@ trait BitcoinSRunner[T] extends StartStopAsync[T] with BitcoinSLogger {
     val runner: Future[T] = start()
     runner.failed.foreach { err =>
       logger.error(s"Failed to startup server!", err)
-    }(scala.concurrent.ExecutionContext.Implicits.global)
+    }(using scala.concurrent.ExecutionContext.Implicits.global)
 
     runner
   }

@@ -72,7 +72,7 @@ case class DLCNodeAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
   def createDLCNode(
       dlcWallet: DLCWalletApi
   )(implicit system: ActorSystem): DLCNode = {
-    DLCNode(dlcWallet)(system, this)
+    DLCNode(dlcWallet)(using system, this)
   }
 }
 

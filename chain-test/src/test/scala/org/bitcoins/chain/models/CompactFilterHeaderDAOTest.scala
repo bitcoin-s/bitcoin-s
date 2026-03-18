@@ -25,7 +25,7 @@ class CompactFilterHeaderDAOTest extends ChainDbUnitTest {
   it must "create and read a filter header from the database" in {
     filterHeaderDAO =>
       val blockHeaderDAO =
-        BlockHeaderDAO()(executionContext, filterHeaderDAO.appConfig)
+        BlockHeaderDAO()(using executionContext, filterHeaderDAO.appConfig)
       val blockHeaderDb =
         BlockHeaderHelper.buildNextHeader(ChainTestUtil.regTestGenesisHeaderDb)
       val blockHeaderDbF = blockHeaderDAO.create(blockHeaderDb)
@@ -49,7 +49,7 @@ class CompactFilterHeaderDAOTest extends ChainDbUnitTest {
 
   it must "find filters between height" in { filterHeaderDAO =>
     val blockHeaderDAO =
-      BlockHeaderDAO()(executionContext, filterHeaderDAO.appConfig)
+      BlockHeaderDAO()(using executionContext, filterHeaderDAO.appConfig)
     val blockHeaderDb =
       BlockHeaderHelper.buildNextHeader(ChainTestUtil.regTestGenesisHeaderDb)
     val blockHeaderDbF = blockHeaderDAO.create(blockHeaderDb)
@@ -74,7 +74,7 @@ class CompactFilterHeaderDAOTest extends ChainDbUnitTest {
   it must "get the best filter header that has a block header associated with it" in {
     filterHeaderDAO =>
       val blockHeaderDAO =
-        BlockHeaderDAO()(executionContext, filterHeaderDAO.appConfig)
+        BlockHeaderDAO()(using executionContext, filterHeaderDAO.appConfig)
       val blockHeaderDb = {
         BlockHeaderHelper.buildNextHeader(ChainTestUtil.regTestGenesisHeaderDb)
       }
@@ -115,7 +115,7 @@ class CompactFilterHeaderDAOTest extends ChainDbUnitTest {
   it must "find the filter header with the heaviest work" in {
     filterHeaderDAO =>
       val blockHeaderDAO =
-        BlockHeaderDAO()(executionContext, filterHeaderDAO.appConfig)
+        BlockHeaderDAO()(using executionContext, filterHeaderDAO.appConfig)
       val blockHeaderDbLightWork = {
         BlockHeaderHelper.buildNextHeader(ChainTestUtil.regTestGenesisHeaderDb)
       }

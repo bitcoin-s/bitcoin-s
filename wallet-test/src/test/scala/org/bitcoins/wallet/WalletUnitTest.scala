@@ -25,13 +25,12 @@ class WalletUnitTest extends BitcoinSWalletTest {
   override type FixtureParam = Wallet
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =
-    withNewWallet(test)(getFreshWalletAppConfig)
+    withNewWallet(test)(using getFreshWalletAppConfig)
 
   behavior of "Wallet - unit test"
 
-  it must "write the mnemonic seed in the correct directory" in {
-    (wallet: Wallet) =>
-      assert(Files.exists(wallet.walletConfig.seedPath))
+  it must "write the mnemonic seed in the correct directory" in { wallet =>
+    assert(Files.exists(wallet.walletConfig.seedPath))
   }
 
   it should "create a new wallet" in { (wallet: Wallet) =>
@@ -95,8 +94,8 @@ class WalletUnitTest extends BitcoinSWalletTest {
         chain: HDChainType
     ): Future[Assertion] = {
       val getAddrFunc: () => Future[BitcoinAddress] = chain match {
-        case Change   => wallet.getNewChangeAddress _
-        case External => wallet.getNewAddress _
+        case Change   => (() => wallet.getNewChangeAddress())
+        case External => (() => wallet.getNewAddress())
       }
       for {
         _ <- {
@@ -184,7 +183,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
             )
             val wConfig = wallet.walletConfig.copy(kmConfOpt = Some(kmConf))
             val walletBadPw =
-              Wallet(wallet.nodeApi, wallet.chainQueryApi)(wConfig)
+              Wallet(wallet.nodeApi, wallet.chainQueryApi)(using wConfig)
             Wallet.initialize(
               walletBadPw
             )
@@ -207,7 +206,7 @@ class WalletUnitTest extends BitcoinSWalletTest {
         _ <- startedF
       } yield {
         Wallet(wallet.nodeApi, wallet.chainQueryApi)(
-          uniqueEntropyWalletConfig
+          using uniqueEntropyWalletConfig
         )
       }
 

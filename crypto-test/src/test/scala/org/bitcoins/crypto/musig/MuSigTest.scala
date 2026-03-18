@@ -16,7 +16,7 @@ class MuSigTest extends BitcoinSCryptoTest {
         val pubKey = privKey.publicKey
         val noncePriv: MuSigNoncePriv = MuSigUtil.nonceGen(pubKey)
         val noncePub: MuSigNoncePub = noncePriv.toNoncePub
-        val keySet = KeySet(pubKey)
+        val keySet = KeySet(Vector(pubKey), tweaks = Vector.empty)
         val aggMuSigNoncePub = MuSigUtil.aggregateNonces(Vector(noncePub))
 
         assert(aggMuSigNoncePub == noncePub)
@@ -61,7 +61,7 @@ class MuSigTest extends BitcoinSCryptoTest {
       val pub2 = priv2.publicKey
       val noncePriv2: MuSigNoncePriv = MuSigUtil.nonceGen(pub2)
       val noncePub2: MuSigNoncePub = noncePriv2.toNoncePub
-      val keySet: KeySet = KeySet(pub1, pub2)
+      val keySet: KeySet = KeySet(Vector(pub1, pub2), tweaks = Vector.empty)
       val aggMuSigNoncePub =
         MuSigUtil.aggregateNonces(Vector(noncePub1, noncePub2))
       val s1 =
@@ -107,7 +107,8 @@ class MuSigTest extends BitcoinSCryptoTest {
       privKeysGen,
       NumberGenerator.bytevector(32)
     ) { case (privKeysUnsorted, msg) =>
-      val keySet: KeySet = KeySet(privKeysUnsorted.map(_.publicKey))
+      val keySet: KeySet =
+        KeySet(privKeysUnsorted.map(_.publicKey), tweaks = Vector.empty)
       val privKeys = keySet.keys.map(pubKey =>
         privKeysUnsorted.find(_.publicKey == pubKey).get)
       val noncePrivs = privKeys.map(pk => MuSigUtil.nonceGen(pk.publicKey))

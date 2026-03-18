@@ -18,7 +18,7 @@ class ChainHandlerCachedTest extends ChainDbUnitTest {
   it must "throw an error when we have no chains" in {
     (chainHandlerCached: ChainHandlerCached) =>
       val handler = chainHandlerCached.copy(blockchains = Vector.empty)(
-        chainHandlerCached.chainConfig,
+        using chainHandlerCached.chainConfig,
         executionContext)
 
       recoverToSucceededIf[RuntimeException] {
@@ -31,7 +31,7 @@ class ChainHandlerCachedTest extends ChainDbUnitTest {
     (chainHandlerCached: ChainHandlerCached) =>
       val noChainsChainHandler =
         chainHandlerCached.copy(blockchains = Vector.empty)(
-          chainHandlerCached.chainConfig,
+          using chainHandlerCached.chainConfig,
           executionContext)
 
       for {

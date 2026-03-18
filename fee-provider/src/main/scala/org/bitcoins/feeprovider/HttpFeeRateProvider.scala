@@ -44,7 +44,7 @@ abstract class HttpFeeRateProvider[T <: FeeUnit] extends FeeRateApi {
   override def getFeeRate(): Future[T] = {
     HttpFeeRateProvider
       .makeApiCall(uri, proxyParams)
-      .flatMap(ret => Future.fromTry(converter(ret)))(system.dispatcher)
+      .flatMap(ret => Future.fromTry(converter(ret)))(using system.dispatcher)
   }
 }
 
