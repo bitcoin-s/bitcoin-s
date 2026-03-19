@@ -59,7 +59,7 @@ abstract class DbAppConfig extends AppConfig {
       config.getDurationOpt(s"bitcoin-s.$moduleName.db.busy-timeout")
     durationOpt match {
       case Some(d) => FiniteDuration(d.toMillis, TimeUnit.MILLISECONDS)
-      case None    => FiniteDuration(5, TimeUnit.SECONDS)
+      case None    => FiniteDuration(30, TimeUnit.SECONDS)
     }
   }
 
