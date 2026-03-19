@@ -38,7 +38,7 @@ trait WalletDAOFixture extends BitcoinSWalletTest with PostgresTestDatabase {
         BitcoinSWalletTest
           .createWalletAppConfig(postgresOpt, Vector.empty)
           .map { wAppConfig =>
-            daos(wAppConfig)
+            daos(using wAppConfig)
           }
       },
       { (daos: WalletDAOs) =>

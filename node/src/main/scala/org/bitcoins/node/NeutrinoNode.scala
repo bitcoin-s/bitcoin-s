@@ -37,10 +37,10 @@ import scala.concurrent.{Await, Future}
 case class NeutrinoNode(
     walletCreationTimeOpt: Option[Instant],
     paramPeers: Vector[Peer]
-)(
-    implicit override val nodeAppConfig: NodeAppConfig,
-    implicit override val chainAppConfig: ChainAppConfig,
-    implicit override val system: ActorSystem)
+)(implicit
+    override val nodeAppConfig: NodeAppConfig,
+    override val chainAppConfig: ChainAppConfig,
+    override val system: ActorSystem)
     extends Node
     with SourceQueue[NodeStreamMessage] {
   require(

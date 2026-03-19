@@ -388,7 +388,7 @@ object Wallet extends WalletLogger {
   ): Future[Wallet] = {
     import wallet.walletConfig.ec
     val createMasterXpubF =
-      createMasterXPub(wallet.keyManager)(wallet.walletConfig)
+      createMasterXPub(wallet.keyManager)(using wallet.walletConfig)
     // We want to make sure all level 0 accounts are created,
     // so the user can change the default account kind later
     // and still have their wallet work
@@ -409,7 +409,7 @@ object Wallet extends WalletLogger {
           val w = Wallet(
             nodeApi = wallet.nodeApi,
             chainQueryApi = wallet.chainQueryApi
-          )(wallet.walletConfig)
+          )(using wallet.walletConfig)
           (w, account)
         }
 

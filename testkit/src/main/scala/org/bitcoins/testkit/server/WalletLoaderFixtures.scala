@@ -33,7 +33,7 @@ trait WalletLoaderFixtures
           bitcoind = bitcoind,
           nodeApi = bitcoind,
           feeProvider = bitcoind
-        )(config, system)
+        )(using config, system)
       } yield WalletHolderWithBitcoindLoaderApi(walletHolder, loader)
     }
 

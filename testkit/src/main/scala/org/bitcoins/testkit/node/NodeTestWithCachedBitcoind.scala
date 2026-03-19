@@ -42,7 +42,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
       for {
         peer <- NodeUnitTest.createPeer(bitcoind)
         node <- NodeUnitTest.createNeutrinoNode(peer, None)(
-          system,
+          using system,
           appConfig.chainConf,
           appConfig.nodeConf
         )
@@ -75,7 +75,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
       for {
         _ <- appConfig.walletConf.kmConf.start()
         node <- NodeUnitTest.createNeutrinoNode(bitcoind, None)(
-          system,
+          using system,
           appConfig.chainConf,
           appConfig.nodeConf
         )
@@ -102,7 +102,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
       for {
         _ <- appConfig.walletConf.kmConf.start()
         node <- NodeUnitTest.createNeutrinoNode(bitcoinds, None)(
-          system,
+          using system,
           appConfig.chainConf,
           appConfig.nodeConf
         )
@@ -134,7 +134,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
       for {
         _ <- appConfig.walletConf.kmConf.start()
         node <- NodeUnitTest.createNeutrinoNode(bitcoinds, None)(
-          system,
+          using system,
           appConfig.chainConf,
           appConfig.nodeConf
         )
@@ -163,7 +163,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
       for {
         _ <- appConfig.walletConf.kmConf.start()
         node <- NodeUnitTest.createNeutrinoNode(bitcoind, None)(
-          system,
+          using system,
           appConfig.chainConf,
           appConfig.nodeConf
         )
@@ -193,7 +193,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
           .createNeutrinoNodeFundedWalletFromBitcoind(
             bitcoind,
             walletCallbacks = walletCallbacks
-          )(system, appConfig),
+          )(using system, appConfig),
       { (x: NeutrinoNodeFundedWalletBitcoind) =>
         tearDownNodeWithBitcoind(x, appConfig)
       }

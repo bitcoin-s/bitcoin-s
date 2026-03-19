@@ -137,7 +137,7 @@ case class DLCWallet(override val walletApi: Wallet)(implicit
       chainQueryApi = chainQueryApi,
       utxoHandling = utxoHandling.asInstanceOf[UtxoHandling],
       walletDAOs = walletDAOs
-    )(walletApi.walletConfig, ec)
+    )(using walletApi.walletConfig, ec)
     DLCTransactionProcessing(
       txProcessing = txProcessing,
       dlcWalletDAOs = dlcWalletDAOs,
@@ -158,7 +158,7 @@ case class DLCWallet(override val walletApi: Wallet)(implicit
       chainQueryApi = chainQueryApi,
       nodeApi = nodeApi,
       walletDAOs = walletDAOs
-    )(walletConfig, walletConfig.system)
+    )(using walletConfig, walletConfig.system)
   }
   private lazy val safeDLCDatabase: SafeDatabase = dlcDAO.safeDatabase
   private lazy val walletDatabase: SafeDatabase =

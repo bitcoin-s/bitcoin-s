@@ -35,8 +35,9 @@ trait NodeDAOFixture extends NodeUnitTest {
         for {
           _ <- nodeConf.start()
         } yield {
-          val tx = BroadcastAbleTransactionDAO()(nodeConf, executionContext)
-          val peerDao = PeerDAO()(nodeConf, executionContext)
+          val tx =
+            BroadcastAbleTransactionDAO()(using nodeConf, executionContext)
+          val peerDao = PeerDAO()(using nodeConf, executionContext)
           NodeDAOs(tx, peerDao, nodeConf)
         }
       },

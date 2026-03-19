@@ -34,7 +34,7 @@ trait DLCOracleDAOFixture extends BitcoinSFixture with PostgresTestDatabase {
     makeDependentFixture[DLCOracleDAOs](
       build = () => {
         val c = config
-        c.start().map(_ => daos()(c))
+        c.start().map(_ => daos()(using c))
       },
       destroy = { (daos: DLCOracleDAOs) => dropAll(daos.oracleAppConfig) }
     )(test)

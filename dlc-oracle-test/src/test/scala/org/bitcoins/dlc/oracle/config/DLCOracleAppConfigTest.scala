@@ -14,7 +14,7 @@ class DLCOracleAppConfigTest extends DLCOracleAppConfigFixture {
   it must "initialize the oracle, move the seed somewhere else, and then start the oracle again and get the same pubkeys" in {
     dlcOracleAppConfig =>
       val seedFile = dlcOracleAppConfig.seedPath
-      val dlcOracle = new DLCOracle()(dlcOracleAppConfig)
+      val dlcOracle = new DLCOracle()(using dlcOracleAppConfig)
       val pubKey1 = dlcOracle.publicKey()
 
       // stop old oracle
@@ -44,7 +44,7 @@ class DLCOracleAppConfigTest extends DLCOracleAppConfigFixture {
         _ <- appConfig.start()
       } yield ()
 
-      val dlcOracle2F = started2F.map(_ => new DLCOracle()(appConfig))
+      val dlcOracle2F = started2F.map(_ => new DLCOracle()(using appConfig))
 
       for {
         _ <- stoppedF

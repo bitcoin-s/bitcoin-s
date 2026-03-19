@@ -47,7 +47,7 @@ sealed trait TestDAOFixture
   def dropAll()(testAppConfig: TestAppConfig): Future[Unit] = {
     // these tables aren't managed by flyway so can't just call .clean()
     import testAppConfig.profile.api.*
-    val testDAO = TestDAO()(executionContext, testAppConfig)
+    val testDAO = TestDAO()(using executionContext, testAppConfig)
     val action = testDAO.table.schema.dropIfExists
     testDAO.safeDatabase.run(action)
   }

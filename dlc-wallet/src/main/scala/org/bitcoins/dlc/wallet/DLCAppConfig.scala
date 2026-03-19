@@ -109,7 +109,7 @@ case class DLCAppConfig(
     DLCAppConfig.createDLCWallet(
       nodeApi = nodeApi,
       chainQueryApi = chainQueryApi
-    )(walletConf, this)
+    )(using walletConf, this)
   }
 
   private val callbacks = new Mutable(DLCWalletCallbacks.empty)
@@ -124,7 +124,6 @@ case class DLCAppConfig(
 
   override lazy val callbackFactory: DLCWalletCallbacks.type =
     DLCWalletCallbacks
-
 }
 
 object DLCAppConfig
@@ -164,7 +163,7 @@ object DLCAppConfig
           .initialize(
             wallet = unInitializedWallet
           )
-          .map(w => DLCWallet(w)(dlcConf, w.walletConfig))
+          .map(w => DLCWallet(w)(using dlcConf, w.walletConfig))
       }
     }
   }
