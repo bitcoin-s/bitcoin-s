@@ -51,7 +51,7 @@ object Deps {
     val pgEmbeddedV = "1.1.1"
 
     val testcontainersV =
-      "2.0.3" //    // GitHub: https://github.com/testcontainers/testcontainers-java
+      "2.0.4" //    // GitHub: https://github.com/testcontainers/testcontainers-java
 
     val breezeV = "1.3"
 
