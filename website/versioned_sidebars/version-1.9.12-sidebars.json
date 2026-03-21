@@ -1,0 +1,103 @@
+{
+  "version-1.9.12-docs": {
+    "Getting Started": [
+      "version-1.9.12-getting-started",
+      "version-1.9.12-bips"
+    ],
+    "Getting Setup": [
+      "version-1.9.12-getting-setup",
+      "version-1.9.12-ui-setup"
+    ],
+    "Applications": [
+      "version-1.9.12-applications/cli",
+      "version-1.9.12-applications/server",
+      "version-1.9.12-applications/gui",
+      "version-1.9.12-applications/server-systemd"
+    ],
+    "Chain": [
+      "version-1.9.12-chain/chain",
+      "version-1.9.12-chain/filter-sync",
+      "version-1.9.12-chain/chain-query-api"
+    ],
+    "Configuration": [
+      "version-1.9.12-config/configuration"
+    ],
+    "Core Module": [
+      "version-1.9.12-core/core-intro",
+      "version-1.9.12-core/addresses",
+      "version-1.9.12-core/hd-keys",
+      "version-1.9.12-core/adding-spks",
+      "version-1.9.12-core/spending-info",
+      "version-1.9.12-core/psbts",
+      "version-1.9.12-core/dlc",
+      "version-1.9.12-core/txbuilder",
+      "version-1.9.12-core/lightning-network"
+    ],
+    "Crypto Module": [
+      "version-1.9.12-crypto/crypto-intro",
+      "version-1.9.12-crypto/sign",
+      "version-1.9.12-crypto/adaptor-signatures",
+      "version-1.9.12-crypto/musig",
+      "version-1.9.12-crypto/frost"
+    ],
+    "Fee Provider": [
+      "version-1.9.12-fee-provider/fee-provider"
+    ],
+    "Key Manager": [
+      "version-1.9.12-key-manager/server-key-manager",
+      "version-1.9.12-key-manager/key-manager"
+    ],
+    "Node": [
+      "version-1.9.12-node/node",
+      "version-1.9.12-node/node-api"
+    ],
+    "Wallet": [
+      "version-1.9.12-wallet/wallet",
+      "version-1.9.12-wallet/wallet-callbacks",
+      "version-1.9.12-wallet/wallet-get-address",
+      "version-1.9.12-wallet/address-tagging",
+      "version-1.9.12-wallet/dlc",
+      "version-1.9.12-wallet/wallet-rescan",
+      "version-1.9.12-wallet/wallet-sync",
+      "version-1.9.12-wallet/wallet-rpc",
+      "version-1.9.12-wallet/backups",
+      "version-1.9.12-wallet/wallet-election-example",
+      "version-1.9.12-wallet/wallet-price-example",
+      "version-1.9.12-wallet/wallet-sports-betting-example"
+    ],
+    "Tor": [
+      "version-1.9.12-tor/tor"
+    ],
+    "RPC Clients": [
+      "version-1.9.12-rpc/rpc-clients-intro",
+      "version-1.9.12-rpc/rpc-eclair",
+      "version-1.9.12-rpc/rpc-bitcoind",
+      "version-1.9.12-rpc/lnd-rpc"
+    ],
+    "Secp256k1": [
+      "version-1.9.12-secp256k1/secp256k1",
+      "version-1.9.12-secp256k1/jni-modify"
+    ],
+    "Testkit": [
+      "version-1.9.12-testkit/testkit",
+      "version-1.9.12-testkit/testkit-core"
+    ],
+    "DLC Oracle": [
+      "version-1.9.12-oracle/build-oracle-server",
+      "version-1.9.12-oracle/oracle-server",
+      "version-1.9.12-oracle/oracle-election-example",
+      "version-1.9.12-oracle/oracle-price-example",
+      "version-1.9.12-oracle/oracle-sports-betting-example"
+    ],
+    "Oracle Explorer Client": [
+      "version-1.9.12-oracle-explorer-client/oracle-explorer-client"
+    ],
+    "Contributing": [
+      "version-1.9.12-contributing",
+      "version-1.9.12-contributing-website"
+    ],
+    "Security": [
+      "version-1.9.12-security"
+    ]
+  }
+}
