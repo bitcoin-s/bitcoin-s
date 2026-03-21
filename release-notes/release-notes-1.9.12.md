@@ -97,6 +97,8 @@ dbdd1a21e4d bitcoindRpc: Remove support for bitcoind v27 now that it is EOL (#61
 
 ## Build
 
+4634808f57c build: More scala3 backward compatible syntax changes from #5713 (#6265)
+73d9ad6f760 build: Re-add {wallet,oracle}-server-extra-startup-script.sh to fix broken jre on arm64 machines (#6263)
 1bba4a3a528 Pull over modules from #5713 that have source compatible scala3 changes (#6257)
 765a6207a68 Remove -Xms512m, bump -Xmx to 8gb from 4gb (#6229)
 d58ca4eda77 Add native ARM64 Mac jlink support using GitHub macos-15 runners (#6201)
@@ -186,6 +188,7 @@ cb2173c0488 Remove old DLC migration code (#6248)
 
 ## Lnd rpc
 
+94bee8e5094 Update LND RPC support to v0.20.1-beta
 a68b7a3b973 Upgrade lnd RPC interface to support v0.19.3-beta (#6109)
 
 ## node
@@ -242,9 +245,15 @@ b6cb43c6e0f tests: Fix bug where we wouldn't generate enough property based test
 
 ## Website / Deps
 
+2f04561e038 Bump versions throughout the codebase to 1.9.12 (#6268)
+5da9f8e7348 docs: Update docker compose instructions (#6269)
+67fef098aa9 Update testcontainers, ... to 2.0.4 (#6267)
+ab84c8c2e26 docs: Add version 1.9.12 of the website (#6264)
+d29b2440ab4 docs: Begin 1.9.12 release notes (#6259)
+2f3c723e9fb docs: Add instructions on how to run tests for scalajs/jvm test modules (#6258)
+32edd7ba2ce chore: fix some minor issues in the comments (#6243)
 9b6c653f2b4 Add frost.md documentation for FROST threshold signature scheme (#6239)
 04bb2ab9f0e Add Copilot instructions for repository (#6196)
-
 e3a3045f6b3 Update sqlite-jdbc to 3.51.3.0 (#6255)
 8995f7a09f0 Update sbt, scripted-plugin to 1.12.6 (#6254)
 56febe136a2 Update xz to 1.12 (#6241)
@@ -329,4 +338,3 @@ dfcad298f2d Update metrics-core, metrics-healthchecks, ... to 4.2.37 (#6077)
 2f5f6f9ada6 Update scalamock to 7.4.2 (#6063)
 ca0ea6c1e15 Update sbt-scalajs, scalajs-compiler, ... to 1.20.1 (#6060)
 363a623932c Update sbt, scripted-plugin to 1.11.6 (#6061)
-
