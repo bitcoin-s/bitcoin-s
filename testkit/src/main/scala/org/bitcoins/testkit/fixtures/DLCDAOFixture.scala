@@ -51,7 +51,7 @@ trait DLCDAOFixture extends BitcoinSFixture with PostgresTestDatabase {
     makeDependentFixture[DLCDAOs](
       build = () => {
         val c = config.dlcConf
-        c.start().map(_ => daos()(c))
+        c.start().map(_ => daos()(using c))
       },
       destroy = { (daos: DLCDAOs) =>
         val config = daos.dlcConf

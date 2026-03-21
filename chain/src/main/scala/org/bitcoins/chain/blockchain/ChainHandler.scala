@@ -1427,7 +1427,7 @@ object ChainHandler {
       filterDAO = cached.filterDAO,
       stateDAO = cached.stateDAO,
       blockFilterCheckpoints = Map.empty
-    )(cached.chainConfig, ec)
+    )(using cached.chainConfig, ec)
   }
 
   /** Constructs a [[ChainHandler chain handler]] from the state in the database
@@ -1502,7 +1502,7 @@ object ChainHandler {
         stateDAO = chainHandler.stateDAO,
         blockchains = blockchains,
         blockFilterCheckpoints = chainHandler.blockFilterCheckpoints
-      )(chainHandler.chainConfig, ec)
+      )(using chainHandler.chainConfig, ec)
     } yield cached
   }
 }

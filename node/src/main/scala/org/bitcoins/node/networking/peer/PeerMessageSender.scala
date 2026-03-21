@@ -75,7 +75,7 @@ case class PeerMessageSender(peerConnection: PeerConnection)
         filterSyncMarker.stopBlockHash
       )
     logger.debug(s"Sending getcfilters=$message to peer ${peer}")
-    sendMsg(message).map(_ => ())(ec)
+    sendMsg(message).map(_ => ())(using ec)
   }
 
   override def sendInventoryMessage(

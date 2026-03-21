@@ -37,13 +37,14 @@ trait ChainWithBitcoindNewestCachedUnitTest
       for {
         _ <- c.start()
         chainApiBitcoind <- ChainUnitTest.createChainApiWithBitcoindRpc(
-          bitcoindRpcClient)(executionContext, c)
+          bitcoindRpcClient)(using executionContext, c)
       } yield chainApiBitcoind
-
     }
     val destroy: BitcoindBaseVersionChainHandlerViaRpc => Future[Unit] = {
       case b: BitcoindBaseVersionChainHandlerViaRpc =>
-        ChainUnitTest.destroyChainApi()(system, b.chainHandler.chainConfig)
+        ChainUnitTest.destroyChainApi()(
+          using system,
+          b.chainHandler.chainConfig)
     }
     makeDependentFixture(builder, destroy)(test)
   }

@@ -210,7 +210,8 @@ case class WalletAppConfig(
         None
     }
   }
-  private def masterXPubDAO: MasterXPubDAO = MasterXPubDAO()(ec, this)
+
+  private def masterXPubDAO: MasterXPubDAO = MasterXPubDAO()(using ec, this)
 
   override def start(): Future[Unit] = {
     for {
@@ -282,10 +283,10 @@ case class WalletAppConfig(
       driver match {
         case PostgreSQL =>
           logger.info(s"Reading postgres wallet database for account existence")
-          AccountDAO()(ec, this).read((hdCoin, 0)).map(_.isDefined)
+          AccountDAO()(using ec, this).read((hdCoin, 0)).map(_.isDefined)
         case SQLite =>
           if (Files.exists(walletDB))
-            AccountDAO()(ec, this).read((hdCoin, 0)).map(_.isDefined)
+            AccountDAO()(using ec, this).read((hdCoin, 0)).map(_.isDefined)
           else Future.successful(false)
       }
     } else {
@@ -303,7 +304,7 @@ case class WalletAppConfig(
     WalletAppConfig.createHDWallet(
       nodeApi = nodeApi,
       chainQueryApi = chainQueryApi
-    )(this, system)
+    )(using this, system)
   }
 
   private var rebroadcastTransactionsCancelOpt: Option[ScheduledFuture[?]] =
