@@ -20,20 +20,21 @@ case class DLCWalletDAOs(
 
 object DLCWalletDAOs {
   def fromDLCAppConfig(dlcConfig: DLCAppConfig): DLCWalletDAOs = {
-    val dlcDAO = DLCDAO()(dlcConfig.ec, dlcConfig)
-    val contractDAO = DLCContractDataDAO()(dlcConfig.ec, dlcConfig)
-    val dlcAnnouncementDAO = DLCAnnouncementDAO()(dlcConfig.ec, dlcConfig)
-    val dlcInputsDAO = DLCFundingInputDAO()(dlcConfig.ec, dlcConfig)
-    val dlcOfferDAO = DLCOfferDAO()(dlcConfig.ec, dlcConfig)
-    val dlcAcceptDAO = DLCAcceptDAO()(dlcConfig.ec, dlcConfig)
-    val dlcSigsDAO = DLCCETSignaturesDAO()(dlcConfig.ec, dlcConfig)
-    val dlcRefundSigDAO = DLCRefundSigsDAO()(dlcConfig.ec, dlcConfig)
-    val oracleNonceDAO = OracleNonceDAO()(dlcConfig.ec, dlcConfig)
+    val dlcDAO = DLCDAO()(using dlcConfig.ec, dlcConfig)
+    val contractDAO = DLCContractDataDAO()(using dlcConfig.ec, dlcConfig)
+    val dlcAnnouncementDAO = DLCAnnouncementDAO()(using dlcConfig.ec, dlcConfig)
+    val dlcInputsDAO = DLCFundingInputDAO()(using dlcConfig.ec, dlcConfig)
+    val dlcOfferDAO = DLCOfferDAO()(using dlcConfig.ec, dlcConfig)
+    val dlcAcceptDAO = DLCAcceptDAO()(using dlcConfig.ec, dlcConfig)
+    val dlcSigsDAO = DLCCETSignaturesDAO()(using dlcConfig.ec, dlcConfig)
+    val dlcRefundSigDAO = DLCRefundSigsDAO()(using dlcConfig.ec, dlcConfig)
+    val oracleNonceDAO = OracleNonceDAO()(using dlcConfig.ec, dlcConfig)
     val oracleAnnouncementDAO =
-      OracleAnnouncementDataDAO()(dlcConfig.ec, dlcConfig)
-    val dlcRemoteTxDAO = DLCRemoteTxDAO()(dlcConfig.ec, dlcConfig)
-    val incomingDLCOfferDAO = IncomingDLCOfferDAO()(dlcConfig.ec, dlcConfig)
-    val contactDAO = DLCContactDAO()(dlcConfig.ec, dlcConfig)
+      OracleAnnouncementDataDAO()(using dlcConfig.ec, dlcConfig)
+    val dlcRemoteTxDAO = DLCRemoteTxDAO()(using dlcConfig.ec, dlcConfig)
+    val incomingDLCOfferDAO =
+      IncomingDLCOfferDAO()(using dlcConfig.ec, dlcConfig)
+    val contactDAO = DLCContactDAO()(using dlcConfig.ec, dlcConfig)
     DLCWalletDAOs(
       dlcDAO = dlcDAO,
       contractDataDAO = contractDAO,

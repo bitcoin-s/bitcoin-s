@@ -231,7 +231,7 @@ object Deps {
         "org.scalacheck" %%% "scalacheck" % V.scalacheck withSources () withJavadoc ())
 
     val scalaJsStubs =
-      "org.scala-js" %% "scalajs-stubs" % V.scalaJsStubsV % "provided"
+      "org.scala-js" % "scalajs-stubs_2.13" % V.scalaJsStubsV % "provided"
 
     val scalaJsTime =
       Def.setting(
@@ -242,7 +242,7 @@ object Deps {
         "org.scalatest" %%% "scalatest" % V.scalaTest withSources () withJavadoc ())
 
     val scalaTestPlus = Def.setting(
-      "org.scalatestplus" %%% "scalacheck-1-17" % V.scalaTestPlus withSources () withJavadoc ())
+      "org.scalatestplus" %%% "scalacheck-1-17" % V.scalaTestPlus withSources () /*withJavadoc ()*/)
 
     // GitHub: https://github.com/testcontainers/testcontainers-java
     val testcontainersCore =
