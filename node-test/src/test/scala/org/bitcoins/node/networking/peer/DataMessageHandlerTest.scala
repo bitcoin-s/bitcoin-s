@@ -214,7 +214,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
         peer = peerManager.peers.head
         chainApi = ChainHandler.fromDatabase()(
-          executionContext,
+          using executionContext,
           node.chainAppConfig
         )
         _ = require(peerManager.getPeerData(peer).isDefined)
@@ -281,7 +281,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         _ <- NodeTestUtil.awaitAllSync(node, bitcoind)
         peer = peerManager.peers.head
         chainApi = ChainHandler.fromDatabase()(
-          executionContext,
+          using executionContext,
           node.chainAppConfig
         )
         _ = require(peerManager.getPeerData(peer).isDefined)
@@ -306,7 +306,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
             peerFinder = peerFinder,
             sentQuery = sentQuery0
           )
-        )(node.executionContext, node.nodeAppConfig, node.chainAppConfig)
+        )(using node.executionContext, node.nodeAppConfig, node.chainAppConfig)
 
         // disconnect our node from bitcoind, then
         // use bitcoind to generate 2,000 blocks, and then try to send the headers
