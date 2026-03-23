@@ -30,7 +30,7 @@ case class SpendingInfoDAO()(implicit
 
   private lazy val addrTable
       : profile.api.TableQuery[AddressDAO#AddressTable] = {
-    AddressDAO()(ec, appConfig).table
+    AddressDAO()(using ec, appConfig).table
   }
 
   private lazy val txTable: profile.api.TableQuery[
@@ -114,7 +114,7 @@ case class SpendingInfoDAO()(implicit
 
   private def insertAction(
       si: SpendingInfoDb
-  ): DBIOAction[UTXORecord, NoStream, Effect.Read with Effect.Write] = {
+  ): DBIOAction[UTXORecord, NoStream, Effect.Read & Effect.Write] = {
     val query =
       table.returning(table.map(_.id)).into((t, id) => t.copyWithId(id = id))
     for {
@@ -693,7 +693,7 @@ case class SpendingInfoDAO()(implicit
                                                 SpendingInfoDb
                                               ],
                                               NoStream,
-                                              Effect.Read with Effect.Write] = {
+                                              Effect.Read & Effect.Write] = {
     // 1. Check if any are reserved already
     // 2. if not, reserve them
     // 3. if they are reserved, throw an exception?
@@ -834,7 +834,7 @@ case class SpendingInfoDAO()(implicit
     )
 
     /** All UTXOs must have a SPK in the wallet that gets spent to */
-    def fk_scriptPubKeyId: slick.lifted.ForeignKeyQuery[_, ScriptPubKeyDb] = {
+    def fk_scriptPubKeyId: slick.lifted.ForeignKeyQuery[?, ScriptPubKeyDb] = {
       val scriptPubKeyTable = spkTable
       foreignKey(
         "fk_scriptPubKeyId",
@@ -845,7 +845,7 @@ case class SpendingInfoDAO()(implicit
 
     /** All UTXOs must have a corresponding transaction in the wallet */
     def fk_incoming_txId
-        : slick.lifted.ForeignKeyQuery[_, IncomingTransactionDb] = {
+        : slick.lifted.ForeignKeyQuery[?, IncomingTransactionDb] = {
       foreignKey(
         "fk_incoming_txId",
         sourceColumns = txid,
