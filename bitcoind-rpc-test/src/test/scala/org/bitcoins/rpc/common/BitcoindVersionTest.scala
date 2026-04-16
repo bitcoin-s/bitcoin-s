@@ -6,9 +6,9 @@ import org.bitcoins.testkit.util.BitcoindRpcTest
 class BitcoindVersionTest extends BitcoindRpcTest {
   behavior of "BitcoindVersion"
 
-  it should "return version 28" in {
-    val version = BitcoindVersion.fromNetworkVersion(280100)
-    assert(version.equals(BitcoindVersion.V28))
+  it should "return version 29" in {
+    val version = BitcoindVersion.fromNetworkVersion(290100)
+    assert(version.equals(BitcoindVersion.V29))
   }
 
 }

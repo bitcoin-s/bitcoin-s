@@ -1100,5 +1100,5 @@ object EclairRpcClient {
     * @see
     *   https://github.com/ACINQ/eclair/releases/tag/v0.13.0
     */
-  val bitcoindV: BitcoindVersion = BitcoindVersion.V28
+  val bitcoindV: BitcoindVersion = BitcoindVersion.V29
 }
