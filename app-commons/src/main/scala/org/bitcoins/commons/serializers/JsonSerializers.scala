@@ -218,7 +218,7 @@ object JsonSerializers {
       (__ \ "subver").read[String] and
       (__ \ "inbound").read[Boolean] and
       (__ \ "connection_type").read[String] and
-      (__ \ "startingheight").read[Int] and
+      (__ \ "startingheight").readNullable[Int] and
       (__ \ "synced_headers").read[Int] and
       (__ \ "synced_blocks").read[Int] and
       (__ \ "inflight").read[Vector[Int]] and
@@ -241,6 +241,9 @@ object JsonSerializers {
   implicit val loadTxOutSetResultReads: Reads[LoadTxOutSetResult] = {
     Json.reads[LoadTxOutSetResult]
   }
+
+  implicit val coinbaseTxInfoReads: Reads[CoinbaseTxInfo] =
+    Json.reads[CoinbaseTxInfo]
 
   implicit val getBlockResultReads: Reads[GetBlockResult] =
     Json.reads[GetBlockResult]
@@ -288,18 +291,27 @@ object JsonSerializers {
 
   implicit val getMemPoolInfoResultReads: Reads[GetMemPoolInfoResult] = Reads {
     case jsObj: JsObject =>
-      // 1. Check for the new V30 fields
-      val hasV30Fields = (jsObj \ "permitbaremultisig").isDefined &&
-        (jsObj \ "maxdatacarriersize").isDefined
+      // 1. Check for the new V31 fields
+      val hasV31Fields = (jsObj \ "limitclustercount").isDefined &&
+        (jsObj \ "limitclustersize").isDefined &&
+        (jsObj \ "optimal").isDefined
 
-      if (hasV30Fields) {
-        // 2. If fields are present, attempt to parse as V30
-        // We must explicitly use the V30Reads here
-        getMemPoolInfoResultV30Reads.reads(jsObj)
+      if (hasV31Fields) {
+        getMemPoolInfoResultV31Reads.reads(jsObj)
       } else {
-        // 3. If fields are missing (or partially missing), fallback to V29
-        // We must explicitly use the V29Reads here
-        getMemPoolInfoResultV29Reads.reads(jsObj)
+        // 2. Check for the new V30 fields
+        val hasV30Fields = (jsObj \ "permitbaremultisig").isDefined &&
+          (jsObj \ "maxdatacarriersize").isDefined
+
+        if (hasV30Fields) {
+          // 3. If fields are present, attempt to parse as V30
+          // We must explicitly use the V30Reads here
+          getMemPoolInfoResultV30Reads.reads(jsObj)
+        } else {
+          // 4. If fields are missing (or partially missing), fallback to V29
+          // We must explicitly use the V29Reads here
+          getMemPoolInfoResultV29Reads.reads(jsObj)
+        }
       }
 
     case x @ (_: JsString | _: JsBoolean | _: JsNumber | _: JsArray | JsNull) =>
@@ -312,6 +324,9 @@ object JsonSerializers {
 
   implicit val getMemPoolInfoResultV30Reads: Reads[GetMemPoolInfoResultV30] =
     Json.reads[GetMemPoolInfoResultV30]
+
+  implicit val getMemPoolInfoResultV31Reads: Reads[GetMemPoolInfoResultV31] =
+    Json.reads[GetMemPoolInfoResultV31]
 
   implicit val getRawMempoolVerboseResultReads
       : Reads[GetRawMempoolVerboseResult] =
@@ -1061,4 +1076,35 @@ object JsonSerializers {
 
   implicit val waitForBlockResultReads: Reads[WaitForBlockResult] =
     Json.reads[WaitForBlockResult]
+
+  // v31 serializers
+
+  implicit val getMempoolClusterChunkReads: Reads[GetMempoolClusterChunk] =
+    Json.reads[GetMempoolClusterChunk]
+
+  implicit val getMempoolClusterResultReads: Reads[GetMempoolClusterResult] =
+    Json.reads[GetMempoolClusterResult]
+
+  implicit val getMempoolFeerateDiagramEntryReads
+      : Reads[GetMempoolFeerateDiagramEntry] =
+    Json.reads[GetMempoolFeerateDiagramEntry]
+
+  implicit val privateBroadcastPeerReads: Reads[PrivateBroadcastPeer] =
+    Json.reads[PrivateBroadcastPeer]
+
+  implicit val privateBroadcastTransactionReads
+      : Reads[PrivateBroadcastTransaction] =
+    Json.reads[PrivateBroadcastTransaction]
+
+  implicit val getPrivateBroadcastInfoResultReads
+      : Reads[GetPrivateBroadcastInfoResult] =
+    Json.reads[GetPrivateBroadcastInfoResult]
+
+  implicit val removedPrivateBroadcastTransactionReads
+      : Reads[RemovedPrivateBroadcastTransaction] =
+    Json.reads[RemovedPrivateBroadcastTransaction]
+
+  implicit val abortPrivateBroadcastResultReads
+      : Reads[AbortPrivateBroadcastResult] =
+    Json.reads[AbortPrivateBroadcastResult]
 }

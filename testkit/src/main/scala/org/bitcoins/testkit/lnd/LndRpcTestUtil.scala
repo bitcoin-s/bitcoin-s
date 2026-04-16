@@ -9,7 +9,7 @@ import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.lnd.rpc.LndRpcClient
 import org.bitcoins.lnd.rpc.config.{LndInstanceLocal, LndInstanceRemote}
-import org.bitcoins.rpc.client.common.BitcoindVersion.{V28, V29, V30}
+import org.bitcoins.rpc.client.common.BitcoindVersion.{V28, V29, V30, V31}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.config.{
   BitcoindAuthCredentials,
@@ -54,6 +54,7 @@ trait LndRpcTestUtil extends BitcoinSLogger {
       case V28                     => BitcoindRpcTestUtil.v28Instance()
       case V29                     => BitcoindRpcTestUtil.v29Instance()
       case V30                     => BitcoindRpcTestUtil.v30Instance()
+      case V31                     => BitcoindRpcTestUtil.v31Instance()
       case BitcoindVersion.Unknown => BitcoindRpcTestUtil.instance()
     }
     startedBitcoindRpcClient(Some(instance))

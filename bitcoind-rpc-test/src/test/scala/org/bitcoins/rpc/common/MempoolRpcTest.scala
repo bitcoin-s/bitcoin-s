@@ -3,7 +3,8 @@ package org.bitcoins.rpc.common
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.SignRawTransactionOutputParameter
 import org.bitcoins.commons.jsonmodels.bitcoind.{
   GetMemPoolInfoResultV29,
-  GetMemPoolInfoResultV30
+  GetMemPoolInfoResultV30,
+  GetMemPoolInfoResultV31
 }
 import org.bitcoins.commons.rpc.BitcoindException
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
@@ -121,6 +122,9 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
       assert(newInfo.size == 1)
 
       newInfo match {
+        case v31: GetMemPoolInfoResultV31 =>
+          assert(v31.permitbaremultisig)
+          assert(v31.maxdatacarriersize == 100000)
         case v30: GetMemPoolInfoResultV30 =>
           assert(v30.permitbaremultisig)
           assert(v30.maxdatacarriersize == 100000)

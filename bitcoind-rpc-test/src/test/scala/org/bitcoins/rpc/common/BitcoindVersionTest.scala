@@ -11,4 +11,9 @@ class BitcoindVersionTest extends BitcoindRpcTest {
     assert(version.equals(BitcoindVersion.V28))
   }
 
+  it should "return version 31" in {
+    val version = BitcoindVersion.fromNetworkVersion(310000)
+    assert(version.equals(BitcoindVersion.V31))
+  }
+
 }

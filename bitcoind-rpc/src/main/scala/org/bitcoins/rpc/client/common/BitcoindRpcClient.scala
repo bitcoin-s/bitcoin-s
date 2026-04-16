@@ -24,6 +24,7 @@ import org.bitcoins.rpc.client.v20.V20MultisigRpc
 import org.bitcoins.rpc.client.v28.BitcoindV28RpcClient
 import org.bitcoins.rpc.client.v29.BitcoindV29RpcClient
 import org.bitcoins.rpc.client.v30.BitcoindV30RpcClient
+import org.bitcoins.rpc.client.v31.BitcoindV31RpcClient
 import org.bitcoins.rpc.config.*
 
 import java.io.File
@@ -355,6 +356,7 @@ object BitcoindRpcClient {
       case BitcoindVersion.V28 => BitcoindV28RpcClient(instance)
       case BitcoindVersion.V29 => BitcoindV29RpcClient(instance)
       case BitcoindVersion.V30 => BitcoindV30RpcClient(instance)
+      case BitcoindVersion.V31 => BitcoindV31RpcClient(instance)
       case BitcoindVersion.Unknown =>
         sys.error(
           s"Cannot create a Bitcoin Core RPC client: unsupported version"
@@ -373,6 +375,7 @@ object BitcoindRpcClient {
       case BitcoindVersion.V28 => new BitcoindV28RpcClient(instance)
       case BitcoindVersion.V29 => new BitcoindV29RpcClient(instance)
       case BitcoindVersion.V30 => new BitcoindV30RpcClient(instance)
+      case BitcoindVersion.V31 => new BitcoindV31RpcClient(instance)
       case BitcoindVersion.Unknown =>
         sys.error(
           s"Cannot create a Bitcoin Core RPC client: unsupported version"
@@ -389,10 +392,10 @@ object BitcoindVersion
     with BitcoinSLogger {
 
   /** The newest version of `bitcoind` we support */
-  val newest: BitcoindVersion = V30
+  val newest: BitcoindVersion = V31
 
   val standard: Vector[BitcoindVersion] =
-    Vector(V30, V29, V28)
+    Vector(V31, V30, V29)
 
   val known: Vector[BitcoindVersion] = standard
 
@@ -406,6 +409,10 @@ object BitcoindVersion
 
   case object V30 extends BitcoindVersion {
     override def toString: String = "v30.2"
+  }
+
+  case object V31 extends BitcoindVersion {
+    override def toString: String = "v31.0"
   }
 
   case object Unknown extends BitcoindVersion {
@@ -428,6 +435,8 @@ object BitcoindVersion
     int.toString.substring(0, 2) match {
       case "28" => V28
       case "29" => V29
+      case "30" => V30
+      case "31" => V31
       case _ =>
         logger.warn(
           s"Unsupported Bitcoin Core version: $int. The latest supported version is ${BitcoindVersion.newest}"
