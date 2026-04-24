@@ -123,7 +123,6 @@ sealed trait GetWalletInfoResult extends WalletResult {
   def keypoololdest: Option[UInt32]
   def keypoolsize: Int
   def keypoolsize_hd_internal: Int
-  def paytxfee: BitcoinFeeUnit
   def hdmasterkeyid: Option[Sha256Hash160Digest]
   def unlocked_until: Option[Int]
   def descriptors: Boolean
@@ -155,7 +154,6 @@ case class GetWalletInfoResultV30(
     keypoololdest: Option[UInt32],
     keypoolsize: Int,
     keypoolsize_hd_internal: Int,
-    paytxfee: BitcoinFeeUnit,
     hdmasterkeyid: Option[Sha256Hash160Digest],
     unlocked_until: Option[Int],
     private_keys_enabled: Boolean,
