@@ -249,6 +249,38 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
 
   }
 
+  it should "get mempool feerate diagram" in { nodePair =>
+    val client = nodePair.node1
+    val otherClient = nodePair.node2
+    for {
+      _ <- client.generate(1)
+      emptyDiagram <- client.getMempoolFeerateDiagram()
+      _ <- BitcoindRpcTestUtil.sendCoinbaseTransaction(client, otherClient)
+      nonEmptyDiagram <- client.getMempoolFeerateDiagram()
+    } yield {
+      assert(emptyDiagram.isEmpty)
+      assert(nonEmptyDiagram.nonEmpty)
+      assert(nonEmptyDiagram.forall(_.weight > 0))
+      assert(nonEmptyDiagram.forall(_.fee >= Bitcoins.zero))
+    }
+  }
+
+  it should "get mempool cluster for a transaction" in { nodePair =>
+    val client = nodePair.node1
+    val otherClient = nodePair.node2
+    for {
+      _ <- client.generate(1)
+      transaction <-
+        BitcoindRpcTestUtil.sendCoinbaseTransaction(client, otherClient)
+      cluster <- client.getMempoolCluster(transaction.txid)
+    } yield {
+      assert(cluster.txcount >= 1)
+      assert(cluster.clusterweight > 0)
+      assert(cluster.chunks.nonEmpty)
+      assert(cluster.chunks.flatMap(_.txs).contains(transaction.txid))
+    }
+  }
+
   it should "submit a package of transactions" in { nodePair =>
     val client = nodePair.node1
     for {
