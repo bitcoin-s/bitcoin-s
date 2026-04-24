@@ -220,7 +220,7 @@ case class SubmitPackageResult(
 case class PrivateBroadcastPeer(
     address: String,
     sent: Long,
-    received: Option[Long] = None
+    received: Option[Long]
 )
 
 /** Information about a transaction currently being privately broadcast. New in

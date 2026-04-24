@@ -16,7 +16,7 @@ import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.gcs.{FilterType, GolombFilter}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.script.descriptor.Descriptor
 import org.bitcoins.core.protocol.transaction.TransactionOutPoint
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
@@ -103,7 +103,7 @@ case class GetBlockResult(
     target: Option[
       String
     ], // once v29 is minimal supported version, remove Option
-    coinbase_tx: Option[CoinbaseTxInfo] = None
+    coinbase_tx: Option[CoinbaseTxInfo]
 ) extends BlockchainResult
 
 /** Coinbase transaction metadata returned in getblock verbosity >= 1 (new in
@@ -113,8 +113,8 @@ case class CoinbaseTxInfo(
     version: Int,
     locktime: UInt32,
     sequence: UInt32,
-    coinbase: String, // hex-encoded coinbase script
-    witness: Option[String] = None // hex-encoded first witness stack element
+    coinbase: ScriptSignature, // hex-encoded coinbase script
+    witness: Option[String] // hex-encoded first witness stack element
 )
 
 sealed trait GetBlockWithTransactionsResult extends BlockchainResult {
@@ -338,7 +338,7 @@ case class FeeInfo(
     modified: BitcoinFeeUnit,
     ancestor: BitcoinFeeUnit,
     descendant: BitcoinFeeUnit,
-    chunk: Option[BitcoinFeeUnit] = None
+    chunk: Option[BitcoinFeeUnit]
 )
 
 sealed trait GetMemPoolEntryResult extends BlockchainResult {
@@ -366,7 +366,7 @@ case class GetMemPoolEntryResultPostV23(
     wtxid: DoubleSha256DigestBE,
     fees: FeeInfo,
     depends: Option[Vector[DoubleSha256DigestBE]],
-    chunkweight: Option[Int] = None
+    chunkweight: Option[Int]
 ) extends GetMemPoolEntryResult {
   override def size: Int = vsize
 }
