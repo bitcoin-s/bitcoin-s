@@ -16,9 +16,9 @@ import org.bitcoins.core.currency.Bitcoins
 import org.bitcoins.core.gcs.{FilterType, GolombFilter}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.core.protocol.script.ScriptPubKey
+import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.script.descriptor.Descriptor
-import org.bitcoins.core.protocol.transaction.TransactionOutPoint
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import play.api.libs.json.{JsArray, JsNull, JsNumber, JsString, JsValue, Json}
@@ -100,10 +100,20 @@ case class GetBlockResult(
     chainwork: String,
     previousblockhash: Option[DoubleSha256DigestBE],
     nextblockhash: Option[DoubleSha256DigestBE],
-    target: Option[
-      String
-    ] // once v29 is minimal supported version, remove Option
+    target: String,
+    coinbase_tx: Option[CoinbaseTxInfo]
 ) extends BlockchainResult
+
+/** Coinbase transaction metadata returned in getblock verbosity >= 1 (new in
+  * v31)
+  */
+case class CoinbaseTxInfo(
+    version: Int,
+    locktime: UInt32,
+    sequence: UInt32,
+    coinbase: ScriptSignature, // hex-encoded coinbase script
+    witness: Option[String] // hex-encoded first witness stack element
+)
 
 sealed trait GetBlockWithTransactionsResult extends BlockchainResult {
   def hash: DoubleSha256DigestBE
@@ -325,7 +335,8 @@ case class FeeInfo(
     base: BitcoinFeeUnit,
     modified: BitcoinFeeUnit,
     ancestor: BitcoinFeeUnit,
-    descendant: BitcoinFeeUnit
+    descendant: BitcoinFeeUnit,
+    chunk: Option[BitcoinFeeUnit]
 )
 
 sealed trait GetMemPoolEntryResult extends BlockchainResult {
@@ -352,7 +363,8 @@ case class GetMemPoolEntryResultPostV23(
     ancestorsize: Int,
     wtxid: DoubleSha256DigestBE,
     fees: FeeInfo,
-    depends: Option[Vector[DoubleSha256DigestBE]]
+    depends: Option[Vector[DoubleSha256DigestBE]],
+    chunkweight: Option[Int]
 ) extends GetMemPoolEntryResult {
   override def size: Int = vsize
 }
@@ -400,6 +412,25 @@ case class GetMemPoolInfoResultV30(
     total_fee: Bitcoins
 ) extends GetMemPoolInfoResult
 
+case class GetMemPoolInfoResultV31(
+    loaded: Boolean,
+    size: Int,
+    bytes: Int,
+    usage: Int,
+    maxmempool: Int,
+    mempoolminfee: BitcoinFeeUnit,
+    minrelaytxfee: Bitcoins,
+    incrementalrelayfee: BigDecimal, // BTC/kvb
+    unbroadcastcount: Int,
+    fullrbf: Boolean,
+    permitbaremultisig: Boolean,
+    maxdatacarriersize: Int,
+    limitclustercount: Int,
+    limitclustersize: Int,
+    optimal: Boolean,
+    total_fee: Bitcoins
+) extends GetMemPoolInfoResult
+
 sealed abstract class GetTxOutResult extends BlockchainResult {
   def bestblock: DoubleSha256DigestBE
   def confirmations: Int
@@ -443,7 +474,13 @@ case class GetBlockFilterResult(
 case class GetTxSpendingPrevOutResult(
     txid: DoubleSha256DigestBE,
     vout: Int,
-    spendingtxid: Option[DoubleSha256DigestBE]
+    spendingtxid: Option[DoubleSha256DigestBE],
+    spendingtx: Option[
+      Transaction
+    ], // full spending tx (v31+ when return_spending_tx=true)
+    blockhash: Option[
+      DoubleSha256DigestBE
+    ] // block hash if confirmed spending tx found (v31+)
 ) {
   def outpoint: TransactionOutPoint = TransactionOutPoint(txid, UInt32(vout))
 }
@@ -546,3 +583,30 @@ case class GetDescriptorActivityResult(activity: Vector[DescriptorActivity])
 
 case class WaitForBlockResult(hash: DoubleSha256DigestBE, height: Int)
     extends BlockchainResult
+
+/** A chunk within a mempool cluster, containing transactions that would be
+  * mined together. New in v31.
+  */
+case class GetMempoolClusterChunk(
+    chunkfee: Bitcoins,
+    chunkweight: Int,
+    txs: Vector[DoubleSha256DigestBE]
+)
+
+/** Result of getmempoolcluster RPC. New in v31. */
+case class GetMempoolClusterResult(
+    clusterweight: Int,
+    txcount: Int,
+    chunks: Vector[GetMempoolClusterChunk]
+) extends BlockchainResult
+
+/** A single entry in the mempool feerate diagram. New in v31. */
+case class GetMempoolFeerateDiagramEntry(
+    weight: Int,
+    fee: Bitcoins
+) extends BlockchainResult
+
+object GetMempoolFeerateDiagramEntry {
+  val empty: GetMempoolFeerateDiagramEntry =
+    GetMempoolFeerateDiagramEntry(0, Bitcoins.zero)
+}

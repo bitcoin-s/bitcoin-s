@@ -6,7 +6,7 @@ object Deps {
   object V {
     val antV = "1.10.17"
 
-    val bouncyCastle = "1.83"
+    val bouncyCastle = "1.84"
     val dropWizardMetrics5V = "5.0.6"
 
     val dropwizardMetricsV = "4.2.38" // https://github.com/dropwizard/metrics
@@ -43,7 +43,7 @@ object Deps {
     val akkaActorV = akkaStreamv
 
     val slickV = "3.6.1"
-    val sqliteV = "3.51.3.0" // https://github.com/xerial/sqlite-jdbc
+    val sqliteV = "3.53.0.0" // https://github.com/xerial/sqlite-jdbc
 
     val scalameterV = "0.17"
     val scalamockV = "7.5.5"
@@ -51,7 +51,7 @@ object Deps {
     val pgEmbeddedV = "1.1.1"
 
     val testcontainersV =
-      "2.0.4" //    // GitHub: https://github.com/testcontainers/testcontainers-java
+      "2.0.5" //    // GitHub: https://github.com/testcontainers/testcontainers-java
 
     val breezeV = "1.3"
 
@@ -139,7 +139,7 @@ object Deps {
       "com.google.code.gson" % "gson" % V.gsonV // https://github.com/google/gson
 
     val guava =
-      "com.google.guava" % "guava" % "33.5.0-jre" // https://github.com/google/guava/
+      "com.google.guava" % "guava" % "33.6.0-jre" // https://github.com/google/guava/
 
     val jUnixSocket =
       "com.kohlschutter.junixsocket" % "junixsocket-core" % V.jUnixSocketV

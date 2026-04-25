@@ -3,7 +3,9 @@ package org.bitcoins.rpc.common
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.SignRawTransactionOutputParameter
 import org.bitcoins.commons.jsonmodels.bitcoind.{
   GetMemPoolInfoResultV29,
-  GetMemPoolInfoResultV30
+  GetMemPoolInfoResultV30,
+  GetMemPoolInfoResultV31,
+  GetMempoolFeerateDiagramEntry
 }
 import org.bitcoins.commons.rpc.BitcoindException
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
@@ -121,6 +123,9 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
       assert(newInfo.size == 1)
 
       newInfo match {
+        case v31: GetMemPoolInfoResultV31 =>
+          assert(v31.permitbaremultisig)
+          assert(v31.maxdatacarriersize == 100000)
         case v30: GetMemPoolInfoResultV30 =>
           assert(v30.permitbaremultisig)
           assert(v30.maxdatacarriersize == 100000)
@@ -229,6 +234,27 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
     } yield assert(spending.spendingtxid.contains(txid))
   }
 
+  it should "get tx spending prev out with options" in { nodePair =>
+    val client = nodePair.node1
+    val junkAddress: BitcoinAddress =
+      BitcoinAddress("2NFyxovf6MyxfHqtVjstGzs6HeLqv92Nq4U")
+    for {
+      txid <- client.sendToAddress(junkAddress, Bitcoins.one)
+      tx <- client.getRawTransaction(txid).map(_.hex)
+      prevout = tx.inputs.head.previousOutput
+      results <- client.getTxSpendingPrevOut(
+        Vector(prevout),
+        mempoolOnly = Some(true),
+        returnSpendingTx = Some(true)
+      )
+    } yield {
+      val result = results.head
+      assert(result.spendingtxid.contains(txid))
+      assert(result.spendingtx.isDefined)
+      assert(result.spendingtx.get.txIdBE == txid)
+    }
+  }
+
   it must "getrawmempool verbose" in { nodePair =>
     val client = nodePair.node1
     for {
@@ -243,6 +269,40 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
       assert(verbose1.txids.exists(_ == txid))
     }
 
+  }
+
+  it should "get mempool feerate diagram" in { nodePair =>
+    val client = nodePair.node1
+    val otherClient = nodePair.node2
+    for {
+      _ <- client.generate(1)
+      emptyDiagram <- client.getMempoolFeerateDiagram()
+      _ <- BitcoindRpcTestUtil.sendCoinbaseTransaction(client, otherClient)
+      nonEmptyDiagram <- client.getMempoolFeerateDiagram()
+    } yield {
+      assert(emptyDiagram.size == 1)
+      assert(
+        emptyDiagram.headOption.contains(GetMempoolFeerateDiagramEntry.empty))
+      assert(nonEmptyDiagram.size == 2)
+      assert(nonEmptyDiagram.tail.forall(_.weight > 0))
+      assert(nonEmptyDiagram.tail.forall(_.fee >= Bitcoins.zero))
+    }
+  }
+
+  it should "get mempool cluster for a transaction" in { nodePair =>
+    val client = nodePair.node1
+    val otherClient = nodePair.node2
+    for {
+      _ <- client.generate(1)
+      transaction <-
+        BitcoindRpcTestUtil.sendCoinbaseTransaction(client, otherClient)
+      cluster <- client.getMempoolCluster(transaction.txid)
+    } yield {
+      assert(cluster.txcount >= 1)
+      assert(cluster.clusterweight > 0)
+      assert(cluster.chunks.nonEmpty)
+      assert(cluster.chunks.flatMap(_.txs).contains(transaction.txid))
+    }
   }
 
   it should "submit a package of transactions" in { nodePair =>

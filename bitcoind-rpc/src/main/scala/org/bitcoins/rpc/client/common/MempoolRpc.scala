@@ -178,6 +178,38 @@ trait MempoolRpc { self: Client =>
     )
   }
 
+  /** Returns information about in-mempool or confirmed spenders of the given
+    * outputs.
+    *
+    * @param prevouts
+    *   Outpoints to query
+    * @param mempoolOnly
+    *   If false and mempool lacks a relevant spend, use txospenderindex (v31+,
+    *   throws an exception if not available)
+    * @param returnSpendingTx
+    *   If true, return the full spending transaction (v31+)
+    */
+  def getTxSpendingPrevOut(
+      prevouts: Vector[TransactionOutPoint],
+      mempoolOnly: Option[Boolean],
+      returnSpendingTx: Option[Boolean]
+  ): Future[Vector[GetTxSpendingPrevOutResult]] = {
+    val outputsJson = JsArray(prevouts.map(Json.toJson(_)))
+    val optionsFields = Seq(
+      mempoolOnly.map(v => "mempool_only" -> play.api.libs.json.JsBoolean(v)),
+      returnSpendingTx.map(v =>
+        "return_spending_tx" -> play.api.libs.json.JsBoolean(v))
+    ).flatten
+    val params =
+      if (optionsFields.isEmpty) List(outputsJson)
+      else List(outputsJson, play.api.libs.json.JsObject(optionsFields))
+
+    bitcoindCall[Vector[GetTxSpendingPrevOutResult]](
+      "gettxspendingprevout",
+      params
+    )
+  }
+
   /** Submit a package of raw transactions to the mempool.
     *
     * The package will be validated according to consensus and mempool policy
@@ -214,5 +246,40 @@ trait MempoolRpc { self: Client =>
         Json.toJson(maxBurnAmount)
       )
     )
+  }
+
+  /** Returns cluster information for the given transaction. The cluster
+    * contains all transactions in the same cluster as the given transaction,
+    * along with the ordering of those transactions and grouping into chunks.
+    *
+    * New in Bitcoin Core v31.
+    *
+    * @param txid
+    *   The transaction id
+    */
+  def getMempoolCluster(
+      txid: DoubleSha256DigestBE
+  ): Future[GetMempoolClusterResult] = {
+    bitcoindCall[GetMempoolClusterResult](
+      "getmempoolcluster",
+      List(JsString(txid.hex))
+    )
+  }
+
+  def getMempoolCluster(
+      txid: DoubleSha256Digest
+  ): Future[GetMempoolClusterResult] = {
+    getMempoolCluster(txid.flip)
+  }
+
+  /** Returns the feerate diagram for the entire mempool. Each entry represents
+    * a point in the feerate diagram showing the cumulative fee and weight.
+    *
+    * New in Bitcoin Core v31.
+    */
+  def getMempoolFeerateDiagram()
+      : Future[Vector[GetMempoolFeerateDiagramEntry]] = {
+    bitcoindCall[Vector[GetMempoolFeerateDiagramEntry]](
+      "getmempoolfeeratediagram")
   }
 }

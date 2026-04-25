@@ -90,7 +90,7 @@ sealed trait PeerInfoResponse extends NetworkResult {
   def inbound: Boolean
   def connection_type: String
   def addnode: Boolean
-  def startingheight: Int
+  def startingheight: Option[Int]
   def synced_headers: Int
   def synced_blocks: Int
   def inflight: Vector[Int]
@@ -106,7 +106,7 @@ case class PeerInfoResponseV25(
     subver: String,
     inbound: Boolean,
     connection_type: String,
-    startingheight: Int,
+    startingheight: Option[Int],
     synced_headers: Int,
     synced_blocks: Int,
     inflight: Vector[Int],

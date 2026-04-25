@@ -8,6 +8,7 @@ import org.bitcoins.commons.jsonmodels.bitcoind.*
 import org.bitcoins.commons.serializers.JsonSerializers
 import org.bitcoins.commons.serializers.JsonSerializers.*
 import org.bitcoins.core.protocol.blockchain.Block
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import play.api.libs.json.{JsBoolean, JsNumber, JsString}
 
 import java.net.URI
@@ -101,5 +102,32 @@ trait P2PRpc { self: Client =>
   def getAddrManInfo(): Future[GetAddrmanInfoResponse] = {
     bitcoindCall[GetAddrmanInfoResponse]("getaddrmaninfo")(
       using JsonSerializers.getAddrmanInfoResponseReads)
+  }
+
+  /** Returns information about transactions that are currently being privately
+    * broadcast.
+    *
+    * New in Bitcoin Core v31. Requires `-privatebroadcast` to be enabled.
+    */
+  def getPrivateBroadcastInfo(): Future[GetPrivateBroadcastInfoResult] = {
+    bitcoindCall[GetPrivateBroadcastInfoResult]("getprivatebroadcastinfo")
+  }
+
+  /** Abort private broadcast attempts for a transaction currently being
+    * privately broadcast. The transaction will be removed from the private
+    * broadcast queue.
+    *
+    * New in Bitcoin Core v31.
+    *
+    * @param id
+    *   A transaction identifier (txid or wtxid) to abort
+    */
+  def abortPrivateBroadcast(
+      id: DoubleSha256DigestBE
+  ): Future[AbortPrivateBroadcastResult] = {
+    bitcoindCall[AbortPrivateBroadcastResult](
+      "abortprivatebroadcast",
+      List(JsString(id.hex))
+    )
   }
 }

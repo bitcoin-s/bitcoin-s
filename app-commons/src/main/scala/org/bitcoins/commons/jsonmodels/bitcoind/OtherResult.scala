@@ -202,3 +202,40 @@ case class SubmitPackageResult(
     tx_results: Map[DoubleSha256DigestBE, SubmitPackageTxResult],
     replaced_transactions: Option[Vector[DoubleSha256DigestBE]]
 ) extends OtherResult
+
+/** Per-peer send/acknowledgment information for a private broadcast
+  * transaction. New in v31.
+  */
+case class PrivateBroadcastPeer(
+    address: String,
+    sent: Long,
+    received: Option[Long]
+)
+
+/** Information about a transaction currently being privately broadcast. New in
+  * v31.
+  */
+case class PrivateBroadcastTransaction(
+    txid: DoubleSha256DigestBE,
+    wtxid: DoubleSha256DigestBE,
+    hex: String,
+    time_added: Long,
+    peers: Vector[PrivateBroadcastPeer]
+)
+
+/** Result of getprivatebroadcastinfo RPC. New in v31. */
+case class GetPrivateBroadcastInfoResult(
+    transactions: Vector[PrivateBroadcastTransaction]
+) extends OtherResult
+
+/** A transaction removed from the private broadcast queue. New in v31. */
+case class RemovedPrivateBroadcastTransaction(
+    txid: DoubleSha256DigestBE,
+    wtxid: DoubleSha256DigestBE,
+    hex: String
+)
+
+/** Result of abortprivatebroadcast RPC. New in v31. */
+case class AbortPrivateBroadcastResult(
+    removed_transactions: Vector[RemovedPrivateBroadcastTransaction]
+) extends OtherResult
