@@ -194,9 +194,7 @@ trait MempoolRpc { self: Client =>
       mempoolOnly: Option[Boolean],
       returnSpendingTx: Option[Boolean]
   ): Future[Vector[GetTxSpendingPrevOutResult]] = {
-    val outputsJson = JsArray(prevouts.map { prev =>
-      Json.obj("txid" -> prev.txIdBE.hex, "vout" -> prev.vout.toLong)
-    })
+    val outputsJson = JsArray(prevouts.map(Json.toJson(_)))
     val optionsFields = Seq(
       mempoolOnly.map(v => "mempool_only" -> play.api.libs.json.JsBoolean(v)),
       returnSpendingTx.map(v =>

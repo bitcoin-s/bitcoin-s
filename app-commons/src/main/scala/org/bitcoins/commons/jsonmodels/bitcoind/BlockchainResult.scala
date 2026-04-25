@@ -18,7 +18,7 @@ import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.protocol.script.{ScriptPubKey, ScriptSignature}
 import org.bitcoins.core.protocol.script.descriptor.Descriptor
-import org.bitcoins.core.protocol.transaction.TransactionOutPoint
+import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.wallet.fee.BitcoinFeeUnit
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import play.api.libs.json.{JsArray, JsNull, JsNumber, JsString, JsValue, Json}
@@ -477,10 +477,8 @@ case class GetTxSpendingPrevOutResult(
     txid: DoubleSha256DigestBE,
     vout: Int,
     spendingtxid: Option[DoubleSha256DigestBE],
-    spendingtx: Option[String] =
-      None, // hex-encoded spending tx (v31+ when return_spending_tx=true)
-    blockhash: Option[DoubleSha256DigestBE] =
-      None // block hash if confirmed spending tx found (v31+)
+    spendingtx: Option[Transaction], // full spending tx (v31+ when return_spending_tx=true)
+    blockhash: Option[DoubleSha256DigestBE] // block hash if confirmed spending tx found (v31+)
 ) {
   def outpoint: TransactionOutPoint = TransactionOutPoint(txid, UInt32(vout))
 }

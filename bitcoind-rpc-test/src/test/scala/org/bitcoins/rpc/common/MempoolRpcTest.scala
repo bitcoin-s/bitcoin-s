@@ -12,6 +12,7 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.core.protocol.transaction.{
+  Transaction,
   TransactionInput,
   TransactionOutPoint
 }
@@ -231,6 +232,27 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
       tx <- client.getRawTransaction(txid).map(_.hex)
       spending <- client.getTxSpendingPrevOut(tx.inputs.head.previousOutput)
     } yield assert(spending.spendingtxid.contains(txid))
+  }
+
+  it should "get tx spending prev out with options" in { nodePair =>
+    val client = nodePair.node1
+    val junkAddress: BitcoinAddress =
+      BitcoinAddress("2NFyxovf6MyxfHqtVjstGzs6HeLqv92Nq4U")
+    for {
+      txid <- client.sendToAddress(junkAddress, Bitcoins.one)
+      tx <- client.getRawTransaction(txid).map(_.hex)
+      prevout = tx.inputs.head.previousOutput
+      results <- client.getTxSpendingPrevOut(
+        Vector(prevout),
+        mempoolOnly = Some(true),
+        returnSpendingTx = Some(true)
+      )
+    } yield {
+      val result = results.head
+      assert(result.spendingtxid.contains(txid))
+      assert(result.spendingtx.isDefined)
+      assert(result.spendingtx.get.txIdBE == txid)
+    }
   }
 
   it must "getrawmempool verbose" in { nodePair =>
