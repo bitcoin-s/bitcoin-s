@@ -27,12 +27,7 @@ import org.bitcoins.crypto.{
   DoubleSha256DigestBE,
   ECPublicKey
 }
-import org.bitcoins.rpc.client.common.BitcoindVersion.{
-  Unknown,
-  V29,
-  V30,
-  V31
-}
+import org.bitcoins.rpc.client.common.BitcoindVersion.{Unknown, V29, V30, V31}
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.rpc.client.v29.BitcoindV29RpcClient
 import org.bitcoins.rpc.client.v30.BitcoindV30RpcClient
