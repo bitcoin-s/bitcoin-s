@@ -605,3 +605,8 @@ case class GetMempoolFeerateDiagramEntry(
     weight: Int,
     fee: Bitcoins
 ) extends BlockchainResult
+
+object GetMempoolFeerateDiagramEntry {
+  val empty: GetMempoolFeerateDiagramEntry =
+    GetMempoolFeerateDiagramEntry(0, Bitcoins.zero)
+}

@@ -4,7 +4,8 @@ import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.SignRawTransactionOutput
 import org.bitcoins.commons.jsonmodels.bitcoind.{
   GetMemPoolInfoResultV29,
   GetMemPoolInfoResultV30,
-  GetMemPoolInfoResultV31
+  GetMemPoolInfoResultV31,
+  GetMempoolFeerateDiagramEntry
 }
 import org.bitcoins.commons.rpc.BitcoindException
 import org.bitcoins.core.currency.{Bitcoins, Satoshis}
@@ -279,10 +280,12 @@ class MempoolRpcTest extends BitcoindFixturesCachedPairNewest {
       _ <- BitcoindRpcTestUtil.sendCoinbaseTransaction(client, otherClient)
       nonEmptyDiagram <- client.getMempoolFeerateDiagram()
     } yield {
-      assert(emptyDiagram.isEmpty)
-      assert(nonEmptyDiagram.nonEmpty)
-      assert(nonEmptyDiagram.forall(_.weight > 0))
-      assert(nonEmptyDiagram.forall(_.fee >= Bitcoins.zero))
+      assert(emptyDiagram.size == 1)
+      assert(
+        emptyDiagram.headOption.contains(GetMempoolFeerateDiagramEntry.empty))
+      assert(nonEmptyDiagram.size == 2)
+      assert(nonEmptyDiagram.tail.forall(_.weight > 0))
+      assert(nonEmptyDiagram.tail.forall(_.fee >= Bitcoins.zero))
     }
   }
 
