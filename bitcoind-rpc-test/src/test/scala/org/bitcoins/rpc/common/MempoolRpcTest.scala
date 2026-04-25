@@ -12,7 +12,6 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.ScriptSignature
 import org.bitcoins.core.protocol.transaction.{
-  Transaction,
   TransactionInput,
   TransactionOutPoint
 }

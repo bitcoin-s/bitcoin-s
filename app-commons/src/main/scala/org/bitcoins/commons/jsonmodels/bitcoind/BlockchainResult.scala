@@ -100,9 +100,7 @@ case class GetBlockResult(
     chainwork: String,
     previousblockhash: Option[DoubleSha256DigestBE],
     nextblockhash: Option[DoubleSha256DigestBE],
-    target: Option[
-      String
-    ], // once v29 is minimal supported version, remove Option
+    target: String,
     coinbase_tx: Option[CoinbaseTxInfo]
 ) extends BlockchainResult
 
@@ -477,8 +475,12 @@ case class GetTxSpendingPrevOutResult(
     txid: DoubleSha256DigestBE,
     vout: Int,
     spendingtxid: Option[DoubleSha256DigestBE],
-    spendingtx: Option[Transaction], // full spending tx (v31+ when return_spending_tx=true)
-    blockhash: Option[DoubleSha256DigestBE] // block hash if confirmed spending tx found (v31+)
+    spendingtx: Option[
+      Transaction
+    ], // full spending tx (v31+ when return_spending_tx=true)
+    blockhash: Option[
+      DoubleSha256DigestBE
+    ] // block hash if confirmed spending tx found (v31+)
 ) {
   def outpoint: TransactionOutPoint = TransactionOutPoint(txid, UInt32(vout))
 }

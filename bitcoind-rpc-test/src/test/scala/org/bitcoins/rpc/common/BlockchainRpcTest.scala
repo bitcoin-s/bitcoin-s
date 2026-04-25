@@ -154,7 +154,6 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
       assert(block.weight > 0)
       assert(block.height > 0)
       assert(block.difficulty > 0)
-      assert(block.target.isDefined)
     }
   }
 
