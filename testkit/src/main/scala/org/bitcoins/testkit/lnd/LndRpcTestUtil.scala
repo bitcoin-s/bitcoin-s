@@ -234,13 +234,15 @@ trait LndRpcTestUtil extends BitcoinSLogger {
   def fundLNNodes(
       bitcoind: BitcoindRpcClient,
       client: LndRpcClient,
-      otherClient: LndRpcClient
+      otherClient: LndRpcClient,
+      bitcoindWalletName: String = BitcoindRpcClient.DEFAULT_WALLET_NAME
   )(implicit ec: ExecutionContext): Future[Unit] = {
     for {
       addrA <- client.getNewAddress
       addrB <- otherClient.getNewAddress
 
-      _ <- bitcoind.sendMany(Map(addrA -> Bitcoins(1), addrB -> Bitcoins(1)))
+      _ <- bitcoind.sendMany(Map(addrA -> Bitcoins(1), addrB -> Bitcoins(1)),
+                             walletName = bitcoindWalletName)
       _ <- bitcoind.generate(6)
     } yield ()
   }
@@ -251,7 +253,8 @@ trait LndRpcTestUtil extends BitcoinSLogger {
   def createNodePair(
       bitcoind: BitcoindRpcClient,
       channelSize: CurrencyUnit = DEFAULT_CHANNEL_AMT,
-      channelPushAmt: CurrencyUnit = DEFAULT_CHANNEL_AMT / Satoshis(2)
+      channelPushAmt: CurrencyUnit = DEFAULT_CHANNEL_AMT / Satoshis(2),
+      bitcoindWalletName: String = BitcoindRpcClient.DEFAULT_WALLET_NAME
   )(implicit ec: ExecutionContext): Future[(LndRpcClient, LndRpcClient)] = {
 
     val actorSystemA =
@@ -287,7 +290,7 @@ trait LndRpcTestUtil extends BitcoinSLogger {
       (client, otherClient) <- clientsF
 
       _ <- connectLNNodes(client, otherClient)
-      _ <- fundLNNodes(bitcoind, client, otherClient)
+      _ <- fundLNNodes(bitcoind, client, otherClient, bitcoindWalletName)
 
       _ <- AsyncUtil.awaitConditionF(() => isSynced)
       _ <- AsyncUtil.awaitConditionF(() => isFunded)
@@ -297,9 +300,9 @@ trait LndRpcTestUtil extends BitcoinSLogger {
         n1 = client,
         n2 = otherClient,
         amt = channelSize,
-        pushAmt = channelPushAmt
+        pushAmt = channelPushAmt,
+        bitcoindWalletName = bitcoindWalletName
       )
-
       _ <- TestAsyncUtil.nonBlockingSleep(2.seconds)
     } yield (client, otherClient)
   }
@@ -312,7 +315,8 @@ trait LndRpcTestUtil extends BitcoinSLogger {
       n1: LndRpcClient,
       n2: LndRpcClient,
       amt: CurrencyUnit = DEFAULT_CHANNEL_AMT,
-      pushAmt: CurrencyUnit = DEFAULT_CHANNEL_AMT / Satoshis(2)
+      pushAmt: CurrencyUnit = DEFAULT_CHANNEL_AMT / Satoshis(2),
+      bitcoindWalletName: String = BitcoindRpcClient.DEFAULT_WALLET_NAME
   )(implicit ec: ExecutionContext): Future[TransactionOutPoint] = {
 
     val n1NodeIdF = n1.nodeId
@@ -338,7 +342,7 @@ trait LndRpcTestUtil extends BitcoinSLogger {
 
     val genF = for {
       _ <- fundedChannelIdF
-      address <- bitcoind.getNewAddress
+      address <- bitcoind.getNewAddress(walletName = bitcoindWalletName)
       blocks <- bitcoind.generateToAddress(6, address)
     } yield blocks
 
