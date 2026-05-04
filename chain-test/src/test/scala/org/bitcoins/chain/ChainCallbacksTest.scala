@@ -6,14 +6,14 @@ import org.bitcoins.core.gcs.FilterType
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.crypto.{CryptoUtil, DoubleSha256DigestBE}
-import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainDbUnitTest}
+import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainUnitTest}
 import org.bitcoins.testkitcore.chain.ChainTestUtil
 import org.scalatest.FutureOutcome
 import scodec.bits.ByteVector
 
 import scala.concurrent.{Future, Promise}
 
-class ChainCallbacksTest extends ChainDbUnitTest {
+class ChainCallbacksTest extends ChainUnitTest {
   override type FixtureParam = ChainHandler
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =

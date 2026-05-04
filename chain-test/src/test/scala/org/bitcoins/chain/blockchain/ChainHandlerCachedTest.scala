@@ -3,11 +3,11 @@ package org.bitcoins.chain.blockchain
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
 import org.bitcoins.crypto.DoubleSha256DigestBE
-import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainDbUnitTest}
+import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainUnitTest}
 import org.bitcoins.testkitcore.chain.ChainTestUtil
 import org.scalatest.FutureOutcome
 
-class ChainHandlerCachedTest extends ChainDbUnitTest {
+class ChainHandlerCachedTest extends ChainUnitTest {
   override type FixtureParam = ChainHandlerCached
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =

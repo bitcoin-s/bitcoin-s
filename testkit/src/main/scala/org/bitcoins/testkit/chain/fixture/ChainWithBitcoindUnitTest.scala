@@ -1,14 +1,14 @@
 package org.bitcoins.testkit.chain.fixture
 
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.testkit.chain.{ChainDbUnitTest, ChainUnitTest}
+import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.rpc.{CachedBitcoind, CachedBitcoindNewest}
 import org.scalatest.{FutureOutcome, Outcome}
 
 import scala.concurrent.Future
 
 /** Chain unit test that requires a cached bitcoind type to be injected */
-trait ChainWithBitcoindUnitTest extends ChainDbUnitTest {
+trait ChainWithBitcoindUnitTest extends ChainUnitTest {
   self: CachedBitcoind[?] =>
 
 }

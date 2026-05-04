@@ -4,12 +4,12 @@ import org.bitcoins.chain.blockchain.Blockchain
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.protocol.blockchain.MainNetChainParams
 import org.bitcoins.core.util.FutureUtil
-import org.bitcoins.testkit.chain.{ChainDbUnitTest, ChainUnitTest}
+import org.bitcoins.testkit.chain.ChainUnitTest
 import org.scalatest.{Assertion, FutureOutcome}
 
 import scala.concurrent.Future
 
-class PopulatedBlockHeaderDAOTest extends ChainDbUnitTest {
+class PopulatedBlockHeaderDAOTest extends ChainUnitTest {
   override type FixtureParam = BlockHeaderDAO
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome =

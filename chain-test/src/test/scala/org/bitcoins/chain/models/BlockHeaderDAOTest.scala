@@ -6,16 +6,16 @@ import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.core.util.TimeUtil
 import org.bitcoins.crypto.{DoubleSha256Digest, DoubleSha256DigestBE}
-import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainDbUnitTest}
+import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainUnitTest}
 import org.bitcoins.testkitcore.chain.ChainTestUtil
 import org.scalatest.FutureOutcome
-import scodec.bits._
+import scodec.bits.*
 
 import scala.concurrent.Future
 
 /** Created by chris on 9/8/16.
   */
-class BlockHeaderDAOTest extends ChainDbUnitTest {
+class BlockHeaderDAOTest extends ChainUnitTest {
 
   override type FixtureParam = BlockHeaderDAO
 

@@ -1,12 +1,12 @@
 package org.bitcoins.chain.models
 
 import org.bitcoins.core.api.chain.db.{BlockHeaderDb, CompactFilterHeaderDb}
-import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainDbUnitTest}
+import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainUnitTest}
 import org.bitcoins.testkitcore.chain.ChainTestUtil
 import org.bitcoins.testkitcore.gen.CryptoGenerators
 import org.scalatest.FutureOutcome
 
-class CompactFilterHeaderDAOTest extends ChainDbUnitTest {
+class CompactFilterHeaderDAOTest extends ChainUnitTest {
 
   override type FixtureParam = CompactFilterHeaderDAO
 

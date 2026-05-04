@@ -18,6 +18,7 @@ import org.bitcoins.core.protocol.blockchain.{Block, BlockHeader}
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
+import org.bitcoins.testkit.BitcoinSTestAppConfig.ProjectType
 import org.bitcoins.testkit.chain.ChainUnitTest.{
   createChainHandler,
   createChainHandlerCached
@@ -29,7 +30,7 @@ import org.bitcoins.testkit.chain.models.{
 }
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.rpc.BitcoindRpcTestUtil
-import org.bitcoins.testkit.{BitcoinSTestAppConfig, chain}
+import org.bitcoins.testkit.{BitcoinSTestAppConfig, PostgresTestDatabase, chain}
 import org.bitcoins.testkitcore.chain.ChainTestUtil
 import org.bitcoins.zmq.ZMQSubscriber
 import org.scalatest.*
@@ -41,19 +42,33 @@ import scala.annotation.tailrec
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 
-trait ChainUnitTest extends BitcoinSFixture {
+trait ChainUnitTest extends BitcoinSFixture with PostgresTestDatabase {
 
-  def chainAppConfig: ChainAppConfig =
-    BitcoinSTestAppConfig.getNeutrinoTestConfig().chainConf
+  def chainAppConfig: ChainAppConfig = {
+    val dbConfig =
+      BitcoinSTestAppConfig.configWithEmbeddedDb(
+        Some(ProjectType.Chain),
+        postgresOpt
+      )
+    BitcoinSTestAppConfig.getNeutrinoTestConfig(config = dbConfig).chainConf
+  }
 
   /** Behaves exactly like the default conf, execpt network is set to mainnet
     */
   def mainnetAppConfig: ChainAppConfig = {
+    val memoryDb =
+      BitcoinSTestAppConfig.configWithEmbeddedDb(
+        Some(ProjectType.Chain),
+        postgresOpt
+      )
     val mainnetConf = ConfigFactory.parseString("bitcoin-s.network = mainnet")
-    BitcoinSTestAppConfig.getNeutrinoTestConfig(mainnetConf).chainConf
+    val chainConfig: ChainAppConfig =
+      BitcoinSTestAppConfig.getNeutrinoTestConfig(mainnetConf).chainConf
+    chainConfig.withOverrides(memoryDb)
   }
 
   override def afterAll(): Unit = {
+    super[PostgresTestDatabase].afterAll()
     super[BitcoinSFixture].afterAll()
   }
 

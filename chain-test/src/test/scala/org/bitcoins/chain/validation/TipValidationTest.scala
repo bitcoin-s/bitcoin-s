@@ -4,13 +4,13 @@ import org.bitcoins.chain.blockchain.Blockchain
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.core.api.chain.db.{BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainDbUnitTest}
+import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainUnitTest}
 import org.scalatest.FutureOutcome
 
 import java.time.Instant
 import scala.concurrent.Future
 
-class TipValidationTest extends ChainDbUnitTest {
+class TipValidationTest extends ChainUnitTest {
 
   behavior of "TipValidation"
   override type FixtureParam = BlockHeaderDAO

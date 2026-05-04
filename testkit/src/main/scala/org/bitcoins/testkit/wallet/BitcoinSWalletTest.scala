@@ -13,7 +13,6 @@ import org.bitcoins.node.NodeCallbacks
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
 import org.bitcoins.server.{BitcoinSAppConfig, BitcoindRpcBackendUtil}
 import org.bitcoins.server.util.CallbackUtil
-import org.bitcoins.testkit.PostgresTestDatabase
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
 import org.bitcoins.testkit.node.MockNodeApi
@@ -33,18 +32,11 @@ import java.util.UUID
 import scala.concurrent.*
 import scala.concurrent.duration.*
 
-trait BitcoinSWalletTest
-    extends BitcoinSFixture
-    with BaseWalletTest
-    with PostgresTestDatabase {
-  import BitcoinSWalletTest._
-
-  override def beforeAll(): Unit = {
-    super[PostgresTestDatabase].beforeAll()
-  }
+trait BitcoinSWalletTest extends BitcoinSFixture with BaseWalletTest {
+  import BitcoinSWalletTest.*
 
   override def afterAll(): Unit = {
-    super[PostgresTestDatabase].afterAll()
+    super[BaseWalletTest].afterAll()
     super[BitcoinSFixture].afterAll()
   }
 

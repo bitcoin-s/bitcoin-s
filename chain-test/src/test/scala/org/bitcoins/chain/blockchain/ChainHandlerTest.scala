@@ -21,11 +21,7 @@ import org.bitcoins.crypto.{
   DoubleSha256DigestBE,
   ECPrivateKey
 }
-import org.bitcoins.testkit.chain.{
-  BlockHeaderHelper,
-  ChainDbUnitTest,
-  ChainUnitTest
-}
+import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainUnitTest}
 import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkitcore.chain.ChainTestUtil
 import org.scalatest.{Assertion, Assertions, FutureOutcome}
@@ -33,7 +29,7 @@ import play.api.libs.json.Json
 
 import scala.concurrent.Future
 
-class ChainHandlerTest extends ChainDbUnitTest {
+class ChainHandlerTest extends ChainUnitTest {
 
   override type FixtureParam = ChainHandler
 

@@ -4,7 +4,7 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.pow.Pow
 import org.bitcoins.core.api.chain.db.{BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
-import org.bitcoins.testkit.chain.{ChainDbUnitTest, ChainUnitTest}
+import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkitcore.chain.ChainTestUtil
 import org.scalatest.FutureOutcome
@@ -13,7 +13,7 @@ import play.api.libs.json.Json
 import scala.concurrent.Future
 import scala.io.BufferedSource
 
-class MainnetChainHandlerTest extends ChainDbUnitTest {
+class MainnetChainHandlerTest extends ChainUnitTest {
 
   override type FixtureParam = ChainHandlerCached
 

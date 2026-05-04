@@ -1,11 +1,11 @@
 package org.bitcoins.chain.models
 
-import org.bitcoins.testkit.chain.ChainDbUnitTest
+import org.bitcoins.testkit.chain.ChainUnitTest
 import org.scalatest.FutureOutcome
 
 /** Created by chris on 9/8/16.
   */
-class ChainStateDescriptorDAOTest extends ChainDbUnitTest {
+class ChainStateDescriptorDAOTest extends ChainUnitTest {
 
   override type FixtureParam = ChainStateDescriptorDAO
 

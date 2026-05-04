@@ -3,7 +3,7 @@ package org.bitcoins.chain.blockchain
 import org.bitcoins.asyncutil.AsyncUtil
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
-import org.bitcoins.testkit.chain.{ChainDbUnitTest, ChainUnitTest}
+import org.bitcoins.testkit.chain.ChainUnitTest
 import org.bitcoins.testkit.chain.fixture.BitcoindChainHandlerViaZmq
 import org.scalatest.{Assertion, FutureOutcome}
 
@@ -11,7 +11,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.util.Random
 
-class BitcoindChainHandlerViaZmqTest extends ChainDbUnitTest {
+class BitcoindChainHandlerViaZmqTest extends ChainUnitTest {
 
   override type FixtureParam = BitcoindChainHandlerViaZmq
 
