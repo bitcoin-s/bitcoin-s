@@ -48,9 +48,11 @@ trait NodeDAOFixture extends NodeUnitTest {
   }
 
   private def destroyAppConfig(nodeConfig: NodeAppConfig): Future[Unit] = {
-    nodeConfig.clean()
+    // Stop the connection pool before cleaning so that SQLite file locks are
+    // released prior to Flyway attempting DDL operations (DROP TABLE).
     for {
       _ <- nodeConfig.stop()
+      _ = nodeConfig.clean()
     } yield ()
   }
 

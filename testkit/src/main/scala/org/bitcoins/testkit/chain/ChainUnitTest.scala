@@ -697,7 +697,12 @@ object ChainUnitTest extends ChainVerificationLogger {
       appConfig: ChainAppConfig,
       ec: ExecutionContext
   ): Future[Unit] = {
-    Future { appConfig.clean() }
+    // Stop the connection pool before cleaning so that SQLite file locks are
+    // released prior to Flyway attempting DDL operations (DROP TABLE).
+    for {
+      _ <- appConfig.stop()
+      _ = appConfig.clean()
+    } yield ()
   }
 
   def setupHeaderTableWithGenesisHeader()(implicit

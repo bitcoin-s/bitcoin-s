@@ -38,9 +38,11 @@ trait TestAppConfigFixture
   }
 
   def destroyTestConfig(testConfig: TestAppConfig): Future[Unit] = {
-    testConfig.clean()
+    // Stop the connection pool before cleaning so that SQLite file locks are
+    // released prior to Flyway attempting DDL operations (DROP TABLE).
     for {
       _ <- testConfig.stop()
+      _ = testConfig.clean()
     } yield ()
   }
 }

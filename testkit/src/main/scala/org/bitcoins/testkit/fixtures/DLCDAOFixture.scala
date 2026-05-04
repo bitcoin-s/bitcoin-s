@@ -1,12 +1,10 @@
 package org.bitcoins.testkit.fixtures
 
-import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
 import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.dlc.wallet.models.*
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, PostgresTestDatabase}
 import org.scalatest.*
-import java.nio.file.Files
 
 trait DLCDAOFixture extends BitcoinSFixture with PostgresTestDatabase {
 
@@ -55,20 +53,11 @@ trait DLCDAOFixture extends BitcoinSFixture with PostgresTestDatabase {
       },
       destroy = { (daos: DLCDAOs) =>
         val config = daos.dlcConf
-        val _ = config.clean()
+        // Stop the connection pool before cleaning so that SQLite file locks
+        // are released prior to Flyway attempting DDL operations (DROP TABLE).
         for {
           _ <- config.stop()
-          _ = config.driver match {
-            case SQLite =>
-              val dbFile = config.dbPath.resolve(config.dbName)
-              Files.deleteIfExists(dbFile)
-              Files.deleteIfExists(
-                config.dbPath.resolve(config.dbName + "-wal"))
-              Files.deleteIfExists(
-                config.dbPath.resolve(config.dbName + "-shm"))
-            case PostgreSQL =>
-              ()
-          }
+          _ = config.clean()
         } yield ()
       }
     )(test)

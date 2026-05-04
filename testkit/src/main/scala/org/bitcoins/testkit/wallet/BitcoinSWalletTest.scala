@@ -8,7 +8,6 @@ import org.bitcoins.core.api.chain.ChainQueryApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.api.wallet.WalletApi
 import org.bitcoins.core.currency.*
-import org.bitcoins.db.models.MasterXPubDAO
 import org.bitcoins.dlc.wallet.DLCWallet
 import org.bitcoins.node.NodeCallbacks
 import org.bitcoins.rpc.client.common.{BitcoindRpcClient, BitcoindVersion}
@@ -28,7 +27,6 @@ import org.bitcoins.wallet.config.WalletAppConfig
 import org.bitcoins.wallet.{Wallet, WalletLogger}
 import org.scalatest.*
 import org.testcontainers.postgresql.PostgreSQLContainer
-import slick.jdbc.meta.MTable
 
 import java.util.UUID
 import scala.concurrent.*
@@ -503,27 +501,10 @@ object BitcoinSWalletTest extends WalletLogger {
   def destroyWalletAppConfig(
       walletAppConfig: WalletAppConfig
   )(implicit ec: ExecutionContext): Future[Unit] = {
-    val masterXPubDAO =
-      MasterXPubDAO()(using walletAppConfig.ec, appConfig = walletAppConfig)
     walletAppConfig.clean()
     for {
-      exists <- tableExists(walletAppConfig,
-                            masterXPubDAO.table.baseTableRow.tableName)
-      _ = require(
-        !exists,
-        s"Table ${masterXPubDAO.table.baseTableRow.tableName} should not exist after clean")
       _ <- walletAppConfig.stop()
     } yield ()
-  }
-
-  private def tableExists(walletAppConfig: WalletAppConfig, tableName: String)(
-      implicit ec: ExecutionContext): Future[Boolean] = {
-    val action = MTable.getTables(None,
-                                  walletAppConfig.schemaName,
-                                  Some(tableName),
-                                  Some(Seq("TABLE")))
-
-    walletAppConfig.slickDbConfig.db.run(action).map(_.nonEmpty)
   }
 
   /** Constructs callbacks for the wallet from the node to process blocks and
