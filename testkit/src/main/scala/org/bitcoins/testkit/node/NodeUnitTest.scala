@@ -193,11 +193,9 @@ object NodeUnitTest extends P2PLogger {
   ): Future[Unit] = {
     for {
       _ <- node.stop()
+      _ = cleanTables(appConfig)
       _ <- node.nodeAppConfig.stop()
       _ <- node.chainAppConfig.stop()
-      // Clean tables after stopping configs so SQLite file locks are released
-      // before Flyway attempts DDL operations (DROP TABLE).
-      _ = cleanTables(appConfig)
     } yield {
       ()
     }

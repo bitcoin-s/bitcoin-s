@@ -289,12 +289,8 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
     }
 
     assertionsF.flatMap { _ =>
-      // Stop the connection pool before cleaning so that SQLite file locks are
-      // released prior to Flyway attempting DDL operations (DROP TABLE).
-      conf.stop().flatMap { _ =>
-        conf.clean()
-        Future.successful(succeed)
-      }
+      conf.clean()
+      conf.stop().map(_ => succeed)
     }
   }
 

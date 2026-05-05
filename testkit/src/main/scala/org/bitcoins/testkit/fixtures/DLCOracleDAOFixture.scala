@@ -1,10 +1,12 @@
 package org.bitcoins.testkit.fixtures
 
+import org.bitcoins.db.DatabaseDriver.{PostgreSQL, SQLite}
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.dlc.oracle.storage._
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, PostgresTestDatabase}
 import org.scalatest._
 
+import java.nio.file.Files
 import scala.concurrent.Future
 
 case class DLCOracleDAOs(
@@ -39,11 +41,17 @@ trait DLCOracleDAOFixture extends BitcoinSFixture with PostgresTestDatabase {
   }
 
   private def dropAll(config: DLCOracleAppConfig): Future[Unit] = {
-    // Stop the connection pool before cleaning so that SQLite file locks are
-    // released prior to Flyway attempting DDL operations (DROP TABLE).
+    config.clean()
     for {
       _ <- config.stop()
-      _ = config.clean()
+      _ = config.driver match {
+        case SQLite =>
+          Files.deleteIfExists(config.dbPath.resolve(config.dbName))
+          Files.deleteIfExists(config.dbPath.resolve(config.dbName + "-wal"))
+          Files.deleteIfExists(config.dbPath.resolve(config.dbName + "-shm"))
+        case PostgreSQL =>
+          ()
+      }
     } yield ()
   }
 }

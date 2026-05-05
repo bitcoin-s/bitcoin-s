@@ -88,6 +88,7 @@ class DbManagementTest extends BitcoinSAsyncTest with PostgresTestDatabase {
           assert(flywayInfo.applied().length == expected + 1)
           assert(flywayInfo.pending().length == 0)
       }
+      _ = walletAppConfig.clean()
       _ <- walletAppConfig.stop()
     } yield succeed
   }
