@@ -46,24 +46,35 @@ trait DbManagement extends BitcoinSLogger {
       }
     }
 
-    // Reuse the already-running HikariCP DataSource from Slick rather than
-    // creating a second connection pool via .dataSource(url, user, password).
-    // slickDbConfig.db.source is a HikariCPJdbcDataSource whose .ds field is
-    // a com.zaxxer.hikari.HikariDataSource (extends javax.sql.DataSource).
-    appConfig.slickDbConfig.db.source match {
-      case h: HikariCPJdbcDataSource if h.ds.getMaximumPoolSize > 1 =>
-        // flyway requires 2 database connections to run migrations
-        logger.debug(
-          s"Using existing HikariCP connection pool for flyway with ${h.getClass.getSimpleName}")
-        config
-          .dataSource(h.ds)
-          .load()
-      case j: JdbcDataSource =>
-        logger.debug(
-          s"No connection pool found in slickDbConfig, falling back to adhoc connections for flyway ${j.getClass.getSimpleName}")
+    appConfig.driver match {
+      case SQLite =>
+        // For SQLite, always use a direct JDBC connection rather than the HikariCP
+        // DataSource. Using HikariCP for SQLite causes flyway.clean() to silently
+        // do nothing (reports success in 0ms but drops no tables) due to WAL mode
+        // interactions between HikariCP's persistent connections and Flyway's DDL.
         config
           .dataSource(jdbcUrl, appConfig.dbUsername, appConfig.dbPassword)
           .load()
+      case PostgreSQL =>
+        // Reuse the already-running HikariCP DataSource from Slick rather than
+        // creating a second connection pool via .dataSource(url, user, password).
+        // slickDbConfig.db.source is a HikariCPJdbcDataSource whose .ds field is
+        // a com.zaxxer.hikari.HikariDataSource (extends javax.sql.DataSource).
+        appConfig.slickDbConfig.db.source match {
+          case h: HikariCPJdbcDataSource if h.ds.getMaximumPoolSize > 1 =>
+            // flyway requires 2 database connections to run migrations
+            logger.debug(
+              s"Using existing HikariCP connection pool for flyway with ${h.getClass.getSimpleName}")
+            config
+              .dataSource(h.ds)
+              .load()
+          case j: JdbcDataSource =>
+            logger.debug(
+              s"No connection pool found in slickDbConfig, falling back to adhoc connections for flyway ${j.getClass.getSimpleName}")
+            config
+              .dataSource(jdbcUrl, appConfig.dbUsername, appConfig.dbPassword)
+              .load()
+        }
     }
 
   }
