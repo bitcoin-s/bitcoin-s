@@ -5,10 +5,10 @@ import org.bitcoins.db.DatabaseDriver.*
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.output.{CleanResult, MigrateResult}
 import org.flywaydb.core.api.{FlywayException, MigrationInfoService}
+import slick.jdbc.JdbcDataSource
 import slick.jdbc.hikaricp.HikariCPJdbcDataSource
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
 
 trait DbManagement extends BitcoinSLogger {
   this: JdbcProfileComponent[DbAppConfig] =>
@@ -37,10 +37,6 @@ trait DbManagement extends BitcoinSLogger {
         .configure()
         .locations(s"classpath:$driverName/$module/migration/")
         .loadDefaultConfigurationFiles()
-        // Flyway 9+ defaults cleanDisabled=true for security.
-        // We explicitly enable clean here so it works regardless of whether
-        // flyway.conf is found on the classpath or working directory.
-        .cleanDisabled(false)
       appConfig.schemaName match {
         case Some(schema) =>
           conf
@@ -50,43 +46,24 @@ trait DbManagement extends BitcoinSLogger {
       }
     }
 
-    // For SQLite, always use a direct JDBC connection rather than the HikariCP
-    // pool from slickDbConfig. This has two benefits:
-    // 1. It avoids accessing slickDbConfig (which throws after stop() is called),
-    //    allowing clean() to work even after the config has been stopped.
-    // 2. The HikariCP pool for SQLite has numThreads=1, which means it would
-    //    never match the "> 1 connections" guard anyway.
-    // For PostgreSQL, reuse the already-running HikariCP DataSource from Slick
-    // when the pool has enough connections; otherwise fall back to direct JDBC.
-    appConfig.driver match {
-      case SQLite =>
+    // Reuse the already-running HikariCP DataSource from Slick rather than
+    // creating a second connection pool via .dataSource(url, user, password).
+    // slickDbConfig.db.source is a HikariCPJdbcDataSource whose .ds field is
+    // a com.zaxxer.hikari.HikariDataSource (extends javax.sql.DataSource).
+    appConfig.slickDbConfig.db.source match {
+      case h: HikariCPJdbcDataSource if h.ds.getMaximumPoolSize > 1 =>
+        // flyway requires 2 database connections to run migrations
         logger.debug(
-          s"Using direct JDBC connection for flyway with SQLite, jdbcUrl=$jdbcUrl")
+          s"Using existing HikariCP connection pool for flyway with ${h.getClass.getSimpleName}")
+        config
+          .dataSource(h.ds)
+          .load()
+      case j: JdbcDataSource =>
+        logger.debug(
+          s"No connection pool found in slickDbConfig, falling back to adhoc connections for flyway ${j.getClass.getSimpleName}")
         config
           .dataSource(jdbcUrl, appConfig.dbUsername, appConfig.dbPassword)
           .load()
-      case PostgreSQL =>
-        // Reuse the already-running HikariCP DataSource from Slick rather than
-        // creating a second connection pool via .dataSource(url, user, password).
-        // slickDbConfig.db.source is a HikariCPJdbcDataSource whose .ds field is
-        // a com.zaxxer.hikari.HikariDataSource (extends javax.sql.DataSource).
-        // If slickDbConfig is unavailable (e.g. stop() was already called), fall
-        // back to a direct JDBC connection so clean() still works.
-        Try(appConfig.slickDbConfig.db.source).toOption match {
-          case Some(h: HikariCPJdbcDataSource) if h.ds.getMaximumPoolSize > 1 =>
-            // flyway requires 2 database connections to run migrations
-            logger.debug(
-              s"Using existing HikariCP connection pool for flyway with ${h.getClass.getSimpleName}")
-            config
-              .dataSource(h.ds)
-              .load()
-          case _ =>
-            logger.debug(
-              s"No connection pool found (or pool already stopped), falling back to adhoc connections for flyway")
-            config
-              .dataSource(jdbcUrl, appConfig.dbUsername, appConfig.dbPassword)
-              .load()
-        }
     }
 
   }
