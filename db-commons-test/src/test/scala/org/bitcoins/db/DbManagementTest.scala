@@ -5,11 +5,14 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.db.DatabaseDriver.*
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.dlc.wallet.DLCAppConfig
+import org.bitcoins.db.models.MasterXPubDAO
 import org.bitcoins.node.config.NodeAppConfig
 import org.bitcoins.testkit.BitcoinSTestAppConfig.ProjectType
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.bitcoins.testkit.{BitcoinSTestAppConfig, PostgresTestDatabase}
 import org.bitcoins.wallet.config.WalletAppConfig
+
+import scala.concurrent.Future
 
 class DbManagementTest extends BitcoinSAsyncTest with PostgresTestDatabase {
 
@@ -89,6 +92,30 @@ class DbManagementTest extends BitcoinSAsyncTest with PostgresTestDatabase {
     } yield succeed
   }
 
+  it must "clean the wallet db and drop the master_xpub table" in {
+    val walletAppConfig = WalletAppConfig(
+      BitcoinSTestAppConfig.tmpDir(),
+      Vector(dbConfig(ProjectType.Wallet))
+    )
+
+    val resultF = for {
+      _ <- walletAppConfig.start()
+      masterXPubDAO =
+        MasterXPubDAO()(using walletAppConfig.ec, appConfig = walletAppConfig)
+      beforeExists <- tableExists(walletAppConfig,
+                                  masterXPubDAO.table.baseTableRow.tableName)
+      _ = assert(beforeExists)
+      _ = walletAppConfig.clean()
+      afterExists <- tableExists(walletAppConfig,
+                                 masterXPubDAO.table.baseTableRow.tableName)
+      _ = assert(!afterExists)
+    } yield succeed
+
+    resultF.transformWith { outcome =>
+      walletAppConfig.stop().transform(_ => outcome)
+    }
+  }
+
   it must "run migrations for node db" in {
     val nodeAppConfig = NodeAppConfig(
       BitcoinSTestAppConfig.tmpDir(),
@@ -136,5 +163,18 @@ class DbManagementTest extends BitcoinSAsyncTest with PostgresTestDatabase {
       }
       _ <- oracleAppConfig.stop()
     } yield succeed
+  }
+
+  import slick.jdbc.meta.MTable
+
+  private def tableExists(
+      walletAppConfig: WalletAppConfig,
+      tableName: String): Future[Boolean] = {
+    val action = MTable.getTables(None,
+                                  walletAppConfig.schemaName,
+                                  Some(tableName),
+                                  Some(Seq("TABLE")))
+
+    walletAppConfig.slickDbConfig.db.run(action).map(_.nonEmpty)
   }
 }
