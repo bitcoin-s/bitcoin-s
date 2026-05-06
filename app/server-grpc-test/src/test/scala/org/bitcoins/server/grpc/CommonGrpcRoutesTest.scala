@@ -33,11 +33,20 @@ class CommonGrpcRoutesTest extends AnyWordSpec with BeforeAndAfterAll {
   }
 
   override def afterAll(): Unit = {
-    Await.result(client.close(), 10.seconds)
-    Await.result(serverBinding.unbind(), 10.seconds)
-    Await.result(system.terminate(), 10.seconds)
-    FileUtil.deleteTmpDir(testDatadir)
-    ()
+    try {
+      Await.result(client.close(), 10.seconds)
+    } finally {
+      try {
+        Await.result(serverBinding.unbind(), 10.seconds)
+      } finally {
+        try {
+          Await.result(system.terminate(), 10.seconds)
+        } finally {
+          FileUtil.deleteTmpDir(testDatadir)
+          ()
+        }
+      }
+    }
   }
 
   "CommonGrpcRoutes" should {
