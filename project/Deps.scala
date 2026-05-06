@@ -697,4 +697,16 @@ object Deps {
     Compile.akkaStream,
     Compile.slf4j
   )
+
+  val serverGrpc = List(
+    Compile.akkaHttp,
+    Compile.akkaStream,
+    Compile.akkaDiscovery,
+    Compile.pekkoGrpc,
+    Compile.slf4j
+  )
+
+  val serverGrpcTest = List(
+    Compile.typesafeConfig
+  )
 }

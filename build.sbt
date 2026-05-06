@@ -225,6 +225,8 @@ lazy val `bitcoin-s` = project
     oracleServer,
     oracleServerTest,
     serverRoutes,
+    serverGrpc,
+    serverGrpcTest,
     lndRpc,
     lndRpcTest,
     tor,
@@ -279,6 +281,8 @@ lazy val `bitcoin-s` = project
     oracleServer,
     oracleServerTest,
     serverRoutes,
+    serverGrpc,
+    serverGrpcTest,
     lndRpc,
     lndRpcTest,
     tor,
@@ -411,6 +415,18 @@ lazy val serverRoutes = project
   .settings(name := "bitcoin-s-server-routes")
   .settings(libraryDependencies ++= Deps.serverRoutes)
   .dependsOn(appCommons, dbCommons)
+
+lazy val serverGrpc = project
+  .in(file("app/server-grpc"))
+  .settings(scalacOptions += "-Xsource:3")
+  .dependsOn(coreJVM, dbCommons)
+
+lazy val serverGrpcTest = project
+  .in(file("app/server-grpc-test"))
+  .settings(scalacOptions += "-Xsource:3")
+  .settings(CommonSettings.testSettings: _*)
+  .settings(libraryDependencies ++= Deps.serverGrpcTest)
+  .dependsOn(serverGrpc, testkit)
 
 lazy val appServer = project
   .in(file("app/server"))

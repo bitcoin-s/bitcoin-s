@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package org.bitcoins.server.grpc;
+
+option java_package = "org.bitcoins.server.grpc";
+option java_multiple_files = true;
+
+// CommonRoutes provides common RPC endpoints for the Bitcoin-S gRPC server.
+service CommonRoutes {
+  // GetVersion returns the current version of the Bitcoin-S server.
+  rpc GetVersion(GetVersionRequest) returns (GetVersionResponse);
+
+  // ZipDataDir zips the data directory to the specified target path.
+  rpc ZipDataDir(ZipDataDirRequest) returns (ZipDataDirResponse);
+}
+
+// GetVersionRequest is the request message for the GetVersion RPC.
+message GetVersionRequest {}
+
+// GetVersionResponse is the response message for the GetVersion RPC.
+message GetVersionResponse {
+  // version is the version of the Bitcoin-S server, or absent if not set.
+  optional string version = 1;
+}
+
+// ZipDataDirRequest is the request message for the ZipDataDir RPC.
+message ZipDataDirRequest {
+  // path is the target path for the zip file.
+  string path = 1;
+}
+
+// ZipDataDirResponse is the response message for the ZipDataDir RPC.
+message ZipDataDirResponse {}
