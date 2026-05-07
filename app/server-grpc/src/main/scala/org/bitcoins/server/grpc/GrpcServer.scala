@@ -2,6 +2,8 @@ package org.bitcoins.server.grpc
 
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.http.scaladsl.Http
+import org.apache.pekko.http.scaladsl.Http.ServerBinding
+import org.bitcoins.core.util.StartStopAsync
 
 import java.nio.file.Path
 import scala.concurrent.Future
@@ -19,10 +21,13 @@ class GrpcServer(
     datadir: Path,
     host: String,
     port: Int
-)(implicit system: ActorSystem) {
-
+)(implicit system: ActorSystem)
+    extends StartStopAsync[Unit] {
+  import system.dispatcher
   private val impl = new CommonGrpcRoutes(datadir)
   private val handler = CommonRoutesHandler(impl)
+
+  private var bindingOpt: Option[ServerBinding] = None
 
   /** Starts the gRPC server and returns the server binding.
     *
@@ -39,9 +44,20 @@ class GrpcServer(
     *   bindingF.flatMap(_.unbind())
     * }}}
     */
-  def start(): Future[Http.ServerBinding] = {
-    Http()
+  override def start(): Future[Unit] = {
+    val bindingF = Http()
       .newServerAt(host, port)
       .bind(handler)
+    bindingF.map { b =>
+      bindingOpt = Some(b)
+      ()
+    }
+  }
+
+  override def stop(): Future[Unit] = {
+    bindingOpt match {
+      case Some(binding) => binding.unbind().map(_ => ())
+      case None          => Future.unit
+    }
   }
 }

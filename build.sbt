@@ -702,7 +702,8 @@ lazy val testkit = project
     dlcWallet,
     zmq,
     dlcOracle,
-    testkitCoreJVM
+    testkitCoreJVM,
+    serverGrpc
   )
 
 lazy val docs = project
