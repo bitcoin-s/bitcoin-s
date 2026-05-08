@@ -423,6 +423,19 @@ object CommonSettings {
     )
   }
 
+  /** Netty includes optional Graal substitution annotation references for native
+    * image support. We do not ship native-image classes in our JVM runtimes, so
+    * these missing packages are safe to ignore for jlink static analysis.
+    */
+  private val nettySvmJlinkIgnore = {
+    Vector(
+      "io.grpc.netty.shaded.io.netty.util" -> "com.oracle.svm.core.annotate",
+      "io.grpc.netty.shaded.io.netty.util.internal.svm" -> "com.oracle.svm.core.annotate",
+      "io.netty.util" -> "com.oracle.svm.core.annotate",
+      "io.netty.util.internal.svm" -> "com.oracle.svm.core.annotate"
+    )
+  }
+
   lazy val oracleServerJlinkIgnore = {
     val oracleServerIgnore = Vector(
       "java.xml" -> "java.activation",
@@ -437,6 +450,7 @@ object CommonSettings {
       .++(dbCommonsJlinkIgnore)
       .++(cryptoJlinkIgnore)
       .++(byteBuddyJlinkIgnore)
+      .++(nettySvmJlinkIgnore)
     JlinkIgnore.byPackagePrefix(oracleServerIgnore: _*)
   }
 
@@ -447,6 +461,7 @@ object CommonSettings {
       .++(dbCommonsJlinkIgnore)
       .++(cryptoJlinkIgnore)
       .++(byteBuddyJlinkIgnore)
+      .++(nettySvmJlinkIgnore)
       .++(
         Vector(
           // https://github.com/janino-compiler/janino/blob/f6bb39d3137ad2e99b41ecc48aaaf8ab2644bd1c/janino/pom.xml#L37
