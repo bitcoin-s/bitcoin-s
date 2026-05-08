@@ -5,8 +5,7 @@ import org.bitcoins.testkit.fixtures.GrpcServerFixture
 import org.bitcoins.testkit.util.FileUtil
 
 import java.nio.file.Files
-import scala.concurrent.duration.*
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.ExecutionContext
 
 class CommonGrpcRoutesTest extends GrpcServerFixture {
 
@@ -15,10 +14,12 @@ class CommonGrpcRoutesTest extends GrpcServerFixture {
   behavior of "CommonGrpcRoutes"
 
   it must "getversion" in { case (client, server) =>
-    val response =
-      Await.result(client.getVersion(GetVersionRequest()), 10.seconds)
+    val responseF =
+      client.getVersion(GetVersionRequest())
     val expectedVersion = Option(EnvUtil.getVersion)
-    assert(response.version == expectedVersion)
+    responseF.map { response =>
+      assert(response.version == expectedVersion)
+    }
   }
 
   it must "zipdatadir" in { case (client, server) =>
