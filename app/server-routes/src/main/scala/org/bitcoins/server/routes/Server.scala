@@ -1,6 +1,6 @@
 package org.bitcoins.server.routes
 
-import de.heikoseeberger.akkahttpupickle.UpickleSupport._
+import de.heikoseeberger.akkahttpupickle.UpickleSupport.*
 import org.apache.pekko.{Done, NotUsed}
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.event.Logging
@@ -40,8 +40,9 @@ import org.apache.pekko.stream.scaladsl.{Flow, Keep, Sink, Source}
 import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.commons.jsonmodels.ws.WsNotification
 import org.bitcoins.commons.util.BitcoinSLogger
+import org.bitcoins.server.grpc.GrpcServer
 import org.bitcoins.server.util.{ServerBindings, WsServerConfig}
-import upickle.{default => up}
+import upickle.default as up
 
 import scala.concurrent.Future
 
@@ -187,6 +188,8 @@ case class Server(
   }
 
   def start(): Future[ServerBindings] = {
+    val grpcServer = new GrpcServer(conf.baseDatadir, rpchost, rpcport + 1)
+    val startGrpcF = grpcServer.start()
     val httpFut = for {
       http <- Http()
         .newServerAt(rpchost, rpcport)
@@ -194,14 +197,19 @@ case class Server(
     } yield http
 
     httpFut.foreach { http =>
-      logger.info(s"Started Bitcoin-S HTTP server at ${http.localAddress}")
+      logger.info(s"Started bitcoin-s HTTP server at ${http.localAddress}")
     }
+    startGrpcF.foreach { _ =>
+      logger.info(s"Started bitcoin-s gRPC server at ${rpchost}:${rpcport + 1}")
+    }
+
     val wsFut = startWsServer()
 
     for {
       http <- httpFut
       ws <- wsFut
-    } yield ServerBindings(http, ws)
+      _ <- startGrpcF
+    } yield ServerBindings(http, ws, grpcServer)
   }
 
   private def startWsServer(): Future[Option[Http.ServerBinding]] = {

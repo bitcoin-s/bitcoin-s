@@ -304,8 +304,6 @@ object CommonSettings {
       // we don't use jboss
       "org.flywaydb.core.internal.scanner.classpath.jboss" -> "org.jboss.vfs",
       "org.flywaydb.core.internal.logging.log4j2" -> "org.apache.logging.log4j",
-      "com.zaxxer.hikari.metrics.micrometer" -> "io.micrometer.core.instrument",
-      "com.zaxxer.hikari.pool" -> "io.micrometer.core.instrument",
       "slick.jdbc" -> "javax.xml.bind",
       "com.zaxxer.hikari.metrics.prometheus" -> "io.prometheus.client",
       "com.zaxxer.hikari.util" -> "javassist",
@@ -334,6 +332,48 @@ object CommonSettings {
       "ch.qos.logback.core.net" -> "jakarta.mail.internet",
       "ch.qos.logback.core.status" -> "jakarta.servlet",
       "ch.qos.logback.core.status" -> "jakarta.servlet.http"
+    )
+  }
+
+  /** Micrometer exposes many optional binders/integrations (AspectJ, servlet,
+    * Kafka, JPA, Mongo, OkHttp, Jetty, etc). bitcoin-s does not enable those
+    * binders at runtime; we only need Micrometer classes to satisfy optional
+    * references pulled in during jdeps static analysis. Ignoring these missing
+    * packages is safe for our packaged apps.
+    */
+  private val micrometerJlinkIgnore = {
+    Vector(
+      // reactor-core has optional Micrometer hooks; we do not enable those
+      // metrics integrations in bitcoin-s server/oracle-server runtimes
+      "reactor.core.publisher" -> "io.micrometer",
+      "reactor.core.scheduler" -> "io.micrometer",
+      "reactor.util" -> "io.micrometer",
+      "reactor.util.context" -> "io.micrometer.context",
+      "io.micrometer.common.annotation" -> "org.aspectj",
+      "io.micrometer.core.aop" -> "org.aspectj",
+      "io.micrometer.observation.aop" -> "org.aspectj",
+      "io.micrometer.core.instrument.binder.cache" -> "javax.cache",
+      "io.micrometer.core.instrument.binder.cache" -> "net.sf.ehcache",
+      "io.micrometer.core.instrument.binder.db" -> "org.jooq",
+      "io.micrometer.core.instrument.binder.http" -> "jakarta.servlet",
+      "io.micrometer.core.instrument.binder.httpcomponents" -> "org.apache.http",
+      "io.micrometer.core.instrument.binder.httpcomponents.hc5" -> "org.apache.hc",
+      "io.micrometer.core.instrument.binder.hystrix" -> "com.netflix.hystrix",
+      "io.micrometer.core.instrument.binder.hystrix" -> "rx",
+      "io.micrometer.core.instrument.binder.jersey" -> "org.glassfish.jersey",
+      "io.micrometer.core.instrument.binder.jetty" -> "org.eclipse.jetty",
+      "io.micrometer.core.instrument.binder.jpa" -> "javax.persistence",
+      "io.micrometer.core.instrument.binder.jpa" -> "org.hibernate",
+      "io.micrometer.core.instrument.binder.kafka" -> "org.apache.kafka",
+      "io.micrometer.core.instrument.binder.logging" -> "org.apache.logging.log4j.core",
+      "io.micrometer.core.instrument.binder.mongodb" -> "com.mongodb",
+      "io.micrometer.core.instrument.binder.mongodb" -> "org.bson",
+      "io.micrometer.core.instrument.binder.okhttp3" -> "okhttp3",
+      "io.micrometer.core.instrument.binder.tomcat" -> "org.apache.catalina",
+      "io.micrometer.core.instrument.kotlin" -> "io.grpc.kotlin",
+      "io.micrometer.core.instrument.kotlin" -> "kotlin",
+      "io.micrometer.core.instrument.kotlin" -> "kotlinx.coroutines",
+      "io.micrometer.core.ipc.http" -> "okhttp3"
     )
   }
 
@@ -393,6 +433,7 @@ object CommonSettings {
       "org.codehaus.janino" -> "org.apache.tools.ant"
     )
       .++(loggingJlinkIgnore)
+      .++(micrometerJlinkIgnore)
       .++(dbCommonsJlinkIgnore)
       .++(cryptoJlinkIgnore)
       .++(byteBuddyJlinkIgnore)
@@ -402,6 +443,7 @@ object CommonSettings {
   lazy val appServerJlinkIgnore = {
 
     val appServerIgnore = loggingJlinkIgnore
+      .++(micrometerJlinkIgnore)
       .++(dbCommonsJlinkIgnore)
       .++(cryptoJlinkIgnore)
       .++(byteBuddyJlinkIgnore)

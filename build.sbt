@@ -414,7 +414,7 @@ lazy val serverRoutes = project
   .settings(CommonSettings.prodSettings: _*)
   .settings(name := "bitcoin-s-server-routes")
   .settings(libraryDependencies ++= Deps.serverRoutes)
-  .dependsOn(appCommons, dbCommons)
+  .dependsOn(appCommons, dbCommons, serverGrpc)
 
 lazy val serverGrpc = project
   .in(file("app/server-grpc"))
@@ -449,7 +449,8 @@ lazy val appServer = project
     dlcNode,
     bitcoindRpc,
     feeProvider,
-    zmq
+    zmq,
+    serverGrpc
   )
   .enablePlugins(JavaAppPackaging, DockerPlugin, JlinkPlugin,
     //needed for windows, else we have the 'The input line is too long` on windows OS

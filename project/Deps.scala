@@ -88,6 +88,29 @@ object Deps {
     val gsonV = "2.14.0"
     val jnaV = "5.18.1"
     val waffleJnaV = "3.6.0"
+
+    // netty optional deps surfaced by jlink static analysis via grpc-netty-shaded
+    val brotli4jV = "1.20.0" // https://github.com/aayushatharva/brotli4j
+    val zstdJniV = "1.5.7-4" // https://github.com/luben/zstd-jni
+    val jzlibV = "1.1.3" // https://github.com/ymnk/jzlib
+    val compressLzfV = "1.1.3" // https://github.com/ning/compress
+    val lz4JavaV = "1.8.0" // https://github.com/lz4/lz4-java
+    val lzmaJavaV = "1.3" // https://github.com/jponge/lzma-java
+    val jbossMarshallingV = "2.2.3.Final" // https://github.com/jboss-remoting/jboss-marshalling
+    val protobufNanoV = "3.0.0-alpha-7" // https://github.com/google/protobuf
+    val conscryptV = "2.5.2" // https://github.com/google/conscrypt
+    val jettyAlpnV = "1.1.3.v20160715" // https://github.com/jetty-project/jetty-alpn
+    val jettyNpnV = "1.1.1.v20141010" // https://github.com/jetty-project/jetty-npn
+    val annotationsV = "26.0.2" // https://github.com/JetBrains/java-annotations
+    val blockhoundV = "1.0.11.RELEASE" // https://github.com/reactor/BlockHound
+    val commonsLoggingV = "1.3.5" // https://github.com/apache/commons-logging
+    val log4j2V = "2.25.2" // https://github.com/apache/logging-log4j2
+    val nettyV = "4.1.127.Final" // https://github.com/netty/netty
+    val jbossModulesV = "2.1.6.Final" // https://github.com/jboss-modules/jboss-modules
+    val reactorCoreV = "3.7.12" // https://github.com/reactor/reactor-core
+    val rxjava2V = "2.2.21" // https://github.com/ReactiveX/RxJava
+    val micrometerCoreV = "1.14.12" // https://github.com/micrometer-metrics/micrometer
+    val micrometerContextV = "1.1.3" // https://github.com/micrometer-metrics/context-propagation
   }
 
   object Compile {
@@ -169,6 +192,42 @@ object Deps {
 
     val jna = "net.java.dev.jna" % "jna" % V.jnaV
     val waffleJna = "com.github.waffle" % "waffle-jna" % V.waffleJnaV
+
+    // netty optional deps surfaced by jlink static analysis via grpc-netty-shaded
+    val brotli4j =
+      "com.aayushatharva.brotli4j" % "brotli4j" % V.brotli4jV
+    val zstdJni = "com.github.luben" % "zstd-jni" % V.zstdJniV
+    val jzlib = "com.jcraft" % "jzlib" % V.jzlibV
+    val compressLzf = "com.ning" % "compress-lzf" % V.compressLzfV
+    val lz4Java = "org.lz4" % "lz4-java" % V.lz4JavaV
+    val lzmaJava = "com.github.jponge" % "lzma-java" % V.lzmaJavaV
+    val jbossMarshalling =
+      "org.jboss.marshalling" % "jboss-marshalling" % V.jbossMarshallingV
+    val protobufNano =
+      "com.google.protobuf.nano" % "protobuf-javanano" % V.protobufNanoV
+    val bcpkix =
+      "org.bouncycastle" % "bcpkix-jdk18on" % V.bouncyCastle
+    val conscrypt =
+      "org.conscrypt" % "conscrypt-openjdk-uber" % V.conscryptV
+    val jettyAlpn = "org.eclipse.jetty.alpn" % "alpn-api" % V.jettyAlpnV
+    val jettyNpn = "org.eclipse.jetty.npn" % "npn-api" % V.jettyNpnV
+    val jetbrainsAnnotations =
+      "org.jetbrains" % "annotations" % V.annotationsV
+    val blockhound =
+      "io.projectreactor.tools" % "blockhound" % V.blockhoundV
+    val commonsLogging =
+      "commons-logging" % "commons-logging" % V.commonsLoggingV
+    val log4j2Api =
+      "org.apache.logging.log4j" % "log4j-api" % V.log4j2V
+    val nettyBuffer = "io.netty" % "netty-buffer" % V.nettyV
+    val jbossModules = "org.jboss.modules" % "jboss-modules" % V.jbossModulesV
+    val reactorCore =
+      "io.projectreactor" % "reactor-core" % V.reactorCoreV
+    val rxjava2 = "io.reactivex.rxjava2" % "rxjava" % V.rxjava2V
+    val micrometerCore =
+      "io.micrometer" % "micrometer-core" % V.micrometerCoreV
+    val micrometerContext =
+      "io.micrometer" % "context-propagation" % V.micrometerContextV
 
     val playJson =
       "org.playframework" %% "play-json" % V.playv withSources () withJavadoc ()
@@ -449,6 +508,7 @@ object Deps {
       Compile.sqlite,
       Compile.postgres,
       Compile.slickHikari,
+      Compile.micrometerCore,
       Compile.slf4j,
       Test.scalaTest.value,
       Test.testcontainersPostgres
@@ -491,6 +551,29 @@ object Deps {
     Compile.dropwizardMetricsHealthChecks,
     Compile.dropwizardMetricsJvm,
     Compile.dropWizardMetricsCore5,
+    // grpc-netty-shaded optional deps needed for jlink static package analysis
+    Compile.brotli4j,
+    Compile.zstdJni,
+    Compile.jzlib,
+    Compile.compressLzf,
+    Compile.lz4Java,
+    Compile.lzmaJava,
+    Compile.jbossMarshalling,
+    Compile.protobufNano,
+    Compile.bcpkix,
+    Compile.conscrypt,
+    Compile.jettyAlpn,
+    Compile.jettyNpn,
+    Compile.jetbrainsAnnotations,
+    Compile.blockhound,
+    Compile.commonsLogging,
+    Compile.log4j2Api,
+    Compile.nettyBuffer,
+    Compile.jbossModules,
+    Compile.reactorCore,
+    Compile.rxjava2,
+    Compile.micrometerCore,
+    Compile.micrometerContext,
     // postgres transitive deps
     Compile.jna,
     Compile.waffleJna,
