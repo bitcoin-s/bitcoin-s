@@ -25,10 +25,16 @@ class CommonGrpcRoutes(datadir: Path) extends CommonRoutes {
     DatadirUtil.zipDatadir(datadir, path) match {
       case Success(_) => Future.successful(ZipDataDirResponse())
       case Failure(ex) =>
+        val status = ex match {
+          case _: IllegalArgumentException => io.grpc.Status.INVALID_ARGUMENT
+          case _ => io.grpc.Status.INTERNAL
+        }
+
         Future.failed(
-          new io.grpc.StatusRuntimeException(
-            io.grpc.Status.INTERNAL.withDescription(ex.getMessage)
-          )
+          status
+            .withDescription(ex.getMessage)
+            .withCause(ex)
+            .asRuntimeException()
         )
     }
   }
