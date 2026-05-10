@@ -183,6 +183,8 @@ lazy val `bitcoin-s` = project
     chainTest,
     cli,
     cliTest,
+    cliGrpc,
+    cliGrpcTest,
     coreJVM,
     coreJS,
     coreTestJVM,
@@ -241,6 +243,8 @@ lazy val `bitcoin-s` = project
     chainTest,
     cli,
     cliTest,
+    cliGrpc,
+    cliGrpcTest,
     coreJVM,
     coreJS,
     coreTestJVM,
@@ -428,6 +432,18 @@ lazy val serverGrpcTest = project
   .settings(libraryDependencies ++= Deps.serverGrpcTest)
   .dependsOn(serverGrpc, testkit)
 
+lazy val serverGrpc = project
+  .in(file("app/server-grpc"))
+  .settings(scalacOptions += "-Xsource:3")
+  .dependsOn(coreJVM, dbCommons)
+
+lazy val serverGrpcTest = project
+  .in(file("app/server-grpc-test"))
+  .settings(scalacOptions += "-Xsource:3")
+  .settings(CommonSettings.testSettings: _*)
+  .settings(libraryDependencies ++= Deps.serverGrpcTest)
+  .dependsOn(serverGrpc, testkit)
+
 lazy val appServer = project
   .in(file("app/server"))
   .settings(scalacOptions += "-Xsource:3")
@@ -488,6 +504,23 @@ lazy val cliTest = project
   .settings(CommonSettings.testSettings: _*)
   .dependsOn(
     cli,
+    testkit
+  )
+
+lazy val cliGrpc = project
+  .in(file("app/cli-grpc"))
+  .settings(CommonSettings.prodSettings: _*)
+  .settings(scalacOptions += "-Xsource:3")
+  .dependsOn(serverGrpc)
+  .enablePlugins(JavaAppPackaging)
+
+lazy val cliGrpcTest = project
+  .in(file("app/cli-grpc-test"))
+  .settings(scalacOptions += "-Xsource:3")
+  .settings(CommonSettings.testSettings: _*)
+  .settings(libraryDependencies ++= Deps.cliGrpcTest)
+  .dependsOn(
+    cliGrpc,
     testkit
   )
 
@@ -694,6 +727,7 @@ lazy val testkit = project
     appServer,
     chain,
     cli,
+    serverGrpc,
     bitcoindRpc,
     eclairRpc,
     lndRpc,
