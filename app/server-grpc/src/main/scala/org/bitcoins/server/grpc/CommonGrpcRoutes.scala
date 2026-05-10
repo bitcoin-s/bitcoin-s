@@ -27,7 +27,7 @@ class CommonGrpcRoutes(datadir: Path) extends CommonRoutes {
       case Failure(ex) =>
         val status = ex match {
           case _: IllegalArgumentException => io.grpc.Status.INVALID_ARGUMENT
-          case _ => io.grpc.Status.INTERNAL
+          case _                           => io.grpc.Status.INTERNAL
         }
 
         Future.failed(

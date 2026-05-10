@@ -6,6 +6,7 @@ import org.apache.pekko.http.scaladsl.Http.ServerBinding
 import org.bitcoins.core.util.StartStopAsync
 
 import java.nio.file.Path
+import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.Future
 
 /** A gRPC server that exposes the CommonRoutes endpoints.
@@ -27,7 +28,8 @@ class GrpcServer(
   private val impl = new CommonGrpcRoutes(datadir)
   private val handler = CommonRoutesHandler(impl)
 
-  private var bindingOpt: Option[ServerBinding] = None
+  private val bindingOpt: AtomicReference[Option[ServerBinding]] =
+    new AtomicReference(None)
 
   /** Starts the gRPC server and returns the server binding.
     *
@@ -49,15 +51,20 @@ class GrpcServer(
       .newServerAt(host, port)
       .bind(handler)
     bindingF.map { b =>
-      bindingOpt = Some(b)
+      bindingOpt.set(Some(b))
       ()
     }
   }
 
   override def stop(): Future[Unit] = {
-    bindingOpt match {
-      case Some(binding) => binding.unbind().map(_ => ())
-      case None          => Future.unit
+    bindingOpt.get() match {
+      case Some(binding) =>
+        binding
+          .unbind()
+          .map { _ =>
+            bindingOpt.set(None)
+          }
+      case None => Future.unit
     }
   }
 }
