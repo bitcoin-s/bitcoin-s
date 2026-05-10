@@ -1,23 +1,23 @@
 package org.bitcoins.testkit.fixtures
 import org.apache.pekko.grpc.GrpcClientSettings
 import org.bitcoins.rpc.util.RpcUtil
-import org.bitcoins.server.grpc.{CommonRoutesClient, GrpcServer}
+import org.bitcoins.server.grpc.{CommonRoutesClient, ServerGrpc}
 import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkit.PostgresTestDatabase
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
 
-trait GrpcServerFixture extends BitcoinSFixture with PostgresTestDatabase {
+trait ServerGrpcFixture extends BitcoinSFixture with PostgresTestDatabase {
 
-  override type FixtureParam = (CommonRoutesClient, GrpcServer)
+  override type FixtureParam = (CommonRoutesClient, ServerGrpc)
 
   override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    val builder: () => Future[(CommonRoutesClient, GrpcServer)] = () => {
+    val builder: () => Future[(CommonRoutesClient, ServerGrpc)] = () => {
       val tmpDir = FileUtil.tmpDir()
       val port = RpcUtil.randomPort
       val host = "localhost"
-      val server = new GrpcServer(tmpDir.toPath, host, port)
+      val server = new ServerGrpc(tmpDir.toPath, host, port)
       val clientSettings = GrpcClientSettings
         .connectToServiceAt(host, port)
         .withTls(false)
@@ -25,7 +25,7 @@ trait GrpcServerFixture extends BitcoinSFixture with PostgresTestDatabase {
       server.start().map(_ => (client, server))
     }
 
-    val destroyF: ((CommonRoutesClient, GrpcServer)) => Future[Unit] = {
+    val destroyF: ((CommonRoutesClient, ServerGrpc)) => Future[Unit] = {
       case (client, server) =>
         for {
           _ <- client.close()
@@ -33,7 +33,7 @@ trait GrpcServerFixture extends BitcoinSFixture with PostgresTestDatabase {
         } yield ()
     }
 
-    makeDependentFixture[(CommonRoutesClient, GrpcServer)](builder, destroyF)(
+    makeDependentFixture[(CommonRoutesClient, ServerGrpc)](builder, destroyF)(
       test)
   }
 }

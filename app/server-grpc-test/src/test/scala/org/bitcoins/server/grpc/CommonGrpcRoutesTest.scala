@@ -1,13 +1,13 @@
 package org.bitcoins.server.grpc
 
 import org.bitcoins.core.util.EnvUtil
-import org.bitcoins.testkit.fixtures.GrpcServerFixture
+import org.bitcoins.testkit.fixtures.ServerGrpcFixture
 import org.bitcoins.testkit.util.FileUtil
 
 import java.nio.file.Files
 import scala.concurrent.ExecutionContext
 
-class CommonGrpcRoutesTest extends GrpcServerFixture {
+class CommonGrpcRoutesTest extends ServerGrpcFixture {
 
   implicit val ec: ExecutionContext = system.dispatcher
 

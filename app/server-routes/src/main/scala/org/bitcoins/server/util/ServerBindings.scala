@@ -2,7 +2,7 @@ package org.bitcoins.server.util
 
 import org.apache.pekko.http.scaladsl.Http
 import org.bitcoins.commons.util.BitcoinSLogger
-import org.bitcoins.server.grpc.GrpcServer
+import org.bitcoins.server.grpc.ServerGrpc
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
@@ -10,14 +10,14 @@ import scala.concurrent.{ExecutionContext, Future}
 case class ServerBindings(
     httpServer: Http.ServerBinding,
     webSocketServerOpt: Option[Http.ServerBinding],
-    grpcServer: GrpcServer
+    serverGrpc: ServerGrpc
 ) extends BitcoinSLogger {
 
   private val terminateTimeout = 5.seconds
 
   def stop()(implicit ec: ExecutionContext): Future[Unit] = {
     val stopHttp = httpServer.terminate(terminateTimeout)
-    val stopGrpc = grpcServer.stop()
+    val stopGrpc = serverGrpc.stop()
     val stopWsFOpt = webSocketServerOpt.map(_.terminate(terminateTimeout))
     for {
       _ <- stopHttp

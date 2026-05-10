@@ -18,7 +18,7 @@ import scala.concurrent.Future
   * @param port
   *   the port to bind the server on (use 0 for a random available port)
   */
-class GrpcServer(
+class ServerGrpc(
     datadir: Path,
     host: String,
     port: Int

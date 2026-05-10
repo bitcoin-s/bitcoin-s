@@ -40,7 +40,7 @@ import org.apache.pekko.stream.scaladsl.{Flow, Keep, Sink, Source}
 import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.commons.jsonmodels.ws.WsNotification
 import org.bitcoins.commons.util.BitcoinSLogger
-import org.bitcoins.server.grpc.GrpcServer
+import org.bitcoins.server.grpc.ServerGrpc
 import org.bitcoins.server.util.{ServerBindings, WsServerConfig}
 import upickle.default as up
 
@@ -188,7 +188,7 @@ case class Server(
   }
 
   def start(): Future[ServerBindings] = {
-    val grpcServer = new GrpcServer(conf.baseDatadir, rpchost, rpcport + 1)
+    val grpcServer = new ServerGrpc(conf.baseDatadir, rpchost, rpcport + 1)
     val startGrpcF = grpcServer.start()
     val httpFut = for {
       http <- Http()
