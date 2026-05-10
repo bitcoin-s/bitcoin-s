@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package org.bitcoins.server.grpc;
+
+option java_package = "org.bitcoins.server.grpc";
+option java_multiple_files = true;
+
+service CommonRoutes {
+  rpc GetVersion(GetVersionRequest) returns (GetVersionResponse);
+  rpc ZipDataDir(ZipDataDirRequest) returns (ZipDataDirResponse);
+}
+
+message GetVersionRequest {}
+
+message GetVersionResponse {
+  optional string version = 1;
+}
+
+message ZipDataDirRequest {
+  string path = 1;
+}
+
+message ZipDataDirResponse {}

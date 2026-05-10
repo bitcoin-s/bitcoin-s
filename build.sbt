@@ -183,6 +183,8 @@ lazy val `bitcoin-s` = project
     chainTest,
     cli,
     cliTest,
+    cliGrpc,
+    cliGrpcTest,
     coreJVM,
     coreJS,
     coreTestJVM,
@@ -225,6 +227,8 @@ lazy val `bitcoin-s` = project
     oracleServer,
     oracleServerTest,
     serverRoutes,
+    serverGrpc,
+    serverGrpcTest,
     lndRpc,
     lndRpcTest,
     tor,
@@ -239,6 +243,8 @@ lazy val `bitcoin-s` = project
     chainTest,
     cli,
     cliTest,
+    cliGrpc,
+    cliGrpcTest,
     coreJVM,
     coreJS,
     coreTestJVM,
@@ -279,6 +285,8 @@ lazy val `bitcoin-s` = project
     oracleServer,
     oracleServerTest,
     serverRoutes,
+    serverGrpc,
+    serverGrpcTest,
     lndRpc,
     lndRpcTest,
     tor,
@@ -412,6 +420,18 @@ lazy val serverRoutes = project
   .settings(libraryDependencies ++= Deps.serverRoutes)
   .dependsOn(appCommons, dbCommons)
 
+lazy val serverGrpc = project
+  .in(file("app/server-grpc"))
+  .settings(scalacOptions += "-Xsource:3")
+  .dependsOn(coreJVM, dbCommons)
+
+lazy val serverGrpcTest = project
+  .in(file("app/server-grpc-test"))
+  .settings(scalacOptions += "-Xsource:3")
+  .settings(CommonSettings.testSettings: _*)
+  .settings(libraryDependencies ++= Deps.serverGrpcTest)
+  .dependsOn(serverGrpc, testkit)
+
 lazy val appServer = project
   .in(file("app/server"))
   .settings(scalacOptions += "-Xsource:3")
@@ -433,7 +453,8 @@ lazy val appServer = project
     dlcNode,
     bitcoindRpc,
     feeProvider,
-    zmq
+    zmq,
+    serverGrpc
   )
   .enablePlugins(JavaAppPackaging, DockerPlugin, JlinkPlugin,
     //needed for windows, else we have the 'The input line is too long` on windows OS
@@ -471,6 +492,23 @@ lazy val cliTest = project
   .settings(CommonSettings.testSettings: _*)
   .dependsOn(
     cli,
+    testkit
+  )
+
+lazy val cliGrpc = project
+  .in(file("app/cli-grpc"))
+  .settings(CommonSettings.prodSettings: _*)
+  .settings(scalacOptions += "-Xsource:3")
+  .dependsOn(serverGrpc)
+  .enablePlugins(JavaAppPackaging)
+
+lazy val cliGrpcTest = project
+  .in(file("app/cli-grpc-test"))
+  .settings(scalacOptions += "-Xsource:3")
+  .settings(CommonSettings.testSettings: _*)
+  .settings(libraryDependencies ++= Deps.cliGrpcTest)
+  .dependsOn(
+    cliGrpc,
     testkit
   )
 
@@ -677,6 +715,7 @@ lazy val testkit = project
     appServer,
     chain,
     cli,
+    serverGrpc,
     bitcoindRpc,
     eclairRpc,
     lndRpc,

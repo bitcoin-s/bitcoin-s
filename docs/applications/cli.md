@@ -39,6 +39,23 @@ Usage: bitcoin-s-cli [options] [<cmd>]
 
 Now you are ready to start the server that the cli sends commands to. Take a look at our [server](server.md) documentation on how to build and start the server.
 
+### gRPC CLI
+
+Bitcoin-s also ships a small gRPC CLI for the `CommonRoutes` endpoints.
+
+Build it with
+
+```bash
+sbt cliGrpc/stage
+```
+
+and run it with
+
+```bash
+./app/cli-grpc/target/universal/stage/bin/bitcoin-s-cli-grpc getversion
+./app/cli-grpc/target/universal/stage/bin/bitcoin-s-cli-grpc zipdatadir /tmp/bitcoin-s-backup.zip
+```
+
 ### Native binaries
 
 Bitcoin-s also supports building native executables for various platforms supported by the [graalvm native image](https://www.graalvm.org/reference-manual/native-image/) tool.

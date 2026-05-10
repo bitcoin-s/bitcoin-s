@@ -469,6 +469,16 @@ object Deps {
     )
   }
 
+  val cliGrpc = List(
+    Compile.akkaSlf4j,
+    Compile.logback,
+    Compile.slf4j
+  )
+
+  val cliGrpcTest = List(
+    Compile.typesafeConfig
+  )
+
   val server = Def.setting {
     Vector(
       Compile.newMicroPickle.value,
@@ -696,5 +706,17 @@ object Deps {
     Compile.akkaSlf4j,
     Compile.akkaStream,
     Compile.slf4j
+  )
+
+  val serverGrpc = List(
+    Compile.akkaHttp,
+    Compile.akkaStream,
+    Compile.akkaDiscovery,
+    Compile.pekkoGrpc,
+    Compile.slf4j
+  )
+
+  val serverGrpcTest = List(
+    Compile.typesafeConfig
   )
 }
