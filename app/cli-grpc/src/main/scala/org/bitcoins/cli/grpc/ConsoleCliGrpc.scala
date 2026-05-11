@@ -12,7 +12,7 @@ import scopt.OParser
 import ujson.{Null, Num, Str}
 
 import java.io.File
-import java.nio.file.Path
+import java.nio.file.{Path, Paths}
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
@@ -34,7 +34,7 @@ object ConsoleCliGrpc {
         .action((_, conf) => conf.copy(command = GetVersion))
         .text("Returns the version of the bitcoin-s server"),
       cmd("zipdatadir")
-        .action((_, conf) => conf.copy(command = ZipDataDir(null)))
+        .action((_, conf) => conf.copy(command = ZipDataDir(Paths.get(""))))
         .text("Zips the bitcoin-s data directory to the given path")
         .children(
           arg[File]("path")
@@ -58,7 +58,8 @@ object ConsoleCliGrpc {
       system: ActorSystem): Future[String] = {
     OParser.parse(parser, args, Config()) match {
       case None =>
-        Future.failed(new RuntimeException("Failed to parse arguments"))
+        Future.failed(
+          new RuntimeException("Invalid arguments provided. See usage above."))
       case Some(conf) => exec(conf.command, conf)
     }
   }
