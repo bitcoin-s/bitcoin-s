@@ -538,6 +538,7 @@ object Deps {
   val cliGrpc = List(
     Compile.akkaSlf4j,
     Compile.logback,
+    Compile.scopt,
     Compile.slf4j
   )
 
