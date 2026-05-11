@@ -58,7 +58,8 @@ object ConsoleCliGrpc {
   def exec(args: Vector[String])(implicit
       system: ActorSystem): Future[String] = {
     OParser.parse(parser, args, Config()) match {
-      case None       => sys.exit(1)
+      case None =>
+        Future.failed(new RuntimeException("Failed to parse arguments"))
       case Some(conf) => exec(conf.command, conf)
     }
   }
