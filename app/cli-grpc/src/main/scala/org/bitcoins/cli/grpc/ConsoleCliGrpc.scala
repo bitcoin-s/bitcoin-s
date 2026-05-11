@@ -12,7 +12,7 @@ import scopt.OParser
 import ujson.{Null, Num, Str}
 
 import java.io.File
-import java.nio.file.Path
+import java.nio.file.{Path, Paths}
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
@@ -34,14 +34,17 @@ object ConsoleCliGrpc {
         .action((_, conf) => conf.copy(command = GetVersion))
         .text("Returns the version of the bitcoin-s server"),
       cmd("zipdatadir")
-        .action((_, conf) => conf.copy(command = ZipDataDir(None)))
+        .action((_, conf) => conf.copy(command = ZipDataDir(Paths.get(""))))
         .text("Zips the bitcoin-s data directory to the given path")
         .children(
           arg[File]("path")
             .text("The destination path for the zipped data directory")
             .required()
             .action((file, conf) =>
-              conf.copy(command = ZipDataDir(Some(file.toPath))))
+              conf.copy(command = conf.command match {
+                case _: ZipDataDir => ZipDataDir(file.toPath)
+                case other         => other
+              }))
         ),
       checkConfig {
         case Config(NoCommand, _, _) =>
@@ -84,11 +87,8 @@ object ConsoleCliGrpc {
     val responseF = command match {
       case GetVersion =>
         client.getVersion(GetVersionRequest()).map(formatGetVersion)
-      case ZipDataDir(Some(path)) =>
+      case ZipDataDir(path) =>
         client.zipDataDir(ZipDataDirRequest(path = path.toString)).map(_ => "")
-      case ZipDataDir(None) =>
-        Future.failed(
-          new IllegalArgumentException("Missing path for zipdatadir command"))
       case NoCommand =>
         Future.failed(
           new IllegalArgumentException("You need to provide a command!"))
@@ -118,7 +118,7 @@ case object NoCommand extends CliGrpcCommand
 
 case object GetVersion extends CliGrpcCommand
 
-case class ZipDataDir(path: Option[Path] = None) extends CliGrpcCommand
+case class ZipDataDir(path: Path) extends CliGrpcCommand
 
 case class Config(
     command: CliGrpcCommand = NoCommand,
