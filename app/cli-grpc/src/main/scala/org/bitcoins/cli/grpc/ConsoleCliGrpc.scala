@@ -34,8 +34,7 @@ object ConsoleCliGrpc {
         .action((_, conf) => conf.copy(command = GetVersion))
         .text("Returns the version of the bitcoin-s server"),
       cmd("zipdatadir")
-        .action((_, conf) =>
-          conf.copy(command = ZipDataDir(new File("").toPath)))
+        .action((_, conf) => conf.copy(command = ZipDataDir(null)))
         .text("Zips the bitcoin-s data directory to the given path")
         .children(
           arg[File]("path")
