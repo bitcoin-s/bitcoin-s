@@ -183,6 +183,8 @@ lazy val `bitcoin-s` = project
     chainTest,
     cli,
     cliTest,
+    cliGrpc,
+    cliGrpcTest,
     coreJVM,
     coreJS,
     coreTestJVM,
@@ -241,6 +243,8 @@ lazy val `bitcoin-s` = project
     chainTest,
     cli,
     cliTest,
+    cliGrpc,
+    cliGrpcTest,
     coreJVM,
     coreJS,
     coreTestJVM,
@@ -491,6 +495,23 @@ lazy val cliTest = project
     testkit
   )
 
+lazy val cliGrpc = project
+  .in(file("app/cli-grpc"))
+  .settings(CommonSettings.prodSettings: _*)
+  .settings(scalacOptions += "-Xsource:3")
+  .dependsOn(serverGrpc)
+  .enablePlugins(JavaAppPackaging)
+
+lazy val cliGrpcTest = project
+  .in(file("app/cli-grpc-test"))
+  .settings(scalacOptions += "-Xsource:3")
+  .settings(CommonSettings.testSettings: _*)
+  .settings(libraryDependencies ++= Deps.cliGrpcTest)
+  .dependsOn(
+    cliGrpc,
+    testkit
+  )
+
 lazy val chain = project
   .in(file("chain"))
   .settings(scalacOptions += "-Xsource:3")
@@ -694,6 +715,7 @@ lazy val testkit = project
     appServer,
     chain,
     cli,
+    serverGrpc,
     bitcoindRpc,
     eclairRpc,
     lndRpc,
