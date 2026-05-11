@@ -432,18 +432,6 @@ lazy val serverGrpcTest = project
   .settings(libraryDependencies ++= Deps.serverGrpcTest)
   .dependsOn(serverGrpc, testkit)
 
-lazy val serverGrpc = project
-  .in(file("app/server-grpc"))
-  .settings(scalacOptions += "-Xsource:3")
-  .dependsOn(coreJVM, dbCommons)
-
-lazy val serverGrpcTest = project
-  .in(file("app/server-grpc-test"))
-  .settings(scalacOptions += "-Xsource:3")
-  .settings(CommonSettings.testSettings: _*)
-  .settings(libraryDependencies ++= Deps.serverGrpcTest)
-  .dependsOn(serverGrpc, testkit)
-
 lazy val appServer = project
   .in(file("app/server"))
   .settings(scalacOptions += "-Xsource:3")

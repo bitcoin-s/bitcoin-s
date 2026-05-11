@@ -1,19 +1,41 @@
 package org.bitcoins.cli.grpc
 
 import org.bitcoins.core.util.EnvUtil
-import org.bitcoins.testkit.fixtures.ServerGrpcFixture
+import org.bitcoins.rpc.util.RpcUtil
+import org.bitcoins.server.grpc.ServerGrpc
+import org.bitcoins.testkit.PostgresTestDatabase
+import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.util.FileUtil
+import org.scalatest.FutureOutcome
 
 import java.nio.file.Files
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
-class ConsoleCliGrpcTest extends ServerGrpcFixture {
+class ConsoleCliGrpcTest extends BitcoinSFixture with PostgresTestDatabase {
+
+  override type FixtureParam = (Int, ServerGrpc)
 
   implicit val ec: ExecutionContext = system.dispatcher
 
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    val builder: () => Future[(Int, ServerGrpc)] = () => {
+      val tmpDir = FileUtil.tmpDir()
+      val port = RpcUtil.randomPort
+      val server = new ServerGrpc(tmpDir.toPath, "localhost", port)
+
+      server.start().map(_ => (port, server))
+    }
+
+    val destroyF: ((Int, ServerGrpc)) => Future[Unit] = { case (_, server) =>
+      server.stop()
+    }
+
+    makeDependentFixture[(Int, ServerGrpc)](builder, destroyF)(test)
+  }
+
   behavior of "ConsoleCliGrpc"
 
-  it must "execute getversion" in { case (_, server) =>
+  it must "execute getversion" in { case (port, _) =>
     val expected =
       ujson
         .Obj(
@@ -24,13 +46,13 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
         .render(2)
 
     ConsoleCliGrpc
-      .exec(Vector("--rpcport", server.port.toString, "getversion"))
+      .exec(Vector("--rpcport", port.toString, "getversion"))
       .map { response =>
         assert(response == expected)
       }
   }
 
-  it must "execute zipdatadir" in { case (_, server) =>
+  it must "execute zipdatadir" in { case (port, _) =>
     val fileName = FileUtil.randomDirName
     val dirName = FileUtil.randomDirName
     val dir = FileUtil.tmpDir().toPath
@@ -43,7 +65,7 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
       .exec(
         Vector(
           "--rpcport",
-          server.port.toString,
+          port.toString,
           "zipdatadir",
           target.toString
         ))
