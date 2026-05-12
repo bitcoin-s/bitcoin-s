@@ -19,7 +19,6 @@ abstract class DbAppConfig extends AppConfig {
 
   override def start(): Future[Unit] = {
     super.start().map { _ =>
-      logger.info(s"Done super.start() DbAppConfig")
       if (isStarted.compareAndSet(false, true)) {
         logger.info(s"Starting DbAppConfig for module=${moduleName}")
         // initialize the database connection pool
