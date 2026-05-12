@@ -31,12 +31,11 @@ object GrpcAuth {
           try {
             val metadata = new Metadata()
             metadata.put(authorizationKey, value)
-            applier(metadata)
+            applier.apply(metadata)
           } catch {
             case NonFatal(err) =>
               applier.fail(err)
           }
-          ()
         })
       }
 
