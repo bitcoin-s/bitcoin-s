@@ -1,6 +1,7 @@
 package org.bitcoins.server.grpc
 
 import org.bitcoins.core.util.EnvUtil
+import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.fixtures.ServerGrpcFixture
 import org.bitcoins.testkit.util.FileUtil
 
@@ -33,6 +34,68 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
 
     client.zipDataDir(ZipDataDirRequest(path = target.toString)).map { _ =>
       assert(Files.exists(target))
+    }
+  }
+
+  it must "authenticate with the configured password" in { _ =>
+    val password = "topsecret"
+    val port = RpcUtil.randomPort
+    val server = new ServerGrpc(
+      datadir = FileUtil.tmpDir().toPath,
+      host = "localhost",
+      port = port,
+      rpcPassword = password
+    )
+    val clientSettings = org.apache.pekko.grpc.GrpcClientSettings
+      .connectToServiceAt("localhost", port)
+      .withTls(false)
+      .withCallCredentials(GrpcAuth.basicCallCredentials(password))
+    val client = CommonRoutesClient(clientSettings)
+
+    val resultF = for {
+      _ <- server.start()
+      response <- client.getVersion(GetVersionRequest())
+    } yield response
+
+    resultF.transformWith { result =>
+      client
+        .close()
+        .flatMap(_ => server.stop())
+        .transform(_ => result)
+    }.map { response =>
+      assert(response.version == Option(EnvUtil.getVersion))
+    }
+  }
+
+  it must "reject authentication with an invalid password" in { _ =>
+    val serverPassword = "topsecret"
+    val clientPassword = "wrong-password"
+    val port = RpcUtil.randomPort
+    val server = new ServerGrpc(
+      datadir = FileUtil.tmpDir().toPath,
+      host = "localhost",
+      port = port,
+      rpcPassword = serverPassword
+    )
+    val clientSettings = org.apache.pekko.grpc.GrpcClientSettings
+      .connectToServiceAt("localhost", port)
+      .withTls(false)
+      .withCallCredentials(GrpcAuth.basicCallCredentials(clientPassword))
+    val client = CommonRoutesClient(clientSettings)
+
+    val resultF = for {
+      _ <- server.start()
+      err <- client.getVersion(GetVersionRequest()).failed
+    } yield err
+
+    resultF.transformWith { result =>
+      client
+        .close()
+        .flatMap(_ => server.stop())
+        .transform(_ => result)
+    }.map { err =>
+      val message = err.getMessage.toLowerCase
+      assert(message.contains("401") || message.contains("unauth"))
     }
   }
 }

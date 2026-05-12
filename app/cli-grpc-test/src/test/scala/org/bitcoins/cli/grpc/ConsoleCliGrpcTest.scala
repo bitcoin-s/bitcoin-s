@@ -12,6 +12,7 @@ import java.nio.file.Files
 import scala.concurrent.{ExecutionContext, Future}
 
 class ConsoleCliGrpcTest extends BitcoinSFixture with PostgresTestDatabase {
+  private val rpcPassword = "topsecret"
 
   override type FixtureParam = (Int, ServerGrpc)
 
@@ -21,7 +22,8 @@ class ConsoleCliGrpcTest extends BitcoinSFixture with PostgresTestDatabase {
     val builder: () => Future[(Int, ServerGrpc)] = () => {
       val tmpDir = FileUtil.tmpDir()
       val port = RpcUtil.randomPort
-      val server = new ServerGrpc(tmpDir.toPath, "localhost", port)
+      val server =
+        new ServerGrpc(tmpDir.toPath, "localhost", port, rpcPassword = rpcPassword)
 
       server.start().map(_ => (port, server))
     }
@@ -46,7 +48,14 @@ class ConsoleCliGrpcTest extends BitcoinSFixture with PostgresTestDatabase {
         .render(2)
 
     ConsoleCliGrpc
-      .exec(Vector("--rpcport", port.toString, "getversion"))
+      .exec(
+        Vector(
+          "--rpcport",
+          port.toString,
+          "--password",
+          rpcPassword,
+          "getversion"
+        ))
       .map { response =>
         assert(response == expected)
       }
@@ -66,6 +75,8 @@ class ConsoleCliGrpcTest extends BitcoinSFixture with PostgresTestDatabase {
         Vector(
           "--rpcport",
           port.toString,
+          "--password",
+          rpcPassword,
           "zipdatadir",
           target.toString
         ))
@@ -73,5 +84,23 @@ class ConsoleCliGrpcTest extends BitcoinSFixture with PostgresTestDatabase {
         assert(response.isEmpty)
         assert(Files.exists(target))
       }
+  }
+
+  it must "fail authentication when an invalid password is provided" in {
+    case (port, _) =>
+      ConsoleCliGrpc
+        .exec(
+          Vector(
+            "--rpcport",
+            port.toString,
+            "--password",
+            "bad-password",
+            "getversion"
+          ))
+        .failed
+        .map { err =>
+          val message = err.getMessage.toLowerCase
+          assert(message.contains("401") || message.contains("unauth"))
+        }
   }
 }

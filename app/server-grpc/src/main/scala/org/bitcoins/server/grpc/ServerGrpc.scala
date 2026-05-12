@@ -3,6 +3,15 @@ package org.bitcoins.server.grpc
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.http.scaladsl.Http
 import org.apache.pekko.http.scaladsl.Http.ServerBinding
+import org.apache.pekko.http.scaladsl.model.{HttpRequest, HttpResponse}
+import org.apache.pekko.http.scaladsl.server.Directives.{
+  authenticateBasic,
+  complete,
+  extractRequest
+}
+import org.apache.pekko.http.scaladsl.server.directives.Credentials
+import org.apache.pekko.http.scaladsl.server.directives.Credentials.Missing
+import org.apache.pekko.Done
 import org.bitcoins.core.util.StartStopAsync
 
 import java.nio.file.Path
@@ -21,7 +30,8 @@ import scala.concurrent.Future
 class ServerGrpc(
     datadir: Path,
     host: String,
-    port: Int
+    port: Int,
+    rpcPassword: String = ""
 )(implicit system: ActorSystem)
     extends StartStopAsync[Unit] {
   import system.dispatcher
@@ -30,6 +40,27 @@ class ServerGrpc(
 
   private val bindingOpt: AtomicReference[Option[ServerBinding]] =
     new AtomicReference(None)
+
+  private def authenticator(credentials: Credentials): Option[Done] = {
+    credentials match {
+      case p @ Credentials.Provided(_) =>
+        if (p.verify(rpcPassword)) Some(Done) else None
+      case Missing => None
+    }
+  }
+
+  private val authedHandler: HttpRequest => Future[HttpResponse] =
+    if (rpcPassword.isEmpty) {
+      handler
+    } else {
+      val route =
+        authenticateBasic("auth", authenticator) { _ =>
+          extractRequest { request =>
+            complete(handler(request))
+          }
+        }
+      org.apache.pekko.http.scaladsl.server.Route.toFunction(route)
+    }
 
   /** Starts the gRPC server and returns the server binding.
     *
@@ -49,7 +80,7 @@ class ServerGrpc(
   override def start(): Future[Unit] = {
     val bindingF = Http()
       .newServerAt(host, port)
-      .bind(handler)
+      .bind(authedHandler)
     bindingF.map { b =>
       bindingOpt.set(Some(b))
       ()
