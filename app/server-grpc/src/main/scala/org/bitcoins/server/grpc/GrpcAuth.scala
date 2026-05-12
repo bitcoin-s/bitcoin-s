@@ -5,7 +5,7 @@ import io.grpc.{CallCredentials, Metadata}
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 import java.util.concurrent.Executor
-import scala.util.Try
+import scala.util.control.NonFatal
 
 object GrpcAuth {
 
@@ -28,10 +28,13 @@ object GrpcAuth {
           applier: CallCredentials.MetadataApplier
       ): Unit = {
         appExecutor.execute(() => {
-          Try {
+          try {
             val metadata = new Metadata()
             metadata.put(authorizationKey, value)
             applier(metadata)
+          } catch {
+            case NonFatal(err) =>
+              applier.fail(err)
           }
           ()
         })

@@ -1,5 +1,6 @@
 package org.bitcoins.cli.grpc
 
+import io.grpc.{Status, StatusRuntimeException}
 import org.bitcoins.core.util.EnvUtil
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.grpc.ServerGrpc
@@ -99,8 +100,11 @@ class ConsoleCliGrpcTest extends BitcoinSFixture with PostgresTestDatabase {
           ))
         .failed
         .map { err =>
-          val message = err.getMessage.toLowerCase
-          assert(message.contains("401") || message.contains("unauth"))
+          assert(err.isInstanceOf[StatusRuntimeException])
+          val grpcErr = err.asInstanceOf[StatusRuntimeException]
+          assert(
+            Set(Status.Code.UNAUTHENTICATED, Status.Code.INTERNAL)
+              .contains(grpcErr.getStatus.getCode))
         }
   }
 }

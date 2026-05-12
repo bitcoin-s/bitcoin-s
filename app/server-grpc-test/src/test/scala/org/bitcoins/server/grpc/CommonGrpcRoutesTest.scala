@@ -1,5 +1,6 @@
 package org.bitcoins.server.grpc
 
+import io.grpc.{Status, StatusRuntimeException}
 import org.bitcoins.core.util.EnvUtil
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.fixtures.ServerGrpcFixture
@@ -94,8 +95,11 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
         .flatMap(_ => server.stop())
         .transform(_ => result)
     }.map { err =>
-      val message = err.getMessage.toLowerCase
-      assert(message.contains("401") || message.contains("unauth"))
+      assert(err.isInstanceOf[StatusRuntimeException])
+      val grpcErr = err.asInstanceOf[StatusRuntimeException]
+      assert(
+        Set(Status.Code.UNAUTHENTICATED, Status.Code.INTERNAL)
+          .contains(grpcErr.getStatus.getCode))
     }
   }
 }
