@@ -102,9 +102,7 @@ class ConsoleCliGrpcTest extends BitcoinSFixture with PostgresTestDatabase {
         .map { err =>
           assert(err.isInstanceOf[StatusRuntimeException])
           val grpcErr = err.asInstanceOf[StatusRuntimeException]
-          assert(
-            Set(Status.Code.UNAUTHENTICATED, Status.Code.INTERNAL)
-              .contains(grpcErr.getStatus.getCode))
+          assert(grpcErr.getStatus.getCode == Status.Code.UNAUTHENTICATED)
         }
   }
 }

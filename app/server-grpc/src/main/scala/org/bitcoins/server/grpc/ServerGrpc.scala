@@ -3,15 +3,18 @@ package org.bitcoins.server.grpc
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.http.scaladsl.Http
 import org.apache.pekko.http.scaladsl.Http.ServerBinding
-import org.apache.pekko.http.scaladsl.model.{HttpRequest, HttpResponse}
-import org.apache.pekko.http.scaladsl.server.Directives.{
-  authenticateBasic,
-  complete,
-  extractRequest
+import org.apache.pekko.http.scaladsl.model.{
+  ContentType,
+  HttpEntity,
+  HttpRequest,
+  HttpResponse
 }
-import org.apache.pekko.http.scaladsl.server.directives.Credentials
-import org.apache.pekko.http.scaladsl.server.directives.Credentials.Missing
-import org.apache.pekko.Done
+import org.apache.pekko.http.scaladsl.model.StatusCodes
+import org.apache.pekko.http.scaladsl.model.headers.{
+  Authorization,
+  BasicHttpCredentials,
+  RawHeader
+}
 import org.bitcoins.core.util.StartStopAsync
 
 import java.nio.file.Path
@@ -41,11 +44,32 @@ class ServerGrpc(
   private val bindingOpt: AtomicReference[Option[ServerBinding]] =
     new AtomicReference(None)
 
-  private def authenticator(credentials: Credentials): Option[Done] = {
-    credentials match {
-      case p @ Credentials.Provided(_) =>
-        if (p.verify(rpcPassword)) Some(Done) else None
-      case Missing => None
+  private val grpcStatusHeader = "grpc-status"
+  private val grpcMessageHeader = "grpc-message"
+  private val grpcContentType: ContentType =
+    ContentType.parse("application/grpc") match {
+      case Right(contentType) => contentType
+      case Left(error) =>
+        throw new IllegalArgumentException(
+          s"Could not parse gRPC content type: $error")
+    }
+
+  private val unauthenticatedResponse =
+    HttpResponse(
+      status = StatusCodes.OK,
+      entity = HttpEntity(grpcContentType, Array.emptyByteArray),
+      headers = List(
+        RawHeader(grpcStatusHeader,
+                  io.grpc.Status.UNAUTHENTICATED.getCode.value().toString),
+        RawHeader(grpcMessageHeader, "Unauthenticated")
+      )
+    )
+
+  private def isAuthenticated(request: HttpRequest): Boolean = {
+    request.header[Authorization] match {
+      case Some(Authorization(credentials: BasicHttpCredentials)) =>
+        credentials.password == rpcPassword
+      case _ => false
     }
   }
 
@@ -53,13 +77,12 @@ class ServerGrpc(
     if (rpcPassword.isEmpty) {
       handler
     } else {
-      val route =
-        authenticateBasic("auth", authenticator) { _ =>
-          extractRequest { request =>
-            complete(handler(request))
-          }
+      request =>
+        if (isAuthenticated(request)) {
+          handler(request)
+        } else {
+          Future.successful(unauthenticatedResponse)
         }
-      org.apache.pekko.http.scaladsl.server.Route.toFunction(route)
     }
 
   /** Starts the gRPC server and returns the server binding.
