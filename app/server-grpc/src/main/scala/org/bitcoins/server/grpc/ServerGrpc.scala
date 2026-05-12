@@ -15,9 +15,12 @@ import org.apache.pekko.http.scaladsl.model.headers.{
   BasicHttpCredentials,
   RawHeader
 }
+import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.util.StartStopAsync
 
+import java.nio.charset.StandardCharsets
 import java.nio.file.Path
+import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.Future
 
@@ -36,7 +39,8 @@ class ServerGrpc(
     port: Int,
     rpcPassword: String = ""
 )(implicit system: ActorSystem)
-    extends StartStopAsync[Unit] {
+    extends StartStopAsync[Unit]
+    with BitcoinSLogger {
   import system.dispatcher
   private val impl = new CommonGrpcRoutes(datadir)
   private val handler = CommonRoutesHandler(impl)
@@ -68,13 +72,16 @@ class ServerGrpc(
   private def isAuthenticated(request: HttpRequest): Boolean = {
     request.header[Authorization] match {
       case Some(Authorization(credentials: BasicHttpCredentials)) =>
-        credentials.password == rpcPassword
+        passwordsMatch(credentials.password, rpcPassword)
       case _ => false
     }
   }
 
   private val authedHandler: HttpRequest => Future[HttpResponse] =
     if (rpcPassword.isEmpty) {
+      logger.warn(
+        s"gRPC authentication is disabled because bitcoin-s.server.password is empty (host=$host, port=$port)"
+      )
       handler
     } else {
       request =>
@@ -84,6 +91,12 @@ class ServerGrpc(
           Future.successful(unauthenticatedResponse)
         }
     }
+
+  private def passwordsMatch(provided: String, expected: String): Boolean = {
+    val providedBytes = provided.getBytes(StandardCharsets.UTF_8)
+    val expectedBytes = expected.getBytes(StandardCharsets.UTF_8)
+    MessageDigest.isEqual(providedBytes, expectedBytes)
+  }
 
   /** Starts the gRPC server and returns the server binding.
     *
