@@ -2,6 +2,7 @@ package org.bitcoins.cli.grpc
 
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.grpc.GrpcClientSettings
+import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.server.grpc.{
   CommonRoutesClient,
   GetVersionRequest,
@@ -12,7 +13,7 @@ import scopt.OParser
 import ujson.{Null, Num, Str}
 
 import java.io.File
-import java.nio.file.{Path, Paths}
+import java.nio.file.Path
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
@@ -34,7 +35,8 @@ object ConsoleCliGrpc {
         .action((_, conf) => conf.copy(command = GetVersion))
         .text("Returns the version of the bitcoin-s server"),
       cmd("zipdatadir")
-        .action((_, conf) => conf.copy(command = ZipDataDir(Paths.get(""))))
+        .action((_, conf) =>
+          conf.copy(command = ZipDataDir(AppConfig.DEFAULT_BITCOIN_S_DATADIR)))
         .text("Zips the bitcoin-s data directory to the given path")
         .children(
           arg[File]("path")
