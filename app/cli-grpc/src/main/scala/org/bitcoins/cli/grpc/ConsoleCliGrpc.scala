@@ -56,9 +56,33 @@ object ConsoleCliGrpc {
     )
   }
 
+  // Global options that consume the following argument
+  private val globalOptsWithArg: Set[String] = Set("--host", "--rpcport")
+
+  // scopt's cmd() requires the subcommand token to precede any global options.
+  // This reorders args so leading global options are moved after the first
+  // non-option token (the command name), preserving the original semantics.
+  private def normalizeArgs(args: Vector[String]): Vector[String] = {
+    @annotation.tailrec
+    def peel(
+        remaining: Vector[String],
+        globalOpts: Vector[String]
+    ): (Vector[String], Vector[String]) =
+      remaining match {
+        case opt +: value +: tail if globalOptsWithArg.contains(opt) =>
+          peel(tail, globalOpts :+ opt :+ value)
+        case flag +: tail if flag.startsWith("-") =>
+          peel(tail, globalOpts :+ flag)
+        case _ => (remaining, globalOpts)
+      }
+
+    val (cmdAndArgs, globalOpts) = peel(args, Vector.empty)
+    cmdAndArgs ++ globalOpts
+  }
+
   def exec(args: Vector[String])(implicit
       system: ActorSystem): Future[String] = {
-    OParser.parse(parser, args, Config()) match {
+    OParser.parse(parser, normalizeArgs(args), Config()) match {
       case None =>
         Future.failed(
           new RuntimeException("Invalid arguments provided. See usage above."))
