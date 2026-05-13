@@ -1,6 +1,6 @@
 package org.bitcoins.server.grpc
 
-import io.grpc.{CallCredentials, Metadata}
+import io.grpc.{CallCredentials, Metadata, Status}
 
 import java.nio.charset.StandardCharsets
 import java.util.Base64
@@ -34,7 +34,7 @@ object GrpcAuth {
             applier.apply(metadata)
           } catch {
             case NonFatal(err) =>
-              applier.fail(err)
+              applier.fail(Status.fromThrowable(err))
           }
         })
       }
