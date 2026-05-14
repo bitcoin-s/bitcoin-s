@@ -83,13 +83,12 @@ class ServerGrpc(
         s"gRPC authentication is disabled because bitcoin-s.server.password is empty (host=$host, port=$port)"
       )
       handler
-    } else {
-      request =>
-        if (isAuthenticated(request)) {
-          handler(request)
-        } else {
-          Future.successful(unauthenticatedResponse)
-        }
+    } else { request =>
+      if (isAuthenticated(request)) {
+        handler(request)
+      } else {
+        Future.successful(unauthenticatedResponse)
+      }
     }
 
   private def passwordsMatch(provided: String, expected: String): Boolean = {

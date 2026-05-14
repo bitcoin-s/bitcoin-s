@@ -7,6 +7,7 @@ import org.bitcoins.server.grpc.{
   CommonRoutesClient,
   GetVersionRequest,
   GetVersionResponse,
+  GrpcAuth,
   ZipDataDirRequest
 }
 import scopt.OParser
@@ -116,8 +117,8 @@ object ConsoleCliGrpc {
         baseSettings
       } else {
         baseSettings.withCallCredentials(
-          org.bitcoins.server.grpc.GrpcAuth.basicCallCredentials(
-            config.rpcPassword))
+          GrpcAuth
+            .basicCallCredentials(config.rpcPassword))
       }
 
     val client = CommonRoutesClient(clientSettings)

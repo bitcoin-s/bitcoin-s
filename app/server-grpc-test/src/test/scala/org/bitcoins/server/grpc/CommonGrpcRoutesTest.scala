@@ -58,14 +58,16 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
       response <- client.getVersion(GetVersionRequest())
     } yield response
 
-    resultF.transformWith { result =>
-      client
-        .close()
-        .flatMap(_ => server.stop())
-        .transform(_ => result)
-    }.map { response =>
-      assert(response.version == Option(EnvUtil.getVersion))
-    }
+    resultF
+      .transformWith { result =>
+        client
+          .close()
+          .flatMap(_ => server.stop())
+          .transform(_ => result)
+      }
+      .map { response =>
+        assert(response.version == Option(EnvUtil.getVersion))
+      }
   }
 
   it must "reject authentication with an invalid password" in { _ =>
@@ -89,15 +91,17 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
       err <- client.getVersion(GetVersionRequest()).failed
     } yield err
 
-    resultF.transformWith { result =>
-      client
-        .close()
-        .flatMap(_ => server.stop())
-        .transform(_ => result)
-    }.map { err =>
-      assert(err.isInstanceOf[StatusRuntimeException])
-      val grpcErr = err.asInstanceOf[StatusRuntimeException]
-      assert(grpcErr.getStatus.getCode == Status.Code.UNAUTHENTICATED)
-    }
+    resultF
+      .transformWith { result =>
+        client
+          .close()
+          .flatMap(_ => server.stop())
+          .transform(_ => result)
+      }
+      .map { err =>
+        assert(err.isInstanceOf[StatusRuntimeException])
+        val grpcErr = err.asInstanceOf[StatusRuntimeException]
+        assert(grpcErr.getStatus.getCode == Status.Code.UNAUTHENTICATED)
+      }
   }
 }
