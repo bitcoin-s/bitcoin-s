@@ -17,7 +17,7 @@ trait ServerGrpcFixture extends BitcoinSFixture with PostgresTestDatabase {
       val tmpDir = FileUtil.tmpDir()
       val port = RpcUtil.randomPort
       val host = "localhost"
-      val server = new ServerGrpc(tmpDir.toPath, host, port)
+      val server = new ServerGrpc(tmpDir.toPath, host, port, rpcPassword = "")
       val clientSettings = GrpcClientSettings
         .connectToServiceAt(host, port)
         .withTls(false)

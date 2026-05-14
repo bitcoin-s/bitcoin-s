@@ -28,20 +28,31 @@ import scala.concurrent.Future
   *
   * @param datadir
   *   the Bitcoin-S data directory
-  * @param host
+  * @param rpchost
   *   the host to bind the server on
   * @param port
   *   the port to bind the server on (use 0 for a random available port)
   */
 class ServerGrpc(
     datadir: Path,
-    host: String,
+    rpchost: String,
     port: Int,
-    rpcPassword: String = ""
+    rpcPassword: String
 )(implicit system: ActorSystem)
     extends StartStopAsync[Unit]
     with BitcoinSLogger {
   import system.dispatcher
+
+  if (rpcPassword.isEmpty) {
+    if (rpchost == "localhost" || rpchost == "127.0.0.1") {
+      logger.warn(s"RPC password is not set (rpchost=$rpchost)")
+    } else {
+      require(
+        rpcPassword.nonEmpty,
+        s"RPC password must be set (rpchost=$rpchost)"
+      )
+    }
+  }
   private val impl = new CommonGrpcRoutes(datadir)
   private val handler = CommonRoutesHandler(impl)
 
@@ -80,7 +91,7 @@ class ServerGrpc(
   private val authedHandler: HttpRequest => Future[HttpResponse] =
     if (rpcPassword.isEmpty) {
       logger.warn(
-        s"gRPC authentication is disabled because bitcoin-s.server.password is empty (host=$host, port=$port)"
+        s"gRPC authentication is disabled because bitcoin-s.server.password is empty (host=$rpchost, port=$port)"
       )
       handler
     } else { request =>
@@ -114,7 +125,7 @@ class ServerGrpc(
     */
   override def start(): Future[Unit] = {
     val bindingF = Http()
-      .newServerAt(host, port)
+      .newServerAt(rpchost, port)
       .bind(authedHandler)
     bindingF.map { b =>
       bindingOpt.set(Some(b))

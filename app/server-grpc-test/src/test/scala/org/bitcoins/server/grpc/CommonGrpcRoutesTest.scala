@@ -43,7 +43,7 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
     val port = RpcUtil.randomPort
     val server = new ServerGrpc(
       datadir = FileUtil.tmpDir().toPath,
-      host = "localhost",
+      rpchost = "localhost",
       port = port,
       rpcPassword = password
     )
@@ -76,7 +76,7 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
     val port = RpcUtil.randomPort
     val server = new ServerGrpc(
       datadir = FileUtil.tmpDir().toPath,
-      host = "localhost",
+      rpchost = "localhost",
       port = port,
       rpcPassword = serverPassword
     )
