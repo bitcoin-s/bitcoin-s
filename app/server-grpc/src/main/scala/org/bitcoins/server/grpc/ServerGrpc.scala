@@ -96,7 +96,7 @@ class ServerGrpc(
       handler
     } else { request =>
       if (isAuthenticated(request)) {
-        handler(request)
+        handler.apply(request)
       } else {
         Future.successful(unauthenticatedResponse)
       }
