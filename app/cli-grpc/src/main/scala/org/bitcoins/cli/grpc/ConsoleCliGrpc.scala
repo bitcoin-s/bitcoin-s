@@ -2,8 +2,26 @@ package org.bitcoins.cli.grpc
 
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.grpc.GrpcClientSettings
-import org.bitcoins.commons.config.AppConfig
-import org.bitcoins.crypto.DoubleSha256DigestBE
+import org.bitcoins.cli.CliCommand.{
+  GetBestBlockHash,
+  GetBlockCount,
+  GetBlockHeader,
+  GetFilterCount,
+  GetFilterHeaderCount,
+  GetInfo,
+  GetMedianTimePast,
+  GetVersion,
+  ZipDataDir
+}
+import org.bitcoins.cli.{Config, ConsoleCli}
+import org.bitcoins.commons.rpc.{
+  AppServerCliCommand,
+  CliCommand,
+  CliGrpcCommand,
+  OracleServerCliCommand,
+  ServerlessCliCommand
+}
+import org.bitcoins.commons.rpc.CliCommand.NoCommand
 import org.bitcoins.server.grpc.{
   ChainRoutesClient,
   GetBestBlockHashRequest,
@@ -24,89 +42,12 @@ import org.bitcoins.server.grpc.{
 import scopt.OParser
 import ujson.{Null, Num, Str}
 
-import java.io.File
-import java.nio.file.Path
 import scala.concurrent.Future
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 object ConsoleCliGrpc {
 
-  def parser: OParser[Unit, Config] = {
-    val builder = OParser.builder[Config]
-    import builder._
-    OParser.sequence(
-      programName("bitcoin-s-cli-grpc"),
-      opt[String]("host")
-        .action((host, conf) => conf.copy(host = host))
-        .text("The hostname of the bitcoin-s gRPC server"),
-      opt[Int]("rpcport")
-        .action((port, conf) => conf.copy(rpcPortOpt = Some(port)))
-        .text("The port of the bitcoin-s gRPC server"),
-      opt[String]("password")
-        .action((password, conf) => conf.copy(rpcPassword = password))
-        .text("The password to authenticate to the bitcoin-s gRPC server"),
-      help('h', "help").text("Display this help message and exit"),
-      cmd("getversion")
-        .action((_, conf) => conf.copy(command = GetVersion))
-        .text("Returns the version of the bitcoin-s server"),
-      cmd("zipdatadir")
-        .action((_, conf) =>
-          conf.copy(command = ZipDataDir(AppConfig.DEFAULT_BITCOIN_S_DATADIR)))
-        .text("Zips the bitcoin-s data directory to the given path")
-        .children(
-          arg[File]("path")
-            .text("The destination path for the zipped data directory")
-            .required()
-            .action((file, conf) =>
-              conf.copy(command = conf.command match {
-                case _: ZipDataDir => ZipDataDir(file.toPath)
-                case other         => other
-              }))
-        ),
-      cmd("getinfo")
-        .action((_, conf) => conf.copy(command = GetInfo))
-        .text("Returns basic info about the current chain"),
-      cmd("getblockcount")
-        .action((_, conf) => conf.copy(command = GetBlockCount))
-        .text("Get the block height"),
-      cmd("getfiltercount")
-        .action((_, conf) => conf.copy(command = GetFilterCount))
-        .text("Get the number of filters"),
-      cmd("getfilterheadercount")
-        .action((_, conf) => conf.copy(command = GetFilterHeaderCount))
-        .text("Get the number of filter headers"),
-      cmd("getbestblockhash")
-        .action((_, conf) => conf.copy(command = GetBestBlockHash))
-        .text("Get the best block hash"),
-      cmd("getblockheader")
-        .action((_, conf) =>
-          conf.copy(command = GetBlockHeader(DoubleSha256DigestBE.empty)))
-        .text("Returns information about block header <hash>")
-        .children(
-          arg[String]("hash")
-            .text("The block hash")
-            .required()
-            .validate(hash =>
-              Try(DoubleSha256DigestBE(hash))
-                .map(_ => success)
-                .getOrElse(failure("Invalid block hash")))
-            .action((hash, conf) =>
-              conf.copy(command = conf.command match {
-                case gbh: GetBlockHeader =>
-                  gbh.copy(hash = DoubleSha256DigestBE(hash))
-                case other => other
-              }))
-        ),
-      cmd("getmediantimepast")
-        .action((_, conf) => conf.copy(command = GetMedianTimePast))
-        .text("Get the median time past"),
-      checkConfig {
-        case Config(NoCommand, _, _, _) =>
-          failure("You need to provide a command!")
-        case _ => success
-      }
-    )
-  }
+  def parser: OParser[Unit, Config] = ConsoleCli.parser
 
   // Global options that consume the following argument
   private val globalOptsWithArg: Set[String] =
@@ -135,11 +76,23 @@ object ConsoleCliGrpc {
 
   def exec(args: Vector[String])(implicit
       system: ActorSystem): Future[String] = {
-    OParser.parse(parser, normalizeArgs(args), Config()) match {
+    val normalized = normalizeArgs(args)
+    OParser.parse(parser, normalized, Config()) match {
       case None =>
         Future.failed(
-          new RuntimeException("Invalid arguments provided. See usage above."))
-      case Some(conf) => exec(conf.command, conf)
+          new RuntimeException(
+            s"Invalid arguments provided. See usage above. args=$normalized"))
+      case Some(conf) =>
+        conf.command match {
+          case c: CliGrpcCommand =>
+            exec(c, conf)
+          case _: AppServerCliCommand | _: ServerlessCliCommand |
+              _: OracleServerCliCommand =>
+            Future.failed(
+              new RuntimeException(
+                s"Command ${conf.command} is not supported in gRPC mode"))
+        }
+
     }
   }
 
@@ -158,7 +111,7 @@ object ConsoleCliGrpc {
     import system.dispatcher
 
     val baseSettings = GrpcClientSettings
-      .connectToServiceAt(config.host, config.rpcPort)
+      .connectToServiceAt(ConsoleCli.host, config.rpcPort)
       .withTls(false)
     val clientSettings =
       if (config.rpcPassword.isEmpty) {
@@ -208,6 +161,10 @@ object ConsoleCliGrpc {
       case NoCommand =>
         Future.failed(
           new IllegalArgumentException("You need to provide a command!"))
+      case x: CliCommand =>
+        Future.failed(
+          new IllegalArgumentException(
+            s"Command $x is not supported in gRPC mode"))
     }
 
     responseF.transformWith {
@@ -272,37 +229,4 @@ object ConsoleCliGrpc {
       case None => "null"
     }
   }
-}
-
-sealed trait CliGrpcCommand {
-  def defaultPort: Int = 8980
-}
-
-case object NoCommand extends CliGrpcCommand
-
-case object GetVersion extends CliGrpcCommand
-
-case class ZipDataDir(path: Path) extends CliGrpcCommand
-
-case object GetInfo extends CliGrpcCommand
-
-case object GetBlockCount extends CliGrpcCommand
-
-case object GetFilterCount extends CliGrpcCommand
-
-case object GetFilterHeaderCount extends CliGrpcCommand
-
-case object GetBestBlockHash extends CliGrpcCommand
-
-case class GetBlockHeader(hash: DoubleSha256DigestBE) extends CliGrpcCommand
-
-case object GetMedianTimePast extends CliGrpcCommand
-
-case class Config(
-    command: CliGrpcCommand = NoCommand,
-    host: String = "localhost",
-    rpcPortOpt: Option[Int] = None,
-    rpcPassword: String = ""
-) {
-  val rpcPort: Int = rpcPortOpt.getOrElse(command.defaultPort)
 }

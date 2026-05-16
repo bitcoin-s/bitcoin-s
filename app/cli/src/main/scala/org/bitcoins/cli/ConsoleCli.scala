@@ -5,6 +5,7 @@ import org.bitcoins.cli.CliReaders.*
 import org.bitcoins.cli.ConsoleCli.RequestParam
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.commons.rpc.*
+import org.bitcoins.commons.rpc.CliCommand.NoCommand
 import org.bitcoins.commons.serializers.Picklers.*
 import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
@@ -65,6 +66,9 @@ object ConsoleCli extends BitcoinSLogger {
       help('h', "help").text("Display this help message and exit"),
       note(sys.props("line.separator") + "Commands:"),
       note(sys.props("line.separator") + "===Blockchain ==="),
+      cmd("getversion")
+        .action((_, conf) => conf.copy(command = GetVersion))
+        .text(s"Returns basic info about the server's version"),
       cmd("getinfo")
         .action((_, conf) => conf.copy(command = GetInfo))
         .text(s"Returns basic info about the current chain"),
@@ -2623,16 +2627,16 @@ object CliCommand {
         RequestParam("offer-remove", args)
 
       case cmd @ (_: ServerlessCliCommand | _: AppServerCliCommand |
-          _: Broadcastable | _: OracleServerCliCommand) =>
+          _: Broadcastable | _: OracleServerCliCommand | _: CliGrpcCommand |
+          NoCommand) =>
         sys.error(s"Command $cmd unsupported")
-      case org.bitcoins.commons.rpc.CliCommand.NoCommand => ???
     }
     requestParam
   }
 
-  case object GetVersion extends ServerlessCliCommand
+  case object GetVersion extends ServerlessCliCommand with CliGrpcCommand
 
-  case object GetInfo extends AppServerCliCommand
+  case object GetInfo extends AppServerCliCommand with CliGrpcCommand
 
   // DLC
   case object GetDLCHostAddress extends AppServerCliCommand
@@ -2692,18 +2696,22 @@ object CliCommand {
   case object Stop extends AppServerCliCommand
 
   // Chain
-  case object GetBestBlockHash extends AppServerCliCommand
-  case object GetBlockCount extends AppServerCliCommand
-  case object GetFilterCount extends AppServerCliCommand
-  case object GetFilterHeaderCount extends AppServerCliCommand
+  case object GetBestBlockHash extends AppServerCliCommand with CliGrpcCommand
+  case object GetBlockCount extends AppServerCliCommand with CliGrpcCommand
+  case object GetFilterCount extends AppServerCliCommand with CliGrpcCommand
+  case object GetFilterHeaderCount
+      extends AppServerCliCommand
+      with CliGrpcCommand
 
-  case object GetMedianTimePast extends AppServerCliCommand
+  case object GetMedianTimePast extends AppServerCliCommand with CliGrpcCommand
 
   // PSBT
 
   // Util
 
-  case class ZipDataDir(path: Path) extends AppServerCliCommand
+  case class ZipDataDir(path: Path)
+      extends AppServerCliCommand
+      with CliGrpcCommand
 
   case object EstimateFee extends AppServerCliCommand
 
