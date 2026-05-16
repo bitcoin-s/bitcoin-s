@@ -134,6 +134,13 @@ Each RPC client (bitcoind, eclair, lnd, c-lightning) has its own module with:
 - Separate workflows for different module groups to parallelize testing
 - Docker images are built and published automatically
 
+### Git Workflow for Copilot/LLMs
+
+- When incorporating new changes from `master` into a Copilot-maintained branch, always use a rebase workflow.
+- Do **not** merge `master` into the branch (avoid merge commits for sync-only updates).
+- Keep branch history linear so PR diffs stay clean and easy to review.
+- Preferred sequence: `git fetch origin` then `git rebase origin/master` (resolve conflicts, then continue rebase).
+
 ### Native Libraries
 
 - `secp256k1jni` provides JNI bindings to Bitcoin's secp256k1 library
