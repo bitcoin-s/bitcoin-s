@@ -65,6 +65,9 @@ object ConsoleCli extends BitcoinSLogger {
       help('h', "help").text("Display this help message and exit"),
       note(sys.props("line.separator") + "Commands:"),
       note(sys.props("line.separator") + "===Blockchain ==="),
+      cmd("getversion")
+        .action((_, conf) => conf.copy(command = GetVersion))
+        .text(s"Returns basic info about the server's version"),
       cmd("getinfo")
         .action((_, conf) => conf.copy(command = GetInfo))
         .text(s"Returns basic info about the current chain"),
