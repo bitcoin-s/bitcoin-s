@@ -4,7 +4,13 @@ import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.grpc.GrpcClientSettings
 import org.bitcoins.cli.CliCommand.{GetVersion, ZipDataDir}
 import org.bitcoins.cli.{Config, ConsoleCli}
-import org.bitcoins.commons.rpc.CliCommand
+import org.bitcoins.commons.rpc.{
+  AppServerCliCommand,
+  CliCommand,
+  CliGrpcCommand,
+  OracleServerCliCommand,
+  ServerlessCliCommand
+}
 import org.bitcoins.commons.rpc.CliCommand.NoCommand
 import org.bitcoins.server.grpc.{
   CommonRoutesClient,
@@ -56,7 +62,17 @@ object ConsoleCliGrpc {
         Future.failed(
           new RuntimeException(
             s"Invalid arguments provided. See usage above. args=$normalized"))
-      case Some(conf) => exec(conf.command, conf)
+      case Some(conf) =>
+        conf.command match {
+          case c: CliGrpcCommand =>
+            exec(c, conf)
+          case _: AppServerCliCommand | _: ServerlessCliCommand |
+              _: OracleServerCliCommand =>
+            Future.failed(
+              new RuntimeException(
+                s"Command ${conf.command} is not supported in gRPC mode"))
+        }
+
     }
   }
 
@@ -69,13 +85,13 @@ object ConsoleCliGrpc {
     }
   }
 
-  def exec(command: CliCommand, config: Config)(implicit
+  def exec(command: CliGrpcCommand, config: Config)(implicit
       system: ActorSystem
   ): Future[String] = {
     import system.dispatcher
 
     val baseSettings = GrpcClientSettings
-      .connectToServiceAt("localhost", config.rpcPort)
+      .connectToServiceAt(ConsoleCli.host, config.rpcPort)
       .withTls(false)
     val clientSettings =
       if (config.rpcPassword.isEmpty) {

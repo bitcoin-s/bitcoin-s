@@ -5,6 +5,7 @@ import org.bitcoins.cli.CliReaders.*
 import org.bitcoins.cli.ConsoleCli.RequestParam
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.commons.rpc.*
+import org.bitcoins.commons.rpc.CliCommand.NoCommand
 import org.bitcoins.commons.serializers.Picklers.*
 import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
@@ -2626,14 +2627,14 @@ object CliCommand {
         RequestParam("offer-remove", args)
 
       case cmd @ (_: ServerlessCliCommand | _: AppServerCliCommand |
-          _: Broadcastable | _: OracleServerCliCommand) =>
+          _: Broadcastable | _: OracleServerCliCommand | _: CliGrpcCommand |
+          NoCommand) =>
         sys.error(s"Command $cmd unsupported")
-      case org.bitcoins.commons.rpc.CliCommand.NoCommand => ???
     }
     requestParam
   }
 
-  case object GetVersion extends ServerlessCliCommand
+  case object GetVersion extends ServerlessCliCommand with CliGrpcCommand
 
   case object GetInfo extends AppServerCliCommand
 
@@ -2706,7 +2707,9 @@ object CliCommand {
 
   // Util
 
-  case class ZipDataDir(path: Path) extends AppServerCliCommand
+  case class ZipDataDir(path: Path)
+      extends AppServerCliCommand
+      with CliGrpcCommand
 
   case object EstimateFee extends AppServerCliCommand
 

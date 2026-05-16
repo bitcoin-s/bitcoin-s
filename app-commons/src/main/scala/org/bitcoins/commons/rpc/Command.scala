@@ -41,7 +41,9 @@ trait AppServerCliCommand extends CliCommand {
   override def defaultPort: Int = 9999
 }
 
-trait Broadcastable extends CliCommand {
+trait CliGrpcCommand extends CliCommand
+
+trait Broadcastable extends AppServerCliCommand {
   override def defaultPort: Int = 9999
 }
 trait SignDLCCliCommand extends AppServerCliCommand
@@ -60,7 +62,7 @@ trait OracleServerCliCommand extends CliCommand {
 
 object CliCommand {
 
-  case object NoCommand extends CliCommand {
+  case object NoCommand extends CliCommand with CliGrpcCommand {
     override val defaultPort: Int = 9999
   }
 }
@@ -792,8 +794,7 @@ case class SendToAddress(
     amount: Bitcoins,
     satoshisPerVirtualByte: Option[SatoshisPerVirtualByte],
     noBroadcast: Boolean
-) extends CliCommand
-    with Broadcastable
+) extends Broadcastable
     with SendCliCommand
 
 object SendToAddress extends ServerJsonModels {
@@ -1305,8 +1306,7 @@ case class ExecuteDLC(
     contractId: ByteVector,
     oracleSigs: Vector[OracleAttestmentTLV],
     noBroadcast: Boolean
-) extends CliCommand
-    with Broadcastable
+) extends Broadcastable
 
 object ExecuteDLC extends ServerJsonModels {
 
@@ -1337,8 +1337,7 @@ object ExecuteDLC extends ServerJsonModels {
 }
 
 case class ExecuteDLCRefund(contractId: ByteVector, noBroadcast: Boolean)
-    extends CliCommand
-    with Broadcastable
+    extends Broadcastable
 
 object ExecuteDLCRefund extends ServerJsonModels {
 
