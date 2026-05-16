@@ -1,5 +1,6 @@
 package org.bitcoins.cli.grpc
 
+import io.grpc.{Status, StatusRuntimeException}
 import org.bitcoins.core.util.EnvUtil
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.grpc.ServerGrpc
@@ -12,6 +13,7 @@ import java.nio.file.Files
 import scala.concurrent.{ExecutionContext, Future}
 
 class ConsoleCliGrpcTest extends BitcoinSFixture with PostgresTestDatabase {
+  private val rpcPassword = "topsecret"
 
   override type FixtureParam = (Int, ServerGrpc)
 
@@ -21,7 +23,11 @@ class ConsoleCliGrpcTest extends BitcoinSFixture with PostgresTestDatabase {
     val builder: () => Future[(Int, ServerGrpc)] = () => {
       val tmpDir = FileUtil.tmpDir()
       val port = RpcUtil.randomPort
-      val server = new ServerGrpc(tmpDir.toPath, "localhost", port)
+      val server =
+        new ServerGrpc(tmpDir.toPath,
+                       "localhost",
+                       port,
+                       rpcPassword = rpcPassword)
 
       server.start().map(_ => (port, server))
     }
@@ -46,7 +52,14 @@ class ConsoleCliGrpcTest extends BitcoinSFixture with PostgresTestDatabase {
         .render(2)
 
     ConsoleCliGrpc
-      .exec(Vector("--rpcport", port.toString, "getversion"))
+      .exec(
+        Vector(
+          "--rpcport",
+          port.toString,
+          "--password",
+          rpcPassword,
+          "getversion"
+        ))
       .map { response =>
         assert(response == expected)
       }
@@ -66,6 +79,8 @@ class ConsoleCliGrpcTest extends BitcoinSFixture with PostgresTestDatabase {
         Vector(
           "--rpcport",
           port.toString,
+          "--password",
+          rpcPassword,
           "zipdatadir",
           target.toString
         ))
@@ -73,5 +88,24 @@ class ConsoleCliGrpcTest extends BitcoinSFixture with PostgresTestDatabase {
         assert(response.isEmpty)
         assert(Files.exists(target))
       }
+  }
+
+  it must "fail authentication when an invalid password is provided" in {
+    case (port, _) =>
+      ConsoleCliGrpc
+        .exec(
+          Vector(
+            "--rpcport",
+            port.toString,
+            "--password",
+            "bad-password",
+            "getversion"
+          ))
+        .failed
+        .map { err =>
+          assert(err.isInstanceOf[StatusRuntimeException])
+          val grpcErr = err.asInstanceOf[StatusRuntimeException]
+          assert(grpcErr.getStatus.getCode == Status.Code.UNAUTHENTICATED)
+        }
   }
 }

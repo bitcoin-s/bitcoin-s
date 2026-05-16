@@ -7,6 +7,7 @@ import org.bitcoins.server.grpc.{
   CommonRoutesClient,
   GetVersionRequest,
   GetVersionResponse,
+  GrpcAuth,
   ZipDataDirRequest
 }
 import scopt.OParser
@@ -30,6 +31,9 @@ object ConsoleCliGrpc {
       opt[Int]("rpcport")
         .action((port, conf) => conf.copy(rpcPortOpt = Some(port)))
         .text("The port of the bitcoin-s gRPC server"),
+      opt[String]("password")
+        .action((password, conf) => conf.copy(rpcPassword = password))
+        .text("The password to authenticate to the bitcoin-s gRPC server"),
       help('h', "help").text("Display this help message and exit"),
       cmd("getversion")
         .action((_, conf) => conf.copy(command = GetVersion))
@@ -49,7 +53,7 @@ object ConsoleCliGrpc {
               }))
         ),
       checkConfig {
-        case Config(NoCommand, _, _) =>
+        case Config(NoCommand, _, _, _) =>
           failure("You need to provide a command!")
         case _ => success
       }
@@ -57,7 +61,8 @@ object ConsoleCliGrpc {
   }
 
   // Global options that consume the following argument
-  private val globalOptsWithArg: Set[String] = Set("--host", "--rpcport")
+  private val globalOptsWithArg: Set[String] =
+    Set("--host", "--rpcport", "--password")
 
   // scopt's cmd() requires the subcommand token to precede any global options.
   // This reorders args so leading global options are moved after the first
@@ -104,9 +109,17 @@ object ConsoleCliGrpc {
   ): Future[String] = {
     import system.dispatcher
 
-    val clientSettings = GrpcClientSettings
+    val baseSettings = GrpcClientSettings
       .connectToServiceAt(config.host, config.rpcPort)
       .withTls(false)
+    val clientSettings =
+      if (config.rpcPassword.isEmpty) {
+        baseSettings
+      } else {
+        baseSettings.withCallCredentials(
+          GrpcAuth
+            .basicCallCredentials(config.rpcPassword))
+      }
 
     val client = CommonRoutesClient(clientSettings)
 
@@ -149,7 +162,8 @@ case class ZipDataDir(path: Path) extends CliGrpcCommand
 case class Config(
     command: CliGrpcCommand = NoCommand,
     host: String = "localhost",
-    rpcPortOpt: Option[Int] = None
+    rpcPortOpt: Option[Int] = None,
+    rpcPassword: String = ""
 ) {
   val rpcPort: Int = rpcPortOpt.getOrElse(command.defaultPort)
 }

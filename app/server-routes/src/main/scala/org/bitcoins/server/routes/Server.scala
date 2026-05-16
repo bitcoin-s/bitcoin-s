@@ -188,7 +188,8 @@ case class Server(
   }
 
   def start(): Future[ServerBindings] = {
-    val grpcServer = new ServerGrpc(conf.baseDatadir, rpchost, rpcport + 1)
+    val grpcServer =
+      new ServerGrpc(conf.baseDatadir, rpchost, rpcport + 1, rpcPassword)
     val startGrpcF = grpcServer.start()
     val httpFut = for {
       http <- Http()
