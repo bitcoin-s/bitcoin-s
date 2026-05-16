@@ -5,7 +5,6 @@ import org.apache.pekko.grpc.GrpcClientSettings
 import org.bitcoins.cli.CliCommand.{
   GetBestBlockHash,
   GetBlockCount,
-  GetBlockHeader,
   GetFilterCount,
   GetFilterHeaderCount,
   GetInfo,
@@ -18,6 +17,7 @@ import org.bitcoins.commons.rpc.{
   AppServerCliCommand,
   CliCommand,
   CliGrpcCommand,
+  GetBlockHeader,
   OracleServerCliCommand,
   ServerlessCliCommand
 }
