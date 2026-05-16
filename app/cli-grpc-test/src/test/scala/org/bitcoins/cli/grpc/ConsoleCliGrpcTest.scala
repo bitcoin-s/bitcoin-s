@@ -1,12 +1,15 @@
 package org.bitcoins.cli.grpc
 
 import io.grpc.{Status, StatusRuntimeException}
+import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.util.EnvUtil
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.grpc.ServerGrpc
 import org.bitcoins.testkit.PostgresTestDatabase
+import org.bitcoins.testkit.chain.StaticChainApi
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.util.FileUtil
+import org.bitcoins.testkitcore.chain.ChainTestUtil
 import org.scalatest.FutureOutcome
 
 import java.nio.file.Files
@@ -23,11 +26,24 @@ class ConsoleCliGrpcTest extends BitcoinSFixture with PostgresTestDatabase {
     val builder: () => Future[(Int, ServerGrpc)] = () => {
       val tmpDir = FileUtil.tmpDir()
       val port = RpcUtil.randomPort
+      val headerDb = ChainTestUtil.regTestGenesisHeaderDb
+      val chainApi = StaticChainApi(
+        bestHeader = headerDb,
+        blockCount = 1,
+        filterCount = 2,
+        filterHeaderCount = 3,
+        syncing = false,
+        isIBDValue = false,
+        medianTimePast = 123L
+      )
       val server =
         new ServerGrpc(tmpDir.toPath,
                        "localhost",
                        port,
-                       rpcPassword = rpcPassword)
+                       rpcPassword = rpcPassword,
+                       chainApiOpt = Some(chainApi),
+                       networkOpt = Some(RegTest),
+                       startedTorConfigF = Future.unit)
 
       server.start().map(_ => (port, server))
     }
@@ -87,6 +103,37 @@ class ConsoleCliGrpcTest extends BitcoinSFixture with PostgresTestDatabase {
       .map { response =>
         assert(response.isEmpty)
         assert(Files.exists(target))
+      }
+  }
+
+  it must "execute getblockcount" in { case (port, _) =>
+    ConsoleCliGrpc
+      .exec(
+        Vector(
+          "--rpcport",
+          port.toString,
+          "--password",
+          rpcPassword,
+          "getblockcount"
+        ))
+      .map { response =>
+        assert(response == "1")
+      }
+  }
+
+  it must "execute getbestblockhash" in { case (port, _) =>
+    val expected = ChainTestUtil.regTestGenesisHeaderDb.hashBE.hex
+    ConsoleCliGrpc
+      .exec(
+        Vector(
+          "--rpcport",
+          port.toString,
+          "--password",
+          rpcPassword,
+          "getbestblockhash"
+        ))
+      .map { response =>
+        assert(response == expected)
       }
   }
 

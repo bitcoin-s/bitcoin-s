@@ -559,7 +559,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
             rpcport = rpcport,
             rpcPassword = conf.rpcPassword,
             wsConfigOpt = Some(wsServerConfig),
-            wsSource
+            wsSource = wsSource,
+            chainApiOpt = Some(chainApi),
+            networkOpt = Some(nodeConf.network),
+            startedTorConfigF = torConfStarted
           )
         case None =>
           Server(
@@ -569,7 +572,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
             rpcport = conf.rpcPort,
             rpcPassword = conf.rpcPassword,
             wsConfigOpt = Some(wsServerConfig),
-            wsSource
+            wsSource = wsSource,
+            chainApiOpt = Some(chainApi),
+            networkOpt = Some(nodeConf.network),
+            startedTorConfigF = torConfStarted
           )
       }
     }

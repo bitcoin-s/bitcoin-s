@@ -40,6 +40,8 @@ import org.apache.pekko.stream.scaladsl.{Flow, Keep, Sink, Source}
 import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.commons.jsonmodels.ws.WsNotification
 import org.bitcoins.commons.util.BitcoinSLogger
+import org.bitcoins.core.api.chain.ChainApi
+import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.server.grpc.ServerGrpc
 import org.bitcoins.server.util.{ServerBindings, WsServerConfig}
 import upickle.default as up
@@ -53,7 +55,10 @@ case class Server(
     rpcport: Int,
     rpcPassword: String,
     wsConfigOpt: Option[WsServerConfig],
-    wsSource: Source[WsNotification[?], NotUsed]
+    wsSource: Source[WsNotification[?], NotUsed],
+    chainApiOpt: Option[ChainApi] = None,
+    networkOpt: Option[BitcoinNetwork] = None,
+    startedTorConfigF: Future[Unit] = Future.unit
 )(implicit system: ActorSystem)
     extends HttpLogger {
 
@@ -189,7 +194,13 @@ case class Server(
 
   def start(): Future[ServerBindings] = {
     val grpcServer =
-      new ServerGrpc(conf.baseDatadir, rpchost, rpcport + 1, rpcPassword)
+      new ServerGrpc(conf.baseDatadir,
+                     rpchost,
+                     rpcport + 1,
+                     rpcPassword,
+                     chainApiOpt,
+                     networkOpt,
+                     startedTorConfigF)
     val startGrpcF = grpcServer.start()
     val httpFut = for {
       http <- Http()
