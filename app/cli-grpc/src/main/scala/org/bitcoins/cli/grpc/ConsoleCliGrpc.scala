@@ -13,6 +13,8 @@ import org.bitcoins.cli.CliCommand.{
   ZipDataDir
 }
 import org.bitcoins.cli.{Config, ConsoleCli}
+import org.bitcoins.commons.jsonmodels.BitcoinSServerInfo
+import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
 import org.bitcoins.commons.rpc.{
   AppServerCliCommand,
   CliCommand,
@@ -22,6 +24,10 @@ import org.bitcoins.commons.rpc.{
   ServerlessCliCommand
 }
 import org.bitcoins.commons.rpc.CliCommand.NoCommand
+import org.bitcoins.commons.serializers.Picklers
+import org.bitcoins.core.config.BitcoinNetworks
+import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.server.grpc.{
   ChainRoutesClient,
   CommonRoutesClient,
@@ -32,7 +38,6 @@ import org.bitcoins.server.grpc.{
   GetFilterCountRequest,
   GetFilterHeaderCountRequest,
   GetInfoRequest,
-  GetInfoResponse,
   GetMedianTimePastRequest,
   GetVersionRequest,
   GetVersionResponse,
@@ -189,44 +194,46 @@ object ConsoleCliGrpc {
     jsValueToString(ujson.Obj("version" -> version))
   }
 
-  private def formatGetInfo(response: GetInfoResponse): String = {
-    jsValueToString(
-      ujson.Obj(
-        "network" -> response.network,
-        "blockHeight" -> response.blockHeight,
-        "blockHash" -> response.blockHash,
-        "torStarted" -> response.torStarted,
-        "syncing" -> response.syncing,
-        "isinitialblockdownload" -> response.isInitialBlockDownload
-      ))
+  private def formatGetInfo(
+      response: org.bitcoins.server.grpc.GetInfoResponse): String = {
+    val info = BitcoinSServerInfo(
+      network = BitcoinNetworks.fromString(response.network),
+      blockHeight = response.blockHeight,
+      blockHash = DoubleSha256DigestBE.fromHex(response.blockHash),
+      torStarted = response.torStarted,
+      syncing = response.syncing,
+      isInitialBlockDownload = response.isInitialBlockDownload
+    )
+    jsValueToString(info.toJson)
   }
 
   private def formatGetBlockHeader(response: GetBlockHeaderResponse): String = {
     response.header match {
-      case Some(header) =>
-        jsValueToString(
-          ujson.Obj(
-            "hash" -> header.hash,
-            "confirmations" -> header.confirmations,
-            "height" -> header.height,
-            "version" -> header.version,
-            "versionHex" -> header.versionHex,
-            "merkleroot" -> header.merkleroot,
-            "time" -> header.time,
-            "mediantime" -> header.mediantime,
-            "nonce" -> header.nonce,
-            "bits" -> header.bits,
-            "difficulty" -> header.difficulty,
-            "chainwork" -> header.chainwork,
-            "previousblockhash" -> header.previousblockhash
-              .map(ujson.Str.apply)
-              .getOrElse(ujson.Null),
-            "nextblockhash" -> header.nextblockhash
-              .map(ujson.Str.apply)
-              .getOrElse(ujson.Null),
-            "target" -> header.target.map(ujson.Str.apply).getOrElse(ujson.Null)
-          ))
       case None => "null"
+      case Some(header) =>
+        val result = GetBlockHeaderResult(
+          hash = DoubleSha256DigestBE.fromHex(header.hash),
+          confirmations = header.confirmations,
+          height = header.height,
+          version = header.version,
+          versionHex = Int32.fromHex(header.versionHex),
+          merkleroot = DoubleSha256DigestBE.fromHex(header.merkleroot),
+          // proto uint32 is Scala Int (signed); mask to recover unsigned bits
+          time = UInt32(header.time.toLong & 0xffffffffL),
+          mediantime = UInt32(header.mediantime.toLong & 0xffffffffL),
+          nonce = UInt32(header.nonce.toLong & 0xffffffffL),
+          bits = UInt32.fromHex(header.bits),
+          difficulty = BigDecimal(header.difficulty),
+          chainwork = header.chainwork,
+          previousblockhash =
+            header.previousblockhash.map(DoubleSha256DigestBE.fromHex),
+          nextblockhash =
+            header.nextblockhash.map(DoubleSha256DigestBE.fromHex),
+          target = header.target
+        )
+        val json = upickle.default.writeJs(result)(
+          using Picklers.getBlockHeaderResultPickler)
+        jsValueToString(json)
     }
   }
 }
