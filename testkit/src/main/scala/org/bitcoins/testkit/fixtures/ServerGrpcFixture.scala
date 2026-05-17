@@ -24,8 +24,8 @@ trait ServerGrpcFixture extends BitcoinSFixture with PostgresTestDatabase {
                                   port,
                                   rpcPassword = "",
                                   chainApi = MockChainApi,
-                                  network,
-                                  Future.unit)
+                                  network = network,
+                                  startedTorConfigF = Future.unit)
       val clientSettings = GrpcClientSettings
         .connectToServiceAt(host, port)
         .withTls(false)

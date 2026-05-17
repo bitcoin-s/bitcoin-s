@@ -47,9 +47,9 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
       rpchost = "localhost",
       port = port,
       rpcPassword = password,
-      MockChainApi,
-      network,
-      Future.unit
+      chainApi = MockChainApi,
+      network = network,
+      startedTorConfigF = Future.unit
     )
     val clientSettings = org.apache.pekko.grpc.GrpcClientSettings
       .connectToServiceAt("localhost", port)

@@ -570,7 +570,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
             rpcPassword = conf.rpcPassword,
             wsConfigOpt = Some(wsServerConfig),
             wsSource = wsSource,
-            Some(serverGrpc)
+            serverGrpcOpt = Some(serverGrpc)
           )
         case None =>
           val serverGrpc = new ServerGrpc(
@@ -590,7 +590,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
             rpcPassword = conf.rpcPassword,
             wsConfigOpt = Some(wsServerConfig),
             wsSource = wsSource,
-            Some(serverGrpc)
+            serverGrpcOpt = Some(serverGrpc)
           )
       }
     }
