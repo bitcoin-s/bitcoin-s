@@ -499,7 +499,7 @@ lazy val cliGrpc = project
   .in(file("app/cli-grpc"))
   .settings(CommonSettings.prodSettings: _*)
   .settings(scalacOptions += "-Xsource:3")
-  .dependsOn(serverGrpc)
+  .dependsOn(serverGrpc, cli)
   .enablePlugins(JavaAppPackaging)
 
 lazy val cliGrpcTest = project
