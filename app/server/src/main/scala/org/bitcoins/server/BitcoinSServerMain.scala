@@ -38,6 +38,7 @@ import org.bitcoins.rpc.callback.BitcoindCallbacks
 import org.bitcoins.rpc.client.common.BitcoindRpcClient
 import org.bitcoins.rpc.config.{BitcoindRpcAppConfig, ZmqConfig}
 import org.bitcoins.server.bitcoind.BitcoindSyncState
+import org.bitcoins.server.grpc.ServerGrpc
 import org.bitcoins.server.routes.{BitcoinSServerRunner, CommonRoutes, Server}
 import org.bitcoins.server.util.*
 import org.bitcoins.tor.config.TorAppConfig
@@ -552,6 +553,15 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val server = {
       serverCmdLineArgs.rpcPortOpt match {
         case Some(rpcport) =>
+          val serverGrpc = new ServerGrpc(
+            datadir = conf.baseDatadir,
+            rpchost = rpcBindConfOpt.getOrElse("localhost"),
+            port = rpcport + 1,
+            rpcPassword = conf.rpcPassword,
+            chainApi = chainApi,
+            network = nodeConf.network,
+            startedTorConfigF = torConfStarted
+          )
           Server(
             conf = nodeConf,
             handlersF = handlers,
@@ -559,9 +569,19 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
             rpcport = rpcport,
             rpcPassword = conf.rpcPassword,
             wsConfigOpt = Some(wsServerConfig),
-            wsSource
+            wsSource = wsSource,
+            serverGrpcOpt = Some(serverGrpc)
           )
         case None =>
+          val serverGrpc = new ServerGrpc(
+            datadir = conf.baseDatadir,
+            rpchost = rpcBindConfOpt.getOrElse("localhost"),
+            port = conf.rpcPort + 1,
+            rpcPassword = conf.rpcPassword,
+            chainApi = chainApi,
+            network = nodeConf.network,
+            startedTorConfigF = torConfStarted
+          )
           Server(
             conf = nodeConf,
             handlersF = handlers,
@@ -569,7 +589,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
             rpcport = conf.rpcPort,
             rpcPassword = conf.rpcPassword,
             wsConfigOpt = Some(wsServerConfig),
-            wsSource
+            wsSource = wsSource,
+            serverGrpcOpt = Some(serverGrpc)
           )
       }
     }

@@ -2,18 +2,43 @@ package org.bitcoins.cli.grpc
 
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.grpc.GrpcClientSettings
-import org.bitcoins.cli.CliCommand.{GetVersion, ZipDataDir}
+import org.bitcoins.cli.CliCommand.{
+  GetBestBlockHash,
+  GetBlockCount,
+  GetFilterCount,
+  GetFilterHeaderCount,
+  GetInfo,
+  GetMedianTimePast,
+  GetVersion,
+  ZipDataDir
+}
 import org.bitcoins.cli.{Config, ConsoleCli}
+import org.bitcoins.commons.jsonmodels.BitcoinSServerInfo
+import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
 import org.bitcoins.commons.rpc.{
   AppServerCliCommand,
   CliCommand,
   CliGrpcCommand,
+  GetBlockHeader,
   OracleServerCliCommand,
   ServerlessCliCommand
 }
 import org.bitcoins.commons.rpc.CliCommand.NoCommand
+import org.bitcoins.commons.serializers.Picklers
+import org.bitcoins.core.config.BitcoinNetworks
+import org.bitcoins.core.number.{Int32, UInt32}
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.server.grpc.{
+  ChainRoutesClient,
   CommonRoutesClient,
+  GetBestBlockHashRequest,
+  GetBlockCountRequest,
+  GetBlockHeaderRequest,
+  GetBlockHeaderResponse,
+  GetFilterCountRequest,
+  GetFilterHeaderCountRequest,
+  GetInfoRequest,
+  GetMedianTimePastRequest,
   GetVersionRequest,
   GetVersionResponse,
   GrpcAuth,
@@ -102,13 +127,42 @@ object ConsoleCliGrpc {
             .basicCallCredentials(config.rpcPassword))
       }
 
-    val client = CommonRoutesClient(clientSettings)
+    val commonClient = CommonRoutesClient(clientSettings)
+    val chainClient = ChainRoutesClient(clientSettings)
 
     val responseF = command match {
       case GetVersion =>
-        client.getVersion(GetVersionRequest()).map(formatGetVersion)
+        commonClient.getVersion(GetVersionRequest()).map(formatGetVersion)
       case ZipDataDir(path) =>
-        client.zipDataDir(ZipDataDirRequest(path = path.toString)).map(_ => "")
+        commonClient
+          .zipDataDir(ZipDataDirRequest(path = path.toString))
+          .map(_ => "")
+      case GetInfo =>
+        chainClient.getInfo(GetInfoRequest()).map(formatGetInfo)
+      case GetBlockCount =>
+        chainClient
+          .getBlockCount(GetBlockCountRequest())
+          .map(r => jsValueToString(Num(r.count)))
+      case GetFilterCount =>
+        chainClient
+          .getFilterCount(GetFilterCountRequest())
+          .map(r => jsValueToString(Num(r.count)))
+      case GetFilterHeaderCount =>
+        chainClient
+          .getFilterHeaderCount(GetFilterHeaderCountRequest())
+          .map(r => jsValueToString(Num(r.count)))
+      case GetBestBlockHash =>
+        chainClient
+          .getBestBlockHash(GetBestBlockHashRequest())
+          .map(r => jsValueToString(Str(r.hash)))
+      case GetBlockHeader(hash) =>
+        chainClient
+          .getBlockHeader(GetBlockHeaderRequest(hash = hash.hex))
+          .map(formatGetBlockHeader)
+      case GetMedianTimePast =>
+        chainClient
+          .getMedianTimePast(GetMedianTimePastRequest())
+          .map(r => r.mediantimepast.toString)
       case NoCommand =>
         Future.failed(
           new IllegalArgumentException("You need to provide a command!"))
@@ -120,9 +174,16 @@ object ConsoleCliGrpc {
 
     responseF.transformWith {
       case Success(result) =>
-        client.close().map(_ => result)
+        for {
+          _ <- commonClient.close()
+          _ <- chainClient.close()
+        } yield result
       case Failure(err) =>
-        client.close().flatMap(_ => Future.failed(err))
+        for {
+          _ <- commonClient.close()
+          _ <- chainClient.close()
+          result <- Future.failed(err)
+        } yield result
     }
   }
 
@@ -131,5 +192,48 @@ object ConsoleCliGrpc {
       response.version.map(Str.apply).getOrElse(Null)
 
     jsValueToString(ujson.Obj("version" -> version))
+  }
+
+  private def formatGetInfo(
+      response: org.bitcoins.server.grpc.GetInfoResponse): String = {
+    val info = BitcoinSServerInfo(
+      network = BitcoinNetworks.fromString(response.network),
+      blockHeight = response.blockHeight,
+      blockHash = DoubleSha256DigestBE.fromHex(response.blockHash),
+      torStarted = response.torStarted,
+      syncing = response.syncing,
+      isInitialBlockDownload = response.isInitialBlockDownload
+    )
+    jsValueToString(info.toJson)
+  }
+
+  private def formatGetBlockHeader(response: GetBlockHeaderResponse): String = {
+    response.header match {
+      case None => "null"
+      case Some(header) =>
+        val result = GetBlockHeaderResult(
+          hash = DoubleSha256DigestBE.fromHex(header.hash),
+          confirmations = header.confirmations,
+          height = header.height,
+          version = header.version,
+          versionHex = Int32.fromHex(header.versionHex),
+          merkleroot = DoubleSha256DigestBE.fromHex(header.merkleroot),
+          // proto uint32 is Scala Int (signed); mask to recover unsigned bits
+          time = UInt32(header.time.toLong & 0xffffffffL),
+          mediantime = UInt32(header.mediantime.toLong & 0xffffffffL),
+          nonce = UInt32(header.nonce.toLong & 0xffffffffL),
+          bits = UInt32.fromHex(header.bits),
+          difficulty = BigDecimal(header.difficulty),
+          chainwork = header.chainwork,
+          previousblockhash =
+            header.previousblockhash.map(DoubleSha256DigestBE.fromHex),
+          nextblockhash =
+            header.nextblockhash.map(DoubleSha256DigestBE.fromHex),
+          target = header.target
+        )
+        val json = upickle.default.writeJs(result)(
+          using Picklers.getBlockHeaderResultPickler)
+        jsValueToString(json)
+    }
   }
 }

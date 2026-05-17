@@ -53,7 +53,8 @@ case class Server(
     rpcport: Int,
     rpcPassword: String,
     wsConfigOpt: Option[WsServerConfig],
-    wsSource: Source[WsNotification[?], NotUsed]
+    wsSource: Source[WsNotification[?], NotUsed],
+    serverGrpcOpt: Option[ServerGrpc]
 )(implicit system: ActorSystem)
     extends HttpLogger {
 
@@ -188,9 +189,12 @@ case class Server(
   }
 
   def start(): Future[ServerBindings] = {
-    val grpcServer =
-      new ServerGrpc(conf.baseDatadir, rpchost, rpcport + 1, rpcPassword)
-    val startGrpcF = grpcServer.start()
+    val startGrpcOptF: Future[Option[ServerGrpc]] = serverGrpcOpt match {
+      case Some(serverGrpc) =>
+        serverGrpc.start().map(_ => Some(serverGrpc))
+      case None =>
+        Future.successful(None)
+    }
     val httpFut = for {
       http <- Http()
         .newServerAt(rpchost, rpcport)
@@ -200,8 +204,11 @@ case class Server(
     httpFut.foreach { http =>
       logger.info(s"Started bitcoin-s HTTP server at ${http.localAddress}")
     }
-    startGrpcF.foreach { _ =>
-      logger.info(s"Started bitcoin-s gRPC server at ${rpchost}:${rpcport + 1}")
+    startGrpcOptF.foreach { s =>
+      if (s.isDefined) {
+        logger.info(
+          s"Started bitcoin-s gRPC server at ${rpchost}:${rpcport + 1}")
+      }
     }
 
     val wsFut = startWsServer()
@@ -209,8 +216,8 @@ case class Server(
     for {
       http <- httpFut
       ws <- wsFut
-      _ <- startGrpcF
-    } yield ServerBindings(http, ws, grpcServer)
+      startGrpcOpt <- startGrpcOptF
+    } yield ServerBindings(http, ws, startGrpcOpt)
   }
 
   private def startWsServer(): Future[Option[Http.ServerBinding]] = {

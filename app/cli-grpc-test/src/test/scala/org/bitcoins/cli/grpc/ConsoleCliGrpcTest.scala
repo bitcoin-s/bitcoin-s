@@ -1,10 +1,12 @@
 package org.bitcoins.cli.grpc
 
 import io.grpc.{Status, StatusRuntimeException}
+import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.util.EnvUtil
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.grpc.ServerGrpc
 import org.bitcoins.testkit.PostgresTestDatabase
+import org.bitcoins.testkit.chain.MockChainApi
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.util.FileUtil
 import org.scalatest.FutureOutcome
@@ -14,7 +16,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class ConsoleCliGrpcTest extends BitcoinSFixture with PostgresTestDatabase {
   private val rpcPassword = "topsecret"
-
+  private val network = RegTest
   override type FixtureParam = (Int, ServerGrpc)
 
   implicit val ec: ExecutionContext = system.dispatcher
@@ -27,7 +29,10 @@ class ConsoleCliGrpcTest extends BitcoinSFixture with PostgresTestDatabase {
         new ServerGrpc(tmpDir.toPath,
                        "localhost",
                        port,
-                       rpcPassword = rpcPassword)
+                       rpcPassword = rpcPassword,
+                       chainApi = MockChainApi,
+                       network = network,
+                       startedTorConfigF = Future.unit)
 
       server.start().map(_ => (port, server))
     }
