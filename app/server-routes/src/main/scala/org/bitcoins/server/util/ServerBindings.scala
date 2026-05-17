@@ -10,14 +10,17 @@ import scala.concurrent.{ExecutionContext, Future}
 case class ServerBindings(
     httpServer: Http.ServerBinding,
     webSocketServerOpt: Option[Http.ServerBinding],
-    serverGrpc: ServerGrpc
+    serverGrpcOpt: Option[ServerGrpc]
 ) extends BitcoinSLogger {
 
   private val terminateTimeout = 5.seconds
 
   def stop()(implicit ec: ExecutionContext): Future[Unit] = {
     val stopHttp = httpServer.terminate(terminateTimeout)
-    val stopGrpc = serverGrpc.stop()
+    val stopGrpc = serverGrpcOpt match {
+      case Some(s) => s.stop()
+      case None    => Future.unit
+    }
     val stopWsFOpt = webSocketServerOpt.map(_.terminate(terminateTimeout))
     for {
       _ <- stopHttp

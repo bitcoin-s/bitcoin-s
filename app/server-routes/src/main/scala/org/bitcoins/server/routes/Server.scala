@@ -40,7 +40,6 @@ import org.apache.pekko.stream.scaladsl.{Flow, Keep, Sink, Source}
 import org.bitcoins.commons.config.AppConfig
 import org.bitcoins.commons.jsonmodels.ws.WsNotification
 import org.bitcoins.commons.util.BitcoinSLogger
-import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.server.grpc.ServerGrpc
 import org.bitcoins.server.util.{ServerBindings, WsServerConfig}
 import upickle.default as up
@@ -55,8 +54,7 @@ case class Server(
     rpcPassword: String,
     wsConfigOpt: Option[WsServerConfig],
     wsSource: Source[WsNotification[?], NotUsed],
-    chainApi: ChainApi,
-    startedTorConfigF: Future[Unit]
+    serverGrpcOpt: Option[ServerGrpc]
 )(implicit system: ActorSystem)
     extends HttpLogger {
 
@@ -191,15 +189,12 @@ case class Server(
   }
 
   def start(): Future[ServerBindings] = {
-    val grpcServer =
-      new ServerGrpc(conf.baseDatadir,
-                     rpchost,
-                     rpcport + 1,
-                     rpcPassword,
-                     chainApi = chainApi,
-                     network = conf.network,
-                     startedTorConfigF = startedTorConfigF)
-    val startGrpcF = grpcServer.start()
+    val startGrpcOptF: Future[Option[ServerGrpc]] = serverGrpcOpt match {
+      case Some(serverGrpc) =>
+        serverGrpc.start().map(_ => Some(serverGrpc))
+      case None =>
+        Future.successful(None)
+    }
     val httpFut = for {
       http <- Http()
         .newServerAt(rpchost, rpcport)
@@ -209,8 +204,11 @@ case class Server(
     httpFut.foreach { http =>
       logger.info(s"Started bitcoin-s HTTP server at ${http.localAddress}")
     }
-    startGrpcF.foreach { _ =>
-      logger.info(s"Started bitcoin-s gRPC server at ${rpchost}:${rpcport + 1}")
+    startGrpcOptF.foreach { s =>
+      if (s.isDefined) {
+        logger.info(
+          s"Started bitcoin-s gRPC server at ${rpchost}:${rpcport + 1}")
+      }
     }
 
     val wsFut = startWsServer()
@@ -218,8 +216,8 @@ case class Server(
     for {
       http <- httpFut
       ws <- wsFut
-      _ <- startGrpcF
-    } yield ServerBindings(http, ws, grpcServer)
+      startGrpcOpt <- startGrpcOptF
+    } yield ServerBindings(http, ws, startGrpcOpt)
   }
 
   private def startWsServer(): Future[Option[Http.ServerBinding]] = {
