@@ -3,12 +3,15 @@ package org.bitcoins.cli.grpc
 import io.grpc.{Status, StatusRuntimeException}
 import org.bitcoins.core.config.RegTest
 import org.bitcoins.core.util.EnvUtil
+import org.bitcoins.commons.jsonmodels.BitcoinSServerInfo
+import org.bitcoins.crypto.DoubleSha256DigestBE
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.grpc.ServerGrpc
 import org.bitcoins.testkit.PostgresTestDatabase
 import org.bitcoins.testkit.chain.MockChainApi
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.util.FileUtil
+import org.bitcoins.testkitcore.chain.ChainTestUtil
 import org.scalatest.FutureOutcome
 
 import java.nio.file.Files
@@ -46,6 +49,12 @@ class ConsoleCliGrpcTest extends BitcoinSFixture with PostgresTestDatabase {
 
   behavior of "ConsoleCliGrpc"
 
+  private def exec(port: Int, args: String*): Future[String] = {
+    ConsoleCliGrpc.exec(
+      Vector("--rpcport", port.toString, "--password", rpcPassword) ++ args
+    )
+  }
+
   it must "execute getversion" in { case (port, _) =>
     val expected =
       ujson
@@ -56,18 +65,9 @@ class ConsoleCliGrpcTest extends BitcoinSFixture with PostgresTestDatabase {
         )
         .render(2)
 
-    ConsoleCliGrpc
-      .exec(
-        Vector(
-          "--rpcport",
-          port.toString,
-          "--password",
-          rpcPassword,
-          "getversion"
-        ))
-      .map { response =>
-        assert(response == expected)
-      }
+    exec(port, "getversion").map { response =>
+      assert(response == expected)
+    }
   }
 
   it must "execute zipdatadir" in { case (port, _) =>
@@ -79,20 +79,63 @@ class ConsoleCliGrpcTest extends BitcoinSFixture with PostgresTestDatabase {
     assert(!Files.exists(target))
     assert(!Files.exists(target.getParent))
 
-    ConsoleCliGrpc
-      .exec(
-        Vector(
-          "--rpcport",
-          port.toString,
-          "--password",
-          rpcPassword,
-          "zipdatadir",
-          target.toString
-        ))
-      .map { response =>
-        assert(response.isEmpty)
-        assert(Files.exists(target))
-      }
+    exec(port, "zipdatadir", target.toString).map { response =>
+      assert(response.isEmpty)
+      assert(Files.exists(target))
+    }
+  }
+
+  it must "execute getinfo" in { case (port, _) =>
+    val expected = BitcoinSServerInfo(
+      network = network,
+      blockHeight = ChainTestUtil.regTestGenesisHeaderDb.height,
+      blockHash = ChainTestUtil.regTestGenesisHeaderDb.hashBE,
+      torStarted = true,
+      syncing = false,
+      isInitialBlockDownload = false
+    ).toJson.render(2)
+
+    exec(port, "getinfo").map { response =>
+      assert(response == expected)
+    }
+  }
+
+  it must "execute getblockcount" in { case (port, _) =>
+    exec(port, "getblockcount").map { response =>
+      assert(response == "0")
+    }
+  }
+
+  it must "execute getfiltercount" in { case (port, _) =>
+    exec(port, "getfiltercount").map { response =>
+      assert(response == "0")
+    }
+  }
+
+  it must "execute getfilterheadercount" in { case (port, _) =>
+    exec(port, "getfilterheadercount").map { response =>
+      assert(response == "0")
+    }
+  }
+
+  it must "execute getbestblockhash" in { case (port, _) =>
+    exec(port, "getbestblockhash").map { response =>
+      assert(response == DoubleSha256DigestBE.empty.hex)
+    }
+  }
+
+  it must "execute getblockheader" in { case (port, _) =>
+    val blockHash = ChainTestUtil.regTestGenesisHeaderDb.hashBE.hex
+
+    exec(port, "getblockheader", blockHash).map { response =>
+      assert(response == "null")
+    }
+  }
+
+  it must "execute getmediantimepast" in { case (port, _) =>
+    exec(port, "getmediantimepast").map { response =>
+      assert(response == "0")
+    }
   }
 
   it must "fail authentication when an invalid password is provided" in {
