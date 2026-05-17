@@ -38,7 +38,9 @@ class OracleServerMain(override val serverArgParser: ServerArgParser)(implicit
             rpcport = rpcport,
             rpcPassword = conf.rpcPassword,
             None,
-            Source.empty
+            Source.empty,
+            chainApi = ???,
+            startedTorConfigF = Future.unit
           )
         case None =>
           Server(
@@ -48,7 +50,9 @@ class OracleServerMain(override val serverArgParser: ServerArgParser)(implicit
             rpcport = conf.rpcPort,
             rpcPassword = conf.rpcPassword,
             None,
-            Source.empty
+            Source.empty,
+            chainApi = ???,
+            startedTorConfigF = Future.unit
           )
       }
 

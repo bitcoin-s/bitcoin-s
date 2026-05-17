@@ -3,11 +3,12 @@ package org.bitcoins.server.grpc
 import io.grpc.{Status, StatusRuntimeException}
 import org.bitcoins.core.util.EnvUtil
 import org.bitcoins.rpc.util.RpcUtil
+import org.bitcoins.testkit.chain.MockChainApi
 import org.bitcoins.testkit.fixtures.ServerGrpcFixture
 import org.bitcoins.testkit.util.FileUtil
 
 import java.nio.file.Files
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 class CommonGrpcRoutesTest extends ServerGrpcFixture {
 
@@ -45,7 +46,10 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
       datadir = FileUtil.tmpDir().toPath,
       rpchost = "localhost",
       port = port,
-      rpcPassword = password
+      rpcPassword = password,
+      MockChainApi,
+      network,
+      Future.unit
     )
     val clientSettings = org.apache.pekko.grpc.GrpcClientSettings
       .connectToServiceAt("localhost", port)
@@ -78,7 +82,10 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
       datadir = FileUtil.tmpDir().toPath,
       rpchost = "localhost",
       port = port,
-      rpcPassword = serverPassword
+      rpcPassword = serverPassword,
+      chainApi = MockChainApi,
+      network = network,
+      startedTorConfigF = Future.unit
     )
     val clientSettings = org.apache.pekko.grpc.GrpcClientSettings
       .connectToServiceAt("localhost", port)

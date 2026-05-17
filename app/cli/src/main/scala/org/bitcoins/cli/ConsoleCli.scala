@@ -2636,7 +2636,7 @@ object CliCommand {
 
   case object GetVersion extends ServerlessCliCommand with CliGrpcCommand
 
-  case object GetInfo extends AppServerCliCommand
+  case object GetInfo extends AppServerCliCommand with CliGrpcCommand
 
   // DLC
   case object GetDLCHostAddress extends AppServerCliCommand
@@ -2696,12 +2696,14 @@ object CliCommand {
   case object Stop extends AppServerCliCommand
 
   // Chain
-  case object GetBestBlockHash extends AppServerCliCommand
-  case object GetBlockCount extends AppServerCliCommand
-  case object GetFilterCount extends AppServerCliCommand
-  case object GetFilterHeaderCount extends AppServerCliCommand
+  case object GetBestBlockHash extends AppServerCliCommand with CliGrpcCommand
+  case object GetBlockCount extends AppServerCliCommand with CliGrpcCommand
+  case object GetFilterCount extends AppServerCliCommand with CliGrpcCommand
+  case object GetFilterHeaderCount
+      extends AppServerCliCommand
+      with CliGrpcCommand
 
-  case object GetMedianTimePast extends AppServerCliCommand
+  case object GetMedianTimePast extends AppServerCliCommand with CliGrpcCommand
 
   // PSBT
 

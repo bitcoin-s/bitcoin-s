@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package org.bitcoins.server.grpc;
+
+option java_package = "org.bitcoins.server.grpc";
+option java_multiple_files = true;
+
+// ChainRoutes provides blockchain RPC endpoints for the Bitcoin-S gRPC server.
+service ChainRoutes {
+  rpc GetInfo(GetInfoRequest) returns (GetInfoResponse);
+  rpc GetBlockCount(GetBlockCountRequest) returns (GetBlockCountResponse);
+  rpc GetFilterCount(GetFilterCountRequest) returns (GetFilterCountResponse);
+  rpc GetFilterHeaderCount(GetFilterHeaderCountRequest)
+      returns (GetFilterHeaderCountResponse);
+  rpc GetBestBlockHash(GetBestBlockHashRequest) returns (GetBestBlockHashResponse);
+  rpc GetBlockHeader(GetBlockHeaderRequest) returns (GetBlockHeaderResponse);
+  rpc GetMedianTimePast(GetMedianTimePastRequest)
+      returns (GetMedianTimePastResponse);
+}
+
+message GetInfoRequest {}
+
+message GetInfoResponse {
+  string network = 1;
+  int32 block_height = 2;
+  string block_hash = 3;
+  bool tor_started = 4;
+  bool syncing = 5;
+  bool is_initial_block_download = 6;
+}
+
+message GetBlockCountRequest {}
+
+message GetBlockCountResponse {
+  int32 count = 1;
+}
+
+message GetFilterCountRequest {}
+
+message GetFilterCountResponse {
+  int32 count = 1;
+}
+
+message GetFilterHeaderCountRequest {}
+
+message GetFilterHeaderCountResponse {
+  int32 count = 1;
+}
+
+message GetBestBlockHashRequest {}
+
+message GetBestBlockHashResponse {
+  string hash = 1;
+}
+
+message GetBlockHeaderRequest {
+  string hash = 1;
+}
+
+message BlockHeaderResult {
+  string hash = 1;
+  int32 confirmations = 2;
+  int32 height = 3;
+  int32 version = 4;
+  string version_hex = 5;
+  string merkleroot = 6;
+  uint32 time = 7;
+  uint32 mediantime = 8;
+  uint32 nonce = 9;
+  string bits = 10;
+  string difficulty = 11;
+  string chainwork = 12;
+  optional string previousblockhash = 13;
+  optional string nextblockhash = 14;
+  optional string target = 15;
+}
+
+message GetBlockHeaderResponse {
+  optional BlockHeaderResult header = 1;
+}
+
+message GetMedianTimePastRequest {}
+
+message GetMedianTimePastResponse {
+  int64 mediantimepast = 1;
+}

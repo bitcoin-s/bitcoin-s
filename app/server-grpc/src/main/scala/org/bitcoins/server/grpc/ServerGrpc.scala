@@ -1,6 +1,7 @@
 package org.bitcoins.server.grpc
 
 import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.grpc.scaladsl.ServiceHandler
 import org.apache.pekko.http.scaladsl.Http
 import org.apache.pekko.http.scaladsl.Http.ServerBinding
 import org.apache.pekko.http.scaladsl.model.{
@@ -16,6 +17,8 @@ import org.apache.pekko.http.scaladsl.model.headers.{
   RawHeader
 }
 import org.bitcoins.commons.util.BitcoinSLogger
+import org.bitcoins.core.api.chain.ChainApi
+import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.util.StartStopAsync
 
 import java.nio.charset.StandardCharsets
@@ -37,7 +40,10 @@ class ServerGrpc(
     datadir: Path,
     rpchost: String,
     port: Int,
-    rpcPassword: String
+    rpcPassword: String,
+    chainApi: ChainApi,
+    network: BitcoinNetwork,
+    startedTorConfigF: Future[Unit]
 )(implicit system: ActorSystem)
     extends StartStopAsync[Unit]
     with BitcoinSLogger {
@@ -53,8 +59,15 @@ class ServerGrpc(
       )
     }
   }
-  private val impl = new CommonGrpcRoutes(datadir)
-  private val handler = CommonRoutesHandler(impl)
+  private val commonImpl = new CommonGrpcRoutes(datadir)
+  private val chainImpl =
+    new ChainGrpcRoutes(chainApi, network, startedTorConfigF)
+
+  private val handler: HttpRequest => Future[HttpResponse] =
+    ServiceHandler.concatOrNotFound(
+      CommonRoutesHandler.partial(commonImpl),
+      ChainRoutesHandler.partial(chainImpl)
+    )
 
   private val bindingOpt: AtomicReference[Option[ServerBinding]] =
     new AtomicReference(None)

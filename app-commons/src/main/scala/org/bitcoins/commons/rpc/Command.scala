@@ -625,8 +625,8 @@ object ConvertToPSBT extends ServerJsonModels {
 }
 
 case class GetBlockHeader(hash: DoubleSha256DigestBE)
-    extends CliCommand
-    with AppServerCliCommand
+    extends AppServerCliCommand
+    with CliGrpcCommand
 
 object GetBlockHeader extends ServerJsonModels {
 
