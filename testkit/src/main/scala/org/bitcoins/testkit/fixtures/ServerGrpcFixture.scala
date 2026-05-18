@@ -6,6 +6,7 @@ import org.bitcoins.server.grpc.{CommonRoutesClient, ServerGrpc}
 import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkit.PostgresTestDatabase
 import org.bitcoins.testkit.chain.MockChainApi
+import org.bitcoins.testkit.node.MockNodeApi
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
@@ -25,7 +26,8 @@ trait ServerGrpcFixture extends BitcoinSFixture with PostgresTestDatabase {
                                   rpcPassword = "",
                                   chainApi = MockChainApi,
                                   network = network,
-                                  startedTorConfigF = Future.unit)
+                                  startedTorConfigF = Future.unit,
+                                  nodeApi = MockNodeApi)
       val clientSettings = GrpcClientSettings
         .connectToServiceAt(host, port)
         .withTls(false)

@@ -5,6 +5,7 @@ import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.PostgresTestDatabase
 import org.bitcoins.testkit.chain.MockChainApi
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
+import org.bitcoins.testkit.node.MockNodeApi
 import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkitcore.chain.ChainTestUtil
 import org.scalatest.FutureOutcome
@@ -29,7 +30,8 @@ class ChainGrpcRoutesTest extends BitcoinSFixture with PostgresTestDatabase {
                                   rpcPassword = "",
                                   chainApi = MockChainApi,
                                   network = network,
-                                  startedTorConfigF = Future.unit)
+                                  startedTorConfigF = Future.unit,
+                                  nodeApi = MockNodeApi)
       val clientSettings = org.apache.pekko.grpc.GrpcClientSettings
         .connectToServiceAt(host, port)
         .withTls(false)

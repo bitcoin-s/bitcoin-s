@@ -553,15 +553,19 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val server = {
       serverCmdLineArgs.rpcPortOpt match {
         case Some(rpcport) =>
-          val serverGrpc = new ServerGrpc(
-            datadir = conf.baseDatadir,
-            rpchost = rpcBindConfOpt.getOrElse("localhost"),
-            port = rpcport + 1,
-            rpcPassword = conf.rpcPassword,
-            chainApi = chainApi,
-            network = nodeConf.network,
-            startedTorConfigF = torConfStarted
-          )
+          val serverGrpcOptF = nodeApiF.map { nodeApi =>
+            Some(
+              new ServerGrpc(
+                datadir = conf.baseDatadir,
+                rpchost = rpcBindConfOpt.getOrElse("localhost"),
+                port = rpcport + 1,
+                rpcPassword = conf.rpcPassword,
+                chainApi = chainApi,
+                network = nodeConf.network,
+                startedTorConfigF = torConfStarted,
+                nodeApi = nodeApi
+              ))
+          }
           Server(
             conf = nodeConf,
             handlersF = handlers,
@@ -570,18 +574,22 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
             rpcPassword = conf.rpcPassword,
             wsConfigOpt = Some(wsServerConfig),
             wsSource = wsSource,
-            serverGrpcOpt = Some(serverGrpc)
+            serverGrpcOptF = serverGrpcOptF
           )
         case None =>
-          val serverGrpc = new ServerGrpc(
-            datadir = conf.baseDatadir,
-            rpchost = rpcBindConfOpt.getOrElse("localhost"),
-            port = conf.rpcPort + 1,
-            rpcPassword = conf.rpcPassword,
-            chainApi = chainApi,
-            network = nodeConf.network,
-            startedTorConfigF = torConfStarted
-          )
+          val serverGrpcOptF = nodeApiF.map { nodeApi =>
+            Some(
+              new ServerGrpc(
+                datadir = conf.baseDatadir,
+                rpchost = rpcBindConfOpt.getOrElse("localhost"),
+                port = conf.rpcPort + 1,
+                rpcPassword = conf.rpcPassword,
+                chainApi = chainApi,
+                network = nodeConf.network,
+                startedTorConfigF = torConfStarted,
+                nodeApi = nodeApi
+              ))
+          }
           Server(
             conf = nodeConf,
             handlersF = handlers,
@@ -590,7 +598,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
             rpcPassword = conf.rpcPassword,
             wsConfigOpt = Some(wsServerConfig),
             wsSource = wsSource,
-            serverGrpcOpt = Some(serverGrpc)
+            serverGrpcOptF = serverGrpcOptF
           )
       }
     }

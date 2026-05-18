@@ -10,6 +10,7 @@ import org.bitcoins.server.grpc.ServerGrpc
 import org.bitcoins.testkit.PostgresTestDatabase
 import org.bitcoins.testkit.chain.MockChainApi
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
+import org.bitcoins.testkit.node.MockNodeApi
 import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkitcore.chain.ChainTestUtil
 import org.scalatest.FutureOutcome
@@ -35,7 +36,8 @@ class ConsoleCliGrpcTest extends BitcoinSFixture with PostgresTestDatabase {
                        rpcPassword = rpcPassword,
                        chainApi = MockChainApi,
                        network = network,
-                       startedTorConfigF = Future.unit)
+                       startedTorConfigF = Future.unit,
+                       nodeApi = MockNodeApi)
 
       server.start().map(_ => (port, server))
     }
@@ -134,6 +136,12 @@ class ConsoleCliGrpcTest extends BitcoinSFixture with PostgresTestDatabase {
 
   it must "execute getmediantimepast" in { case (port, _) =>
     exec(port, "getmediantimepast").map { response =>
+      assert(response == "0")
+    }
+  }
+
+  it must "execute getconnectioncount" in { case (port, _) =>
+    exec(port, "getconnectioncount").map { response =>
       assert(response == "0")
     }
   }

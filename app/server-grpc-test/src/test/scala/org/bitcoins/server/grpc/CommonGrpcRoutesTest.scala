@@ -5,6 +5,7 @@ import org.bitcoins.core.util.EnvUtil
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.chain.MockChainApi
 import org.bitcoins.testkit.fixtures.ServerGrpcFixture
+import org.bitcoins.testkit.node.MockNodeApi
 import org.bitcoins.testkit.util.FileUtil
 
 import java.nio.file.Files
@@ -49,7 +50,8 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
       rpcPassword = password,
       chainApi = MockChainApi,
       network = network,
-      startedTorConfigF = Future.unit
+      startedTorConfigF = Future.unit,
+      nodeApi = MockNodeApi
     )
     val clientSettings = org.apache.pekko.grpc.GrpcClientSettings
       .connectToServiceAt("localhost", port)
@@ -85,7 +87,8 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
       rpcPassword = serverPassword,
       chainApi = MockChainApi,
       network = network,
-      startedTorConfigF = Future.unit
+      startedTorConfigF = Future.unit,
+      nodeApi = MockNodeApi
     )
     val clientSettings = org.apache.pekko.grpc.GrpcClientSettings
       .connectToServiceAt("localhost", port)

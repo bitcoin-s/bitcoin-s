@@ -2692,7 +2692,7 @@ object CliCommand {
   case object GetDLCWalletAccounting extends AppServerCliCommand
 
   // Node
-  case object GetConnectionCount extends AppServerCliCommand
+  case object GetConnectionCount extends AppServerCliCommand with CliGrpcCommand
   case object Stop extends AppServerCliCommand
 
   // Chain
