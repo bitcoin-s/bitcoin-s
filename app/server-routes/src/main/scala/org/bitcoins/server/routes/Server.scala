@@ -54,7 +54,7 @@ case class Server(
     rpcPassword: String,
     wsConfigOpt: Option[WsServerConfig],
     wsSource: Source[WsNotification[?], NotUsed],
-    serverGrpcOptF: Future[Option[ServerGrpc]]
+    serverGrpcOpt: Option[ServerGrpc]
 )(implicit system: ActorSystem)
     extends HttpLogger {
 
@@ -189,7 +189,7 @@ case class Server(
   }
 
   def start(): Future[ServerBindings] = {
-    val startGrpcOptF: Future[Option[ServerGrpc]] = serverGrpcOptF.flatMap {
+    val startGrpcOptF: Future[Option[ServerGrpc]] = serverGrpcOpt match {
       case Some(serverGrpc) =>
         serverGrpc.start().map(_ => Some(serverGrpc))
       case None =>

@@ -59,7 +59,7 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
       chainApi = MockChainApi,
       network = network,
       startedTorConfigF = Future.unit,
-      nodeApi = MockNodeApi
+      nodeApiF = Future.successful(MockNodeApi)
     )
     val clientSettings = org.apache.pekko.grpc.GrpcClientSettings
       .connectToServiceAt("localhost", port)
@@ -96,7 +96,7 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
       chainApi = MockChainApi,
       network = network,
       startedTorConfigF = Future.unit,
-      nodeApi = MockNodeApi
+      nodeApiF = Future.successful(MockNodeApi)
     )
     val clientSettings = org.apache.pekko.grpc.GrpcClientSettings
       .connectToServiceAt("localhost", port)

@@ -42,14 +42,16 @@ trait ServerGrpcFixture extends BitcoinSFixture with PostgresTestDatabase {
       host: String,
       port: Int,
       rpcPassword: String = ""): ServerGrpc = {
-    val server = new ServerGrpc(tmpDir.toPath,
-                                host,
-                                port,
-                                rpcPassword = rpcPassword,
-                                chainApi = MockChainApi,
-                                network = network,
-                                startedTorConfigF = Future.unit,
-                                nodeApi = MockNodeApi)
+    val server = new ServerGrpc(
+      tmpDir.toPath,
+      host,
+      port,
+      rpcPassword = rpcPassword,
+      chainApi = MockChainApi,
+      network = network,
+      startedTorConfigF = Future.unit,
+      nodeApiF = Future.successful(MockNodeApi)
+    )
     server
   }
 

@@ -30,14 +30,16 @@ class ConsoleCliGrpcTest extends BitcoinSFixture with PostgresTestDatabase {
       val tmpDir = FileUtil.tmpDir()
       val port = RpcUtil.randomPort
       val server =
-        new ServerGrpc(tmpDir.toPath,
-                       "localhost",
-                       port,
-                       rpcPassword = rpcPassword,
-                       chainApi = MockChainApi,
-                       network = network,
-                       startedTorConfigF = Future.unit,
-                       nodeApi = MockNodeApi)
+        new ServerGrpc(
+          tmpDir.toPath,
+          "localhost",
+          port,
+          rpcPassword = rpcPassword,
+          chainApi = MockChainApi,
+          network = network,
+          startedTorConfigF = Future.unit,
+          nodeApiF = Future.successful(MockNodeApi)
+        )
 
       server.start().map(_ => (port, server))
     }

@@ -553,7 +553,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
     val server = {
       serverCmdLineArgs.rpcPortOpt match {
         case Some(rpcport) =>
-          val serverGrpcOptF = nodeApiF.map { nodeApi =>
+          val serverGrpcOpt =
             Some(
               new ServerGrpc(
                 datadir = conf.baseDatadir,
@@ -563,9 +563,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                 chainApi = chainApi,
                 network = nodeConf.network,
                 startedTorConfigF = torConfStarted,
-                nodeApi = nodeApi
+                nodeApiF = nodeApiF
               ))
-          }
           Server(
             conf = nodeConf,
             handlersF = handlers,
@@ -574,10 +573,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
             rpcPassword = conf.rpcPassword,
             wsConfigOpt = Some(wsServerConfig),
             wsSource = wsSource,
-            serverGrpcOptF = serverGrpcOptF
+            serverGrpcOpt = serverGrpcOpt
           )
         case None =>
-          val serverGrpcOptF = nodeApiF.map { nodeApi =>
+          val serverGrpcOpt =
             Some(
               new ServerGrpc(
                 datadir = conf.baseDatadir,
@@ -587,9 +586,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                 chainApi = chainApi,
                 network = nodeConf.network,
                 startedTorConfigF = torConfStarted,
-                nodeApi = nodeApi
+                nodeApiF = nodeApiF
               ))
-          }
           Server(
             conf = nodeConf,
             handlersF = handlers,
@@ -598,7 +596,7 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
             rpcPassword = conf.rpcPassword,
             wsConfigOpt = Some(wsServerConfig),
             wsSource = wsSource,
-            serverGrpcOptF = serverGrpcOptF
+            serverGrpcOpt = serverGrpcOpt
           )
       }
     }

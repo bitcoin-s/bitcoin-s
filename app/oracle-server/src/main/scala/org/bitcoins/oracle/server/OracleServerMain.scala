@@ -39,7 +39,7 @@ class OracleServerMain(override val serverArgParser: ServerArgParser)(implicit
             rpcPassword = conf.rpcPassword,
             wsConfigOpt = None,
             wsSource = Source.empty,
-            serverGrpcOptF = Future.successful(None)
+            serverGrpcOpt = None
           )
         case None =>
           Server(
@@ -50,7 +50,7 @@ class OracleServerMain(override val serverArgParser: ServerArgParser)(implicit
             rpcPassword = conf.rpcPassword,
             wsConfigOpt = None,
             wsSource = Source.empty,
-            serverGrpcOptF = Future.successful(None)
+            serverGrpcOpt = None
           )
       }
 
