@@ -1,8 +1,14 @@
 package org.bitcoins.testkit.fixtures
 import org.apache.pekko.grpc.GrpcClientSettings
+import org.apache.pekko.grpc.scaladsl.PekkoGrpcClient
 import org.bitcoins.core.config.{BitcoinNetwork, RegTest}
 import org.bitcoins.rpc.util.RpcUtil
-import org.bitcoins.server.grpc.{CommonRoutesClient, ServerGrpc}
+import org.bitcoins.server.grpc.{
+  ChainRoutesClient,
+  CommonRoutesClient,
+  NodeRoutesClient,
+  ServerGrpc
+}
 import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkit.PostgresTestDatabase
 import org.bitcoins.testkit.chain.MockChainApi
@@ -13,37 +19,91 @@ import scala.concurrent.Future
 
 trait ServerGrpcFixture extends BitcoinSFixture with PostgresTestDatabase {
   lazy val network: BitcoinNetwork = RegTest
-  override type FixtureParam = (CommonRoutesClient, ServerGrpc)
+  case class GrpcClientServerFixture[T <: PekkoGrpcClient](
+      client: T,
+      server: ServerGrpc)
 
-  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
-    val builder: () => Future[(CommonRoutesClient, ServerGrpc)] = () => {
-      val tmpDir = FileUtil.tmpDir()
-      val port = RpcUtil.randomPort
-      val host = "localhost"
-      val server = new ServerGrpc(tmpDir.toPath,
-                                  host,
-                                  port,
-                                  rpcPassword = "",
-                                  chainApi = MockChainApi,
-                                  network = network,
-                                  startedTorConfigF = Future.unit,
-                                  nodeApi = MockNodeApi)
-      val clientSettings = GrpcClientSettings
-        .connectToServiceAt(host, port)
-        .withTls(false)
-      val client = CommonRoutesClient(clientSettings)
-      server.start().map(_ => (client, server))
-    }
+  type GrpcClient <: PekkoGrpcClient
+  final override type FixtureParam = GrpcClientServerFixture[GrpcClient]
 
-    val destroyF: ((CommonRoutesClient, ServerGrpc)) => Future[Unit] = {
-      case (client, server) =>
-        for {
-          _ <- client.close()
-          _ <- server.stop()
-        } yield ()
-    }
+  private def buildClient[T](
+      host: String,
+      port: Int,
+      build: GrpcClientSettings => T): Future[T] = {
+    val clientSettings = GrpcClientSettings
+      .connectToServiceAt(host, port)
+      .withTls(false)
+    val client = build(clientSettings)
+    Future.successful(client)
+  }
 
-    makeDependentFixture[(CommonRoutesClient, ServerGrpc)](builder, destroyF)(
-      test)
+  private def buildGrpcServer(
+      tmpDir: java.io.File,
+      host: String,
+      port: Int,
+      rpcPassword: String = ""): ServerGrpc = {
+    val server = new ServerGrpc(tmpDir.toPath,
+                                host,
+                                port,
+                                rpcPassword = rpcPassword,
+                                chainApi = MockChainApi,
+                                network = network,
+                                startedTorConfigF = Future.unit,
+                                nodeApi = MockNodeApi)
+    server
+  }
+
+  def withCommonRoutesClient(test: OneArgAsyncTest): FutureOutcome = {
+    val port = RpcUtil.randomPort
+    val host = "localhost"
+    val server = buildGrpcServer(FileUtil.tmpDir(), host, port)
+    val build: () => Future[GrpcClientServerFixture[CommonRoutesClient]] =
+      () =>
+        buildClient(host, port, CommonRoutesClient.apply).flatMap { client =>
+          server.start().map(_ => GrpcClientServerFixture(client, server))
+        }
+
+    makeDependentFixture[GrpcClientServerFixture[CommonRoutesClient]](
+      build,
+      destroyClientServer)(test)
+  }
+
+  def withChainRoutesClient(test: OneArgAsyncTest): FutureOutcome = {
+    val port = RpcUtil.randomPort
+    val host = "localhost"
+    val server = buildGrpcServer(FileUtil.tmpDir(), host, port)
+    val build: () => Future[GrpcClientServerFixture[ChainRoutesClient]] =
+      () =>
+        buildClient(host, port, ChainRoutesClient.apply).flatMap { client =>
+          server.start().map(_ => GrpcClientServerFixture(client, server))
+        }
+
+    makeDependentFixture[GrpcClientServerFixture[ChainRoutesClient]](
+      build,
+      destroyClientServer)(test)
+  }
+
+  def withNodeRoutesClient(test: OneArgAsyncTest): FutureOutcome = {
+    val port = RpcUtil.randomPort
+    val host = "localhost"
+    val server = buildGrpcServer(FileUtil.tmpDir(), host, port)
+    val build: () => Future[GrpcClientServerFixture[NodeRoutesClient]] =
+      () =>
+        buildClient(host, port, NodeRoutesClient.apply).flatMap { client =>
+          server.start().map(_ => GrpcClientServerFixture(client, server))
+        }
+
+    makeDependentFixture[GrpcClientServerFixture[NodeRoutesClient]](
+      build,
+      destroyClientServer)(test)
+  }
+
+  private def destroyClientServer[T <: PekkoGrpcClient](
+      cs: GrpcClientServerFixture[T]): Future[Unit] = {
+    val (client, server) = (cs.client, cs.server)
+    for {
+      _ <- client.close()
+      _ <- server.stop()
+    } yield ()
   }
 }

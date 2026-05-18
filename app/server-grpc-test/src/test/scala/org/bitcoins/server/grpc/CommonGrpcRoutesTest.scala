@@ -7,6 +7,7 @@ import org.bitcoins.testkit.chain.MockChainApi
 import org.bitcoins.testkit.fixtures.ServerGrpcFixture
 import org.bitcoins.testkit.node.MockNodeApi
 import org.bitcoins.testkit.util.FileUtil
+import org.scalatest.FutureOutcome
 
 import java.nio.file.Files
 import scala.concurrent.{ExecutionContext, Future}
@@ -17,7 +18,13 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
 
   behavior of "CommonGrpcRoutes"
 
-  it must "getversion" in { case (client, server) =>
+  override type GrpcClient = CommonRoutesClient
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    withCommonRoutesClient(test)
+  }
+
+  it must "getversion" in { case clientServer =>
+    val client = clientServer.client
     val responseF =
       client.getVersion(GetVersionRequest())
     val expectedVersion = Option(EnvUtil.getVersion)
@@ -26,7 +33,8 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
     }
   }
 
-  it must "zipdatadir" in { case (client, server) =>
+  it must "zipdatadir" in { case clientServer =>
+    val client = clientServer.client
     val fileName = FileUtil.randomDirName
     val dirName = FileUtil.randomDirName
     val dir = FileUtil.tmpDir().toPath
