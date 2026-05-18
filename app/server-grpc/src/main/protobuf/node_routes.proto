@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package org.bitcoins.server.grpc;
+
+option java_package = "org.bitcoins.server.grpc";
+option java_multiple_files = true;
+
+// NodeRoutes provides node RPC endpoints for the Bitcoin-S gRPC server.
+service NodeRoutes {
+  rpc GetConnectionCount(GetConnectionCountRequest)
+      returns (GetConnectionCountResponse);
+}
+
+message GetConnectionCountRequest {}
+
+message GetConnectionCountResponse {
+  int32 count = 1;
+}

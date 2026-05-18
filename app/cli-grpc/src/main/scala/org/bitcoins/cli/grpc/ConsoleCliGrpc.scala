@@ -5,6 +5,7 @@ import org.apache.pekko.grpc.GrpcClientSettings
 import org.bitcoins.cli.CliCommand.{
   GetBestBlockHash,
   GetBlockCount,
+  GetConnectionCount,
   GetFilterCount,
   GetFilterHeaderCount,
   GetInfo,
@@ -35,6 +36,7 @@ import org.bitcoins.server.grpc.{
   GetBlockCountRequest,
   GetBlockHeaderRequest,
   GetBlockHeaderResponse,
+  GetConnectionCountRequest,
   GetFilterCountRequest,
   GetFilterHeaderCountRequest,
   GetInfoRequest,
@@ -42,6 +44,7 @@ import org.bitcoins.server.grpc.{
   GetVersionRequest,
   GetVersionResponse,
   GrpcAuth,
+  NodeRoutesClient,
   ZipDataDirRequest
 }
 import scopt.OParser
@@ -129,6 +132,7 @@ object ConsoleCliGrpc {
 
     val commonClient = CommonRoutesClient(clientSettings)
     val chainClient = ChainRoutesClient(clientSettings)
+    val nodeClient = NodeRoutesClient(clientSettings)
 
     val responseF = command match {
       case GetVersion =>
@@ -163,6 +167,10 @@ object ConsoleCliGrpc {
         chainClient
           .getMedianTimePast(GetMedianTimePastRequest())
           .map(r => r.mediantimepast.toString)
+      case GetConnectionCount =>
+        nodeClient
+          .getConnectionCount(GetConnectionCountRequest())
+          .map(r => jsValueToString(Num(r.count)))
       case NoCommand =>
         Future.failed(
           new IllegalArgumentException("You need to provide a command!"))
@@ -177,11 +185,13 @@ object ConsoleCliGrpc {
         for {
           _ <- commonClient.close()
           _ <- chainClient.close()
+          _ <- nodeClient.close()
         } yield result
       case Failure(err) =>
         for {
           _ <- commonClient.close()
           _ <- chainClient.close()
+          _ <- nodeClient.close()
           result <- Future.failed(err)
         } yield result
     }

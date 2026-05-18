@@ -5,7 +5,9 @@ import org.bitcoins.core.util.EnvUtil
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.chain.MockChainApi
 import org.bitcoins.testkit.fixtures.ServerGrpcFixture
+import org.bitcoins.testkit.node.MockNodeApi
 import org.bitcoins.testkit.util.FileUtil
+import org.scalatest.FutureOutcome
 
 import java.nio.file.Files
 import scala.concurrent.{ExecutionContext, Future}
@@ -16,7 +18,13 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
 
   behavior of "CommonGrpcRoutes"
 
-  it must "getversion" in { case (client, server) =>
+  override type GrpcClient = CommonRoutesClient
+  override def withFixture(test: OneArgAsyncTest): FutureOutcome = {
+    withCommonRoutesClient(test)
+  }
+
+  it must "getversion" in { case clientServer =>
+    val client = clientServer.client
     val responseF =
       client.getVersion(GetVersionRequest())
     val expectedVersion = Option(EnvUtil.getVersion)
@@ -25,7 +33,8 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
     }
   }
 
-  it must "zipdatadir" in { case (client, server) =>
+  it must "zipdatadir" in { case clientServer =>
+    val client = clientServer.client
     val fileName = FileUtil.randomDirName
     val dirName = FileUtil.randomDirName
     val dir = FileUtil.tmpDir().toPath
@@ -49,7 +58,8 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
       rpcPassword = password,
       chainApi = MockChainApi,
       network = network,
-      startedTorConfigF = Future.unit
+      startedTorConfigF = Future.unit,
+      nodeApiF = Future.successful(MockNodeApi)
     )
     val clientSettings = org.apache.pekko.grpc.GrpcClientSettings
       .connectToServiceAt("localhost", port)
@@ -85,7 +95,8 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
       rpcPassword = serverPassword,
       chainApi = MockChainApi,
       network = network,
-      startedTorConfigF = Future.unit
+      startedTorConfigF = Future.unit,
+      nodeApiF = Future.successful(MockNodeApi)
     )
     val clientSettings = org.apache.pekko.grpc.GrpcClientSettings
       .connectToServiceAt("localhost", port)

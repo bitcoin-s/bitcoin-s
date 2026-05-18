@@ -18,6 +18,7 @@ import org.apache.pekko.http.scaladsl.model.headers.{
 }
 import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.chain.ChainApi
+import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.util.StartStopAsync
 
@@ -35,6 +36,21 @@ import scala.concurrent.Future
   *   the host to bind the server on
   * @param port
   *   the port to bind the server on (use 0 for a random available port)
+  * @param rpcPassword
+  *   the password required for HTTP Basic authentication on gRPC requests
+  * @param chainApi
+  *   the chain API used by chain gRPC routes
+  * @param network
+  *   the active Bitcoin network for server responses
+  * @param startedTorConfigF
+  *   a future that completes when Tor startup/configuration is finished
+  * @param nodeApiF
+  *   a future that yields the node API used by node gRPC routes. The reason
+  *   this is a Future is because if bitcoin-s is used with Tor, starting up the
+  *   nodeApi can take a while. For now we will block the gRPC server from
+  *   starting until the nodeApi is ready, but in the future we may want to
+  *   allow the gRPC server to start up and return an error if a request is made
+  *   before the nodeApi is ready.
   */
 class ServerGrpc(
     datadir: Path,
@@ -43,7 +59,8 @@ class ServerGrpc(
     rpcPassword: String,
     chainApi: ChainApi,
     network: BitcoinNetwork,
-    startedTorConfigF: Future[Unit]
+    startedTorConfigF: Future[Unit],
+    nodeApiF: Future[NodeApi]
 )(implicit system: ActorSystem)
     extends StartStopAsync[Unit]
     with BitcoinSLogger {
@@ -62,12 +79,19 @@ class ServerGrpc(
   private val commonImpl = new CommonGrpcRoutes(datadir)
   private val chainImpl =
     new ChainGrpcRoutes(chainApi, network, startedTorConfigF)
+  private val nodeImplF = nodeApiF.map(n => new NodeGrpcRoutes(n))
 
-  private val handler: HttpRequest => Future[HttpResponse] =
-    ServiceHandler.concatOrNotFound(
-      CommonRoutesHandler.partial(commonImpl),
-      ChainRoutesHandler.partial(chainImpl)
-    )
+  private val handlerF: Future[HttpRequest => Future[HttpResponse]] = {
+    for {
+      nodeImpl <- nodeImplF
+    } yield {
+      ServiceHandler.concatOrNotFound(
+        CommonRoutesHandler.partial(commonImpl),
+        ChainRoutesHandler.partial(chainImpl),
+        NodeRoutesHandler.partial(nodeImpl)
+      )
+    }
+  }
 
   private val bindingOpt: AtomicReference[Option[ServerBinding]] =
     new AtomicReference(None)
@@ -101,17 +125,19 @@ class ServerGrpc(
     }
   }
 
-  private val authedHandler: HttpRequest => Future[HttpResponse] =
-    if (rpcPassword.isEmpty) {
-      logger.warn(
-        s"gRPC authentication is disabled because bitcoin-s.server.password is empty (host=$rpchost, port=$port)"
-      )
-      handler
-    } else { request =>
-      if (isAuthenticated(request)) {
-        handler.apply(request)
-      } else {
-        Future.successful(unauthenticatedResponse)
+  private val authedHandlerF: Future[HttpRequest => Future[HttpResponse]] =
+    handlerF.map { handler =>
+      if (rpcPassword.isEmpty) {
+        logger.warn(
+          s"gRPC authentication is disabled because bitcoin-s.server.password is empty (host=$rpchost, port=$port)"
+        )
+        handler
+      } else { request =>
+        if (isAuthenticated(request)) {
+          handler.apply(request)
+        } else {
+          Future.successful(unauthenticatedResponse)
+        }
       }
     }
 
@@ -137,12 +163,14 @@ class ServerGrpc(
     * }}}
     */
   override def start(): Future[Unit] = {
-    val bindingF = Http()
-      .newServerAt(rpchost, port)
-      .bind(authedHandler)
-    bindingF.map { b =>
-      bindingOpt.set(Some(b))
-      ()
+    authedHandlerF.flatMap { authedHandler =>
+      val bindingF = Http()
+        .newServerAt(rpchost, port)
+        .bind(authedHandler)
+      bindingF.map { b =>
+        bindingOpt.set(Some(b))
+        ()
+      }
     }
   }
 
