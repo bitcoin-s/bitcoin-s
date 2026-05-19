@@ -3,7 +3,8 @@ package org.bitcoins.server
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.http.scaladsl.server.Directives.complete
 import org.apache.pekko.http.scaladsl.server.Route
-import org.bitcoins.commons.rpc._
+import org.bitcoins.commons.jsonmodels.server.{OfferAdd, OfferRemove, OfferSend}
+import org.bitcoins.commons.rpc.*
 import org.bitcoins.commons.serializers.Picklers
 import org.bitcoins.core.api.dlc.node.DLCNodeApi
 import org.bitcoins.core.api.dlc.wallet.db.IncomingDLCOfferDb
@@ -16,9 +17,9 @@ import org.bitcoins.core.protocol.tlv.{
   EnumEventDescriptorV0TLV,
   NumericEventDescriptorTLV
 }
-import org.bitcoins.server.routes._
-import ujson._
-import upickle.default._
+import org.bitcoins.server.routes.*
+import ujson.*
+import upickle.default.*
 
 import scala.concurrent.Future
 

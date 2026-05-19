@@ -1,24 +1,24 @@
-package org.bitcoins.server
+package org.bitcoins.commons.jsonmodels.server
 
 import org.bitcoins.commons.jsonmodels.bitcoind.RpcOpts.LockUnspentOutputParameter
 import org.bitcoins.commons.serializers.JsonReaders
 import org.bitcoins.core.api.wallet.CoinSelectionAlgo
 import org.bitcoins.core.config.DLC
-import org.bitcoins.core.crypto._
+import org.bitcoins.core.crypto.*
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.BitcoinAddress
-import org.bitcoins.core.protocol.tlv._
+import org.bitcoins.core.protocol.tlv.*
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.core.psbt.PSBT
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
-import org.bitcoins.crypto._
-import ujson._
+import org.bitcoins.crypto.*
+import ujson.*
 
 import java.io.File
 import java.net.{InetSocketAddress, URI}
 import java.nio.file.Path
-import scala.util._
+import scala.util.*
 
 case class DecodeAccept(accept: DLCAcceptTLV)
 
