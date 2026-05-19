@@ -5,6 +5,7 @@ import org.apache.pekko.http.scaladsl.model.HttpEntity
 import org.apache.pekko.http.scaladsl.server.Directives.complete
 import org.apache.pekko.http.scaladsl.server.Route
 import org.apache.pekko.stream.Materializer
+import org.bitcoins.commons.jsonmodels.server.{DLCDataFromFile, GetDLCOffer}
 import org.bitcoins.commons.rpc.*
 import org.bitcoins.commons.serializers.Picklers
 import org.bitcoins.commons.serializers.Picklers.*
