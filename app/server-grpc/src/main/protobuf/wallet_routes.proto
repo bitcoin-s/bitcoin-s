@@ -1,0 +1,103 @@
+syntax = "proto3";
+
+package org.bitcoins.server.grpc;
+
+option java_package = "org.bitcoins.server.grpc";
+option java_multiple_files = true;
+
+// WalletRoutes provides wallet RPC endpoints for the Bitcoin-S gRPC server.
+service WalletRoutes {
+  rpc IsEmpty(IsEmptyRequest) returns (IsEmptyResponse);
+  rpc GetBalance(GetBalanceRequest) returns (GetBalanceResponse);
+  rpc GetConfirmedBalance(GetBalanceRequest) returns (GetBalanceResponse);
+  rpc GetUnconfirmedBalance(GetBalanceRequest) returns (GetBalanceResponse);
+  rpc GetBalances(GetBalancesRequest) returns (GetBalancesResponse);
+  rpc GetUtxos(GetUtxosRequest) returns (GetUtxosResponse);
+  rpc GetReservedUtxos(GetReservedUtxosRequest) returns (GetUtxosResponse);
+  rpc GetAddresses(GetAddressesRequest) returns (GetAddressesResponse);
+  rpc GetSpentAddresses(GetSpentAddressesRequest) returns (GetAddressesResponse);
+  rpc GetFundedAddresses(GetFundedAddressesRequest)
+      returns (GetFundedAddressesResponse);
+  rpc GetUnusedAddresses(GetUnusedAddressesRequest)
+      returns (GetAddressesResponse);
+  rpc GetAccounts(GetAccountsRequest) returns (GetAccountsResponse);
+  rpc GetAddressLabels(GetAddressLabelsRequest)
+      returns (GetAddressLabelsResponse);
+}
+
+message IsEmptyRequest {}
+
+message IsEmptyResponse {
+  bool empty = 1;
+}
+
+message GetBalanceRequest {
+  bool is_sats = 1;
+}
+
+message GetBalanceResponse {
+  double balance = 1;
+}
+
+message GetBalancesRequest {
+  bool is_sats = 1;
+}
+
+message GetBalancesResponse {
+  double confirmed = 1;
+  double unconfirmed = 2;
+  double reserved = 3;
+  double total = 4;
+}
+
+message GetUtxosRequest {}
+
+message GetReservedUtxosRequest {}
+
+message Utxo {
+  string txid = 1;
+  int64 vout = 2;
+  int64 value_sats = 3;
+}
+
+message GetUtxosResponse {
+  repeated Utxo utxos = 1;
+}
+
+message GetAddressesRequest {}
+
+message GetSpentAddressesRequest {}
+
+message GetUnusedAddressesRequest {}
+
+message GetAddressesResponse {
+  repeated string addresses = 1;
+}
+
+message GetFundedAddressesRequest {}
+
+message FundedAddress {
+  string address = 1;
+  int64 value_sats = 2;
+}
+
+message GetFundedAddressesResponse {
+  repeated FundedAddress funded_addresses = 1;
+}
+
+message GetAccountsRequest {}
+
+message GetAccountsResponse {
+  repeated string xpubs = 1;
+}
+
+message GetAddressLabelsRequest {}
+
+message AddressLabels {
+  string address = 1;
+  repeated string labels = 2;
+}
+
+message GetAddressLabelsResponse {
+  repeated AddressLabels address_labels = 1;
+}

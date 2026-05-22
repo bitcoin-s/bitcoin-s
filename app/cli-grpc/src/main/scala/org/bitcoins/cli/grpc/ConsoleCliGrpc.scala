@@ -4,16 +4,26 @@ import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.grpc.GrpcClientSettings
 import org.bitcoins.cli.CliCommand.{
   AddDLCOffer,
+  GetAccounts,
+  GetAddressLabels,
+  GetAddresses,
+  GetBalances,
   GetBestBlockHash,
   GetBlockCount,
   GetConnectionCount,
   GetDLCHostAddress,
   GetFilterCount,
   GetFilterHeaderCount,
+  GetFundedAddresses,
   GetInfo,
   GetMedianTimePast,
+  GetReservedUtxos,
+  GetSpentAddresses,
+  GetUnusedAddresses,
+  GetUtxos,
   GetVersion,
   IncomingOffersList,
+  IsEmpty,
   OfferSend,
   RemoveDLCOffer,
   ZipDataDir
@@ -53,24 +63,36 @@ import org.bitcoins.server.grpc.{
   DLCRoutesClient,
   DlcContactAddRequest,
   GetBestBlockHashRequest,
+  GetAccountsRequest,
+  GetAddressLabelsRequest,
+  GetAddressesRequest,
+  GetBalancesRequest,
+  GetFundedAddressesRequest,
   GetBlockCountRequest,
   GetBlockHeaderRequest,
   GetBlockHeaderResponse,
   GetConnectionCountRequest,
   GetDlcHostAddressRequest,
+  GetUtxosResponse,
   GetFilterCountRequest,
   GetFilterHeaderCountRequest,
   GetInfoRequest,
   GetMedianTimePastRequest,
+  GetReservedUtxosRequest,
+  GetSpentAddressesRequest,
+  GetUnusedAddressesRequest,
+  GetUtxosRequest,
   GetVersionRequest,
   GetVersionResponse,
   GrpcAuth,
+  IsEmptyRequest,
   IncomingOfferListResponse,
   IncomingOffersListRequest,
   NodeRoutesClient,
   OfferAddRequest,
   OfferRemoveRequest,
   OfferSendRequest,
+  WalletRoutesClient,
   ZipDataDirRequest
 }
 import scopt.OParser
@@ -161,6 +183,7 @@ object ConsoleCliGrpc {
     val chainClient = ChainRoutesClient(clientSettings)
     val nodeClient = NodeRoutesClient(clientSettings)
     val dlcClient = DLCRoutesClient(clientSettings)
+    val walletClient = WalletRoutesClient(clientSettings)
 
     val responseF = command match {
       case GetVersion =>
@@ -199,6 +222,72 @@ object ConsoleCliGrpc {
         nodeClient
           .getConnectionCount(GetConnectionCountRequest())
           .map(r => jsValueToString(Num(r.count)))
+      case IsEmpty =>
+        walletClient
+          .isEmpty(IsEmptyRequest())
+          .map(r => jsValueToString(ujson.Bool(r.empty)))
+      case command: GetBalances =>
+        walletClient
+          .getBalances(GetBalancesRequest(isSats = command.isSats))
+          .map { response =>
+            jsValueToString(
+              ujson.Obj(
+                "confirmed" -> Num(response.confirmed),
+                "unconfirmed" -> Num(response.unconfirmed),
+                "reserved" -> Num(response.reserved),
+                "total" -> Num(response.total)
+              ))
+          }
+      case GetUtxos =>
+        walletClient
+          .getUtxos(GetUtxosRequest())
+          .map(formatUtxos)
+      case GetReservedUtxos =>
+        walletClient
+          .getReservedUtxos(GetReservedUtxosRequest())
+          .map(formatUtxos)
+      case GetAddresses =>
+        walletClient
+          .getAddresses(GetAddressesRequest())
+          .map(r => formatStringArray(r.addresses))
+      case GetSpentAddresses =>
+        walletClient
+          .getSpentAddresses(GetSpentAddressesRequest())
+          .map(r => formatStringArray(r.addresses))
+      case GetFundedAddresses =>
+        walletClient
+          .getFundedAddresses(GetFundedAddressesRequest())
+          .map { response =>
+            val json = ujson.Arr.from(
+              response.fundedAddresses.map(fa =>
+                ujson.Obj(
+                  "address" -> Str(fa.address),
+                  "value" -> Num(fa.valueSats.toDouble)
+                ))
+            )
+            jsValueToString(json)
+          }
+      case GetUnusedAddresses =>
+        walletClient
+          .getUnusedAddresses(GetUnusedAddressesRequest())
+          .map(r => formatStringArray(r.addresses))
+      case GetAccounts =>
+        walletClient
+          .getAccounts(GetAccountsRequest())
+          .map(r => formatStringArray(r.xpubs))
+      case GetAddressLabels =>
+        walletClient
+          .getAddressLabels(GetAddressLabelsRequest())
+          .map { response =>
+            val json = ujson.Arr.from(
+              response.addressLabels.map(labels =>
+                ujson.Obj(
+                  "address" -> Str(labels.address),
+                  "labels" -> ujson.Arr.from(labels.labels.map(Str(_)))
+                ))
+            )
+            jsValueToString(json)
+          }
       case GetDLCHostAddress =>
         dlcClient
           .getDlcHostAddress(GetDlcHostAddressRequest())
@@ -295,6 +384,7 @@ object ConsoleCliGrpc {
           _ <- chainClient.close()
           _ <- nodeClient.close()
           _ <- dlcClient.close()
+          _ <- walletClient.close()
         } yield result
       case Failure(err) =>
         for {
@@ -302,6 +392,7 @@ object ConsoleCliGrpc {
           _ <- chainClient.close()
           _ <- nodeClient.close()
           _ <- dlcClient.close()
+          _ <- walletClient.close()
           result <- Future.failed(err)
         } yield result
     }
@@ -392,6 +483,24 @@ object ConsoleCliGrpc {
         upickle.default.writeJs(c)(using Picklers.contactDbPickler))
     )
 
+    jsValueToString(json)
+  }
+
+  private def formatUtxos(response: GetUtxosResponse): String = {
+    val json = ujson.Arr.from(
+      response.utxos.map(utxo =>
+        ujson.Obj(
+          "outpoint" -> ujson.Obj("txid" -> Str(utxo.txid),
+                                  "vout" -> Num(utxo.vout.toDouble)),
+          "value" -> Num(utxo.valueSats.toDouble)
+        ))
+    )
+
+    jsValueToString(json)
+  }
+
+  private def formatStringArray(values: Seq[String]): String = {
+    val json = ujson.Arr.from(values.map(Str(_)))
     jsValueToString(json)
   }
 }

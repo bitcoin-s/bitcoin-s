@@ -11,6 +11,7 @@ import org.bitcoins.server.grpc.{
   CommonRoutesClient,
   DLCRoutesClient,
   NodeRoutesClient,
+  WalletRoutesClient,
   ServerGrpc
 }
 import org.bitcoins.testkit.BitcoinSTestAppConfig
@@ -20,6 +21,7 @@ import org.bitcoins.testkit.node.{
   NodeTestUtil,
   NodeTestWithCachedBitcoindNewest
 }
+import org.bitcoins.testkit.wallet.MockWalletHolder
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
@@ -71,6 +73,7 @@ trait ServerGrpcFixture extends NodeTestWithCachedBitcoindNewest {
     val dlcNode = MockDLCNodeApi.fresh()
     val neutrinoNodeF = cachedBitcoindWithFundsF
       .flatMap(createNeutrinoNodeConnectedToBitcoindCached(_)(appConfig))
+    val walletApi = MockWalletHolder.emptyApi()
     for {
       neutrinoNode <- neutrinoNodeF
       chainApi <- neutrinoNode.node.chainApiFromDb()
@@ -83,7 +86,8 @@ trait ServerGrpcFixture extends NodeTestWithCachedBitcoindNewest {
         network = network,
         startedTorConfigF = Future.unit,
         nodeApiF = neutrinoNodeF.map(_.node),
-        dlcNodeF = Future.successful(dlcNode)
+        dlcNodeF = Future.successful(dlcNode),
+        walletApiF = Future.successful(walletApi)
       )
       bitcoind <- cachedBitcoindWithFundsF
       _ <- NodeTestUtil.awaitAllSync(neutrinoNode.node, bitcoind)
@@ -140,6 +144,21 @@ trait ServerGrpcFixture extends NodeTestWithCachedBitcoindNewest {
       () => buildClient(host, port, DLCRoutesClient.apply, serverPackageF)
 
     makeDependentFixture[GrpcClientServerFixture[DLCRoutesClient]](
+      build,
+      destroyClientServer)(test)
+  }
+
+  def withWalletRoutesClient(test: OneArgAsyncTest): FutureOutcome = {
+    val port = RpcUtil.randomPort
+    val host = "localhost"
+    val server = buildGrpcServer(FileUtil.tmpDir(), host, port)
+    val build: () => Future[GrpcClientServerFixture[WalletRoutesClient]] =
+      () =>
+        buildClient(host, port, WalletRoutesClient.apply).flatMap { client =>
+          server.start().map(_ => GrpcClientServerFixture(client, server))
+        }
+
+    makeDependentFixture[GrpcClientServerFixture[WalletRoutesClient]](
       build,
       destroyClientServer)(test)
   }
