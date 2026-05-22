@@ -8,6 +8,7 @@ import org.bitcoins.testkit.dlc.MockDLCNodeApi
 import org.bitcoins.testkit.fixtures.ServerGrpcFixture
 import org.bitcoins.testkit.node.MockNodeApi
 import org.bitcoins.testkit.util.FileUtil
+import org.bitcoins.testkit.wallet.MockWalletHolder
 import org.scalatest.FutureOutcome
 
 import java.nio.file.Files
@@ -53,6 +54,7 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
     val password = "topsecret"
     val port = RpcUtil.randomPort
     val dlcNode = MockDLCNodeApi.fresh()
+    val walletApi = MockWalletHolder.emptyApi()
     val server = new ServerGrpc(
       datadir = FileUtil.tmpDir().toPath,
       rpchost = "localhost",
@@ -62,7 +64,8 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
       network = network,
       startedTorConfigF = Future.unit,
       nodeApiF = Future.successful(MockNodeApi),
-      dlcNodeF = Future.successful(dlcNode)
+      dlcNodeF = Future.successful(dlcNode),
+      walletApiF = Future.successful(walletApi)
     )
     val clientSettings = org.apache.pekko.grpc.GrpcClientSettings
       .connectToServiceAt("localhost", port)
@@ -92,6 +95,7 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
     val clientPassword = "wrong-password"
     val port = RpcUtil.randomPort
     val dlcNode = MockDLCNodeApi.fresh()
+    val walletApi = MockWalletHolder.emptyApi()
     val server = new ServerGrpc(
       datadir = FileUtil.tmpDir().toPath,
       rpchost = "localhost",
@@ -101,7 +105,8 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
       network = network,
       startedTorConfigF = Future.unit,
       nodeApiF = Future.successful(MockNodeApi),
-      dlcNodeF = Future.successful(dlcNode)
+      dlcNodeF = Future.successful(dlcNode),
+      walletApiF = Future.successful(walletApi)
     )
     val clientSettings = org.apache.pekko.grpc.GrpcClientSettings
       .connectToServiceAt("localhost", port)

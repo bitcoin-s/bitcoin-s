@@ -13,6 +13,7 @@ import org.bitcoins.testkit.dlc.MockDLCNodeApi
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.node.MockNodeApi
 import org.bitcoins.testkit.util.FileUtil
+import org.bitcoins.testkit.wallet.MockWalletHolder
 import org.bitcoins.testkitcore.chain.ChainTestUtil
 import org.scalatest.FutureOutcome
 
@@ -31,6 +32,7 @@ class ConsoleCliGrpcTest extends BitcoinSFixture with PostgresTestDatabase {
       val tmpDir = FileUtil.tmpDir()
       val port = RpcUtil.randomPort
       val dlcNode = MockDLCNodeApi.fresh()
+      val walletApi = MockWalletHolder.emptyApi()
       val server =
         new ServerGrpc(
           tmpDir.toPath,
@@ -41,7 +43,8 @@ class ConsoleCliGrpcTest extends BitcoinSFixture with PostgresTestDatabase {
           network = network,
           startedTorConfigF = Future.unit,
           nodeApiF = Future.successful(MockNodeApi),
-          dlcNodeF = Future.successful(dlcNode)
+          dlcNodeF = Future.successful(dlcNode),
+          walletApiF = Future.successful(walletApi)
         )
 
       server.start().map(_ => (port, server))
@@ -148,6 +151,70 @@ class ConsoleCliGrpcTest extends BitcoinSFixture with PostgresTestDatabase {
   it must "execute getconnectioncount" in { case (port, _) =>
     exec(port, "getconnectioncount").map { response =>
       assert(response == "0")
+    }
+  }
+
+  it must "execute isempty" in { case (port, _) =>
+    exec(port, "isempty").map { response =>
+      assert(response == "true")
+    }
+  }
+
+  it must "execute getbalances" in { case (port, _) =>
+    exec(port, "getbalances").map { response =>
+      val json = ujson.read(response)
+      assert(json("confirmed").num == 0)
+      assert(json("unconfirmed").num == 0)
+      assert(json("reserved").num == 0)
+      assert(json("total").num == 0)
+    }
+  }
+
+  it must "execute getutxos" in { case (port, _) =>
+    exec(port, "getutxos").map { response =>
+      assert(response == "[]")
+    }
+  }
+
+  it must "execute getreservedutxos" in { case (port, _) =>
+    exec(port, "getreservedutxos").map { response =>
+      assert(response == "[]")
+    }
+  }
+
+  it must "execute getaddresses" in { case (port, _) =>
+    exec(port, "getaddresses").map { response =>
+      assert(response == "[]")
+    }
+  }
+
+  it must "execute getspentaddresses" in { case (port, _) =>
+    exec(port, "getspentaddresses").map { response =>
+      assert(response == "[]")
+    }
+  }
+
+  it must "execute getfundedaddresses" in { case (port, _) =>
+    exec(port, "getfundedaddresses").map { response =>
+      assert(response == "[]")
+    }
+  }
+
+  it must "execute getunusedaddresses" in { case (port, _) =>
+    exec(port, "getunusedaddresses").map { response =>
+      assert(response == "[]")
+    }
+  }
+
+  it must "execute getaccounts" in { case (port, _) =>
+    exec(port, "getaccounts").map { response =>
+      assert(response == "[]")
+    }
+  }
+
+  it must "execute getaddresslabels" in { case (port, _) =>
+    exec(port, "getaddresslabels").map { response =>
+      assert(response == "[]")
     }
   }
 
