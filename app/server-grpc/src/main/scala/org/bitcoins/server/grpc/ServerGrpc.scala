@@ -18,6 +18,7 @@ import org.apache.pekko.http.scaladsl.model.headers.{
 }
 import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.chain.ChainApi
+import org.bitcoins.core.api.dlc.node.DLCNodeApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.config.BitcoinNetwork
 import org.bitcoins.core.util.StartStopAsync
@@ -51,6 +52,8 @@ import scala.concurrent.Future
   *   starting until the nodeApi is ready, but in the future we may want to
   *   allow the gRPC server to start up and return an error if a request is made
   *   before the nodeApi is ready.
+  * @param dlcNodeF
+  *   a future that yields the DLC node API used by dlc gRPC routes.
   */
 class ServerGrpc(
     datadir: Path,
@@ -60,7 +63,8 @@ class ServerGrpc(
     chainApi: ChainApi,
     network: BitcoinNetwork,
     startedTorConfigF: Future[Unit],
-    nodeApiF: Future[NodeApi]
+    nodeApiF: Future[NodeApi],
+    dlcNodeF: Future[DLCNodeApi]
 )(implicit system: ActorSystem)
     extends StartStopAsync[Unit]
     with BitcoinSLogger {
@@ -80,15 +84,18 @@ class ServerGrpc(
   private val chainImpl =
     new ChainGrpcRoutes(chainApi, network, startedTorConfigF)
   private val nodeImplF = nodeApiF.map(n => new NodeGrpcRoutes(n))
+  private val dlcImplF = dlcNodeF.map(n => new DLCGrpcRoutes(n))
 
   private val handlerF: Future[HttpRequest => Future[HttpResponse]] = {
     for {
       nodeImpl <- nodeImplF
+      dlcImpl <- dlcImplF
     } yield {
       ServiceHandler.concatOrNotFound(
         CommonRoutesHandler.partial(commonImpl),
         ChainRoutesHandler.partial(chainImpl),
-        NodeRoutesHandler.partial(nodeImpl)
+        NodeRoutesHandler.partial(nodeImpl),
+        DLCRoutesHandler.partial(dlcImpl)
       )
     }
   }

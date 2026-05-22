@@ -9,6 +9,7 @@ import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.grpc.ServerGrpc
 import org.bitcoins.testkit.PostgresTestDatabase
 import org.bitcoins.testkit.chain.MockChainApi
+import org.bitcoins.testkit.dlc.MockDLCNodeApi
 import org.bitcoins.testkit.fixtures.BitcoinSFixture
 import org.bitcoins.testkit.node.MockNodeApi
 import org.bitcoins.testkit.util.FileUtil
@@ -29,6 +30,7 @@ class ConsoleCliGrpcTest extends BitcoinSFixture with PostgresTestDatabase {
     val builder: () => Future[(Int, ServerGrpc)] = () => {
       val tmpDir = FileUtil.tmpDir()
       val port = RpcUtil.randomPort
+      val dlcNode = MockDLCNodeApi.fresh()
       val server =
         new ServerGrpc(
           tmpDir.toPath,
@@ -38,7 +40,8 @@ class ConsoleCliGrpcTest extends BitcoinSFixture with PostgresTestDatabase {
           chainApi = MockChainApi,
           network = network,
           startedTorConfigF = Future.unit,
-          nodeApiF = Future.successful(MockNodeApi)
+          nodeApiF = Future.successful(MockNodeApi),
+          dlcNodeF = Future.successful(dlcNode)
         )
 
       server.start().map(_ => (port, server))
@@ -145,6 +148,72 @@ class ConsoleCliGrpcTest extends BitcoinSFixture with PostgresTestDatabase {
   it must "execute getconnectioncount" in { case (port, _) =>
     exec(port, "getconnectioncount").map { response =>
       assert(response == "0")
+    }
+  }
+
+  it must "execute getdlchostaddress" in { case (port, _) =>
+    exec(port, "getdlchostaddress").map { response =>
+      val expected =
+        s"${MockDLCNodeApi.hostAddress.getHostName}:${MockDLCNodeApi.hostAddress.getPort}"
+      assert(response == expected)
+    }
+  }
+
+  it must "execute offers-list" in { case (port, _) =>
+    exec(port, "incoming-offers-list").map { response =>
+      assert(response == "[]")
+    }
+  }
+
+  it must "execute addoffer" in { case (port, _) =>
+    exec(port, "addoffer", MockDLCNodeApi.offerLnMessageHex, "note", "peer-1")
+      .map { response =>
+        assert(response.nonEmpty)
+      }
+  }
+
+  it must "execute removeoffer" in { case (port, _) =>
+    exec(port, "removeoffer", org.bitcoins.crypto.Sha256Digest.empty.hex).map {
+      response =>
+        assert(response == org.bitcoins.crypto.Sha256Digest.empty.hex)
+    }
+  }
+
+  it must "execute contact-add and contacts-list" in { case (port, _) =>
+    for {
+      addResponse <- exec(port,
+                          "contact-add",
+                          "alice",
+                          "localhost:2862",
+                          "memo")
+      listResponse <- exec(port, "contacts-list")
+    } yield {
+      assert(addResponse == "ok")
+      val contacts = ujson.read(listResponse).arr
+      assert(contacts.nonEmpty)
+      assert(contacts.head.obj("alias").str == "alice")
+    }
+  }
+
+  it must "execute dlc-contact-add" in { case (port, _) =>
+    exec(port,
+         "dlc-contact-add",
+         org.bitcoins.crypto.Sha256Digest.empty.hex,
+         "localhost:2862").map { response =>
+      val json = ujson.read(response)
+      assert(
+        json.obj("dlcId").str == org.bitcoins.crypto.Sha256Digest.empty.hex)
+      assert(json.obj("contactId").str == "localhost:2862")
+    }
+  }
+
+  it must "execute offer-send" in { case (port, _) =>
+    exec(port,
+         "offer-send",
+         org.bitcoins.crypto.Sha256Digest.empty.hex,
+         "localhost:2862",
+         "message").map { response =>
+      assert(response == org.bitcoins.crypto.Sha256Digest.empty.hex)
     }
   }
 

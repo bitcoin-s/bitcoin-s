@@ -4,6 +4,7 @@ import io.grpc.{Status, StatusRuntimeException}
 import org.bitcoins.core.util.EnvUtil
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.testkit.chain.MockChainApi
+import org.bitcoins.testkit.dlc.MockDLCNodeApi
 import org.bitcoins.testkit.fixtures.ServerGrpcFixture
 import org.bitcoins.testkit.node.MockNodeApi
 import org.bitcoins.testkit.util.FileUtil
@@ -51,6 +52,7 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
   it must "authenticate with the configured password" in { _ =>
     val password = "topsecret"
     val port = RpcUtil.randomPort
+    val dlcNode = MockDLCNodeApi.fresh()
     val server = new ServerGrpc(
       datadir = FileUtil.tmpDir().toPath,
       rpchost = "localhost",
@@ -59,7 +61,8 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
       chainApi = MockChainApi,
       network = network,
       startedTorConfigF = Future.unit,
-      nodeApiF = Future.successful(MockNodeApi)
+      nodeApiF = Future.successful(MockNodeApi),
+      dlcNodeF = Future.successful(dlcNode)
     )
     val clientSettings = org.apache.pekko.grpc.GrpcClientSettings
       .connectToServiceAt("localhost", port)
@@ -88,6 +91,7 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
     val serverPassword = "topsecret"
     val clientPassword = "wrong-password"
     val port = RpcUtil.randomPort
+    val dlcNode = MockDLCNodeApi.fresh()
     val server = new ServerGrpc(
       datadir = FileUtil.tmpDir().toPath,
       rpchost = "localhost",
@@ -96,7 +100,8 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
       chainApi = MockChainApi,
       network = network,
       startedTorConfigF = Future.unit,
-      nodeApiF = Future.successful(MockNodeApi)
+      nodeApiF = Future.successful(MockNodeApi),
+      dlcNodeF = Future.successful(dlcNode)
     )
     val clientSettings = org.apache.pekko.grpc.GrpcClientSettings
       .connectToServiceAt("localhost", port)

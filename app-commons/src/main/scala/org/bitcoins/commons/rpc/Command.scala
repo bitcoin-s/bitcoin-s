@@ -1143,6 +1143,7 @@ case class AcceptDLC(
     externalChangeAddressOpt: Option[BitcoinAddress]
 ) extends CliCommand
     with AcceptDLCCliCommand
+    with CliGrpcCommand
 
 object AcceptDLC extends ServerJsonModels {
 
@@ -1581,13 +1582,14 @@ object BumpFee extends ServerJsonModels {
 case class CreateContractInfo(
     announcementTLV: OracleAnnouncementTLV,
     totalCollateral: Satoshis,
-    contractDescriptor: ContractDescriptorTLV
+    contractDescriptorTLV: ContractDescriptorTLV
 ) extends CommandRpc
     with AppServerCliCommand
+    with CliGrpcCommand
     with ServerJsonModels {
 
-  def ContractDescriptorTLV: ContractDescriptor = {
-    ContractDescriptor.fromTLV(contractDescriptor)
+  def contractDescriptor: ContractDescriptor = {
+    ContractDescriptor.fromTLV(contractDescriptorTLV)
   }
 }
 
@@ -1597,20 +1599,30 @@ object CreateContractInfo extends ServerJsonModels {
     CreateContractInfo(
       announcementTLV = OracleAnnouncementV0TLV.dummy,
       totalCollateral = Satoshis.zero,
-      contractDescriptor = ContractDescriptorTLV.empty
+      contractDescriptorTLV = ContractDescriptorTLV.empty
     )
   }
 
   def fromJsArr(arr: ujson.Arr): Try[CreateContractInfo] = {
     arr.arr.toVector match {
-      case announcementVal +: totalCollateralVal +: payoutsVal +: Vector() =>
+      case announcementVal +: totalCollateralVal +: contractVal +: Vector() =>
         Try {
           val announcementTLV =
             OracleAnnouncementTLV.fromHex(announcementVal.str)
           val totalCollateral = Satoshis(totalCollateralVal.num.toLong)
           // validate that these are part of the announcement?
+
+          // if contract descriptor is a json object (enum contract)
+          // or array (numeric contract)
+          // parse it as a json formatted contract descriptor,
+          // otherwise parse it as a hex string formatted contract descriptor
           val contractDescriptor =
-            ContractDescriptorParser.parseCmdLine(payoutsVal, announcementTLV)
+            if (contractVal.objOpt.isDefined || contractVal.arrOpt.isDefined) {
+              ContractDescriptorParser.parseCmdLine(contractVal,
+                                                    announcementTLV)
+            } else {
+              ContractDescriptorTLV.fromHex(contractVal.str)
+            }
 
           CreateContractInfo(
             announcementTLV,
@@ -1630,6 +1642,7 @@ object CreateContractInfo extends ServerJsonModels {
 case class ContactAdd(alias: String, address: InetSocketAddress, memo: String)
     extends CommandRpc
     with AppServerCliCommand
+    with CliGrpcCommand
     with ServerJsonModels {
   def toDLCContactDb: DLCContactDb = DLCContactDb(alias, address, memo)
 }
@@ -1658,7 +1671,10 @@ object ContactAdd {
   }
 }
 
-case object ContactsList extends CommandRpc with AppServerCliCommand
+case object ContactsList
+    extends CommandRpc
+    with AppServerCliCommand
+    with CliGrpcCommand
 
 case class ContactRemove(address: InetSocketAddress)
     extends CommandRpc
@@ -1689,6 +1705,7 @@ object ContactRemove {
 case class DLCContactAdd(dlcId: Sha256Digest, address: InetSocketAddress)
     extends CommandRpc
     with AppServerCliCommand
+    with CliGrpcCommand
     with ServerJsonModels
 
 object DLCContactAdd {

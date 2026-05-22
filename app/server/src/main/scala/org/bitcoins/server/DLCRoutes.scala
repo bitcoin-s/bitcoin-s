@@ -68,24 +68,18 @@ case class DLCRoutes(dlcNode: DLCNodeApi)(implicit system: ActorSystem)
               }
             val contractInfo = SingleContractInfo(
               create.totalCollateral,
-              create.ContractDescriptorTLV,
+              create.contractDescriptor,
               oracleInfo
             )
             Server.httpSuccess(contractInfo.hex)
           }
       }
 
-    case ServerCommand("offers-list", _) =>
+    case ServerCommand("offers-list" | "incoming-offers-list", _) =>
       complete {
         dlcNode.incomingOfferHandling.listIncomingDLCOffers().map { offers =>
           def toJson(io: IncomingDLCOfferDb): Value = {
-            Obj(
-              "hash" -> io.hash.hex,
-              "receivedAt" -> Num(io.receivedAt.getEpochSecond.toDouble),
-              "peer" -> io.peer.map(Str.apply).getOrElse(Null),
-              "message" -> io.message.map(Str.apply).getOrElse(Null),
-              "offerTLV" -> io.offerTLV.hex
-            )
+            upickle.default.writeJs(io)(using Picklers.dlcOfferAddW)
           }
 
           Server.httpSuccess(offers.map(toJson))

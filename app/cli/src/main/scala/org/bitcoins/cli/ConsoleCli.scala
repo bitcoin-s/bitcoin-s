@@ -1377,6 +1377,29 @@ object ConsoleCli extends BitcoinSLogger {
                 case other => other
               }))
         ),
+      cmd("dlc-contact-add")
+        .action((_, conf) => conf.copy(command = DLCContactAdd.empty))
+        .text("Associates a DLC with a peer address")
+        .children(
+          arg[Sha256Digest]("dlcId")
+            .text("Internal id of the DLC")
+            .required()
+            .action((dlcId, conf) =>
+              conf.copy(command = conf.command match {
+                case add: DLCContactAdd =>
+                  add.copy(dlcId = dlcId)
+                case other => other
+              })),
+          arg[InetSocketAddress]("address")
+            .text("Peer's network address")
+            .required()
+            .action((address, conf) =>
+              conf.copy(command = conf.command match {
+                case add: DLCContactAdd =>
+                  add.copy(address = address)
+                case other => other
+              }))
+        ),
       cmd("createcontractinfo")
         .action((_, conf) => conf.copy(command = CreateContractInfo.empty))
         .text(
@@ -1411,7 +1434,7 @@ object ConsoleCli extends BitcoinSLogger {
             .action((contractDescriptor, conf) =>
               conf.copy(command = conf.command match {
                 case create: CreateContractInfo =>
-                  create.copy(contractDescriptor = contractDescriptor)
+                  create.copy(contractDescriptorTLV = contractDescriptor)
                 case other => other
               }))
         ),
@@ -1424,8 +1447,8 @@ object ConsoleCli extends BitcoinSLogger {
             .required()
             .action((offer, conf) =>
               conf.copy(command = conf.command match {
-                case accept: AcceptDLCOffer =>
-                  accept.copy(offer = offer)
+                case add: AddDLCOffer =>
+                  add.copy(offer = offer)
                 case other => other
               })),
           arg[String]("message")
@@ -1458,6 +1481,46 @@ object ConsoleCli extends BitcoinSLogger {
               conf.copy(command = conf.command match {
                 case accept: RemoveDLCOffer =>
                   accept.copy(offerHash = hash)
+                case other => other
+              }))
+        ),
+      cmd("offers-list")
+        .action((_, conf) => conf.copy(command = OffersList))
+        .text("Lists incoming DLC offers"),
+      cmd("incoming-offers-list")
+        .action((_, conf) => conf.copy(command = IncomingOffersList))
+        .text(
+          "Lists incoming DLC offers that have not been removed from the inbox"),
+      cmd("offer-send")
+        .action((_, conf) => conf.copy(command = OfferSend("", "", "")))
+        .text("Sends a DLC offer or temp contract id to a remote peer")
+        .children(
+          arg[String]("offerOrTempContractId")
+            .text("DLC offer hex or temporary contract id")
+            .required()
+            .action((offer, conf) =>
+              conf.copy(command = conf.command match {
+                case send: OfferSend =>
+                  send.copy(offer = offer)
+                case other => other
+              })),
+          arg[InetSocketAddress]("peerAddress")
+            .text("Peer's network address")
+            .required()
+            .action((peerAddress, conf) =>
+              conf.copy(command = conf.command match {
+                case send: OfferSend =>
+                  send.copy(peerAddress =
+                    s"${peerAddress.getHostString}:${peerAddress.getPort}")
+                case other => other
+              })),
+          arg[String]("message")
+            .text("Text message or note")
+            .required()
+            .action((message, conf) =>
+              conf.copy(command = conf.command match {
+                case send: OfferSend =>
+                  send.copy(message = message)
                 case other => other
               }))
         ),
@@ -2191,6 +2254,9 @@ object CliCommand {
         )
       case ContactsList =>
         RequestParam("contacts-list", Seq.empty)
+      case DLCContactAdd(dlcId, address) =>
+        RequestParam("dlc-contact-add",
+                     Seq(up.writeJs(dlcId), up.writeJs(address)))
       case ContactRemove(address) =>
         RequestParam("contact-remove", Seq(up.writeJs(address)))
       case GetDLCHostAddress => RequestParam("getdlchostaddress")
@@ -2625,6 +2691,12 @@ object CliCommand {
       case RemoveDLCOffer(offerHash) =>
         val args = Seq(up.writeJs(offerHash))
         RequestParam("offer-remove", args)
+      case OffersList =>
+        RequestParam("incoming-offers-list", Seq.empty)
+      case OfferSend(offer, peerAddress, message) =>
+        val args =
+          Seq(up.writeJs(offer), up.writeJs(peerAddress), up.writeJs(message))
+        RequestParam("offer-send", args)
 
       case cmd @ (_: ServerlessCliCommand | _: AppServerCliCommand |
           _: Broadcastable | _: OracleServerCliCommand | _: CliGrpcCommand |
@@ -2639,7 +2711,7 @@ object CliCommand {
   case object GetInfo extends AppServerCliCommand with CliGrpcCommand
 
   // DLC
-  case object GetDLCHostAddress extends AppServerCliCommand
+  case object GetDLCHostAddress extends AppServerCliCommand with CliGrpcCommand
 
   case class DecodeAttestments(sigs: OracleAttestmentV0TLV)
       extends AppServerCliCommand
@@ -2670,8 +2742,17 @@ object CliCommand {
       peer: String,
       message: String
   ) extends AppServerCliCommand
+      with CliGrpcCommand
 
-  case class RemoveDLCOffer(offerHash: Sha256Digest) extends AppServerCliCommand
+  case class RemoveDLCOffer(offerHash: Sha256Digest)
+      extends AppServerCliCommand
+      with CliGrpcCommand
+
+  case object OffersList extends AppServerCliCommand with CliGrpcCommand
+  case object IncomingOffersList extends AppServerCliCommand with CliGrpcCommand
+  case class OfferSend(offer: String, peerAddress: String, message: String)
+      extends AppServerCliCommand
+      with CliGrpcCommand
 
   // Wallet
 

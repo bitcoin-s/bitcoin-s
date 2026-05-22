@@ -3,40 +3,61 @@ package org.bitcoins.cli.grpc
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.grpc.GrpcClientSettings
 import org.bitcoins.cli.CliCommand.{
+  AddDLCOffer,
   GetBestBlockHash,
   GetBlockCount,
   GetConnectionCount,
+  GetDLCHostAddress,
   GetFilterCount,
   GetFilterHeaderCount,
   GetInfo,
   GetMedianTimePast,
   GetVersion,
+  IncomingOffersList,
+  OfferSend,
+  RemoveDLCOffer,
   ZipDataDir
 }
 import org.bitcoins.cli.{Config, ConsoleCli}
 import org.bitcoins.commons.jsonmodels.BitcoinSServerInfo
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
 import org.bitcoins.commons.rpc.{
+  AcceptDLC,
   AppServerCliCommand,
   CliCommand,
   CliGrpcCommand,
+  ContactAdd,
+  ContactsList,
+  CreateContractInfo,
+  DLCContactAdd,
   GetBlockHeader,
   OracleServerCliCommand,
   ServerlessCliCommand
 }
 import org.bitcoins.commons.rpc.CliCommand.NoCommand
 import org.bitcoins.commons.serializers.Picklers
+import org.bitcoins.core.api.dlc.wallet.db.{DLCContactDb, IncomingDLCOfferDb}
 import org.bitcoins.core.config.BitcoinNetworks
 import org.bitcoins.core.number.{Int32, UInt32}
-import org.bitcoins.crypto.DoubleSha256DigestBE
+import org.bitcoins.core.protocol.tlv.DLCOfferTLV
+import org.bitcoins.core.util.NetworkUtil
+import org.bitcoins.crypto.{DoubleSha256DigestBE, Sha256Digest}
 import org.bitcoins.server.grpc.{
+  AcceptDlcRequest,
   ChainRoutesClient,
   CommonRoutesClient,
+  ContactAddRequest,
+  ContactsListRequest,
+  ContactsListResponse,
+  CreateContractInfoRequest,
+  DLCRoutesClient,
+  DlcContactAddRequest,
   GetBestBlockHashRequest,
   GetBlockCountRequest,
   GetBlockHeaderRequest,
   GetBlockHeaderResponse,
   GetConnectionCountRequest,
+  GetDlcHostAddressRequest,
   GetFilterCountRequest,
   GetFilterHeaderCountRequest,
   GetInfoRequest,
@@ -44,12 +65,18 @@ import org.bitcoins.server.grpc.{
   GetVersionRequest,
   GetVersionResponse,
   GrpcAuth,
+  IncomingOfferListResponse,
+  IncomingOffersListRequest,
   NodeRoutesClient,
+  OfferAddRequest,
+  OfferRemoveRequest,
+  OfferSendRequest,
   ZipDataDirRequest
 }
 import scopt.OParser
 import ujson.{Null, Num, Str}
 
+import java.time.Instant
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
@@ -133,6 +160,7 @@ object ConsoleCliGrpc {
     val commonClient = CommonRoutesClient(clientSettings)
     val chainClient = ChainRoutesClient(clientSettings)
     val nodeClient = NodeRoutesClient(clientSettings)
+    val dlcClient = DLCRoutesClient(clientSettings)
 
     val responseF = command match {
       case GetVersion =>
@@ -171,6 +199,86 @@ object ConsoleCliGrpc {
         nodeClient
           .getConnectionCount(GetConnectionCountRequest())
           .map(r => jsValueToString(Num(r.count)))
+      case GetDLCHostAddress =>
+        dlcClient
+          .getDlcHostAddress(GetDlcHostAddressRequest())
+          .map(r => jsValueToString(Str(r.address)))
+      case command: AcceptDLC =>
+        dlcClient
+          .acceptDlc(
+            AcceptDlcRequest(
+              offer = command.offer.hex,
+              peerAddr =
+                s"${command.peerAddr.getHostString}:${command.peerAddr.getPort}",
+              externalPayoutAddress =
+                command.externalPayoutAddressOpt.map(_.toString),
+              externalChangeAddress =
+                command.externalChangeAddressOpt.map(_.toString)
+            ))
+          .map(_.acceptHex)
+      case command: CreateContractInfo =>
+        dlcClient
+          .createContractInfo(
+            CreateContractInfoRequest(
+              announcement = command.announcementTLV.hex,
+              totalCollateralSats = command.totalCollateral.satoshis.toLong,
+              contractDescriptorHex = command.contractDescriptor.hex
+            )
+          )
+          .map(_.contractInfoHex)
+      case IncomingOffersList =>
+        dlcClient
+          .incomingOffersList(IncomingOffersListRequest())
+          .map(formatOffersList)
+      case command: AddDLCOffer =>
+        dlcClient
+          .offerAdd(
+            OfferAddRequest(
+              offer = command.offer.hex,
+              peer = Some(command.peer),
+              message = Some(command.message)
+            ))
+          .map(_.offerHash)
+      case command: RemoveDLCOffer =>
+        dlcClient
+          .offerRemove(OfferRemoveRequest(hash = command.offerHash.hex))
+          .map(_.offerHash)
+      case command: OfferSend =>
+        dlcClient
+          .offerSend(
+            OfferSendRequest(
+              offerOrTempContractId = command.offer,
+              peerAddress = command.peerAddress,
+              message = command.message
+            ))
+          .map(_.tempContractId)
+      case ContactsList =>
+        dlcClient.contactsList(ContactsListRequest()).map(formatContactsList)
+      case command: ContactAdd =>
+        dlcClient
+          .contactAdd(
+            ContactAddRequest(
+              alias = command.alias,
+              address =
+                s"${command.address.getHostString}:${command.address.getPort}",
+              memo = command.memo
+            ))
+          .map(_.result)
+      case command: DLCContactAdd =>
+        dlcClient
+          .dlcContactAdd(
+            DlcContactAddRequest(
+              dlcId = command.dlcId.hex,
+              address =
+                s"${command.address.getHostString}:${command.address.getPort}"
+            ))
+          .map { response =>
+            jsValueToString(
+              ujson.Obj(
+                "dlcId" -> Str(response.dlcId),
+                "contactId" -> Str(response.contactId)
+              ))
+          }
       case NoCommand =>
         Future.failed(
           new IllegalArgumentException("You need to provide a command!"))
@@ -186,12 +294,14 @@ object ConsoleCliGrpc {
           _ <- commonClient.close()
           _ <- chainClient.close()
           _ <- nodeClient.close()
+          _ <- dlcClient.close()
         } yield result
       case Failure(err) =>
         for {
           _ <- commonClient.close()
           _ <- chainClient.close()
           _ <- nodeClient.close()
+          _ <- dlcClient.close()
           result <- Future.failed(err)
         } yield result
     }
@@ -245,5 +355,43 @@ object ConsoleCliGrpc {
           using Picklers.getBlockHeaderResultPickler)
         jsValueToString(json)
     }
+  }
+
+  private def formatOffersList(response: IncomingOfferListResponse): String = {
+    val ios: Seq[IncomingDLCOfferDb] = response.offers.map { offer =>
+      IncomingDLCOfferDb(
+        hash = Sha256Digest.fromHex(offer.hash),
+        receivedAt = Instant.ofEpochSecond(offer.receivedAt),
+        peer = offer.peer,
+        message = offer.message,
+        offerTLV = DLCOfferTLV.fromHex(offer.offerTlvHex)
+      )
+    }
+
+    val offersJson =
+      ios.map(io => upickle.default.writeJs(io)(using Picklers.dlcOfferAddW))
+    val json = ujson.Arr.from(offersJson)
+
+    jsValueToString(json)
+
+  }
+
+  private def formatContactsList(response: ContactsListResponse): String = {
+    val contacts = response.contacts.map { c =>
+      DLCContactDb(
+        alias = c.alias,
+        address = NetworkUtil
+          .parseInetSocketAddress(c.address,
+                                  org.bitcoins.core.config.DLC.DefaultPort),
+        memo = c.memo
+      )
+    }
+
+    val json = ujson.Arr.from(
+      contacts.map(c =>
+        upickle.default.writeJs(c)(using Picklers.contactDbPickler))
+    )
+
+    jsValueToString(json)
   }
 }

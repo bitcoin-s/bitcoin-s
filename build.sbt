@@ -423,7 +423,7 @@ lazy val serverRoutes = project
 lazy val serverGrpc = project
   .in(file("app/server-grpc"))
   .settings(scalacOptions += "-Xsource:3")
-  .dependsOn(coreJVM, dbCommons)
+  .dependsOn(coreJVM, dbCommons, appCommons)
 
 lazy val serverGrpcTest = project
   .in(file("app/server-grpc-test"))

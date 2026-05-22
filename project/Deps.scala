@@ -91,7 +91,7 @@ object Deps {
 
     // netty optional deps surfaced by jlink static analysis via grpc-netty-shaded
     val brotli4jV = "1.23.0" // https://github.com/aayushatharva/brotli4j
-    val zstdJniV = "1.5.7-9" // https://github.com/luben/zstd-jni
+    val zstdJniV = "1.5.7-8" // https://github.com/luben/zstd-jni
     val jzlibV = "1.1.3" // https://github.com/ymnk/jzlib
     val compressLzfV = "1.2.0" // https://github.com/ning/compress
     val lz4JavaV = "1.8.1" // https://github.com/lz4/lz4-java
@@ -110,7 +110,7 @@ object Deps {
     val blockhoundV = "1.0.16.RELEASE" // https://github.com/reactor/BlockHound
     val commonsLoggingV = "1.3.6" // https://github.com/apache/commons-logging
     val log4j2V = "2.26.0" // https://github.com/apache/logging-log4j2
-    val nettyV = "4.2.14.Final" // https://github.com/netty/netty
+    val nettyV = "4.2.13.Final" // https://github.com/netty/netty
     val jbossModulesV =
       jbossMarshallingV // https://github.com/jboss-modules/jboss-modules
 

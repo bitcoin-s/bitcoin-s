@@ -6,12 +6,14 @@ import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.grpc.{
   ChainRoutesClient,
   CommonRoutesClient,
+  DLCRoutesClient,
   NodeRoutesClient,
   ServerGrpc
 }
 import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkit.PostgresTestDatabase
 import org.bitcoins.testkit.chain.MockChainApi
+import org.bitcoins.testkit.dlc.MockDLCNodeApi
 import org.bitcoins.testkit.node.MockNodeApi
 import org.scalatest.FutureOutcome
 
@@ -42,6 +44,7 @@ trait ServerGrpcFixture extends BitcoinSFixture with PostgresTestDatabase {
       host: String,
       port: Int,
       rpcPassword: String = ""): ServerGrpc = {
+    val dlcNode = MockDLCNodeApi.fresh()
     val server = new ServerGrpc(
       tmpDir.toPath,
       host,
@@ -50,7 +53,8 @@ trait ServerGrpcFixture extends BitcoinSFixture with PostgresTestDatabase {
       chainApi = MockChainApi,
       network = network,
       startedTorConfigF = Future.unit,
-      nodeApiF = Future.successful(MockNodeApi)
+      nodeApiF = Future.successful(MockNodeApi),
+      dlcNodeF = Future.successful(dlcNode)
     )
     server
   }
@@ -96,6 +100,21 @@ trait ServerGrpcFixture extends BitcoinSFixture with PostgresTestDatabase {
         }
 
     makeDependentFixture[GrpcClientServerFixture[NodeRoutesClient]](
+      build,
+      destroyClientServer)(test)
+  }
+
+  def withDLCRoutesClient(test: OneArgAsyncTest): FutureOutcome = {
+    val port = RpcUtil.randomPort
+    val host = "localhost"
+    val server = buildGrpcServer(FileUtil.tmpDir(), host, port)
+    val build: () => Future[GrpcClientServerFixture[DLCRoutesClient]] =
+      () =>
+        buildClient(host, port, DLCRoutesClient.apply).flatMap { client =>
+          server.start().map(_ => GrpcClientServerFixture(client, server))
+        }
+
+    makeDependentFixture[GrpcClientServerFixture[DLCRoutesClient]](
       build,
       destroyClientServer)(test)
   }
