@@ -15,7 +15,7 @@ class NodeGrpcRoutesTest extends ServerGrpcFixture {
   it must "getconnectioncount" in { case clientServer =>
     val client = clientServer.client
     client.getConnectionCount(GetConnectionCountRequest()).map { response =>
-      assert(response.count == 0)
+      assert(response.count == 1)
     }
   }
 }

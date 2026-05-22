@@ -1,8 +1,11 @@
 package org.bitcoins.testkit.fixtures
 import org.apache.pekko.grpc.GrpcClientSettings
 import org.apache.pekko.grpc.scaladsl.PekkoGrpcClient
+import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.config.{BitcoinNetwork, RegTest}
+import org.bitcoins.node.Node
 import org.bitcoins.rpc.util.RpcUtil
+import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.server.grpc.{
   ChainRoutesClient,
   CommonRoutesClient,
@@ -10,64 +13,92 @@ import org.bitcoins.server.grpc.{
   NodeRoutesClient,
   ServerGrpc
 }
+import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.util.FileUtil
-import org.bitcoins.testkit.PostgresTestDatabase
 import org.bitcoins.testkit.chain.MockChainApi
 import org.bitcoins.testkit.dlc.MockDLCNodeApi
-import org.bitcoins.testkit.node.MockNodeApi
+import org.bitcoins.testkit.node.NodeTestWithCachedBitcoind
+import org.bitcoins.testkit.rpc.CachedBitcoindNewest
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
 
-trait ServerGrpcFixture extends BitcoinSFixture with PostgresTestDatabase {
+trait ServerGrpcFixture
+    extends NodeTestWithCachedBitcoind
+    with CachedBitcoindNewest {
   lazy val network: BitcoinNetwork = RegTest
   case class GrpcClientServerFixture[T <: PekkoGrpcClient](
       client: T,
-      server: ServerGrpc)
+      server: ServerGrpc,
+      chainApi: ChainApi,
+      nodeApi: Node,
+      appConfig: BitcoinSAppConfig)
 
   type GrpcClient <: PekkoGrpcClient
   final override type FixtureParam = GrpcClientServerFixture[GrpcClient]
 
-  private def buildClient[T](
+  override protected def getFreshConfig: BitcoinSAppConfig = {
+    BitcoinSTestAppConfig.getMultiPeerNeutrinoWithEmbeddedDbTestConfig(
+      postgresOpt,
+      Vector.empty
+    )
+  }
+  private def buildClient[T <: PekkoGrpcClient](
       host: String,
       port: Int,
-      build: GrpcClientSettings => T): Future[T] = {
+      build: GrpcClientSettings => T,
+      serverPackageF: Future[(ServerGrpc, ChainApi, Node, BitcoinSAppConfig)])
+      : Future[GrpcClientServerFixture[T]] = {
     val clientSettings = GrpcClientSettings
       .connectToServiceAt(host, port)
       .withTls(false)
-    val client = build(clientSettings)
-    Future.successful(client)
+    val client: T = build(clientSettings)
+    for {
+      (server, chainApi, nodeApi, appConfig) <- serverPackageF
+      _ <- server.start()
+    } yield GrpcClientServerFixture(client,
+                                    server,
+                                    chainApi,
+                                    nodeApi,
+                                    appConfig)
   }
 
   private def buildGrpcServer(
       tmpDir: java.io.File,
       host: String,
       port: Int,
-      rpcPassword: String = ""): ServerGrpc = {
+      rpcPassword: String = "")(implicit appConfig: BitcoinSAppConfig)
+      : Future[(ServerGrpc, ChainApi, Node, BitcoinSAppConfig)] = {
     val dlcNode = MockDLCNodeApi.fresh()
-    val server = new ServerGrpc(
-      tmpDir.toPath,
-      host,
-      port,
-      rpcPassword = rpcPassword,
-      chainApi = MockChainApi,
-      network = network,
-      startedTorConfigF = Future.unit,
-      nodeApiF = Future.successful(MockNodeApi),
-      dlcNodeF = Future.successful(dlcNode)
-    )
-    server
+    val neutrinoNodeF = cachedBitcoindWithFundsF
+      .flatMap(createNeutrinoNodeConnectedToBitcoindCached(_)(appConfig))
+    for {
+      neutrinoNode <- neutrinoNodeF
+      server = new ServerGrpc(
+        tmpDir.toPath,
+        host,
+        port,
+        rpcPassword = rpcPassword,
+        chainApi = MockChainApi,
+        network = network,
+        startedTorConfigF = Future.unit,
+        nodeApiF = neutrinoNodeF.map(_.node),
+        dlcNodeF = Future.successful(dlcNode)
+      )
+      chainApi <- neutrinoNode.node.chainApiFromDb()
+    } yield (server, chainApi, neutrinoNode.node, appConfig)
   }
 
   def withCommonRoutesClient(test: OneArgAsyncTest): FutureOutcome = {
     val port = RpcUtil.randomPort
     val host = "localhost"
-    val server = buildGrpcServer(FileUtil.tmpDir(), host, port)
+    val config = getFreshConfig
+    val serverPackageF =
+      buildGrpcServer(FileUtil.tmpDir(), host, port)(config)
     val build: () => Future[GrpcClientServerFixture[CommonRoutesClient]] =
-      () =>
-        buildClient(host, port, CommonRoutesClient.apply).flatMap { client =>
-          server.start().map(_ => GrpcClientServerFixture(client, server))
-        }
+      () => {
+        buildClient(host, port, CommonRoutesClient.apply, serverPackageF)
+      }
 
     makeDependentFixture[GrpcClientServerFixture[CommonRoutesClient]](
       build,
@@ -77,13 +108,10 @@ trait ServerGrpcFixture extends BitcoinSFixture with PostgresTestDatabase {
   def withChainRoutesClient(test: OneArgAsyncTest): FutureOutcome = {
     val port = RpcUtil.randomPort
     val host = "localhost"
-    val server = buildGrpcServer(FileUtil.tmpDir(), host, port)
+    val serverPackageF =
+      buildGrpcServer(FileUtil.tmpDir(), host, port)(getFreshConfig)
     val build: () => Future[GrpcClientServerFixture[ChainRoutesClient]] =
-      () =>
-        buildClient(host, port, ChainRoutesClient.apply).flatMap { client =>
-          server.start().map(_ => GrpcClientServerFixture(client, server))
-        }
-
+      () => buildClient(host, port, ChainRoutesClient.apply, serverPackageF)
     makeDependentFixture[GrpcClientServerFixture[ChainRoutesClient]](
       build,
       destroyClientServer)(test)
@@ -92,12 +120,10 @@ trait ServerGrpcFixture extends BitcoinSFixture with PostgresTestDatabase {
   def withNodeRoutesClient(test: OneArgAsyncTest): FutureOutcome = {
     val port = RpcUtil.randomPort
     val host = "localhost"
-    val server = buildGrpcServer(FileUtil.tmpDir(), host, port)
+    val serverPackageF =
+      buildGrpcServer(FileUtil.tmpDir(), host, port)(getFreshConfig)
     val build: () => Future[GrpcClientServerFixture[NodeRoutesClient]] =
-      () =>
-        buildClient(host, port, NodeRoutesClient.apply).flatMap { client =>
-          server.start().map(_ => GrpcClientServerFixture(client, server))
-        }
+      () => buildClient(host, port, NodeRoutesClient.apply, serverPackageF)
 
     makeDependentFixture[GrpcClientServerFixture[NodeRoutesClient]](
       build,
@@ -107,12 +133,10 @@ trait ServerGrpcFixture extends BitcoinSFixture with PostgresTestDatabase {
   def withDLCRoutesClient(test: OneArgAsyncTest): FutureOutcome = {
     val port = RpcUtil.randomPort
     val host = "localhost"
-    val server = buildGrpcServer(FileUtil.tmpDir(), host, port)
+    val serverPackageF =
+      buildGrpcServer(FileUtil.tmpDir(), host, port)(getFreshConfig)
     val build: () => Future[GrpcClientServerFixture[DLCRoutesClient]] =
-      () =>
-        buildClient(host, port, DLCRoutesClient.apply).flatMap { client =>
-          server.start().map(_ => GrpcClientServerFixture(client, server))
-        }
+      () => buildClient(host, port, DLCRoutesClient.apply, serverPackageF)
 
     makeDependentFixture[GrpcClientServerFixture[DLCRoutesClient]](
       build,
@@ -122,9 +146,11 @@ trait ServerGrpcFixture extends BitcoinSFixture with PostgresTestDatabase {
   private def destroyClientServer[T <: PekkoGrpcClient](
       cs: GrpcClientServerFixture[T]): Future[Unit] = {
     val (client, server) = (cs.client, cs.server)
+    val node = cs.nodeApi
     for {
       _ <- client.close()
       _ <- server.stop()
+      _ <- tearDownNode(node, cs.appConfig)
     } yield ()
   }
 }

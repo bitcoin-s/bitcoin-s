@@ -43,7 +43,6 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
     val outcome: Future[Outcome] = for {
       bitcoind <- cachedBitcoindWithFundsF
       outcome = withNeutrinoNodeConnectedToBitcoindCached(test, bitcoind)(
-        using system,
         getFreshConfig
       )
       f <- outcome.toFuture
