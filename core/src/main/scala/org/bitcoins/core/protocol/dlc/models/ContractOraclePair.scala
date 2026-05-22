@@ -25,7 +25,7 @@ object ContractOraclePair {
     private val descriptorOutcomes =
       contractDescriptor.map(_._1).sortBy(_.outcome)
 
-    private val isValid = oracleInfo.singleOracleInfos.forall { singleInfo =>
+    oracleInfo.singleOracleInfos.foreach { singleInfo =>
       val announcementOutcomes =
         singleInfo.announcement.eventTLV.eventDescriptor
           .asInstanceOf[EnumEventDescriptorV0TLV]
@@ -33,10 +33,13 @@ object ContractOraclePair {
           .map(EnumOutcome(_))
           .sortBy(_.outcome)
 
-      announcementOutcomes == descriptorOutcomes
+      require(
+        announcementOutcomes == descriptorOutcomes,
+        s"OracleInfo did not match ContractDescriptor: ${announcementOutcomes} descriptorOutcomes=${descriptorOutcomes}"
+      )
+
     }
 
-    require(isValid, s"OracleInfo did not match ContractDescriptor: $this")
   }
 
   case class NumericPair(

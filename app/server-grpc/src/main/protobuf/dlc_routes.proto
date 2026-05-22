@@ -1,0 +1,124 @@
+syntax = "proto3";
+
+package org.bitcoins.server.grpc;
+
+option java_package = "org.bitcoins.server.grpc";
+option java_multiple_files = true;
+
+// DLCRoutes provides DLC RPC endpoints for the Bitcoin-S gRPC server.
+service DLCRoutes {
+  rpc GetDlcHostAddress(GetDlcHostAddressRequest)
+      returns (GetDlcHostAddressResponse);
+  rpc AcceptDlc(AcceptDlcRequest) returns (AcceptDlcResponse);
+  rpc CreateContractInfo(CreateContractInfoRequest)
+      returns (CreateContractInfoResponse);
+  rpc IncomingOffersList(IncomingOffersListRequest)
+      returns (IncomingOfferListResponse);
+  rpc OfferAdd(OfferAddRequest) returns (OfferAddResponse);
+  rpc OfferRemove(OfferRemoveRequest) returns (OfferRemoveResponse);
+  rpc OfferSend(OfferSendRequest) returns (OfferSendResponse);
+  rpc ContactsList(ContactsListRequest) returns (ContactsListResponse);
+  rpc ContactAdd(ContactAddRequest) returns (ContactAddResponse);
+  rpc DlcContactAdd(DlcContactAddRequest) returns (DlcContactAddResponse);
+}
+
+message GetDlcHostAddressRequest {}
+
+message GetDlcHostAddressResponse {
+  string address = 1;
+}
+
+message AcceptDlcRequest {
+  string offer = 1;
+  string peer_addr = 2;
+  optional string external_payout_address = 3;
+  optional string external_change_address = 4;
+}
+
+message AcceptDlcResponse {
+  string accept_hex = 1;
+}
+
+message CreateContractInfoRequest {
+  string announcement = 1;
+  int64 total_collateral_sats = 2;
+  string contract_descriptor_hex = 3;
+}
+
+message CreateContractInfoResponse {
+  string contract_info_hex = 1;
+}
+
+message IncomingOffersListRequest {}
+
+message IncomingOffer {
+  string hash = 1;
+  int64 received_at = 2;
+  optional string peer = 3;
+  optional string message = 4;
+  string offer_tlv_hex = 5;
+}
+
+message IncomingOfferListResponse {
+  repeated IncomingOffer offers = 1;
+}
+
+message OfferAddRequest {
+  string offer = 1;
+  optional string peer = 2;
+  optional string message = 3;
+}
+
+message OfferAddResponse {
+  string offer_hash = 1;
+}
+
+message OfferRemoveRequest {
+  string hash = 1;
+}
+
+message OfferRemoveResponse {
+  string offer_hash = 1;
+}
+
+message OfferSendRequest {
+  string offer_or_temp_contract_id = 1;
+  string peer_address = 2;
+  string message = 3;
+}
+
+message OfferSendResponse {
+  string temp_contract_id = 1;
+}
+
+message ContactsListRequest {}
+
+message Contact {
+  string alias = 1;
+  string address = 2;
+  string memo = 3;
+}
+
+message ContactsListResponse {
+  repeated Contact contacts = 1;
+}
+
+message ContactAddRequest {
+  string alias = 1;
+  string address = 2;
+  string memo = 3;
+}
+
+message ContactAddResponse {
+  string result = 1;
+}
+
+message DlcContactAddRequest {
+  string dlc_id = 1;
+  string address = 2;
+}
+
+message DlcContactAddResponse {
+  string dlc_id = 1;
+  string contact_id = 2;
+}

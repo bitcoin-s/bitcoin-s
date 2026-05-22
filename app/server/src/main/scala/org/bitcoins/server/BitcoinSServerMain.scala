@@ -563,7 +563,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                 chainApi = chainApi,
                 network = nodeConf.network,
                 startedTorConfigF = torConfStarted,
-                nodeApiF = nodeApiF
+                nodeApiF = nodeApiF,
+                dlcNodeF = dlcNodeF
               ))
           Server(
             conf = nodeConf,
@@ -586,7 +587,8 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                 chainApi = chainApi,
                 network = nodeConf.network,
                 startedTorConfigF = torConfStarted,
-                nodeApiF = nodeApiF
+                nodeApiF = nodeApiF,
+                dlcNodeF = dlcNodeF
               ))
           Server(
             conf = nodeConf,
