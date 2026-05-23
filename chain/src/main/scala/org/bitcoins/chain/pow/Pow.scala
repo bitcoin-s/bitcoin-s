@@ -122,9 +122,9 @@ sealed abstract class Pow {
       var bnNew = chainParams match {
         case MainNetChainParams | TestNetChainParams | RegTestNetChainParams |
             SigNetChainParams(_) =>
-          NumberUtil.targetExpansion(currentTip.nBits).difficulty
+          NumberUtil.targetExpansion(currentTip.nBits).target
         case TestNet4ChainParams =>
-          NumberUtil.targetExpansion(firstBlock.nBits).difficulty
+          NumberUtil.targetExpansion(firstBlock.nBits).target
       }
       bnNew = bnNew * actualTimespan
 

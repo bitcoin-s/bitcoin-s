@@ -29,7 +29,7 @@ class NumberUtilTest extends BitcoinSUnitTest {
     val expected1 = BigInteger.valueOf(0)
     val diffHelper1 = {
       BlockHeader.TargetDifficultyHelper(
-        difficulty = expected1,
+        target = expected1,
         isNegative = false,
         isOverflow = false
       )
@@ -40,7 +40,7 @@ class NumberUtilTest extends BitcoinSUnitTest {
     val expected2 = BigInteger.valueOf(18)
     val diffHelper2 = {
       BlockHeader.TargetDifficultyHelper(
-        difficulty = expected2,
+        target = expected2,
         isNegative = false,
         isOverflow = false
       )
@@ -51,7 +51,7 @@ class NumberUtilTest extends BitcoinSUnitTest {
     val expected3 = BigInteger.valueOf(128)
     val diffHelper3 = {
       BlockHeader.TargetDifficultyHelper(
-        difficulty = expected3,
+        target = expected3,
         isNegative = false,
         isOverflow = false
       )
@@ -62,7 +62,7 @@ class NumberUtilTest extends BitcoinSUnitTest {
     val expected4 = BigInteger.valueOf(2452881408L)
     val diffHelper4 = {
       BlockHeader.TargetDifficultyHelper(
-        difficulty = expected4,
+        target = expected4,
         isNegative = false,
         isOverflow = false
       )
@@ -73,7 +73,7 @@ class NumberUtilTest extends BitcoinSUnitTest {
     val expected6 = BigInteger.valueOf(305419776)
     val diffHelper6 = {
       BlockHeader.TargetDifficultyHelper(
-        difficulty = expected6,
+        target = expected6,
         isNegative = false,
         isOverflow = false
       )
@@ -84,7 +84,7 @@ class NumberUtilTest extends BitcoinSUnitTest {
     val expected5 = BigInteger.valueOf(305419776)
     val diffHelper5 = {
       BlockHeader.TargetDifficultyHelper(
-        difficulty = expected5,
+        target = expected5,
         isNegative = true,
         isOverflow = false
       )
@@ -175,7 +175,7 @@ class NumberUtilTest extends BitcoinSUnitTest {
     ) must be(UInt32.fromHex("02008000"))
     val expanded11 = NumberUtil.targetExpansion(UInt32.fromHex("01fedcba"))
 
-    expanded11.difficulty must be(126)
+    expanded11.target must be(126)
     expanded11.isNegative must be(true)
     NumberUtil.targetCompression(expanded11) must be(UInt32.fromHex("01fe0000"))
 

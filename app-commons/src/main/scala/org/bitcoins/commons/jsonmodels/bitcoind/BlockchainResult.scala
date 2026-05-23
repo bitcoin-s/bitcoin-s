@@ -219,7 +219,7 @@ case class GetBlockHeaderResult(
     mediantime: UInt32,
     nonce: UInt32,
     bits: UInt32,
-    difficulty: BigDecimal,
+    difficulty: Option[BigDecimal],
     chainwork: String,
     previousblockhash: Option[DoubleSha256DigestBE],
     nextblockhash: Option[DoubleSha256DigestBE],
