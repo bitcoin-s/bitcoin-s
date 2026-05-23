@@ -1618,7 +1618,12 @@ object Picklers {
       PicklerKeys.mediantimeKey -> Num(header.mediantime.toLong.toDouble),
       PicklerKeys.nonceKey -> Num(header.nonce.toBigInt.toDouble),
       PicklerKeys.bitsKey -> Str(header.bits.hex),
-      PicklerKeys.difficultyKey -> ujson.Null,
+      PicklerKeys.difficultyKey -> {
+        header.difficulty match {
+          case Some(difficulty) => Num(difficulty.toDouble)
+          case None             => ujson.Null
+        }
+      },
       PicklerKeys.chainworkKey -> Str(header.chainwork),
       PicklerKeys.previousblockhashKey -> {
         header.previousblockhash.map(_.hex) match {

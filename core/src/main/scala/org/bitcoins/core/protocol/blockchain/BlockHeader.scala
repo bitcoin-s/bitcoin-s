@@ -104,7 +104,7 @@ sealed trait BlockHeader extends NetworkElement {
     * more information on how this is constructed
     * [[https://bitcoin.org/en/developer-reference#target-nbits documentation]]
     *
-    * The hash of this block needs to be _less than_ this difficulty to be
+    * The hash of this block needs to be _less than_ this target to be
     * considered a valid block on the network
     */
   def target: BigInt = {
