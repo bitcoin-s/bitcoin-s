@@ -343,7 +343,7 @@ object ConsoleCliGrpc {
           mediantime = UInt32(header.mediantime.toLong & 0xffffffffL),
           nonce = UInt32(header.nonce.toLong & 0xffffffffL),
           bits = UInt32.fromHex(header.bits),
-          difficulty = BigDecimal(header.difficulty),
+          difficulty = None,
           chainwork = header.chainwork,
           previousblockhash =
             header.previousblockhash.map(DoubleSha256DigestBE.fromHex),

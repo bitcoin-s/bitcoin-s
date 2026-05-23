@@ -94,6 +94,9 @@ sealed trait BlockHeader extends NetworkElement {
     */
   def nBits: UInt32
 
+  @deprecated("Use target", "1.9.13")
+  def difficulty: BigInt = target
+
   /** This is the decoded version of [[nBits]]. nBits is used to compactly
     * represent the difficulty target for the bitcoin network. This field is the
     * expanded version that is the _actual_ requirement needed for the network.
@@ -101,11 +104,11 @@ sealed trait BlockHeader extends NetworkElement {
     * more information on how this is constructed
     * [[https://bitcoin.org/en/developer-reference#target-nbits documentation]]
     *
-    * The hash of this block needs to be _less than_ this difficulty to be
+    * The hash of this block needs to be _less than_ this target to be
     * considered a valid block on the network
     */
-  def difficulty: BigInt = {
-    NumberUtil.targetExpansion(nBits = nBits).difficulty
+  def target: BigInt = {
+    NumberUtil.targetExpansion(nBits = nBits).target
   }
 
   /** An arbitrary number miners change to modify the header hash in order to
@@ -190,12 +193,12 @@ object BlockHeader extends Factory[BlockHeader] {
     * it being an overflow or negative which is returned by
     * [[https://github.com/bitcoin/bitcoin/blob/2068f089c8b7b90eb4557d3f67ea0f0ed2059a23/src/arith_uint256.cpp#L206 arith_uint256#SetCompact()]]
     * in bitcoin core
-    * @param difficulty
+    * @param target
     * @param isNegative
     * @param isOverflow
     */
   case class TargetDifficultyHelper(
-      difficulty: BigInt,
+      target: BigInt,
       isNegative: Boolean,
       isOverflow: Boolean)
 
@@ -205,7 +208,7 @@ object BlockHeader extends Factory[BlockHeader] {
     if (target.isNegative || target.isOverflow) {
       BigInt(0)
     } else {
-      (BigInt(1) << 256) / (target.difficulty + BigInt(1))
+      (BigInt(1) << 256) / (target.target + BigInt(1))
     }
   }
 }

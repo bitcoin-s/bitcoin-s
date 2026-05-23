@@ -1574,7 +1574,7 @@ object Picklers {
     val mediantime = UInt32(obj(PicklerKeys.mediantimeKey).num.toLong)
     val nonce = UInt32(obj(PicklerKeys.nonceKey).num.toLong)
     val bits = UInt32.fromHex(obj(PicklerKeys.bitsKey).str)
-    val difficulty = obj(PicklerKeys.difficultyKey).num
+    val difficulty = obj(PicklerKeys.difficultyKey).numOpt.map(BigDecimal.apply)
     val chainWork = obj(PicklerKeys.chainworkKey).str
     val previousBlockHash = obj(PicklerKeys.previousblockhashKey).strOpt.map {
       str =>
@@ -1618,7 +1618,12 @@ object Picklers {
       PicklerKeys.mediantimeKey -> Num(header.mediantime.toLong.toDouble),
       PicklerKeys.nonceKey -> Num(header.nonce.toBigInt.toDouble),
       PicklerKeys.bitsKey -> Str(header.bits.hex),
-      PicklerKeys.difficultyKey -> Num(header.difficulty.toDouble),
+      PicklerKeys.difficultyKey -> {
+        header.difficulty match {
+          case Some(difficulty) => Num(difficulty.toDouble)
+          case None             => ujson.Null
+        }
+      },
       PicklerKeys.chainworkKey -> Str(header.chainwork),
       PicklerKeys.previousblockhashKey -> {
         header.previousblockhash.map(_.hex) match {

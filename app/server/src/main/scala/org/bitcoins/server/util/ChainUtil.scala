@@ -3,6 +3,7 @@ package org.bitcoins.server.util
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.db.BlockHeaderDb
+import org.bitcoins.core.util.NumberUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import scodec.bits.ByteVector
 
@@ -52,11 +53,11 @@ object ChainUtil {
             mediantime = header.time, // can't get this?
             nonce = header.nonce,
             bits = header.nBits,
-            difficulty = BigDecimal(header.difficulty),
+            difficulty = None,
             chainwork = chainworkStr,
             previousblockhash = Some(header.previousBlockHashBE),
             nextblockhash = None,
-            target = None
+            target = Some(NumberUtil.serializeTargetHex(header.target))
           )
           result
       }

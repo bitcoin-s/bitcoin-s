@@ -269,7 +269,14 @@ sealed abstract class NumberUtil extends CryptoNumberUtil {
   }
 
   def targetCompression(difficultyHelper: TargetDifficultyHelper): UInt32 = {
-    targetCompression(difficultyHelper.difficulty, difficultyHelper.isNegative)
+    targetCompression(difficultyHelper.target, difficultyHelper.isNegative)
+  }
+
+  /** Serializes the target difficulty to a hex string, padding it to the given
+    * size. Useful for RPC interfaces
+    */
+  def serializeTargetHex(target: BigInt, padding: Int = 32): String = {
+    ByteVector.fromBigInt(target, size = Some(padding)).toHex
   }
 
   /** Implements this check for overflowing for

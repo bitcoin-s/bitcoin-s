@@ -68,7 +68,6 @@ message BlockHeaderResult {
   uint32 mediantime = 8;
   uint32 nonce = 9;
   string bits = 10;
-  string difficulty = 11;
   string chainwork = 12;
   optional string previousblockhash = 13;
   optional string nextblockhash = 14;

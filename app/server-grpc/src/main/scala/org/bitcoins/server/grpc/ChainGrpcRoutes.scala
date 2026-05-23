@@ -114,7 +114,6 @@ class ChainGrpcRoutes(
       mediantime = header.time.toLong.toInt,
       nonce = header.nonce.toLong.toInt,
       bits = header.nBits.hex,
-      difficulty = header.difficulty.toString,
       chainwork = chainworkStr,
       previousblockhash = Some(header.previousBlockHashBE.hex),
       nextblockhash = None,

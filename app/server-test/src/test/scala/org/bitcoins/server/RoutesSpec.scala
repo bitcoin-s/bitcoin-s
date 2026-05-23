@@ -42,7 +42,7 @@ import org.bitcoins.core.protocol.{
 }
 import org.bitcoins.core.psbt.InputPSBTRecord.PartialSignature
 import org.bitcoins.core.psbt.PSBT
-import org.bitcoins.core.util.FutureUtil
+import org.bitcoins.core.util.{FutureUtil, NumberUtil}
 import org.bitcoins.core.util.sorted.OrderedSchnorrSignatures
 import org.bitcoins.core.wallet.fee.{FeeUnit, SatoshisPerVirtualByte}
 import org.bitcoins.core.wallet.rescan.RescanState
@@ -354,7 +354,8 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         assert(
           responseAs[
             String
-          ] == s"""{"result":{"raw":"${blockHeader.hex}","hash":"${blockHeader.hashBE.hex}","confirmations":0,"height":1899697,"version":${blockHeader.version.toLong},"versionHex":"${blockHeader.version.hex}","merkleroot":"${blockHeader.merkleRootHashBE.hex}","time":${blockHeader.time.toLong},"mediantime":${blockHeaderDb.time.toLong},"nonce":${blockHeader.nonce.toLong},"bits":"${blockHeader.nBits.hex}","difficulty":${blockHeader.difficulty.toDouble},"chainwork":"$chainworkStr","previousblockhash":"${blockHeader.previousBlockHashBE.hex}","nextblockhash":null,"target":null},"error":null}"""
+          ] == s"""{"result":{"raw":"${blockHeader.hex}","hash":"${blockHeader.hashBE.hex}","confirmations":0,"height":1899697,"version":${blockHeader.version.toLong},"versionHex":"${blockHeader.version.hex}","merkleroot":"${blockHeader.merkleRootHashBE.hex}","time":${blockHeader.time.toLong},"mediantime":${blockHeaderDb.time.toLong},"nonce":${blockHeader.nonce.toLong},"bits":"${blockHeader.nBits.hex}","difficulty":null,"chainwork":"$chainworkStr","previousblockhash":"${blockHeader.previousBlockHashBE.hex}","nextblockhash":null,"target":"${NumberUtil
+              .serializeTargetHex(blockHeader.target)}"},"error":null}"""
         )
       }
     }

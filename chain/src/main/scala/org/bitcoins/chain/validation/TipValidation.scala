@@ -102,7 +102,7 @@ sealed abstract class TipValidation extends ChainVerificationLogger {
     if (headerWork <= 0 || NumberUtil.isNBitsOverflow(nBits = header.nBits)) {
       true
     } else {
-      headerWork > header.difficulty
+      headerWork > header.target
     }
   }
 

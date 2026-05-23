@@ -31,7 +31,10 @@ case class BlockHeaderDb(
     blockHeader
   }
 
-  lazy val difficulty: BigInt = blockHeader.difficulty
+  @deprecated("Use target", "1.9.13")
+  def difficulty: BigInt = target
+
+  lazy val target: BigInt = blockHeader.target
 
   lazy val hash: DoubleSha256Digest = hashBE.flip
 
