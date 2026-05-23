@@ -118,11 +118,7 @@ class ChainGrpcRoutes(
       chainwork = chainworkStr,
       previousblockhash = Some(header.previousBlockHashBE.hex),
       nextblockhash = None,
-      target = Some(
-        ByteVector
-          .fromBigInt(NumberUtil.targetExpansion(header.nBits).difficulty,
-                      size = Some(32))
-          .toHex)
+      target = Some(NumberUtil.serializeTargetHex(header.target))
     )
   }
 }

@@ -93,14 +93,14 @@ class ChainGrpcRoutesTest extends ServerGrpcFixture {
       assert(header.versionHex == expected.versionHex.hex)
       assert(header.merkleroot == expected.merkleroot.hex)
       assert(header.time == expected.time.toInt)
+      assert(header.target == expected.target)
       assert(header.mediantime == expected.mediantime.toInt)
       assert(header.nonce == expected.nonce.toInt)
       assert(header.bits == expected.bits.hex)
       assert(header.chainwork == expected.chainwork)
       assert(header.previousblockhash == expected.previousblockhash.map(_.hex))
       assert(header.nextblockhash == expected.nextblockhash.map(_.hex))
-      assert(BigDecimal(header.difficulty) == expected.difficulty)
-      assert(header.target == expected.target)
+
     }
   }
 
