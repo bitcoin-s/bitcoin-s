@@ -15,9 +15,8 @@ import org.bitcoins.server.grpc.{
 }
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.util.FileUtil
-import org.bitcoins.testkit.chain.MockChainApi
 import org.bitcoins.testkit.dlc.MockDLCNodeApi
-import org.bitcoins.testkit.node.NodeTestWithCachedBitcoind
+import org.bitcoins.testkit.node.{NodeTestUtil, NodeTestWithCachedBitcoind}
 import org.bitcoins.testkit.rpc.CachedBitcoindNewest
 import org.scalatest.FutureOutcome
 
@@ -74,18 +73,20 @@ trait ServerGrpcFixture
       .flatMap(createNeutrinoNodeConnectedToBitcoindCached(_)(appConfig))
     for {
       neutrinoNode <- neutrinoNodeF
+      chainApi <- neutrinoNode.node.chainApiFromDb()
       server = new ServerGrpc(
         tmpDir.toPath,
         host,
         port,
         rpcPassword = rpcPassword,
-        chainApi = MockChainApi,
+        chainApi = chainApi,
         network = network,
         startedTorConfigF = Future.unit,
         nodeApiF = neutrinoNodeF.map(_.node),
         dlcNodeF = Future.successful(dlcNode)
       )
-      chainApi <- neutrinoNode.node.chainApiFromDb()
+      bitcoind <- cachedBitcoindWithFundsF
+      _ <- NodeTestUtil.awaitAllSync(neutrinoNode.node, bitcoind)
     } yield (server, chainApi, neutrinoNode.node, appConfig)
   }
 
@@ -151,6 +152,7 @@ trait ServerGrpcFixture
       _ <- client.close()
       _ <- server.stop()
       _ <- tearDownNode(node, cs.appConfig)
+      _ <- cs.appConfig.stop()
     } yield ()
   }
 }

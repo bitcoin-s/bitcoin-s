@@ -4,6 +4,7 @@ import io.grpc.Status
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.db.BlockHeaderDb
 import org.bitcoins.core.config.BitcoinNetwork
+import org.bitcoins.core.util.NumberUtil
 import org.bitcoins.crypto.DoubleSha256DigestBE
 import scodec.bits.ByteVector
 
@@ -76,7 +77,7 @@ class ChainGrpcRoutes(
           case None => Future.successful(GetBlockHeaderResponse(header = None))
           case Some(headerDb) =>
             chainApi.getBestBlockHeader().map { bestHeader =>
-              val confirmations = bestHeader.height - headerDb.height
+              val confirmations = bestHeader.height - headerDb.height + 1
               val header = toBlockHeaderResult(headerDb, confirmations)
               GetBlockHeaderResponse(header = Some(header))
             }
@@ -117,7 +118,11 @@ class ChainGrpcRoutes(
       chainwork = chainworkStr,
       previousblockhash = Some(header.previousBlockHashBE.hex),
       nextblockhash = None,
-      target = None
+      target = Some(
+        ByteVector
+          .fromBigInt(NumberUtil.targetExpansion(header.nBits).difficulty,
+                      size = Some(32))
+          .toHex)
     )
   }
 }
