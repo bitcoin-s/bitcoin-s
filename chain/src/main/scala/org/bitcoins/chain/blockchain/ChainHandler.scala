@@ -965,6 +965,15 @@ class ChainHandler(
         Future.failed(new RuntimeException(s"Not implemented: $blockTime"))
     }
 
+  override def getBlockchainFrom(
+      header: BlockHeaderDb): Future[Option[Blockchain]] =
+    blockHeaderDAO.getBlockchainFrom(header)
+
+  override def getBlockchainFrom(
+      header: BlockHeaderDb,
+      startHeight: Int): Future[Option[Blockchain]] =
+    blockHeaderDAO.getBlockchainFrom(header, startHeight)
+
   override def epochSecondToBlockHeight(time: Long): Future[Int] =
     blockHeaderDAO.findClosestToTime(time = UInt32(time)).map(_.height)
 

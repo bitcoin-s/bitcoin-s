@@ -186,6 +186,16 @@ trait ChainApi extends ChainQueryApi {
       from: BlockHeaderDb,
       to: BlockHeaderDb): Future[Vector[BlockHeaderDb]]
 
+  /** Retrieves a blockchain with the best tip being the given header */
+  def getBlockchainFrom(
+      header: BlockHeaderDb
+  ): Future[Option[Blockchain]]
+
+  /** Retrieves a blockchain from the given ehader to the given startHeight */
+  def getBlockchainFrom(
+      header: BlockHeaderDb,
+      startHeight: Int): Future[Option[Blockchain]]
+
   def isSyncing(): Future[Boolean]
 
   def isIBD(): Future[Boolean]

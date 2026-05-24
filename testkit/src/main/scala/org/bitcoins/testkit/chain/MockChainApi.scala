@@ -5,7 +5,12 @@ import org.bitcoins.core.api.chain.db.{
   CompactFilterDb,
   CompactFilterHeaderDb
 }
-import org.bitcoins.core.api.chain.{ChainApi, ChainQueryApi, FilterSyncMarker}
+import org.bitcoins.core.api.chain.{
+  Blockchain,
+  ChainApi,
+  ChainQueryApi,
+  FilterSyncMarker
+}
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.p2p.CompactFilterMessage
 import org.bitcoins.core.protocol.BlockStamp
@@ -135,6 +140,14 @@ object MockChainApi extends ChainApi {
       endHeight: Int
   ): Future[Vector[ChainQueryApi.FilterResponse]] =
     Future.successful(Vector.empty)
+
+  override def getBlockchainFrom(
+      header: BlockHeaderDb,
+      startHeight: Int): Future[Option[Blockchain]] = Future.successful(None)
+
+  override def getBlockchainFrom(
+      header: BlockHeaderDb): Future[Option[Blockchain]] =
+    Future.successful(None)
 
   override def epochSecondToBlockHeight(time: Long): Future[Int] =
     Future.successful(0)

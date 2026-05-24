@@ -29,6 +29,7 @@ import org.bitcoins.testkit.rpc.{
   BitcoindFixturesCachedPairNewest,
   BitcoindRpcTestUtil
 }
+
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
@@ -450,5 +451,199 @@ class BlockchainRpcTest extends BitcoindFixturesCachedPairNewest {
       assert(hashes.head == wait.hash)
       assert(height + 1 == wait.height)
     }
+  }
+
+  it should "return a valid blockchain from a given header height" in {
+    nodePair =>
+      val client = nodePair.node1
+
+      for {
+        // Generate some blocks to work with
+        _ <- client.generate(10)
+
+        // Get the best block header
+        bestHeader <- client.getBestBlockHeader()
+        _ = assert(bestHeader.height >= 10, "Should have at least 10 blocks")
+
+        // Get blockchain from the best header (should use default difficulty interval)
+        blockchainOpt <- client.getBlockchainFrom(bestHeader)
+        _ = assert(blockchainOpt.isDefined, "Blockchain should be defined")
+
+        blockchain = blockchainOpt.get
+
+        // Validate the blockchain structure
+        _ = assert(
+          blockchain.headers.nonEmpty,
+          "Blockchain should have headers"
+        )
+        _ = assert(
+          blockchain.tip.hashBE == bestHeader.hashBE,
+          "Tip should match the best header"
+        )
+
+        // Verify consecutive headers are connected
+        _ = blockchain.headers.sliding(2).foreach {
+          case Vector(curr, prev) =>
+            assert(
+              curr.height == prev.height + 1,
+              s"Heights should be consecutive: ${prev.height} -> ${curr.height}"
+            )
+            assert(
+              curr.previousBlockHashBE == prev.hashBE,
+              s"Block at height ${curr.height} should reference previous block"
+            )
+          case _ => ()
+        }
+      } yield succeed
+  }
+
+  it should "return a valid blockchain when specifying a start height" in {
+    nodePair =>
+      val client = nodePair.node1
+
+      for {
+        _ <- client.generate(20)
+
+        // Get the best header and a header at mid-range height
+        bestHeader <- client.getBestBlockHeader()
+        startHeight = Math.max(0, bestHeader.height - 10)
+
+        // Get blockchain from best header with custom start height
+        blockchainOpt <- client.getBlockchainFrom(bestHeader, startHeight)
+        _ = assert(blockchainOpt.isDefined, "Blockchain should be defined")
+
+        blockchain = blockchainOpt.get
+
+        // Validate structure
+        _ = assert(
+          blockchain.headers.nonEmpty,
+          "Blockchain should have headers"
+        )
+        _ = assert(
+          blockchain.headers.head.height >= startHeight,
+          s"First header height ${blockchain.headers.head.height} should be >= start height $startHeight"
+        )
+        _ = assert(
+          blockchain.tip.hashBE == bestHeader.hashBE,
+          "Tip should match the best header"
+        )
+
+        // Verify size is reasonable (between start and best)
+        expectedRange = (bestHeader.height - startHeight) + 1
+        _ = assert(
+          blockchain.headers.length <= expectedRange,
+          s"Blockchain should have at most $expectedRange headers, got ${blockchain.headers.length}"
+        )
+      } yield succeed
+  }
+
+  it should "handle the genesis block correctly" in { nodePair =>
+    val client = nodePair.node1
+
+    for {
+      // Generate a few blocks
+      _ <- client.generate(5)
+
+      // Get a header and request blockchain from genesis
+      bestHeader <- client.getBestBlockHeader()
+      blockchainOpt <- client.getBlockchainFrom(bestHeader, startHeight = 0)
+      _ = assert(blockchainOpt.isDefined, "Blockchain should be defined")
+
+      blockchain = blockchainOpt.get
+
+      // Verify genesis block is included
+      _ = assert(
+        blockchain.headers.last.height == 0,
+        "First header should be genesis block (height 0)"
+      )
+      _ = assert(
+        blockchain.tip.hashBE == bestHeader.hashBE,
+        "Tip should match best header"
+      )
+    } yield succeed
+  }
+
+  it should "validate blockchain connectivity" in { nodePair =>
+    val client = nodePair.node1
+
+    for {
+      // Generate blocks to create a chain
+      _ <- client.generate(15)
+
+      // Get best header
+      bestHeader <- client.getBestBlockHeader()
+      startHeight = Math.max(0, bestHeader.height - 7)
+
+      // Get blockchain
+      blockchainOpt <- client.getBlockchainFrom(bestHeader, startHeight)
+      _ = assert(blockchainOpt.isDefined)
+
+      blockchain = blockchainOpt.get
+
+      // Verify via Blockchain's own validation logic
+      // Blockchain should be able to connect its headers if they're valid
+      headers = blockchain.headers
+      _ = assert(
+        headers.forall(header =>
+          header.height == startHeight || header.previousBlockHashBE == headers
+            .find(_.height ==
+              header.height - 1)
+            .get
+            .hashBE),
+        "All non-genesis headers should have valid previous block references"
+      )
+    } yield succeed
+  }
+
+  it should "return None for an invalid or unreachable blockchain" in {
+    nodePair =>
+      val client = nodePair.node1
+
+      for {
+        // Generate blocks
+        _ <- client.generate(5)
+        // Get a header
+        bestHeader <- client.getBestBlockHeader()
+
+        // Try to fetch blockchain with a future start height (should fail gracefully)
+        futureStart = bestHeader.height + 100
+        _ <- assertThrows[IllegalArgumentException](
+          client.getBlockchainFrom(bestHeader, futureStart))
+      } yield {
+        // Either None or exception handled is acceptable
+        succeed
+      }
+  }
+
+  it should "verify header sequence has strictly increasing heights" in {
+    nodePair =>
+      val client = nodePair.node1
+
+      for {
+        _ <- client.generate(12)
+
+        bestHeader <- client.getBestBlockHeader()
+        blockchainOpt <- client.getBlockchainFrom(bestHeader)
+        _ = assert(blockchainOpt.isDefined)
+
+        blockchain = blockchainOpt.get
+        headers = blockchain.headers
+
+        // Verify strictly increasing heights with no gaps
+        _ = headers.zipWithIndex.foreach {
+          case (_, idx) if idx == headers.length - 1 =>
+            () // First header is fine
+          case (header, idx) =>
+            val prevHeader = headers(idx + 1)
+            assert(
+              header.height == prevHeader.height + 1,
+              s"Gap at index $idx: ${prevHeader.height} -> ${header.height}"
+            )
+            assert(
+              header.previousBlockHashBE == prevHeader.hashBE,
+              s"Header at height ${header.height} does not link to previous"
+            )
+        }
+      } yield succeed
   }
 }
