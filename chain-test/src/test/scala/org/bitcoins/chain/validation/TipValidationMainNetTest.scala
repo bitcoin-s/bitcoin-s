@@ -2,13 +2,13 @@ package org.bitcoins.chain.validation
 
 import org.bitcoins.chain.models.BlockHeaderDAO
 import org.bitcoins.chain.pow.Pow
+import org.bitcoins.core.api.chain.{Blockchain, TipUpdateResult}
 import org.bitcoins.core.api.chain.db.BlockHeaderDbHelper
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainUnitTest}
 import org.scalatest.{Assertion, FutureOutcome}
 
 class TipValidationMainNetTest extends ChainUnitTest {
-  import org.bitcoins.chain.blockchain.Blockchain
   import org.bitcoins.chain.config.ChainAppConfig
 
   override type FixtureParam = BlockHeaderDAO

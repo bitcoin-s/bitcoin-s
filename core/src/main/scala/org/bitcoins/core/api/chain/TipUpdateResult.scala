@@ -1,4 +1,4 @@
-package org.bitcoins.chain.validation
+package org.bitcoins.core.api.chain
 
 import org.bitcoins.core.api.chain.db.BlockHeaderDb
 import org.bitcoins.core.protocol.blockchain.BlockHeader

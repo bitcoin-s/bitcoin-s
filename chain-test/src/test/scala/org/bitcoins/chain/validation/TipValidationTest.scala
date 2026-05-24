@@ -1,10 +1,19 @@
 package org.bitcoins.chain.validation
 
-import org.bitcoins.chain.blockchain.Blockchain
 import org.bitcoins.chain.models.BlockHeaderDAO
+import org.bitcoins.core.api.chain.{
+  Blockchain,
+  ConnectTipResult,
+  TipUpdateResult
+}
 import org.bitcoins.core.api.chain.db.{BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.blockchain.{
+  BlockHeader,
+  RegTestNetChainParams
+}
 import org.bitcoins.testkit.chain.{BlockHeaderHelper, ChainUnitTest}
+import org.bitcoins.testkitcore.chain.ChainTestUtil
 import org.scalatest.FutureOutcome
 
 import java.time.Instant
@@ -112,6 +121,49 @@ class TipValidationTest extends ChainUnitTest {
         tipValidationResultValid == TipUpdateResult.Success(
           newHeaderTime2hoursDb)
       )
+    }
+  }
+
+  it must "correctly identify a bad tip" in { _ =>
+    val genesis = ChainTestUtil.regTestGenesisHeaderDb
+    val chain = Blockchain(Vector(genesis))
+
+    val goodHeader = BlockHeaderHelper.buildNextHeader(genesis).blockHeader
+    val badHeader = BlockHeader(
+      version = goodHeader.version,
+      previousBlockHash = goodHeader.previousBlockHash,
+      merkleRootHash = goodHeader.merkleRootHash,
+      time = goodHeader.time,
+      nBits = UInt32.zero,
+      nonce = goodHeader.nonce
+    )
+
+    val result = TipValidation.connectTip(header = badHeader,
+                                          blockchain = chain,
+                                          chainParams = RegTestNetChainParams)
+
+    assert(result.isInstanceOf[ConnectTipResult.BadTip])
+  }
+
+  it must "connect a new header to the current tip of a blockchain" in { _ =>
+    val blockchain = Blockchain.fromHeaders(
+      headers = Vector(ChainTestUtil.regTestGenesisHeaderDb)
+    )
+
+    val newHeader =
+      BlockHeaderHelper.buildNextHeader(ChainTestUtil.regTestGenesisHeaderDb)
+
+    val connectTip =
+      TipValidation.connectTip(header = newHeader.blockHeader,
+                               blockchain = blockchain,
+                               chainParams = RegTestNetChainParams)
+
+    connectTip match {
+      case ConnectTipResult.ExtendChain(_, newChain) =>
+        assert(newHeader == newChain.tip)
+
+      case _ @(_: ConnectTipResult.Reorg | _: ConnectTipResult.BadTip) =>
+        fail()
     }
   }
 }

@@ -1,6 +1,6 @@
 package org.bitcoins.chain.pow
 
-import org.bitcoins.chain.blockchain.Blockchain
+import org.bitcoins.core.api.chain.Blockchain
 import org.bitcoins.core.protocol.blockchain.{
   MainNetChainParams,
   RegTestNetChainParams,

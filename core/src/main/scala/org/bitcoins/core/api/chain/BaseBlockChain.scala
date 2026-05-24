@@ -1,7 +1,5 @@
-package org.bitcoins.chain.blockchain
+package org.bitcoins.core.api.chain
 
-import org.bitcoins.chain.ChainVerificationLogger
-import org.bitcoins.chain.validation.{TipUpdateResult, TipValidation}
 import org.bitcoins.core.api.chain.db.BlockHeaderDb
 import org.bitcoins.core.protocol.blockchain.{BitcoinChainParams, BlockHeader}
 import org.bitcoins.core.util.SeqWrapper
@@ -28,7 +26,7 @@ import scala.annotation.tailrec
   *   headers.map(h => println(h))
   * }}}
   */
-private[blockchain] trait BaseBlockChain extends SeqWrapper[BlockHeaderDb] {
+private[chain] trait BaseBlockChain extends SeqWrapper[BlockHeaderDb] {
   require(headers.nonEmpty, s"Cannot have empty Blockchain")
   require(
     headers.size == 1 || headers(1).height == tip.height - 1,
@@ -94,84 +92,10 @@ private[blockchain] trait BaseBlockChain extends SeqWrapper[BlockHeaderDb] {
   }
 }
 
-private[blockchain] trait BaseBlockChainCompObject
-    extends ChainVerificationLogger {
-
+private[chain] trait BaseBlockChainCompObject {
   def fromHeaders(
       headers: scala.collection.immutable.Seq[BlockHeaderDb]
   ): Blockchain
-
-  /** Attempts to connect the given block header with the given blockchain
-    * @param header
-    *   the block header to connect to our chain
-    * @param blockchain
-    *   the blockchain we are attempting to connect to
-    */
-  def connectTip(
-      header: BlockHeader,
-      blockchain: Blockchain,
-      chainParams: BitcoinChainParams): ConnectTipResult = {
-    logger.debug(
-      s"Attempting to add new tip=${header.hashBE.hex} with prevhash=${header.previousBlockHashBE.hex} to chain"
-    )
-
-    val tipResult: ConnectTipResult = {
-      findPrevBlockHeaderIdx(header, blockchain) match {
-        case None =>
-          logger.debug(
-            s"No common ancestor found in the chain with tip=${blockchain.tip.hashBE.hex} to connect to hash=${header.hashBE.hex} prevHash=${header.previousBlockHashBE.hex}. This may be because we have a competing reorg!"
-          )
-          val err = TipUpdateResult.BadPreviousBlockHash(header)
-          val failed = ConnectTipResult.BadTip(err)
-          failed
-
-        case Some(prevHeaderIdx) =>
-          // found a header to connect to!
-          val prevBlockHeader = blockchain.headers(prevHeaderIdx)
-          logger.debug(
-            s"Attempting to add new tip=${header.hashBE.hex} with prevhash=${header.previousBlockHashBE.hex} to chain of ${blockchain.length} headers with tip ${blockchain.tip.hashBE.hex}"
-          )
-          val chain = blockchain.fromValidHeader(prevBlockHeader)
-          val tipResult =
-            TipValidation.checkNewTip(newPotentialTip = header,
-                                      chain,
-                                      chainParams)
-
-          tipResult match {
-            case success: TipUpdateResult.Success =>
-              logger.debug(
-                s"Successfully verified=${success.header.hashBE.hex}, connecting to chain"
-              )
-              val connectionIdx = blockchain.length - prevHeaderIdx
-
-              // we construct a new blockchain by prepending the headers vector from the old one with the new tip
-              // in order to avoid creating unnecessary hidden copies of the blockchain here
-              if (connectionIdx != blockchain.length) {
-                val newChain = Blockchain(
-                  success.headerDb +: blockchain.headers.takeRight(
-                    connectionIdx
-                  )
-                )
-                // means we have a reorg, since we aren't connecting to latest tip
-                ConnectTipResult.Reorg(success, newChain)
-              } else {
-                val olderChain = if (blockchain.size < 2016) {
-                  blockchain.headers
-                } else blockchain.headers.take(2015)
-                val newChain = Blockchain(success.headerDb +: olderChain)
-                // we just extended the latest tip
-                ConnectTipResult.ExtendChain(success, newChain)
-              }
-            case fail: TipUpdateResult.Failure =>
-              logger.warn(
-                s"Could not verify header=${header.hashBE.hex}, reason=$fail"
-              )
-              ConnectTipResult.BadTip(fail)
-          }
-      }
-    }
-    tipResult
-  }
 
   /** Iterates through each given blockchains attempting to connect the given
     * headers to that chain
@@ -182,11 +106,9 @@ private[blockchain] trait BaseBlockChainCompObject
   def connectHeadersToChains(
       headers: Vector[BlockHeader],
       blockchains: Vector[Blockchain],
+      tipValidationApi: TipValidationApi,
       chainParams: BitcoinChainParams
   ): Vector[BlockchainUpdate] = {
-    logger.debug(
-      s"Attempting to connect ${headers.length} headers to ${blockchains.length} blockchains"
-    )
 
     val initUpdates: Vector[BlockchainUpdate] = blockchains.map { blockchain =>
       BlockchainUpdate.Successful(blockchain, Vector.empty)
@@ -196,7 +118,7 @@ private[blockchain] trait BaseBlockChainCompObject
       lastUpdates
         .flatMap { lastUpdate =>
           val connectTipResult =
-            Blockchain.connectTip(
+            tipValidationApi.connectTip(
               header = h,
               blockchain = lastUpdate.blockchain,
               chainParams
@@ -247,23 +169,6 @@ private[blockchain] trait BaseBlockChainCompObject
 
   }
 
-  /** Finds the parent's index of the given header
-    */
-  private def findPrevBlockHeaderIdx(
-      header: BlockHeader,
-      blockchain: Blockchain
-  ): Option[Int] = {
-    // Let's see if we are lucky and the latest tip is the parent.
-    val latestTip = blockchain.tip
-    if (latestTip.hashBE == header.previousBlockHashBE) {
-      // Yes we are.
-      Some(0)
-    } else {
-      // No. Scanning the blockchain to find the parent.
-      blockchain.findHeaderIdx(header.previousBlockHashBE)
-    }
-  }
-
   /** Walks backwards from the current header searching through ancestors if
     * [[current.previousBlockHashBE]] is in [[ancestors]] This does not validate
     * other things such as POW.
@@ -305,6 +210,7 @@ private[blockchain] trait BaseBlockChainCompObject
   def reconstructFromHeaders(
       childHeader: BlockHeaderDb,
       ancestors: Vector[BlockHeaderDb],
+      tipValidationApi: TipValidationApi,
       chainParams: BitcoinChainParams
   ): Vector[Blockchain] = {
     // now all hashes are connected correctly forming a
@@ -331,6 +237,7 @@ private[blockchain] trait BaseBlockChainCompObject
       Blockchain.connectHeadersToChains(
         headers = orderedHeaders.tail.map(_.blockHeader),
         blockchains = Vector(initBlockchain),
+        tipValidationApi = tipValidationApi,
         chainParams = chainParams
       )
     }

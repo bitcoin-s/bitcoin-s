@@ -1,6 +1,5 @@
-package org.bitcoins.chain.blockchain
+package org.bitcoins.core.api.chain
 
-import org.bitcoins.chain.validation.TipUpdateResult
 import org.bitcoins.core.api.chain.db.BlockHeaderDb
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 
