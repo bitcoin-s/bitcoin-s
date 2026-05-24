@@ -2,6 +2,7 @@ package org.bitcoins.chain.blockchain
 
 import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.chain.pow.Pow
+import org.bitcoins.core.api.chain.Blockchain
 import org.bitcoins.core.api.chain.db.{BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.core.protocol.blockchain.BlockHeader
 import org.bitcoins.testkit.chain.ChainUnitTest

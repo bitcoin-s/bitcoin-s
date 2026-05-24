@@ -1,7 +1,7 @@
 package org.bitcoins.chain.models
 
-import org.bitcoins.chain.blockchain.Blockchain
 import org.bitcoins.chain.pow.Pow
+import org.bitcoins.core.api.chain.Blockchain
 import org.bitcoins.core.protocol.blockchain.MainNetChainParams
 import org.bitcoins.core.util.FutureUtil
 import org.bitcoins.testkit.chain.ChainUnitTest

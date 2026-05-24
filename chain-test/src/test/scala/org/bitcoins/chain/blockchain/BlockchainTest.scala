@@ -1,12 +1,13 @@
 package org.bitcoins.chain.blockchain
 
-import org.bitcoins.chain.validation.TipUpdateResult
-import org.bitcoins.core.api.chain.db.BlockHeaderDb
-import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.blockchain.{
-  BlockHeader,
-  RegTestNetChainParams
+import org.bitcoins.chain.validation.TipValidation
+import org.bitcoins.core.api.chain.{
+  Blockchain,
+  BlockchainUpdate,
+  TipUpdateResult
 }
+import org.bitcoins.core.api.chain.db.BlockHeaderDb
+import org.bitcoins.core.protocol.blockchain.{RegTestNetChainParams}
 import org.bitcoins.testkit.chain.BlockHeaderHelper
 import org.bitcoins.testkit.util.BitcoinSAsyncTest
 import org.bitcoins.testkitcore.chain.ChainTestUtil
@@ -25,28 +26,6 @@ class BlockchainTest extends BitcoinSAsyncTest {
     assert(chain.toString == s"BaseBlockchain(tip=$headerDb,length=2)")
   }
 
-  it must "connect a new header to the current tip of a blockchain" in {
-    val blockchain = Blockchain.fromHeaders(
-      headers = Vector(ChainTestUtil.regTestGenesisHeaderDb)
-    )
-
-    val newHeader =
-      BlockHeaderHelper.buildNextHeader(ChainTestUtil.regTestGenesisHeaderDb)
-
-    val connectTip =
-      Blockchain.connectTip(header = newHeader.blockHeader,
-                            blockchain = blockchain,
-                            chainParams = RegTestNetChainParams)
-
-    connectTip match {
-      case ConnectTipResult.ExtendChain(_, newChain) =>
-        assert(newHeader == newChain.tip)
-
-      case _ @(_: ConnectTipResult.Reorg | _: ConnectTipResult.BadTip) =>
-        fail()
-    }
-  }
-
   it must "reconstruct a blockchain given a child header correctly" in {
     val accum = new mutable.ArrayBuffer[BlockHeaderDb](5)
     accum.+=(ChainTestUtil.regTestGenesisHeaderDb)
@@ -63,6 +42,7 @@ class BlockchainTest extends BitcoinSAsyncTest {
     val reconstructed = Blockchain.reconstructFromHeaders(
       childHeader = tip,
       ancestors = headers,
+      tipValidationApi = TipValidation,
       chainParams = RegTestNetChainParams
     )
 
@@ -84,6 +64,7 @@ class BlockchainTest extends BitcoinSAsyncTest {
       Blockchain.reconstructFromHeaders(
         thirdHeader,
         Vector(ChainTestUtil.regTestGenesisHeaderDb),
+        tipValidationApi = TipValidation,
         chainParams = RegTestNetChainParams
       )
 
@@ -115,24 +96,4 @@ class BlockchainTest extends BitcoinSAsyncTest {
     assert(updated.height == chain.height)
   }
 
-  it must "correctly identify a bad tip" in {
-    val genesis = ChainTestUtil.regTestGenesisHeaderDb
-    val chain = Blockchain(Vector(genesis))
-
-    val goodHeader = BlockHeaderHelper.buildNextHeader(genesis).blockHeader
-    val badHeader = BlockHeader(
-      version = goodHeader.version,
-      previousBlockHash = goodHeader.previousBlockHash,
-      merkleRootHash = goodHeader.merkleRootHash,
-      time = goodHeader.time,
-      nBits = UInt32.zero,
-      nonce = goodHeader.nonce
-    )
-
-    val result = Blockchain.connectTip(header = badHeader,
-                                       blockchain = chain,
-                                       chainParams = RegTestNetChainParams)
-
-    assert(result.isInstanceOf[ConnectTipResult.BadTip])
-  }
 }

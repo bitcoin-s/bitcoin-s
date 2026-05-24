@@ -1,4 +1,4 @@
-package org.bitcoins.chain.blockchain
+package org.bitcoins.core.api.chain
 
 import org.bitcoins.core.api.chain.db.BlockHeaderDb
 

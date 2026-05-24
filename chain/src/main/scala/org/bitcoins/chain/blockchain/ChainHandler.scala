@@ -2,11 +2,17 @@ package org.bitcoins.chain.blockchain
 
 import org.bitcoins.chain.ChainVerificationLogger
 import org.bitcoins.chain.config.ChainAppConfig
-import org.bitcoins.chain.models._
+import org.bitcoins.chain.models.*
 import org.bitcoins.chain.pow.Pow
+import org.bitcoins.chain.validation.TipValidation
 import org.bitcoins.core.api.chain.ChainQueryApi.FilterResponse
-import org.bitcoins.core.api.chain.db._
-import org.bitcoins.core.api.chain.{ChainApi, FilterSyncMarker}
+import org.bitcoins.core.api.chain.db.*
+import org.bitcoins.core.api.chain.{
+  Blockchain,
+  BlockchainUpdate,
+  ChainApi,
+  FilterSyncMarker
+}
 import org.bitcoins.core.gcs.FilterHeader
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.p2p.CompactFilterMessage
@@ -16,7 +22,7 @@ import org.bitcoins.core.util.{FutureUtil, NetworkUtil}
 import org.bitcoins.crypto.{CryptoUtil, DoubleSha256DigestBE}
 
 import scala.annotation.tailrec
-import scala.concurrent._
+import scala.concurrent.*
 
 /** Chain Handler is meant to be the reference implementation of
   * [[ChainApi ChainApi]], this is the entry point in to the chain project.
@@ -136,6 +142,7 @@ class ChainHandler(
         Blockchain.connectHeadersToChains(
           headers = filteredHeaders,
           blockchains = blockchains,
+          tipValidationApi = TipValidation,
           chainParams = chainConfig.chain
         )
       }

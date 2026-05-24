@@ -1,6 +1,6 @@
 package org.bitcoins.chain.models
 
-import org.bitcoins.chain.blockchain.Blockchain
+import org.bitcoins.core.api.chain.Blockchain
 import org.bitcoins.core.api.chain.db.{BlockHeaderDb, BlockHeaderDbHelper}
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.BlockHeader

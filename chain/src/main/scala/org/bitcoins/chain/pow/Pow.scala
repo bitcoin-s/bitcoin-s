@@ -1,9 +1,9 @@
 package org.bitcoins.chain.pow
 
-import org.bitcoins.chain.blockchain.Blockchain
+import org.bitcoins.core.api.chain.Blockchain
 import org.bitcoins.core.api.chain.db.BlockHeaderDb
 import org.bitcoins.core.number.UInt32
-import org.bitcoins.core.protocol.blockchain._
+import org.bitcoins.core.protocol.blockchain.*
 import org.bitcoins.core.util.NumberUtil
 
 /** Implements functions found inside of bitcoin core's
