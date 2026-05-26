@@ -8,6 +8,7 @@ import org.apache.pekko.http.scaladsl.testkit.{
 }
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.db.*
+import org.bitcoins.core.api.chain.Blockchain
 import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
 import org.bitcoins.core.api.wallet.db.*
 import org.bitcoins.core.api.wallet.{
@@ -369,12 +370,12 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .expects(Vector(blockHeader.hashBE))
         .returning(Future.successful(Vector(Some(blockHeaderDb))))
 
-      ancestorHeaders.foreach { ancestorHeader =>
-        (mockChainApi
-          .getHeader(_: DoubleSha256DigestBE))
-          .expects(ancestorHeader.hashBE)
-          .returning(Future.successful(Some(ancestorHeader)))
-      }
+      // Mock getBlockchainFrom to return a Blockchain with all headers for median time calculation
+      val blockchain = Blockchain(blockHeaderDb +: ancestorHeaders)
+      (mockChainApi
+        .getBlockchainFrom(_: BlockHeaderDb))
+        .expects(blockHeaderDb)
+        .returning(Future.successful(Some(blockchain)))
 
       val route =
         chainRoutes.handleCommand(
