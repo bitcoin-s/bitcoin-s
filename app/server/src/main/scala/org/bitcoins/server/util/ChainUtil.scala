@@ -2,6 +2,7 @@ package org.bitcoins.server.util
 
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
 import org.bitcoins.core.api.chain.ChainApi
+import org.bitcoins.core.api.chain.Blockchain
 import org.bitcoins.core.api.chain.db.BlockHeaderDb
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util.NumberUtil
@@ -11,12 +12,34 @@ import scodec.bits.ByteVector
 import scala.concurrent.{ExecutionContext, Future}
 
 object ChainUtil {
+
+  /** Calculates median time past for a given header, using a cached blockchain
+    * to avoid redundant ancestor fetches.
+    *
+    * @param header
+    *   the header to calculate median time for
+    * @param blockchainOpt
+    *   optional cached blockchain containing this header's ancestors
+    * @param chain
+    *   the chain API for fetching if not in cache
+    */
   private def getMedianTimePast(
       header: BlockHeaderDb,
+      blockchain: Blockchain,
       chain: ChainApi
   )(implicit ec: ExecutionContext): Future[Long] = {
-    val blockchainF = chain.getBlockchainFrom(header)
-    blockchainF.map(_.get.getMedianTimePast)
+    if (blockchain.headers.nonEmpty) {
+      // Cached blockchain available - use it if the header is in it
+      val headerIsInChain = blockchain.headers.exists(_.hash == header.hash)
+      if (headerIsInChain) {
+        Future.successful(blockchain.getMedianTimePast)
+      } else {
+        // Header not in cached chain, fetch its own
+        chain.getBlockchainFrom(header).map(_.get.getMedianTimePast)
+      }
+    } else {
+      chain.getBlockchainFrom(header).map(_.get.getMedianTimePast)
+    }
   }
 
   def getBlockHeaderResult(
@@ -25,7 +48,11 @@ object ChainUtil {
   )(implicit ec: ExecutionContext): Future[Vector[GetBlockHeaderResult]] = {
     val headersF: Future[Vector[Option[BlockHeaderDb]]] =
       chain.getHeaders(hashes)
-    val bestHeightF = chain.getBestBlockHeader().map(_.height)
+    val bestHeaderF = chain.getBestBlockHeader()
+    val bestHeightF = bestHeaderF.map(_.height)
+    val bestBlockchainF: Future[Option[Blockchain]] =
+      bestHeaderF.flatMap(bestHeader => chain.getBlockchainFrom(bestHeader))
+
     val headersWithConfsF: Future[Vector[Option[(BlockHeaderDb, Int)]]] = for {
       headers <- headersF
       bestHeight <- bestHeightF
@@ -35,43 +62,63 @@ object ChainUtil {
 
     for {
       headersWithConfs <- headersWithConfsF
-      results <- Future.traverse(headersWithConfs) {
-        case None =>
-          Future.failed(
-            new RuntimeException(
-              "Could not find block header or confirmations for the header"
-            ))
-        case Some((header, confs)) =>
-          getMedianTimePast(header, chain).map { medianTimePast =>
-            val chainworkStr = {
-              val bytes = ByteVector(header.chainWork.toByteArray)
-              val padded = if (bytes.length <= 32) {
-                bytes.padLeft(32)
-              } else bytes
+      cachedBlockchain <- bestBlockchainF
+      results <- {
+        cachedBlockchain match {
+          case Some(blockchain) =>
+            getBestBlockHeaderResults(headersWithConfs, blockchain, chain)
+          case None =>
+            Future.failed(
+              new RuntimeException(
+                "Could not fetch best block header or blockchain for median time past calculation"
+              ))
+        }
 
-              padded.toHex
-            }
-            GetBlockHeaderResult(
-              hash = header.hashBE,
-              confirmations = confs,
-              height = header.height,
-              version = header.version.toInt,
-              versionHex = header.version,
-              merkleroot = header.merkleRootHashBE,
-              time = header.time,
-              mediantime = UInt32(medianTimePast),
-              nonce = header.nonce,
-              bits = header.nBits,
-              difficulty = None,
-              chainwork = chainworkStr,
-              previousblockhash = Some(header.previousBlockHashBE),
-              nextblockhash = None,
-              target = Some(NumberUtil.serializeTargetHex(header.target))
-            )
-          }
       }
     } yield {
       results
+    }
+  }
+
+  private def getBestBlockHeaderResults(
+      headersWithConfs: Vector[Option[(BlockHeaderDb, Int)]],
+      blockchain: Blockchain,
+      chain: ChainApi)(implicit
+      ec: ExecutionContext): Future[Vector[GetBlockHeaderResult]] = {
+    Future.traverse(headersWithConfs) {
+      case None =>
+        Future.failed(
+          new RuntimeException(
+            "Could not find block header or confirmations for the header"
+          ))
+      case Some((header, confs)) =>
+        getMedianTimePast(header, blockchain, chain).map { medianTimePast =>
+          val chainworkStr = {
+            val bytes = ByteVector(header.chainWork.toByteArray)
+            val padded = if (bytes.length <= 32) {
+              bytes.padLeft(32)
+            } else bytes
+
+            padded.toHex
+          }
+          GetBlockHeaderResult(
+            hash = header.hashBE,
+            confirmations = confs,
+            height = header.height,
+            version = header.version.toInt,
+            versionHex = header.version,
+            merkleroot = header.merkleRootHashBE,
+            time = header.time,
+            mediantime = UInt32(medianTimePast),
+            nonce = header.nonce,
+            bits = header.nBits,
+            difficulty = None,
+            chainwork = chainworkStr,
+            previousblockhash = Some(header.previousBlockHashBE),
+            nextblockhash = None,
+            target = Some(NumberUtil.serializeTargetHex(header.target))
+          )
+        }
     }
   }
 }
