@@ -3,10 +3,10 @@ package org.bitcoins.rpc.client.common
 import org.apache.pekko.Done
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.stream.scaladsl.{Keep, RunnableGraph, Sink, Source}
-import org.bitcoins.commons.jsonmodels.bitcoind.{GetNetworkInfoResultV28}
+import org.bitcoins.commons.jsonmodels.bitcoind.GetNetworkInfoResultV28
 import org.bitcoins.commons.util.BitcoinSLogger
 import org.bitcoins.core.api.chain.db.BlockHeaderDb
-import org.bitcoins.core.api.chain.{ChainApi, FilterSyncMarker}
+import org.bitcoins.core.api.chain.{Blockchain, ChainApi, FilterSyncMarker}
 import org.bitcoins.core.api.feeprovider.FeeRateApi
 import org.bitcoins.core.api.node.NodeApi
 import org.bitcoins.core.config.RegTest
@@ -215,8 +215,12 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
       to: BlockHeaderDb
   ): Future[Vector[BlockHeaderDb]] = {
     val range = from.height.to(to.height).toVector
-    val headerFs =
-      Future.traverse(range)(height => getHeaderAtHeight(height))
+    val headerFs = Source(range)
+      .mapAsync(FutureUtil.getParallelism) { height =>
+        getHeaderAtHeight(height)
+      }
+      .runWith(Sink.seq)
+      .map(_.toVector)
     headerFs
   }
 
@@ -241,6 +245,42 @@ class BitcoindRpcClient(override val instance: BitcoindInstance)(implicit
       hash <- getBestBlockHash()
       header <- getBlockHeader(hash)
     } yield header.blockHeaderDb
+
+  override def getBlockchainFrom(
+      header: BlockHeaderDb): Future[Option[Blockchain]] = {
+    val diffInterval = network.chainParams.difficultyChangeInterval
+    val startHeight = Math.max(0, header.height - diffInterval)
+    getBlockchainFrom(header, startHeight)
+  }
+
+  override def getBlockchainFrom(
+      header: BlockHeaderDb,
+      startHeight: Int): Future[Option[Blockchain]] = {
+    require(
+      startHeight >= 0,
+      s"Can only have positive  startHeight=$startHeight"
+    )
+    require(
+      startHeight <= header.height,
+      s"startHeight=$startHeight was not less than header.height=${header.height}")
+
+    for {
+      startHeader <- getHeaderAtHeight(startHeight)
+      headers <- getHeadersBetween(from = startHeader, to = header)
+      connected = Blockchain.connectWalkBackwards(header, headers)
+    } yield {
+      if (containsStartAndTip(startHeader, header, connected)) {
+        Some(Blockchain(connected.reverse))
+      } else None
+    }
+  }
+
+  private def containsStartAndTip(
+      startHeader: BlockHeaderDb,
+      tip: BlockHeaderDb,
+      headers: Vector[BlockHeaderDb]): Boolean = {
+    headers.headOption.contains(startHeader) && headers.lastOption.contains(tip)
+  }
 
   override def nextBlockHeaderBatchRange(
       prevStopHash: DoubleSha256DigestBE,
