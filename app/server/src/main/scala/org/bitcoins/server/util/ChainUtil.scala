@@ -10,6 +10,7 @@ import org.bitcoins.crypto.DoubleSha256DigestBE
 import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 object ChainUtil {
 
@@ -18,27 +19,31 @@ object ChainUtil {
     *
     * @param header
     *   the header to calculate median time for
-    * @param blockchainOpt
-    *   optional cached blockchain containing this header's ancestors
+    * @param blockchain
+    *   cached blockchain that may contain this header and its ancestors
     * @param chain
-    *   the chain API for fetching if not in cache
+    *   the chain API used to fetch a blockchain if the cached one cannot be
+    *   used
+    * @return
+    *   `Some(mtp)` when median time past can be calculated, otherwise `None`
+    *   when either: 1) the blockchain used for calculation does not contain
+    *   `header`, or 2) the blockchain does not contain enough ancestor headers
+    *   below `header` to compute median time past
     */
   private def getMedianTimePast(
       header: BlockHeaderDb,
       blockchain: Blockchain,
       chain: ChainApi
-  )(implicit ec: ExecutionContext): Future[Long] = {
-    if (blockchain.headers.nonEmpty) {
-      // Cached blockchain available - use it if the header is in it
-      val headerIsInChain = blockchain.headers.exists(_.hash == header.hash)
-      if (headerIsInChain) {
-        Future.successful(blockchain.getMedianTimePast)
-      } else {
-        // Header not in cached chain, fetch its own
-        chain.getBlockchainFrom(header).map(_.get.getMedianTimePast)
-      }
-    } else {
-      chain.getBlockchainFrom(header).map(_.get.getMedianTimePast)
+  )(implicit ec: ExecutionContext): Future[Option[Long]] = {
+    Try {
+      // Header not in cached chain, fetch its own
+      blockchain.getMedianTimePast(header)
+    } match {
+      case scala.util.Success(mtpF) => Future.successful(Some(mtpF))
+      case scala.util.Failure(_) =>
+        chain
+          .getBlockchainFrom(header)
+          .map(b => b.map(_.getMedianTimePast))
     }
   }
 
@@ -92,7 +97,7 @@ object ChainUtil {
             "Could not find block header or confirmations for the header"
           ))
       case Some((header, confs)) =>
-        getMedianTimePast(header, blockchain, chain).map { medianTimePast =>
+        getMedianTimePast(header, blockchain, chain).map { medianTimePastOpt =>
           val chainworkStr = {
             val bytes = ByteVector(header.chainWork.toByteArray)
             val padded = if (bytes.length <= 32) {
@@ -109,7 +114,8 @@ object ChainUtil {
             versionHex = header.version,
             merkleroot = header.merkleRootHashBE,
             time = header.time,
-            mediantime = UInt32(medianTimePast),
+            mediantime =
+              medianTimePastOpt.map(UInt32.apply).getOrElse(header.time),
             nonce = header.nonce,
             bits = header.nBits,
             difficulty = None,

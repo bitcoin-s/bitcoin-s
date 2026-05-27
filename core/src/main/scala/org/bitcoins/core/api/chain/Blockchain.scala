@@ -14,7 +14,22 @@ case class Blockchain(headers: Vector[BlockHeaderDb]) extends BaseBlockChain {
         .sorted
       Some(sorted.apply(sorted.length / 2))
     }
-
+  def getMedianTimePast(header: BlockHeaderDb): Long = {
+    val headerIndexOpt = headers.indexWhere(_.hash == header.hash) match {
+      case -1  => None
+      case idx => Some(idx)
+    }
+    headerIndexOpt match {
+      case Some(headerIndex) =>
+        val sorted = headers
+          .slice(from = headerIndex,
+                 until = headerIndex + Blockchain.nMedianTimeSpan)
+        Blockchain.fromHeaders(sorted).getMedianTimePast
+      case None =>
+        throw new IllegalArgumentException(
+          s"Header ${header.hash} not found in blockchain"
+        )
+    }
   }
 
   def getMedianTimePast(header: BlockHeaderDb): Option[Long] = {
