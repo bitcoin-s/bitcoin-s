@@ -1,8 +1,7 @@
-package org.bitcoins.server.util
+package org.bitcoins.commons.util
 
 import org.bitcoins.commons.jsonmodels.bitcoind.GetBlockHeaderResult
-import org.bitcoins.core.api.chain.ChainApi
-import org.bitcoins.core.api.chain.Blockchain
+import org.bitcoins.core.api.chain.{Blockchain, ChainApi}
 import org.bitcoins.core.api.chain.db.BlockHeaderDb
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util.NumberUtil
@@ -64,7 +63,7 @@ object ChainUtil {
       headers <- headersF
       bestHeight <- bestHeightF
     } yield {
-      headers.map(hOpt => hOpt.map(h => (h, bestHeight - h.height)))
+      headers.map(hOpt => hOpt.map(h => (h, bestHeight - h.height + 1)))
     }
 
     for {

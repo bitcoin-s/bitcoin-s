@@ -23,7 +23,7 @@ import org.bitcoins.commons.jsonmodels.ws.{
   WalletWsType,
   WsNotification
 }
-import org.bitcoins.commons.util.BitcoinSLogger
+import org.bitcoins.commons.util.{BitcoinSLogger, ChainUtil}
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.db.{CompactFilterDb, CompactFilterHeaderDb}
 import org.bitcoins.core.api.dlc.wallet.db.IncomingDLCOfferDb
