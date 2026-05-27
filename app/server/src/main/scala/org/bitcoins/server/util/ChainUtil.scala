@@ -10,7 +10,6 @@ import org.bitcoins.crypto.DoubleSha256DigestBE
 import scodec.bits.ByteVector
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
 
 object ChainUtil {
 
@@ -35,15 +34,13 @@ object ChainUtil {
       blockchain: Blockchain,
       chain: ChainApi
   )(implicit ec: ExecutionContext): Future[Option[Long]] = {
-    Try {
-      // Header not in cached chain, fetch its own
-      blockchain.getMedianTimePast(header)
-    } match {
-      case scala.util.Success(mtpF) => Future.successful(Some(mtpF))
-      case scala.util.Failure(_) =>
+    blockchain.getMedianTimePast(header) match {
+      case Some(mtp) => Future.successful(Some(mtp))
+      case None      =>
+        // Header not in cached chain, fetch its own
         chain
           .getBlockchainFrom(header)
-          .map(b => b.map(_.getMedianTimePast))
+          .map(b => b.flatMap(_.getMedianTimePast))
     }
   }
 
