@@ -370,11 +370,14 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .expects(Vector(blockHeader.hashBE))
         .returning(Future.successful(Vector(Some(blockHeaderDb))))
 
-      // Mock getBlockchainFrom to return a Blockchain with all headers for median time calculation
+      // Mock getBlockchainFrom(bestHeader, startHeight) used by ChainUtil
       val blockchain = Blockchain(blockHeaderDb +: ancestorHeaders)
+      val startHeight =
+        Math.min(blockHeaderDb.height - Blockchain.nMedianTimeSpan,
+                 blockHeaderDb.height - 1)
       (mockChainApi
-        .getBlockchainFrom(_: BlockHeaderDb))
-        .expects(blockHeaderDb)
+        .getBlockchainFrom(_: BlockHeaderDb, _: Int))
+        .expects(blockHeaderDb, startHeight)
         .returning(Future.successful(Some(blockchain)))
 
       val route =

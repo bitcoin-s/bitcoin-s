@@ -52,8 +52,13 @@ object ChainUtil {
       chain.getHeaders(hashes)
     val bestHeaderF = chain.getBestBlockHeader()
     val bestHeightF = bestHeaderF.map(_.height)
-    val bestBlockchainF: Future[Option[Blockchain]] =
-      bestHeaderF.flatMap(bestHeader => chain.getBlockchainFrom(bestHeader))
+
+    val bestBlockchainF: Future[Option[Blockchain]] = for {
+      bestHeader <- bestHeaderF
+      startHeight = Math.min(bestHeader.height - Blockchain.nMedianTimeSpan,
+                             bestHeader.height - hashes.length)
+      blockchain <- chain.getBlockchainFrom(bestHeader, startHeight)
+    } yield blockchain
 
     val headersWithConfsF: Future[Vector[Option[(BlockHeaderDb, Int)]]] = for {
       headers <- headersF
