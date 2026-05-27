@@ -94,11 +94,13 @@ sealed abstract class TipValidation
 
         case Some(prevHeaderIdx) =>
           // found a header to connect to!
-          val prevBlockHeader = blockchain.headers(prevHeaderIdx)
+          val prevBlockHeaders = blockchain.headers.slice(
+            prevHeaderIdx,
+            prevHeaderIdx + chainParams.difficultyChangeInterval)
+          val chain = Blockchain.fromHeaders(prevBlockHeaders)
           logger.debug(
             s"Attempting to add new tip=${header.hashBE.hex} with prevhash=${header.previousBlockHashBE.hex} to chain of ${blockchain.length} headers with tip ${blockchain.tip.hashBE.hex}"
           )
-          val chain = blockchain.fromValidHeader(prevBlockHeader)
           val tipResult =
             TipValidation.checkNewTip(newPotentialTip = header,
                                       chain,
@@ -211,11 +213,13 @@ sealed abstract class TipValidation
       newPotentialTip: BlockHeader,
       blockchain: Blockchain
   ): Boolean = {
-    if (blockchain.length <= 4) {
-      false
-    } else {
-      val medianTimePast = blockchain.getMedianTimePast
-      newPotentialTip.time.toLong <= medianTimePast
+    blockchain.getMedianTimePast match {
+      case None =>
+        // if median time past cannot be computed, do not silently
+        // skip MTP validation.
+        false
+      case Some(medianTimePast) =>
+        newPotentialTip.time.toLong <= medianTimePast
     }
   }
 

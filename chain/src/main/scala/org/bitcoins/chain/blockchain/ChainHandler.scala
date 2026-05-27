@@ -1305,7 +1305,7 @@ class ChainHandler(
         return pbegin[(pend - pbegin)/2];
     }
      */
-    val nMedianTimeSpan = 11
+    val nMedianTimeSpan = Blockchain.nMedianTimeSpan
 
     @tailrec
     def getNTopHeaders(
@@ -1332,7 +1332,17 @@ class ChainHandler(
       .sequence(top11)
       .map(_.flatten) // is this safe / right?
       .map(Blockchain.apply)
-      .map(_.getMedianTimePast)
+      .flatMap { blockchain =>
+        blockchain.getMedianTimePast match {
+          case Some(mtp) => Future.successful(mtp)
+          case None =>
+            val exn = new RuntimeException(
+              s"Could not calculate median time past, not enough blocks in the chain, got only ${blockchain.headers.length} headers"
+            )
+            Future.failed(exn)
+        }
+
+      }
   }
 
   override def isSyncing(): Future[Boolean] = {
