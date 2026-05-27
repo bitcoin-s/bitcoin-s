@@ -16,15 +16,15 @@ import org.bitcoins.server.grpc.{
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.util.FileUtil
 import org.bitcoins.testkit.dlc.MockDLCNodeApi
-import org.bitcoins.testkit.node.{NodeTestUtil, NodeTestWithCachedBitcoind}
-import org.bitcoins.testkit.rpc.CachedBitcoindNewest
+import org.bitcoins.testkit.node.{
+  NodeTestUtil,
+  NodeTestWithCachedBitcoindNewest
+}
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
 
-trait ServerGrpcFixture
-    extends NodeTestWithCachedBitcoind
-    with CachedBitcoindNewest {
+trait ServerGrpcFixture extends NodeTestWithCachedBitcoindNewest {
   lazy val network: BitcoinNetwork = RegTest
   case class GrpcClientServerFixture[T <: PekkoGrpcClient](
       client: T,
