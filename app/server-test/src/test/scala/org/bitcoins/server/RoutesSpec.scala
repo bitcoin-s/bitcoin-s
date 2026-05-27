@@ -8,6 +8,7 @@ import org.apache.pekko.http.scaladsl.testkit.{
 }
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.api.chain.db.*
+import org.bitcoins.core.api.chain.Blockchain
 import org.bitcoins.core.api.dlc.wallet.DLCNeutrinoHDWalletApi
 import org.bitcoins.core.api.wallet.db.*
 import org.bitcoins.core.api.wallet.{
@@ -321,6 +322,31 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
       )
 
     "get a block header" in {
+      val medianTimePast = UInt32(blockHeader.time.toLong - 5)
+      val ancestorHashes = Vector(
+        blockHeader.previousBlockHashBE,
+        DoubleSha256DigestBE(ByteVector.fill(32)(2.toByte)),
+        DoubleSha256DigestBE(ByteVector.fill(32)(3.toByte)),
+        DoubleSha256DigestBE(ByteVector.fill(32)(4.toByte)),
+        DoubleSha256DigestBE(ByteVector.fill(32)(5.toByte)),
+        DoubleSha256DigestBE(ByteVector.fill(32)(6.toByte)),
+        DoubleSha256DigestBE(ByteVector.fill(32)(7.toByte)),
+        DoubleSha256DigestBE(ByteVector.fill(32)(8.toByte)),
+        DoubleSha256DigestBE(ByteVector.fill(32)(9.toByte)),
+        DoubleSha256DigestBE(ByteVector.fill(32)(10.toByte))
+      )
+      val previousHashes = ancestorHashes.tail :+ DoubleSha256DigestBE.empty
+
+      val ancestorHeaders = ancestorHashes.zipWithIndex.map {
+        case (hash, idx) =>
+          blockHeaderDb.copy(
+            height = blockHeaderDb.height - idx - 1,
+            hashBE = hash,
+            previousBlockHashBE = previousHashes(idx),
+            time = UInt32(blockHeader.time.toLong - idx - 1)
+          )
+      }
+
       val chainworkStr = {
         val bytes = ByteVector(blockHeaderDb.chainWork.toByteArray)
         val padded = if (bytes.length <= 32) {
@@ -344,6 +370,16 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         .expects(Vector(blockHeader.hashBE))
         .returning(Future.successful(Vector(Some(blockHeaderDb))))
 
+      // Mock getBlockchainFrom(bestHeader, startHeight) used by ChainUtil
+      val blockchain = Blockchain(blockHeaderDb +: ancestorHeaders)
+      val startHeight =
+        Math.min(blockHeaderDb.height - Blockchain.nMedianTimeSpan,
+                 blockHeaderDb.height - 1)
+      (mockChainApi
+        .getBlockchainFrom(_: BlockHeaderDb, _: Int))
+        .expects(blockHeaderDb, startHeight)
+        .returning(Future.successful(Some(blockchain)))
+
       val route =
         chainRoutes.handleCommand(
           ServerCommand("getblockheader", Arr(Str(blockHeader.hashBE.hex)))
@@ -354,7 +390,7 @@ class RoutesSpec extends AnyWordSpec with ScalatestRouteTest with MockFactory {
         assert(
           responseAs[
             String
-          ] == s"""{"result":{"raw":"${blockHeader.hex}","hash":"${blockHeader.hashBE.hex}","confirmations":0,"height":1899697,"version":${blockHeader.version.toLong},"versionHex":"${blockHeader.version.hex}","merkleroot":"${blockHeader.merkleRootHashBE.hex}","time":${blockHeader.time.toLong},"mediantime":${blockHeaderDb.time.toLong},"nonce":${blockHeader.nonce.toLong},"bits":"${blockHeader.nBits.hex}","difficulty":null,"chainwork":"$chainworkStr","previousblockhash":"${blockHeader.previousBlockHashBE.hex}","nextblockhash":null,"target":"${NumberUtil
+          ] == s"""{"result":{"raw":"${blockHeader.hex}","hash":"${blockHeader.hashBE.hex}","confirmations":0,"height":1899697,"version":${blockHeader.version.toLong},"versionHex":"${blockHeader.version.hex}","merkleroot":"${blockHeader.merkleRootHashBE.hex}","time":${blockHeader.time.toLong},"mediantime":${medianTimePast.toLong},"nonce":${blockHeader.nonce.toLong},"bits":"${blockHeader.nBits.hex}","difficulty":null,"chainwork":"$chainworkStr","previousblockhash":"${blockHeader.previousBlockHashBE.hex}","nextblockhash":null,"target":"${NumberUtil
               .serializeTargetHex(blockHeader.target)}"},"error":null}"""
         )
       }

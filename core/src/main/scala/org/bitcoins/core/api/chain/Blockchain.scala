@@ -14,7 +14,6 @@ case class Blockchain(headers: Vector[BlockHeaderDb]) extends BaseBlockChain {
         .sorted
       Some(sorted.apply(sorted.length / 2))
     }
-
   }
 
   def getMedianTimePast(header: BlockHeaderDb): Option[Long] = {
