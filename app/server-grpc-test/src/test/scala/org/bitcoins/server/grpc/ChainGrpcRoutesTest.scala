@@ -1,9 +1,7 @@
 package org.bitcoins.server.grpc
 
 import org.bitcoins.core.config.RegTest
-import org.bitcoins.testkit.chain.MockChainApi
 import org.bitcoins.testkit.fixtures.ServerGrpcFixture
-import org.bitcoins.testkitcore.chain.ChainTestUtil
 import org.scalatest.FutureOutcome
 
 class ChainGrpcRoutesTest extends ServerGrpcFixture {
@@ -17,12 +15,16 @@ class ChainGrpcRoutesTest extends ServerGrpcFixture {
 
   it must "getinfo" in { case clientServer =>
     val client = clientServer.client
-    client.getInfo(GetInfoRequest()).map { response =>
+
+    for {
+      response <- client.getInfo(GetInfoRequest())
+      bitcoind <- cachedBitcoindWithFundsF
+      expectedHash <- bitcoind.getBestBlockHash()
+      height <- bitcoind.getBlockCount()
+    } yield {
       assert(response.network == RegTest.name)
-      assert(
-        response.blockHeight == ChainTestUtil.regTestGenesisHeaderDb.height)
-      assert(
-        response.blockHash == ChainTestUtil.regTestGenesisHeaderDb.hashBE.hex)
+      assert(response.blockHeight == height)
+      assert(response.blockHash == expectedHash.hex)
       assert(response.torStarted)
       assert(!response.syncing)
       assert(!response.isInitialBlockDownload)
@@ -31,22 +33,34 @@ class ChainGrpcRoutesTest extends ServerGrpcFixture {
 
   it must "getblockcount" in { case clientServer =>
     val client = clientServer.client
-    client.getBlockCount(GetBlockCountRequest()).map { response =>
-      assert(response.count == 0)
+    for {
+      response <- client.getBlockCount(GetBlockCountRequest())
+      bitcoind <- cachedBitcoindWithFundsF
+      expectedCount <- bitcoind.getBlockCount()
+    } yield {
+      assert(response.count == expectedCount)
     }
   }
 
   it must "getfiltercount" in { case clientServer =>
     val client = clientServer.client
-    client.getFilterCount(GetFilterCountRequest()).map { response =>
-      assert(response.count == 0)
+    for {
+      response <- client.getFilterCount(GetFilterCountRequest())
+      bitcoind <- cachedBitcoindWithFundsF
+      expectedCount <- bitcoind.getFilterCount()
+    } yield {
+      assert(response.count == expectedCount)
     }
   }
 
   it must "getfilterheadercount" in { case clientServer =>
     val client = clientServer.client
-    client.getFilterHeaderCount(GetFilterHeaderCountRequest()).map { response =>
-      assert(response.count == 0)
+    for {
+      response <- client.getFilterHeaderCount(GetFilterHeaderCountRequest())
+      bitcoind <- cachedBitcoindWithFundsF
+      expectedCount <- bitcoind.getFilterCount()
+    } yield {
+      assert(response.count == expectedCount)
     }
   }
 
@@ -54,7 +68,8 @@ class ChainGrpcRoutesTest extends ServerGrpcFixture {
     val client = clientServer.client
     for {
       response <- client.getBestBlockHash(GetBestBlockHashRequest())
-      expectedHash <- MockChainApi.getBestBlockHash()
+      bitcoind <- cachedBitcoindWithFundsF
+      expectedHash <- bitcoind.getBestBlockHash()
     } yield {
       assert(response.hash == expectedHash.hex)
     }
@@ -62,16 +77,41 @@ class ChainGrpcRoutesTest extends ServerGrpcFixture {
 
   it must "getblockheader" in { case clientServer =>
     val client = clientServer.client
-    val hash = ChainTestUtil.regTestGenesisHeaderDb.hashBE.hex
-    client.getBlockHeader(GetBlockHeaderRequest(hash = hash)).map { response =>
-      assert(response.header.isEmpty)
+    for {
+      bitcoind <- cachedBitcoindWithFundsF
+      bestHash <- bitcoind.getBestBlockHash()
+      expected <- bitcoind.getBlockHeader(bestHash)
+      response <- client.getBlockHeader(
+        GetBlockHeaderRequest(hash = bestHash.hex))
+    } yield {
+      assert(response.header.isDefined)
+      val header = response.header.get
+      assert(header.hash == expected.hash.hex)
+      assert(header.confirmations == expected.confirmations)
+      assert(header.height == expected.height)
+      assert(header.version == expected.version)
+      assert(header.versionHex == expected.versionHex.hex)
+      assert(header.merkleroot == expected.merkleroot.hex)
+      assert(header.time == expected.time.toInt)
+      assert(header.target == expected.target)
+      assert(header.mediantime == expected.mediantime.toInt)
+      assert(header.nonce == expected.nonce.toInt)
+      assert(header.bits == expected.bits.hex)
+      assert(header.chainwork == expected.chainwork)
+      assert(header.previousblockhash == expected.previousblockhash.map(_.hex))
+      assert(header.nextblockhash == expected.nextblockhash.map(_.hex))
+
     }
   }
 
   it must "getmediantimepast" in { case clientServer =>
     val client = clientServer.client
-    client.getMedianTimePast(GetMedianTimePastRequest()).map { response =>
-      assert(response.mediantimepast == 0L)
+    for {
+      response <- client.getMedianTimePast(GetMedianTimePastRequest())
+      bitcoind <- cachedBitcoindWithFundsF
+      expected <- bitcoind.getMedianTimePast()
+    } yield {
+      assert(response.mediantimepast == expected)
     }
   }
 }

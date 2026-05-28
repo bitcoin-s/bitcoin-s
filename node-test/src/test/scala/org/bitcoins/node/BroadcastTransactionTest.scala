@@ -34,7 +34,6 @@ class BroadcastTransactionTest extends NodeTestWithCachedBitcoindNewest {
       _ <- torClientF
       bitcoind <- cachedBitcoindWithFundsF
       outcome = withNeutrinoNodeConnectedToBitcoindCached(test, bitcoind)(
-        using system,
         getFreshConfig
       )
       f <- outcome.toFuture

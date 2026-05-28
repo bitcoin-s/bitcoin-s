@@ -33,25 +33,11 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
       test: OneArgAsyncTest,
       bitcoind: BitcoindRpcClient
   )(implicit
-      system: ActorSystem,
       appConfig: BitcoinSAppConfig
   ): FutureOutcome = {
     val nodeWithBitcoindBuilder
         : () => Future[NeutrinoNodeConnectedWithBitcoind] = { () =>
-      require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
-      for {
-        peer <- NodeUnitTest.createPeer(bitcoind)
-        node <- NodeUnitTest.createNeutrinoNode(peer, None)(
-          using system,
-          appConfig.chainConf,
-          appConfig.nodeConf
-        )
-        started <- node.start()
-        _ <- NodeTestUtil.awaitConnectionCount(
-          node = node,
-          expectedConnectionCount = 1
-        )
-      } yield NeutrinoNodeConnectedWithBitcoind(started, bitcoind)
+      createNeutrinoNodeConnectedToBitcoindCached(bitcoind)
     }
 
     makeDependentFixture[NeutrinoNodeConnectedWithBitcoind](
@@ -60,6 +46,22 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
         NodeUnitTest.destroyNode(x.node, appConfig)
       }
     )(test)
+  }
+
+  def createNeutrinoNodeConnectedToBitcoindCached(bitcoind: BitcoindRpcClient)(
+      implicit appConfig: BitcoinSAppConfig)
+      : Future[NeutrinoNodeConnectedWithBitcoind] = {
+    require(appConfig.nodeConf.nodeType == NodeType.NeutrinoNode)
+    for {
+      _ <- appConfig.walletConf.kmConf.start()
+      node <- NodeUnitTest.createNeutrinoNode(bitcoind, None)(
+        using system,
+        appConfig.chainConf,
+        appConfig.nodeConf
+      )
+      startedNode <- node.start()
+      _ <- NodeTestUtil.awaitConnectionCount(node, 1)
+    } yield NeutrinoNodeConnectedWithBitcoind(startedNode, bitcoind)
   }
 
   def withNeutrinoNodeUnstarted(
@@ -222,7 +224,7 @@ trait NodeTestWithCachedBitcoind extends BaseNodeTest with CachedTor {
     } yield ()
   }
 
-  private def tearDownNode(
+  protected def tearDownNode(
       node: Node,
       appConfig: BitcoinSAppConfig
   ): Future[Unit] = {
