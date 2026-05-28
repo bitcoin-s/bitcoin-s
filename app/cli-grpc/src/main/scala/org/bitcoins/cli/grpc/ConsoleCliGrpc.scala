@@ -4,6 +4,7 @@ import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.grpc.GrpcClientSettings
 import org.bitcoins.cli.CliCommand.{
   AddDLCOffer,
+  EstimateFee,
   GetAccounts,
   GetAddressLabels,
   GetAddresses,
@@ -26,6 +27,7 @@ import org.bitcoins.cli.CliCommand.{
   IsEmpty,
   OfferSend,
   RemoveDLCOffer,
+  WalletInfo,
   ZipDataDir
 }
 import org.bitcoins.cli.{Config, ConsoleCli}
@@ -39,9 +41,23 @@ import org.bitcoins.commons.rpc.{
   ContactAdd,
   ContactsList,
   CreateContractInfo,
+  CreateNewAccount,
   DLCContactAdd,
+  DropAddressLabel,
+  DropAddressLabels,
+  GetAddressInfo,
+  GetAddressLabel,
+  GetAddressTags,
+  GetBalance,
   GetBlockHeader,
+  GetConfirmedBalance,
+  GetNewAddress,
+  GetTransaction,
+  GetUnconfirmedBalance,
+  LabelAddress,
+  LockUnspent,
   OracleServerCliCommand,
+  Rescan,
   ServerlessCliCommand
 }
 import org.bitcoins.commons.rpc.CliCommand.NoCommand
@@ -60,38 +76,53 @@ import org.bitcoins.server.grpc.{
   ContactsListRequest,
   ContactsListResponse,
   CreateContractInfoRequest,
+  CreateNewAccountRequest,
   DLCRoutesClient,
   DlcContactAddRequest,
-  GetBestBlockHashRequest,
+  DropAddressLabelRequest,
+  DropAddressLabelsRequest,
+  EstimateFeeRequest,
   GetAccountsRequest,
+  GetAddressInfoRequest,
+  GetAddressLabelRequest,
   GetAddressLabelsRequest,
+  GetAddressTagsRequest,
   GetAddressesRequest,
+  GetBalanceRequest,
   GetBalancesRequest,
-  GetFundedAddressesRequest,
+  GetBestBlockHashRequest,
   GetBlockCountRequest,
   GetBlockHeaderRequest,
   GetBlockHeaderResponse,
   GetConnectionCountRequest,
   GetDlcHostAddressRequest,
-  GetUtxosResponse,
   GetFilterCountRequest,
   GetFilterHeaderCountRequest,
+  GetFundedAddressesRequest,
   GetInfoRequest,
   GetMedianTimePastRequest,
+  GetNewAddressRequest,
   GetReservedUtxosRequest,
   GetSpentAddressesRequest,
+  GetTransactionRequest,
   GetUnusedAddressesRequest,
   GetUtxosRequest,
+  GetUtxosResponse,
   GetVersionRequest,
   GetVersionResponse,
+  GetWalletInfoRequest,
   GrpcAuth,
-  IsEmptyRequest,
   IncomingOfferListResponse,
   IncomingOffersListRequest,
+  IsEmptyRequest,
+  LabelAddressRequest,
+  LockUnspentRequest,
   NodeRoutesClient,
   OfferAddRequest,
   OfferRemoveRequest,
   OfferSendRequest,
+  OutPoint,
+  RescanRequest,
   WalletRoutesClient,
   ZipDataDirRequest
 }
@@ -226,6 +257,18 @@ object ConsoleCliGrpc {
         walletClient
           .isEmpty(IsEmptyRequest())
           .map(r => jsValueToString(ujson.Bool(r.empty)))
+      case command: GetBalance =>
+        walletClient
+          .getBalance(GetBalanceRequest(isSats = command.isSats))
+          .map(r => jsValueToString(Num(r.balance)))
+      case command: GetConfirmedBalance =>
+        walletClient
+          .getConfirmedBalance(GetBalanceRequest(isSats = command.isSats))
+          .map(r => jsValueToString(Num(r.balance)))
+      case command: GetUnconfirmedBalance =>
+        walletClient
+          .getUnconfirmedBalance(GetBalanceRequest(isSats = command.isSats))
+          .map(r => jsValueToString(Num(r.balance)))
       case command: GetBalances =>
         walletClient
           .getBalances(GetBalancesRequest(isSats = command.isSats))
@@ -368,6 +411,96 @@ object ConsoleCliGrpc {
                 "contactId" -> Str(response.contactId)
               ))
           }
+      case WalletInfo =>
+        walletClient
+          .getWalletInfo(GetWalletInfoRequest())
+          .map { response =>
+            jsValueToString(
+              ujson.Obj(
+                "walletName" -> Str(response.walletName),
+                "rootXpub" -> Str(response.rootXpub),
+                "xpub" -> Str(response.xpub),
+                "hdAccount" -> Str(response.hdAccount),
+                "height" -> Num(response.height.toDouble),
+                "blockHash" -> Str(response.blockHash),
+                "rescan" -> ujson.Bool(response.rescan),
+                "imported" -> ujson.Bool(response.imported)
+              ))
+          }
+      case command: GetNewAddress =>
+        walletClient
+          .getNewAddress(
+            GetNewAddressRequest(label = command.labelOpt.map(_.name)))
+          .map(r => jsValueToString(Str(r.address)))
+      case command: GetTransaction =>
+        walletClient
+          .getTransaction(GetTransactionRequest(txid = command.txId.hex))
+          .map(r => jsValueToString(r.txHex.map(Str(_)).getOrElse(ujson.Null)))
+      case command: GetAddressTags =>
+        walletClient
+          .getAddressTags(
+            GetAddressTagsRequest(address = command.address.value))
+          .map(r => jsValueToString(ujson.Arr.from(r.tags.map(Str(_)))))
+      case command: GetAddressLabel =>
+        walletClient
+          .getAddressLabel(
+            GetAddressLabelRequest(address = command.address.value))
+          .map(r => jsValueToString(ujson.Arr.from(r.labels.map(Str(_)))))
+      case command: LabelAddress =>
+        walletClient
+          .labelAddress(
+            LabelAddressRequest(address = command.address.value,
+                                label = command.label.name))
+          .map(r => jsValueToString(Str(r.message)))
+      case command: DropAddressLabel =>
+        walletClient
+          .dropAddressLabel(
+            DropAddressLabelRequest(address = command.address.value,
+                                    label = command.label))
+          .map(r => jsValueToString(Str(r.message)))
+      case command: DropAddressLabels =>
+        walletClient
+          .dropAddressLabels(
+            DropAddressLabelsRequest(address = command.address.value))
+          .map(r => jsValueToString(Str(r.message)))
+      case command: LockUnspent =>
+        val outpoints = command.outputParam.map { op =>
+          OutPoint(txid = op.txid.hex, vout = op.vout.toLong)
+        }
+        walletClient
+          .lockUnspent(
+            LockUnspentRequest(unlock = command.unlock, outpoints = outpoints))
+          .map(r => jsValueToString(ujson.Bool(r.success)))
+      case command: GetAddressInfo =>
+        walletClient
+          .getAddressInfo(
+            GetAddressInfoRequest(address = command.address.value))
+          .map { r =>
+            jsValueToString(
+              ujson.Obj(
+                "pubkey" -> r.pubkey.map(Str(_)).getOrElse(ujson.Null),
+                "hdPath" -> r.hdPath.map(Str(_)).getOrElse(ujson.Null)
+              ))
+          }
+      case command: CreateNewAccount =>
+        walletClient
+          .createNewAccount(
+            CreateNewAccountRequest(purpose = command.purpose.toString))
+          .map(r => formatStringArray(r.xpubs))
+      case command: Rescan =>
+        walletClient
+          .rescan(
+            RescanRequest(
+              ignoreCreationTime = command.ignoreCreationTime,
+              batchSize = command.batchSize,
+              startBlock = command.startBlock.map(_.toString),
+              endBlock = command.endBlock.map(_.toString)
+            ))
+          .map(r => jsValueToString(Str(r.message)))
+      case EstimateFee =>
+        walletClient
+          .estimateFee(EstimateFeeRequest())
+          .map(r => jsValueToString(Num(r.satsPerVbyte)))
       case NoCommand =>
         Future.failed(
           new IllegalArgumentException("You need to provide a command!"))

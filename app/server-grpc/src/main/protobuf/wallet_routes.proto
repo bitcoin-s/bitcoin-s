@@ -8,27 +8,81 @@ option java_multiple_files = true;
 // WalletRoutes provides wallet RPC endpoints for the Bitcoin-S gRPC server.
 service WalletRoutes {
   rpc IsEmpty(IsEmptyRequest) returns (IsEmptyResponse);
+  rpc GetWalletInfo(GetWalletInfoRequest) returns (GetWalletInfoResponse);
   rpc GetBalance(GetBalanceRequest) returns (GetBalanceResponse);
   rpc GetConfirmedBalance(GetBalanceRequest) returns (GetBalanceResponse);
   rpc GetUnconfirmedBalance(GetBalanceRequest) returns (GetBalanceResponse);
   rpc GetBalances(GetBalancesRequest) returns (GetBalancesResponse);
+  rpc GetNewAddress(GetNewAddressRequest) returns (GetNewAddressResponse);
+  rpc GetTransaction(GetTransactionRequest) returns (GetTransactionResponse);
+  rpc LockUnspent(LockUnspentRequest) returns (LockUnspentResponse);
+  rpc LabelAddress(LabelAddressRequest) returns (LabelAddressResponse);
+  rpc GetAddressTags(GetAddressTagsRequest) returns (GetAddressTagsResponse);
+  rpc GetAddressLabel(GetAddressLabelRequest) returns (GetAddressLabelResponse);
+  rpc GetAddressLabels(GetAddressLabelsRequest)
+      returns (GetAddressLabelsResponse);
+  rpc DropAddressLabel(DropAddressLabelRequest)
+      returns (DropAddressLabelResponse);
+  rpc DropAddressLabels(DropAddressLabelsRequest)
+      returns (DropAddressLabelsResponse);
   rpc GetUtxos(GetUtxosRequest) returns (GetUtxosResponse);
   rpc GetReservedUtxos(GetReservedUtxosRequest) returns (GetUtxosResponse);
   rpc GetAddresses(GetAddressesRequest) returns (GetAddressesResponse);
-  rpc GetSpentAddresses(GetSpentAddressesRequest) returns (GetAddressesResponse);
+  rpc GetSpentAddresses(GetSpentAddressesRequest)
+      returns (GetAddressesResponse);
   rpc GetFundedAddresses(GetFundedAddressesRequest)
       returns (GetFundedAddressesResponse);
   rpc GetUnusedAddresses(GetUnusedAddressesRequest)
       returns (GetAddressesResponse);
   rpc GetAccounts(GetAccountsRequest) returns (GetAccountsResponse);
-  rpc GetAddressLabels(GetAddressLabelsRequest)
-      returns (GetAddressLabelsResponse);
+  rpc GetAddressInfo(GetAddressInfoRequest) returns (GetAddressInfoResponse);
+  rpc CreateNewAccount(CreateNewAccountRequest)
+      returns (CreateNewAccountResponse);
+  rpc SendToAddress(SendToAddressRequest) returns (SendToAddressResponse);
+  rpc SendFromOutPoints(SendFromOutPointsRequest)
+      returns (SendFromOutPointsResponse);
+  rpc SweepWallet(SweepWalletRequest) returns (SweepWalletResponse);
+  rpc SendWithAlgo(SendWithAlgoRequest) returns (SendWithAlgoResponse);
+  rpc SignPsbt(SignPsbtRequest) returns (SignPsbtResponse);
+  rpc OpReturnCommit(OpReturnCommitRequest) returns (OpReturnCommitResponse);
+  rpc BumpFeeRbf(BumpFeeRbfRequest) returns (BumpFeeRbfResponse);
+  rpc BumpFeeCpfp(BumpFeeCpfpRequest) returns (BumpFeeCpfpResponse);
+  rpc Rescan(RescanRequest) returns (RescanResponse);
+  rpc SendRawTransaction(SendRawTransactionRequest)
+      returns (SendRawTransactionResponse);
+  rpc EstimateFee(EstimateFeeRequest) returns (EstimateFeeResponse);
+  rpc KeyManagerPassphraseChange(KeyManagerPassphraseChangeRequest)
+      returns (KeyManagerPassphraseChangeResponse);
+  rpc KeyManagerPassphraseSet(KeyManagerPassphraseSetRequest)
+      returns (KeyManagerPassphraseSetResponse);
+  rpc ImportSeed(ImportSeedRequest) returns (ImportSeedResponse);
+  rpc ExportSeed(ExportSeedRequest) returns (ExportSeedResponse);
+  rpc MarkSeedAsBackedUp(MarkSeedAsBackedUpRequest)
+      returns (MarkSeedAsBackedUpResponse);
+  rpc GetSeedBackupTime(GetSeedBackupTimeRequest)
+      returns (GetSeedBackupTimeResponse);
+  rpc ImportXprv(ImportXprvRequest) returns (ImportXprvResponse);
+  rpc ListWallets(ListWalletsRequest) returns (ListWalletsResponse);
+  rpc LoadWallet(LoadWalletRequest) returns (LoadWalletResponse);
 }
 
 message IsEmptyRequest {}
 
 message IsEmptyResponse {
   bool empty = 1;
+}
+
+message GetWalletInfoRequest {}
+
+message GetWalletInfoResponse {
+  string wallet_name = 1;
+  string root_xpub = 2;
+  string xpub = 3;
+  string hd_account = 4;
+  int32 height = 5;
+  string block_hash = 6;
+  bool rescan = 7;
+  bool imported = 8;
 }
 
 message GetBalanceRequest {
@@ -48,6 +102,79 @@ message GetBalancesResponse {
   double unconfirmed = 2;
   double reserved = 3;
   double total = 4;
+}
+
+message GetNewAddressRequest {
+  optional string label = 1;
+}
+
+message GetNewAddressResponse {
+  string address = 1;
+}
+
+message GetTransactionRequest {
+  string txid = 1;
+}
+
+message GetTransactionResponse {
+  optional string tx_hex = 1;
+}
+
+// A transaction outpoint (txid + vout index).
+message OutPoint {
+  string txid = 1;
+  int64 vout = 2;
+}
+
+message LockUnspentRequest {
+  bool unlock = 1;
+  repeated OutPoint outpoints = 2;
+}
+
+message LockUnspentResponse {
+  bool success = 1;
+}
+
+message LabelAddressRequest {
+  string address = 1;
+  string label = 2;
+}
+
+message LabelAddressResponse {
+  string message = 1;
+}
+
+message GetAddressTagsRequest {
+  string address = 1;
+}
+
+message GetAddressTagsResponse {
+  repeated string tags = 1;
+}
+
+message GetAddressLabelRequest {
+  string address = 1;
+}
+
+message GetAddressLabelResponse {
+  repeated string labels = 1;
+}
+
+message DropAddressLabelRequest {
+  string address = 1;
+  string label = 2;
+}
+
+message DropAddressLabelResponse {
+  string message = 1;
+}
+
+message DropAddressLabelsRequest {
+  string address = 1;
+}
+
+message DropAddressLabelsResponse {
+  string message = 1;
 }
 
 message GetUtxosRequest {}
@@ -91,6 +218,24 @@ message GetAccountsResponse {
   repeated string xpubs = 1;
 }
 
+message GetAddressInfoRequest {
+  string address = 1;
+}
+
+message GetAddressInfoResponse {
+  optional string pubkey = 1;
+  optional string hd_path = 2;
+}
+
+message CreateNewAccountRequest {
+  // HD purpose string (e.g. "legacy", "segwit", "nested-segwit", "taproot")
+  string purpose = 1;
+}
+
+message CreateNewAccountResponse {
+  repeated string xpubs = 1;
+}
+
 message GetAddressLabelsRequest {}
 
 message AddressLabels {
@@ -101,3 +246,190 @@ message AddressLabels {
 message GetAddressLabelsResponse {
   repeated AddressLabels address_labels = 1;
 }
+
+message SendToAddressRequest {
+  string address = 1;
+  int64 amount_sats = 2;
+  optional int64 fee_rate_sats_per_vbyte = 3;
+  bool no_broadcast = 4;
+}
+
+message SendToAddressResponse {
+  // Hex of the txid (when broadcast) or raw transaction (when no_broadcast=true).
+  string hex = 1;
+}
+
+message SendFromOutPointsRequest {
+  repeated OutPoint outpoints = 1;
+  string address = 2;
+  int64 amount_sats = 3;
+  optional int64 fee_rate_sats_per_vbyte = 4;
+}
+
+message SendFromOutPointsResponse {
+  string txid = 1;
+}
+
+message SweepWalletRequest {
+  string address = 1;
+  optional int64 fee_rate_sats_per_vbyte = 2;
+}
+
+message SweepWalletResponse {
+  string txid = 1;
+}
+
+message SendWithAlgoRequest {
+  string address = 1;
+  int64 amount_sats = 2;
+  optional int64 fee_rate_sats_per_vbyte = 3;
+  // Coin selection algo: "RandomSelection", "AccumulateLargest",
+  // "AccumulateSmallestViable", "StandardAccumulate", "LeastWaste"
+  string algo = 4;
+}
+
+message SendWithAlgoResponse {
+  string txid = 1;
+}
+
+message SignPsbtRequest {
+  string psbt_base64 = 1;
+}
+
+message SignPsbtResponse {
+  string signed_psbt_base64 = 1;
+}
+
+message OpReturnCommitRequest {
+  string message = 1;
+  bool hash_message = 2;
+  optional int64 fee_rate_sats_per_vbyte = 3;
+}
+
+message OpReturnCommitResponse {
+  string txid = 1;
+}
+
+message BumpFeeRbfRequest {
+  string txid = 1;
+  int64 fee_rate_sats_per_vbyte = 2;
+}
+
+message BumpFeeRbfResponse {
+  string txid = 1;
+}
+
+message BumpFeeCpfpRequest {
+  string txid = 1;
+  int64 fee_rate_sats_per_vbyte = 2;
+}
+
+message BumpFeeCpfpResponse {
+  string txid = 1;
+}
+
+message RescanRequest {
+  optional int32 batch_size = 1;
+  // Block height (integer) or block hash (hex string). Omit to use genesis / wallet creation time.
+  optional string start_block = 2;
+  // Block height (integer) or block hash (hex string). Omit to use chain tip.
+  optional string end_block = 3;
+  bool ignore_creation_time = 4;
+}
+
+message RescanResponse {
+  string message = 1;
+}
+
+message SendRawTransactionRequest {
+  string tx_hex = 1;
+}
+
+message SendRawTransactionResponse {
+  string txid = 1;
+}
+
+message EstimateFeeRequest {}
+
+message EstimateFeeResponse {
+  double sats_per_vbyte = 1;
+}
+
+// Key-manager operations — require wallet configuration accessible on the server.
+
+message KeyManagerPassphraseChangeRequest {
+  string old_password = 1;
+  string new_password = 2;
+}
+
+message KeyManagerPassphraseChangeResponse {}
+
+message KeyManagerPassphraseSetRequest {
+  string password = 1;
+}
+
+message KeyManagerPassphraseSetResponse {}
+
+message ImportSeedRequest {
+  optional string wallet_name = 1;
+  // Space-separated BIP39 mnemonic words.
+  string mnemonic = 2;
+  optional string password = 3;
+}
+
+message ImportSeedResponse {
+  bool success = 1;
+}
+
+message ExportSeedRequest {
+  optional string wallet_name = 1;
+  optional string password = 2;
+}
+
+message ExportSeedResponse {
+  // Space-separated BIP39 mnemonic words.
+  string mnemonic = 1;
+}
+
+message MarkSeedAsBackedUpRequest {
+  optional string wallet_name = 1;
+  optional string password = 2;
+}
+
+message MarkSeedAsBackedUpResponse {
+  string message = 1;
+}
+
+message GetSeedBackupTimeRequest {
+  optional string wallet_name = 1;
+  optional string password = 2;
+}
+
+message GetSeedBackupTimeResponse {
+  // Unix epoch seconds of the backup time, or absent if never backed up.
+  optional int64 backup_epoch_seconds = 1;
+}
+
+message ImportXprvRequest {
+  optional string wallet_name = 1;
+  string xprv = 2;
+  optional string password = 3;
+}
+
+message ImportXprvResponse {}
+
+message ListWalletsRequest {}
+
+message ListWalletsResponse {
+  repeated string wallet_names = 1;
+}
+
+message LoadWalletRequest {
+  optional string wallet_name = 1;
+  optional string aes_password = 2;
+}
+
+message LoadWalletResponse {
+  string wallet_name = 1;
+}
+

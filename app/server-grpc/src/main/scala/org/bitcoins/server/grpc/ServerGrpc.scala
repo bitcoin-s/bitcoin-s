@@ -61,7 +61,7 @@ import scala.concurrent.Future
 class ServerGrpc(
     datadir: Path,
     rpchost: String,
-    port: Int,
+    val port: Int,
     rpcPassword: String,
     chainApi: ChainApi,
     network: BitcoinNetwork,
@@ -84,6 +84,8 @@ class ServerGrpc(
       )
     }
   }
+
+  def getPort: Int = port
   private val commonImpl = new CommonGrpcRoutes(datadir)
   private val chainImpl =
     new ChainGrpcRoutes(chainApi, network, startedTorConfigF)

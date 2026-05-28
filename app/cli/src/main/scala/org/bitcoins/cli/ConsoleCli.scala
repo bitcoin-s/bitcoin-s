@@ -2765,7 +2765,7 @@ object CliCommand {
   case object GetUnusedAddresses extends AppServerCliCommand with CliGrpcCommand
   case object GetAccounts extends AppServerCliCommand with CliGrpcCommand
   case object IsEmpty extends AppServerCliCommand with CliGrpcCommand
-  case object WalletInfo extends AppServerCliCommand
+  case object WalletInfo extends AppServerCliCommand with CliGrpcCommand
   case object ListWallets extends AppServerCliCommand
 
   case class GetBalances(isSats: Boolean)
@@ -2796,7 +2796,7 @@ object CliCommand {
       extends AppServerCliCommand
       with CliGrpcCommand
 
-  case object EstimateFee extends AppServerCliCommand
+  case object EstimateFee extends AppServerCliCommand with CliGrpcCommand
 
   // Oracle
   case object GetPublicKey extends OracleServerCliCommand
