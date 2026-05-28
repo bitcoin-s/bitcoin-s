@@ -68,8 +68,8 @@ object CliCommand {
 }
 
 case class GetNewAddress(labelOpt: Option[AddressLabelTag])
-    extends CliCommand
-    with AppServerCliCommand
+    extends AppServerCliCommand
+    with CliGrpcCommand
 
 object GetNewAddress extends ServerJsonModels {
 
@@ -94,8 +94,8 @@ object GetNewAddress extends ServerJsonModels {
 case class LockUnspent(
     unlock: Boolean,
     outputParam: Vector[LockUnspentOutputParameter]
-) extends CliCommand
-    with AppServerCliCommand
+) extends AppServerCliCommand
+    with CliGrpcCommand
 
 object LockUnspent extends ServerJsonModels {
 
@@ -119,8 +119,8 @@ object LockUnspent extends ServerJsonModels {
 }
 
 case class LabelAddress(address: BitcoinAddress, label: AddressLabelTag)
-    extends CliCommand
-    with AppServerCliCommand
+    extends AppServerCliCommand
+    with CliGrpcCommand
 
 object LabelAddress extends ServerJsonModels {
 
@@ -144,8 +144,8 @@ object LabelAddress extends ServerJsonModels {
 }
 
 case class GetAddressTags(address: BitcoinAddress)
-    extends CliCommand
-    with AppServerCliCommand
+    extends AppServerCliCommand
+    with CliGrpcCommand
 
 object GetAddressTags extends ServerJsonModels {
 
@@ -168,8 +168,8 @@ object GetAddressTags extends ServerJsonModels {
 }
 
 case class GetAddressLabel(address: BitcoinAddress)
-    extends CliCommand
-    with AppServerCliCommand
+    extends AppServerCliCommand
+    with CliGrpcCommand
 
 object GetAddressLabel extends ServerJsonModels {
 
@@ -192,8 +192,8 @@ object GetAddressLabel extends ServerJsonModels {
 }
 
 case class DropAddressLabel(address: BitcoinAddress, label: String)
-    extends CliCommand
-    with AppServerCliCommand
+    extends AppServerCliCommand
+    with CliGrpcCommand
 
 object DropAddressLabel extends ServerJsonModels {
 
@@ -215,8 +215,8 @@ object DropAddressLabel extends ServerJsonModels {
 }
 
 case class DropAddressLabels(address: BitcoinAddress)
-    extends CliCommand
-    with AppServerCliCommand
+    extends AppServerCliCommand
+    with CliGrpcCommand
 
 object DropAddressLabels extends ServerJsonModels {
 
@@ -239,8 +239,8 @@ object DropAddressLabels extends ServerJsonModels {
 }
 
 case class GetBalance(isSats: Boolean)
-    extends CliCommand
-    with AppServerCliCommand
+    extends AppServerCliCommand
+    with CliGrpcCommand
 
 object GetBalance extends ServerJsonModels {
 
@@ -255,8 +255,8 @@ object GetBalance extends ServerJsonModels {
 }
 
 case class GetConfirmedBalance(isSats: Boolean)
-    extends CliCommand
-    with AppServerCliCommand
+    extends AppServerCliCommand
+    with CliGrpcCommand
 
 object GetConfirmedBalance extends ServerJsonModels {
 
@@ -271,8 +271,8 @@ object GetConfirmedBalance extends ServerJsonModels {
 }
 
 case class GetUnconfirmedBalance(isSats: Boolean)
-    extends CliCommand
-    with AppServerCliCommand
+    extends AppServerCliCommand
+    with CliGrpcCommand
 
 object GetUnconfirmedBalance extends ServerJsonModels {
 
@@ -287,8 +287,8 @@ object GetUnconfirmedBalance extends ServerJsonModels {
 }
 
 case class GetAddressInfo(address: BitcoinAddress)
-    extends CliCommand
-    with AppServerCliCommand
+    extends AppServerCliCommand
+    with CliGrpcCommand
 
 object GetAddressInfo extends ServerJsonModels {
 
@@ -710,8 +710,8 @@ case class Rescan(
     endBlock: Option[BlockStamp],
     force: Boolean,
     ignoreCreationTime: Boolean
-) extends CliCommand
-    with AppServerCliCommand
+) extends AppServerCliCommand
+    with CliGrpcCommand
 
 object Rescan extends ServerJsonModels {
 
@@ -774,8 +774,8 @@ object Rescan extends ServerJsonModels {
 }
 
 case class GetTransaction(txId: DoubleSha256DigestBE)
-    extends CliCommand
-    with AppServerCliCommand
+    extends AppServerCliCommand
+    with CliGrpcCommand
 
 object GetTransaction extends ServerJsonModels {
 
@@ -1820,8 +1820,8 @@ object LoadWallet extends ServerJsonModels with BitcoinSLogger {
 }
 
 case class CreateNewAccount(purpose: HDPurpose)
-    extends CommandRpc
-    with AppServerCliCommand
+    extends AppServerCliCommand
+    with CliGrpcCommand
 
 object CreateNewAccount {
 

@@ -8,7 +8,6 @@ import org.bitcoins.testkit.dlc.MockDLCNodeApi
 import org.bitcoins.testkit.fixtures.ServerGrpcFixture
 import org.bitcoins.testkit.node.MockNodeApi
 import org.bitcoins.testkit.util.FileUtil
-import org.bitcoins.testkit.wallet.MockWalletHolder
 import org.scalatest.FutureOutcome
 
 import java.nio.file.Files
@@ -50,11 +49,11 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
     }
   }
 
-  it must "authenticate with the configured password" in { _ =>
+  it must "authenticate with the configured password" in { clientServer =>
     val password = "topsecret"
     val port = RpcUtil.randomPort
     val dlcNode = MockDLCNodeApi.fresh()
-    val walletApi = MockWalletHolder.emptyApi()
+    val walletApi = clientServer.walletApi
     val server = new ServerGrpc(
       datadir = FileUtil.tmpDir().toPath,
       rpchost = "localhost",
@@ -63,7 +62,7 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
       chainApi = MockChainApi,
       network = network,
       startedTorConfigF = Future.unit,
-      nodeApiF = Future.successful(MockNodeApi),
+      nodeApiF = Future.successful(clientServer.nodeApi),
       dlcNodeF = Future.successful(dlcNode),
       walletApiF = Future.successful(walletApi)
     )
@@ -90,12 +89,12 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
       }
   }
 
-  it must "reject authentication with an invalid password" in { _ =>
+  it must "reject authentication with an invalid password" in { clientServer =>
     val serverPassword = "topsecret"
     val clientPassword = "wrong-password"
     val port = RpcUtil.randomPort
     val dlcNode = MockDLCNodeApi.fresh()
-    val walletApi = MockWalletHolder.emptyApi()
+    val walletApi = clientServer.walletApi
     val server = new ServerGrpc(
       datadir = FileUtil.tmpDir().toPath,
       rpchost = "localhost",

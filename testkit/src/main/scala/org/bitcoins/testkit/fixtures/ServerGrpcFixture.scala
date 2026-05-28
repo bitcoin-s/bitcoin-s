@@ -105,12 +105,15 @@ trait ServerGrpcFixture extends NodeTestWithCachedBitcoindNewest {
     } yield (server, chainApi, neutrinoNode.node, walletApi, appConfig)
   }
 
-  def withCommonRoutesClient(test: OneArgAsyncTest): FutureOutcome = {
+  def withCommonRoutesClient(
+      test: OneArgAsyncTest,
+      rpcPassword: String = ""): FutureOutcome = {
     val port = RpcUtil.randomPort
     val host = "localhost"
     val config = getFreshConfig
     val serverPackageF =
-      buildGrpcServer(FileUtil.tmpDir(), host, port)(config)
+      buildGrpcServer(FileUtil.tmpDir(), host, port, rpcPassword = rpcPassword)(
+        config)
     val build: () => Future[GrpcClientServerFixture[CommonRoutesClient]] =
       () => {
         buildClient(host, port, CommonRoutesClient.apply, serverPackageF)
