@@ -21,7 +21,8 @@ import org.bitcoins.testkit.node.{
   NodeTestUtil,
   NodeTestWithCachedBitcoindNewest
 }
-import org.bitcoins.testkit.wallet.MockWalletHolder
+import org.bitcoins.testkit.wallet.BitcoinSWalletTest
+import org.bitcoins.dlc.wallet.DLCWallet
 import org.scalatest.FutureOutcome
 
 import scala.concurrent.Future
@@ -33,6 +34,7 @@ trait ServerGrpcFixture extends NodeTestWithCachedBitcoindNewest {
       server: ServerGrpc,
       chainApi: ChainApi,
       nodeApi: Node,
+      walletApi: DLCWallet,
       appConfig: BitcoinSAppConfig)
 
   type GrpcClient <: PekkoGrpcClient
@@ -48,19 +50,21 @@ trait ServerGrpcFixture extends NodeTestWithCachedBitcoindNewest {
       host: String,
       port: Int,
       build: GrpcClientSettings => T,
-      serverPackageF: Future[(ServerGrpc, ChainApi, Node, BitcoinSAppConfig)])
+      serverPackageF: Future[
+        (ServerGrpc, ChainApi, Node, DLCWallet, BitcoinSAppConfig)])
       : Future[GrpcClientServerFixture[T]] = {
     val clientSettings = GrpcClientSettings
       .connectToServiceAt(host, port)
       .withTls(false)
     val client: T = build(clientSettings)
     for {
-      (server, chainApi, nodeApi, appConfig) <- serverPackageF
+      (server, chainApi, nodeApi, walletApi, appConfig) <- serverPackageF
       _ <- server.start()
     } yield GrpcClientServerFixture(client,
                                     server,
                                     chainApi,
                                     nodeApi,
+                                    walletApi,
                                     appConfig)
   }
 
@@ -69,14 +73,21 @@ trait ServerGrpcFixture extends NodeTestWithCachedBitcoindNewest {
       host: String,
       port: Int,
       rpcPassword: String = "")(implicit appConfig: BitcoinSAppConfig)
-      : Future[(ServerGrpc, ChainApi, Node, BitcoinSAppConfig)] = {
+      : Future[(ServerGrpc, ChainApi, Node, DLCWallet, BitcoinSAppConfig)] = {
     val dlcNode = MockDLCNodeApi.fresh()
     val neutrinoNodeF = cachedBitcoindWithFundsF
       .flatMap(createNeutrinoNodeConnectedToBitcoindCached(_)(appConfig))
-    val walletApi = MockWalletHolder.emptyApi()
     for {
       neutrinoNode <- neutrinoNodeF
       chainApi <- neutrinoNode.node.chainApiFromDb()
+      walletApi <- BitcoinSWalletTest.createDLCWallet2Accounts(
+        nodeApi = neutrinoNode.node,
+        chainQueryApi = chainApi
+      )(using appConfig, system)
+      nodeCallbacks <- BitcoinSWalletTest.createNeutrinoNodeCallbacksForWallet(
+        walletApi.walletApi
+      )(using system)
+      _ = appConfig.nodeConf.addCallbacks(nodeCallbacks)
       server = new ServerGrpc(
         tmpDir.toPath,
         host,
@@ -91,7 +102,7 @@ trait ServerGrpcFixture extends NodeTestWithCachedBitcoindNewest {
       )
       bitcoind <- cachedBitcoindWithFundsF
       _ <- NodeTestUtil.awaitAllSync(neutrinoNode.node, bitcoind)
-    } yield (server, chainApi, neutrinoNode.node, appConfig)
+    } yield (server, chainApi, neutrinoNode.node, walletApi, appConfig)
   }
 
   def withCommonRoutesClient(test: OneArgAsyncTest): FutureOutcome = {
@@ -151,12 +162,10 @@ trait ServerGrpcFixture extends NodeTestWithCachedBitcoindNewest {
   def withWalletRoutesClient(test: OneArgAsyncTest): FutureOutcome = {
     val port = RpcUtil.randomPort
     val host = "localhost"
-    val server = buildGrpcServer(FileUtil.tmpDir(), host, port)
+    val serverPackageF =
+      buildGrpcServer(FileUtil.tmpDir(), host, port)(getFreshConfig)
     val build: () => Future[GrpcClientServerFixture[WalletRoutesClient]] =
-      () =>
-        buildClient(host, port, WalletRoutesClient.apply).flatMap { client =>
-          server.start().map(_ => GrpcClientServerFixture(client, server))
-        }
+      () => buildClient(host, port, WalletRoutesClient.apply, serverPackageF)
 
     makeDependentFixture[GrpcClientServerFixture[WalletRoutesClient]](
       build,
@@ -170,6 +179,7 @@ trait ServerGrpcFixture extends NodeTestWithCachedBitcoindNewest {
     for {
       _ <- client.close()
       _ <- server.stop()
+      _ <- BitcoinSWalletTest.destroyDLCWallet(cs.walletApi)
       _ <- tearDownNode(node, cs.appConfig)
       _ <- cs.appConfig.stop()
     } yield ()
