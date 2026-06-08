@@ -114,7 +114,7 @@ object Deps {
     val jbossModulesV =
       jbossMarshallingV // https://github.com/jboss-modules/jboss-modules
 
-    val reactorCoreV = "3.8.5" // https://github.com/reactor/reactor-core
+    val reactorCoreV = "3.8.6" // https://github.com/reactor/reactor-core
     val rxjava2V = "2.2.21" // https://github.com/ReactiveX/RxJava
     val micrometerCoreV =
       "1.16.5" // https://github.com/micrometer-metrics/micrometer
