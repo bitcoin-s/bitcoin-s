@@ -30,7 +30,7 @@ trait PostgresTestDatabase extends BeforeAndAfterAll { this: Suite =>
     if (!pgEnabled) None
     else {
       // val pgStartupWait = sys.env.getOrElse("PG_STARTUP_WAIT", "60").toInt
-      val image = sys.env.getOrElse("PG_IMAGE", "postgres:15-alpine")
+      val image = sys.env.getOrElse("PG_IMAGE", "postgres:18-alpine")
       val container =
         new PostgreSQLContainer(image)
       // Start container and wait for readiness
