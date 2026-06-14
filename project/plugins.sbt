@@ -44,7 +44,7 @@ addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.6.1")
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.10.0-RC1")
 
 //https://github.com/scalameta/sbt-native-image
-addSbtPlugin("org.scalameta" % "sbt-native-image" % "0.4.0")
+addSbtPlugin("org.scalameta" % "sbt-native-image" % "0.5.0")
 
 // gRPC
 //https://pekko.apache.org/docs/pekko-grpc/current/server/walkthrough.html#setting-up
