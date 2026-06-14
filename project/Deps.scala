@@ -86,7 +86,7 @@ object Deps {
     val javaxMailV = "1.4.7"
 
     val gsonV = "2.14.0"
-    val jnaV = "5.19.0"
+    val jnaV = "5.19.1"
     val waffleJnaV = "3.6.0"
 
     // netty optional deps surfaced by jlink static analysis via grpc-netty-shaded
