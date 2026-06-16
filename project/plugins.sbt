@@ -23,7 +23,7 @@ addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.13.1")
 
 // ensure proper linkage across libraries in Scaladoc
 //https://github.com/ThoughtWorksInc/sbt-api-mappings
-addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "3.0.2")
+addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "3.0.3")
 
 // bloop is a build server, enabling faster builds and more rapid dev feedback
 //https://github.com/scalacenter/bloop
