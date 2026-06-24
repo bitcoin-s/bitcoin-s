@@ -104,11 +104,18 @@ TaskKeys.downloadBitcoind := {
             )
           else if (Properties.isMac)
             Map(
-            "29.2" -> ( if (isAarch64) "bd07450f76d149d094842feab58e6240673120c8a317a1c51d45ba30c34e85ef" else "69ca05fbe838123091cf4d6d2675352f36cf55f49e2e6fb3b52fcf32b5e8dd9f"),
-              "30.2" -> (if (isAarch64) "c2ecab62891de22228043815cb6211549a32272be3d5d052ff19847d3420bd10"
-              else "99d5cee9b9c37be506396c30837a4b98e320bfea71c474d6120a7e8eb6075c7b"),
-              "31.0" -> (if (isAarch64) "a2d7a13b4da53d4a3e4c517f3a0269e2429813417bb320d3b268993cfdc545d0"
-              else "56824dd705bc2a3b22d42e8aa02ed53498d491ff7c2c8aa96831333871887ead")
+              "29.2" -> (if (isAarch64)
+                           "bd07450f76d149d094842feab58e6240673120c8a317a1c51d45ba30c34e85ef"
+                         else
+                           "69ca05fbe838123091cf4d6d2675352f36cf55f49e2e6fb3b52fcf32b5e8dd9f"),
+              "30.2" -> (if (isAarch64)
+                           "c2ecab62891de22228043815cb6211549a32272be3d5d052ff19847d3420bd10"
+                         else
+                           "99d5cee9b9c37be506396c30837a4b98e320bfea71c474d6120a7e8eb6075c7b"),
+              "31.0" -> (if (isAarch64)
+                           "a2d7a13b4da53d4a3e4c517f3a0269e2429813417bb320d3b268993cfdc545d0"
+                         else
+                           "56824dd705bc2a3b22d42e8aa02ed53498d491ff7c2c8aa96831333871887ead")
             )
           else if (Properties.isWin)
             Map(
@@ -128,7 +135,7 @@ TaskKeys.downloadBitcoind := {
             "--directory",
             binaryDir.toString
           )
-          //val extractCommand = s"""tar -xzf \"$archiveLocation\" --directory \"$binaryDir\""""
+          // val extractCommand = s"""tar -xzf \"$archiveLocation\" --directory \"$binaryDir\""""
           logger.info(s"Extracting archive with command: $cmds")
           cmds.!!
         } else {
@@ -147,6 +154,6 @@ TaskKeys.downloadBitcoind := {
     }
   }
 
-  //timeout if we cannot download in 5 minutes
+  // timeout if we cannot download in 5 minutes
   Await.result(downloads, 2.minutes)
 }
