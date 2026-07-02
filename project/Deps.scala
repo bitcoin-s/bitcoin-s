@@ -109,7 +109,7 @@ object Deps {
       "26.1.0" // https://github.com/JetBrains/java-annotations
     val blockhoundV = "1.0.16.RELEASE" // https://github.com/reactor/BlockHound
     val commonsLoggingV = "1.3.6" // https://github.com/apache/commons-logging
-    val log4j2V = "2.26.0" // https://github.com/apache/logging-log4j2
+    val log4j2V = "2.26.1" // https://github.com/apache/logging-log4j2
     val nettyV = "4.2.15.Final" // https://github.com/netty/netty
     val jbossModulesV =
       jbossMarshallingV // https://github.com/jboss-modules/jboss-modules
