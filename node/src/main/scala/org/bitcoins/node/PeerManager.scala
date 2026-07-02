@@ -285,7 +285,7 @@ case class PeerManager(
   }
 
   /** @param peer
-    *   the peer we were disconencted from
+    *   the peer we were disconnected from
     * @param reconnect
     *   flag indicating if we should attempt to reconnect
     * @return

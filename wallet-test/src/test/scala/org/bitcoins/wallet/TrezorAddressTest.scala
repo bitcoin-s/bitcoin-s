@@ -159,7 +159,7 @@ class TrezorAddressTest extends BitcoinSWalletTest with EmptyFixture {
       vector: TestVector
   )
 
-  /** Asserts that the given addresses are gthe same as in the given vector */
+  /** Asserts that the given addresses are the same as in the given vector */
   private def assertSameAddresses(
       addrs: Seq[AddressDb],
       vector: TestVector
