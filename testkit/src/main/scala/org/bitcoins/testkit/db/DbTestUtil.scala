@@ -24,20 +24,20 @@ object DbTestUtil {
 }
 
 trait TestDbManagement extends DbManagement {
-  _: JdbcProfileComponent[TestAppConfig] =>
+  self: JdbcProfileComponent[TestAppConfig] =>
 
   import profile.api._
 
   def ec: ExecutionContext
 
-  private lazy val testTable: TableQuery[Table[_]] =
-    TestDAO()(ec, appConfig).table
+  private lazy val testTable: TableQuery[Table[?]] =
+    TestDAO()(using ec, appConfig).table
 
-  private lazy val masterXpubTable: TableQuery[Table[_]] = {
-    MasterXPubDAO()(ec = ec, appConfig = appConfig).table
+  private lazy val masterXpubTable: TableQuery[Table[?]] = {
+    MasterXPubDAO()(using ec = ec, appConfig = appConfig).table
   }
 
-  override lazy val allTables: List[TableQuery[Table[_]]] =
+  override lazy val allTables: List[TableQuery[Table[?]]] =
     List(testTable, masterXpubTable)
 
 }
@@ -64,7 +64,7 @@ case class TestAppConfig(baseDatadir: Path, configOverrides: Vector[Config])(
       _ <- super.start()
       _ = migrate()
       _ = logger.debug(s"Initializing test setup")
-      _ <- createTable(TestDAO()(ec, this).table)
+      _ <- createTable(TestDAO()(using ec, this).table)
     } yield ()
   }
 }
@@ -112,6 +112,6 @@ case class TestDAO()(implicit
     def data: Rep[ByteVector] = column[ByteVector]("data")
 
     def * : ProvenShape[TestDb] =
-      (pk, data).<>(TestDb.tupled, TestDb.unapply)
+      (pk, data).<>(TestDb.apply, TestDb.unapply)
   }
 }
