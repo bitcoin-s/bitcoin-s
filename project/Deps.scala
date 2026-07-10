@@ -100,7 +100,7 @@ object Deps {
       "2.3.0" // https://github.com/jboss-remoting/jboss-marshalling
     val protobufNanoV = "3.1.0" // https://github.com/google/protobuf
 
-    val conscryptV = "2.5.2" // https://github.com/google/conscrypt
+    val conscryptV = "2.6.0" // https://github.com/google/conscrypt
     val jettyAlpnV =
       "1.1.3.v20160715" // https://github.com/jetty-project/jetty-alpn
     val jettyNpnV =
