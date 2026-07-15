@@ -374,7 +374,10 @@ object CommonSettings {
       "io.micrometer.core.instrument.kotlin" -> "io.grpc.kotlin",
       "io.micrometer.core.instrument.kotlin" -> "kotlin",
       "io.micrometer.core.instrument.kotlin" -> "kotlinx.coroutines",
-      "io.micrometer.core.ipc.http" -> "okhttp3"
+      "io.micrometer.core.ipc.http" -> "okhttp3",
+      // micrometer-core 1.17.0 started referencing LatencyUtils' pause
+      // detector directly; it's an optional histogram dependency we don't use
+      "io.micrometer.core.instrument" -> "org.LatencyUtils"
     )
   }
 
