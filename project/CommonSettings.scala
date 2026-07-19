@@ -377,7 +377,10 @@ object CommonSettings {
       "io.micrometer.core.instrument.kotlin" -> "io.grpc.kotlin",
       "io.micrometer.core.instrument.kotlin" -> "kotlin",
       "io.micrometer.core.instrument.kotlin" -> "kotlinx.coroutines",
-      "io.micrometer.core.ipc.http" -> "okhttp3"
+      "io.micrometer.core.ipc.http" -> "okhttp3",
+      // micrometer-core 1.17.0 started referencing LatencyUtils' pause
+      // detector directly; it's an optional histogram dependency we don't use
+      "io.micrometer.core.instrument" -> "org.LatencyUtils"
     )
   }
 
@@ -423,7 +426,10 @@ object CommonSettings {
       "net.bytebuddy.utility" -> "org.objectweb.asm",
       "net.bytebuddy.utility.dispatcher" -> "org.objectweb.asm",
       "net.bytebuddy.utility.nullability" -> "javax.annotation",
-      "net.bytebuddy.utility.nullability" -> "javax.annotation.meta"
+      "net.bytebuddy.utility.nullability" -> "javax.annotation.meta",
+      // blockhound 1.0.17.RELEASE started referencing byte-buddy's shaded
+      // ASM classes; byte-buddy is not on the runtime classpath, so ignore it
+      "reactor.blockhound" -> "net.bytebuddy.jar.asm"
     )
   }
 

@@ -6,12 +6,12 @@ object Deps {
   object V {
     val antV = "1.10.17"
 
-    val bouncyCastle = "1.84"
+    val bouncyCastle = "1.85"
     val dropWizardMetrics5V = "5.0.7"
 
     val dropwizardMetricsV = "4.2.39" // https://github.com/dropwizard/metrics
 
-    val logback = "1.5.37" // https://github.com/qos-ch/logback
+    val logback = "1.5.38" // https://github.com/qos-ch/logback
     val log4jV = "1.2.17"
 
     val logkitV = "20020529"
@@ -39,7 +39,7 @@ object Deps {
 
     val flywayV =
       "11.8.0" // https://flywaydb.org/documentation/learnmore/releaseNotes
-    val postgresV = "42.7.12" // https://jdbc.postgresql.org/
+    val postgresV = "42.7.13" // https://jdbc.postgresql.org/
     val akkaActorV = akkaStreamv
 
     val slickV = "3.6.1"
@@ -100,24 +100,24 @@ object Deps {
       "2.3.0" // https://github.com/jboss-remoting/jboss-marshalling
     val protobufNanoV = "3.1.0" // https://github.com/google/protobuf
 
-    val conscryptV = "2.5.2" // https://github.com/google/conscrypt
+    val conscryptV = "2.6.1" // https://github.com/google/conscrypt
     val jettyAlpnV =
       "1.1.3.v20160715" // https://github.com/jetty-project/jetty-alpn
     val jettyNpnV =
       "8.1.2.v20120308" // https://github.com/jetty-project/jetty-npn
     val annotationsV =
       "26.1.0" // https://github.com/JetBrains/java-annotations
-    val blockhoundV = "1.0.16.RELEASE" // https://github.com/reactor/BlockHound
+    val blockhoundV = "1.0.17.RELEASE" // https://github.com/reactor/BlockHound
     val commonsLoggingV = "1.4.0" // https://github.com/apache/commons-logging
     val log4j2V = "2.26.1" // https://github.com/apache/logging-log4j2
-    val nettyV = "4.2.15.Final" // https://github.com/netty/netty
+    val nettyV = "4.2.16.Final" // https://github.com/netty/netty
     val jbossModulesV =
       jbossMarshallingV // https://github.com/jboss-modules/jboss-modules
 
     val reactorCoreV = "3.8.6" // https://github.com/reactor/reactor-core
     val rxjava2V = "2.2.21" // https://github.com/ReactiveX/RxJava
     val micrometerCoreV =
-      "1.16.6" // https://github.com/micrometer-metrics/micrometer
+      "1.17.0" // https://github.com/micrometer-metrics/micrometer
     val micrometerContextV =
       "1.2.1" // https://github.com/micrometer-metrics/context-propagation
   }
