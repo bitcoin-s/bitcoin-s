@@ -223,8 +223,13 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
         if (remainingBytes.isEmpty) {
           accum
         } else {
-          val record = fromBytes(remainingBytes)
           val consumed = PSBTRecord.parsedSize(remainingBytes)
+          val recordBytes = remainingBytes.take(consumed)
+          val record = fromBytes(recordBytes)
+          require(
+            record.bytes == recordBytes,
+            s"PartialSignature record did not re-serialize to the bytes it was parsed from, got: $record"
+          )
           val next = remainingBytes.drop(consumed)
 
           loop(next, accum :+ record)
@@ -725,7 +730,8 @@ object OutputPSBTRecord extends Factory[OutputPSBTRecord] {
             val depth = bytes.head
             val version = bytes.tail.head
             val spkLen = CompactSizeUInt.fromBytes(bytes.drop(2))
-            val spk = bytes.drop(spkLen.byteSize + 2)
+            val spk =
+              bytes.drop(2 + spkLen.byteSize).take(spkLen.num.toLong)
 
             val remaining = bytes.drop(2 + spkLen.byteSize + spk.length)
             loop(remaining, accum :+ (depth, version, spk))

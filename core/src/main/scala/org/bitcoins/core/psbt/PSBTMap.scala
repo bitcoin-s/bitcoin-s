@@ -76,8 +76,13 @@ sealed trait PSBTMapFactory[
       if (remainingBytes.head == PSBTMap.separatorByte) {
         (accum, consumed + 1)
       } else {
-        val record = recordFactory.fromBytes(remainingBytes)
         val recordSize = PSBTRecord.parsedSize(remainingBytes)
+        val recordBytes = remainingBytes.take(recordSize)
+        val record = recordFactory.fromBytes(recordBytes)
+        require(
+          record.bytes == recordBytes,
+          s"PSBT record did not re-serialize to the bytes it was parsed from, got: $record"
+        )
         val next = remainingBytes.drop(recordSize)
 
         loop(next, consumed + recordSize, accum :+ record)

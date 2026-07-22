@@ -743,13 +743,15 @@ class PSBTUnitTest extends BitcoinSUnitTest {
     assert(vec.forall(b => Try(PSBT.fromBytes(b)).isFailure))
   }
 
-  it must "not desync map parsing when a record's value does not re-serialize byte-identically" in {
+  it must "reject a PSBT whose unsigned tx value contains a phantom trailing record instead of desyncing map parsing" in {
     // See https://github.com/bitcoin-s/bitcoin-s/issues/6411
     // The unsigned tx's declared value length (0x55) is 3 bytes longer than
-    // the transaction it contains re-serializes to. Those 3 extra bytes
-    // must still be treated as part of the global map's value and skipped
-    // over, rather than reinterpreted as a phantom record that swallows the
-    // input map.
+    // the transaction it contains re-serializes to. Those 3 extra bytes must
+    // not be reinterpreted as a phantom record that swallows the input map -
+    // and since the value doesn't re-serialize byte-for-byte, the PSBT as a
+    // whole must be rejected outright (matching Core and other
+    // implementations), rather than silently accepted with the padding
+    // dropped.
     val crafted =
       "70736274ff0100550200000001aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
         "aaaaaaaaaaaaaaaaaaaa0000000000fdffffff01905f01000000000016" +
@@ -757,10 +759,51 @@ class PSBTUnitTest extends BitcoinSUnitTest {
         "01ff29" +
         "00010425512102020202020202020202020202020202020202020202020202020202020202020251ae0000"
 
-    val psbt = PSBT.fromHex(crafted)
+    assertThrows[IllegalArgumentException](PSBT.fromHex(crafted))
+  }
 
-    assert(psbt.globalMap.elements.size == 1)
-    assert(psbt.inputMaps.head.elements.size == 1)
-    assert(psbt.inputMaps.head.redeemScriptOpt.isDefined)
+  it must "correctly parse a TaprootTree record with multiple leaves" in {
+    // OutputPSBTRecord.fromBytes's TaprootTreeKeyId loop previously sliced
+    // each leaf's script as "everything remaining in the value" instead of
+    // bounding it to the leaf's own declared script length, so any tree with
+    // more than one leaf merged every later leaf into the first leaf's
+    // script and silently dropped them from the parsed result.
+    val leaf1 = (1.toByte, 0xc0.toByte, hex"aabbcc")
+    val leaf2 = (2.toByte, 0xc0.toByte, hex"1122334455")
+
+    val tree = OutputPSBTRecord.TaprootTree(Vector(leaf1, leaf2))
+
+    val parsed = OutputPSBTRecord.fromBytes(tree.bytes)
+
+    assert(parsed == tree)
+    parsed match {
+      case OutputPSBTRecord.TaprootTree(leafs) =>
+        assert(leafs == Vector(leaf1, leaf2))
+      case other => fail(s"Expected a TaprootTree record, got: $other")
+    }
+  }
+
+  it must "reject a record whose declared value length includes trailing padding bytes" in {
+    // PSBT.empty's only record is the UnsignedTransaction. Its layout is:
+    // magic(5) ++ keylen(1)=01 ++ key(1)=00 ++ vallen(1) ++ value(n) ++ sep(1)=00
+    val original = PSBT.empty.bytes
+
+    val magic = original.take(5)
+    val keylen = original.slice(5, 6)
+    val key = original.slice(6, 7)
+    val valLen = original(7)
+    val value = original.slice(8, 8 + valLen)
+    val rest = original.drop(8 + valLen) // just the global separator, 0x00
+
+    // pad the declared value with 2 extra bytes that BaseTransaction.fromBytes
+    // will never consume - they carry no meaning under the tx format, and per
+    // BIP-174 the value must be exactly the serialized transaction.
+    val padding = hex"aabb"
+    val paddedValue = value ++ padding
+    val paddedValLen = ByteVector(paddedValue.size.toByte)
+
+    val padded = magic ++ keylen ++ key ++ paddedValLen ++ paddedValue ++ rest
+
+    assertThrows[IllegalArgumentException](PSBT.fromBytes(padded))
   }
 }
