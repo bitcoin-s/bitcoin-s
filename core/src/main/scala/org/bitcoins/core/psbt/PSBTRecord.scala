@@ -52,6 +52,22 @@ object PSBTRecord {
       (key, value)
     }
   }
+
+  /** The number of bytes a record occupies on the wire, as determined strictly
+    * from the CompactSize key/value length prefixes. This must be used to
+    * advance a parsing cursor instead of the re-serialized `.bytes.size` of a
+    * parsed record, since some records store a parsed object and re-derive
+    * `value` from it, which does not necessarily round-trip to the original
+    * bytes read off the wire.
+    */
+  def parsedSize(bytes: ByteVector): Long = {
+    val keyCmpctUInt = CompactSizeUInt.parse(bytes)
+
+    val valueBytes = bytes.drop(keyCmpctUInt.byteSize + keyCmpctUInt.toLong)
+    val valueCmpctUInt = CompactSizeUInt.parse(valueBytes)
+
+    keyCmpctUInt.byteSize + keyCmpctUInt.toLong + valueCmpctUInt.byteSize + valueCmpctUInt.toLong
+  }
 }
 
 sealed trait GlobalPSBTRecord extends PSBTRecord {
@@ -208,7 +224,8 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
           accum
         } else {
           val record = fromBytes(remainingBytes)
-          val next = remainingBytes.drop(record.bytes.size)
+          val consumed = PSBTRecord.parsedSize(remainingBytes)
+          val next = remainingBytes.drop(consumed)
 
           loop(next, accum :+ record)
         }
@@ -532,6 +549,10 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
 
         TRLeafScript(controlBlock, script, LeafVersion.fromByte(value.last))
       case TRBIP32DerivationPathKeyId =>
+        require(
+          key.size == 33,
+          s"The key must contain the 1 byte type followed by the 32 byte x-only public key, got: ${key.size}")
+
         val pubKey = XOnlyPubKey(key.tail)
         val numHashes = CompactSizeUInt.fromBytes(value)
         val hashes = value
@@ -689,6 +710,9 @@ object OutputPSBTRecord extends Factory[OutputPSBTRecord] {
         require(key.size == 1,
                 s"The key must only contain the 1 byte type, got: ${key.size}")
 
+        require(
+          value.size == 32,
+          s"The value must contain the 32 byte x-only public key, got: ${value.size}")
         val xOnlyPubKey = XOnlyPubKey.fromBytes(value)
         OutputPSBTRecord.TRInternalKey(xOnlyPubKey)
       case TaprootTreeKeyId =>
@@ -710,6 +734,10 @@ object OutputPSBTRecord extends Factory[OutputPSBTRecord] {
         val leafs = loop(value, Vector.empty)
         OutputPSBTRecord.TaprootTree(leafs)
       case PSBTOutputKeyId.TRBIP32DerivationPathKeyId =>
+        require(
+          key.size == 33,
+          s"The key must contain the 1 byte type followed by the 32 byte x-only public key, got: ${key.size}")
+
         val pubKey = XOnlyPubKey(key.tail)
         val numHashes = CompactSizeUInt.fromBytes(value)
         val hashes = value

@@ -742,4 +742,25 @@ class PSBTUnitTest extends BitcoinSUnitTest {
 
     assert(vec.forall(b => Try(PSBT.fromBytes(b)).isFailure))
   }
+
+  it must "not desync map parsing when a record's value does not re-serialize byte-identically" in {
+    // See https://github.com/bitcoin-s/bitcoin-s/issues/6411
+    // The unsigned tx's declared value length (0x55) is 3 bytes longer than
+    // the transaction it contains re-serializes to. Those 3 extra bytes
+    // must still be treated as part of the global map's value and skipped
+    // over, rather than reinterpreted as a phantom record that swallows the
+    // input map.
+    val crafted =
+      "70736274ff0100550200000001aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
+        "aaaaaaaaaaaaaaaaaaaa0000000000fdffffff01905f01000000000016" +
+        "0014bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb00000000" +
+        "01ff29" +
+        "00010425512102020202020202020202020202020202020202020202020202020202020202020251ae0000"
+
+    val psbt = PSBT.fromHex(crafted)
+
+    assert(psbt.globalMap.elements.size == 1)
+    assert(psbt.inputMaps.head.elements.size == 1)
+    assert(psbt.inputMaps.head.redeemScriptOpt.isDefined)
+  }
 }

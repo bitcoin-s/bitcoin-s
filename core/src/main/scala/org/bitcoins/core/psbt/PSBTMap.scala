@@ -60,23 +60,35 @@ sealed trait PSBTMapFactory[
 
   lazy val empty: MapType = constructMap(Vector.empty)
 
-  override def fromBytes(bytes: ByteVector): MapType = {
+  /** Parses a map from the front of `bytes`, returning the map along with the
+    * number of bytes actually consumed on the wire (including the trailing
+    * separator byte). Callers that need to know where the next map begins must
+    * use the returned consumed length rather than `.bytes.size` on the returned
+    * map, since a record's value is not guaranteed to re-serialize
+    * byte-for-byte identical to what was parsed (see PSBTRecord.parsedSize).
+    */
+  def parseWithSize(bytes: ByteVector): (MapType, Long) = {
     @tailrec
     def loop(
         remainingBytes: ByteVector,
-        accum: Vector[RecordType]): Vector[RecordType] = {
+        consumed: Long,
+        accum: Vector[RecordType]): (Vector[RecordType], Long) = {
       if (remainingBytes.head == PSBTMap.separatorByte) {
-        accum
+        (accum, consumed + 1)
       } else {
         val record = recordFactory.fromBytes(remainingBytes)
-        val next = remainingBytes.drop(record.bytes.size)
+        val recordSize = PSBTRecord.parsedSize(remainingBytes)
+        val next = remainingBytes.drop(recordSize)
 
-        loop(next, accum :+ record)
+        loop(next, consumed + recordSize, accum :+ record)
       }
     }
 
-    constructMap(loop(bytes, Vector.empty))
+    val (elements, consumed) = loop(bytes, 0L, Vector.empty)
+    (constructMap(elements), consumed)
   }
+
+  override def fromBytes(bytes: ByteVector): MapType = parseWithSize(bytes)._1
 }
 
 case class GlobalPSBTMap(elements: Vector[GlobalPSBTRecord])
