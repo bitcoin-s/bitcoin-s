@@ -331,7 +331,10 @@ object CommonSettings {
       "ch.qos.logback.core.net" -> "jakarta.mail",
       "ch.qos.logback.core.net" -> "jakarta.mail.internet",
       "ch.qos.logback.core.status" -> "jakarta.servlet",
-      "ch.qos.logback.core.status" -> "jakarta.servlet.http"
+      "ch.qos.logback.core.status" -> "jakarta.servlet.http",
+      // commons-logging 1.4.0 added an optional Jakarta Servlet adapter;
+      // we don't use it
+      "org.apache.commons.logging.jakarta" -> "jakarta.servlet"
     )
   }
 
