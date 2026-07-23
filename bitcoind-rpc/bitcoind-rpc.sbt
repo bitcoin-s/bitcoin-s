@@ -23,7 +23,7 @@ TaskKeys.downloadBitcoind := {
   }
 
   val versions =
-    List("31.0", "30.2", "29.2")
+    List("31.1", "30.3", "29.4")
 
   logger.debug(
     s"(Maybe) downloading Bitcoin Core binaries for versions: ${versions.mkString(",")}")
@@ -98,23 +98,23 @@ TaskKeys.downloadBitcoind := {
         val expectedHash =
           if (Properties.isLinux)
             Map(
-              "29.2" -> "1fd58d0ae94b8a9e21bbaeab7d53395a44976e82bd5492b0a894826c135f9009",
-              "30.2" -> "6aa7bb4feb699c4c6262dd23e4004191f6df7f373b5d5978b5bcdd4bb72f75d8",
-              "31.0" -> "d3e4c58a35b1d0a97a457462c94f55501ad167c660c245cb1ffa565641c65074"
+              "29.4" -> "e15bff6f6d21a315c4af25d2e8ae933a22bd51e924e0e90ab0474e1e11516331",
+              "30.3" -> "4753cd70416c629a2090503e8545a3c05e94a0f5037f8fb97b4c35c6e1afee0e",
+              "31.1" -> "b80d9c3e04da78fb6f0569685673418cf686fadba9042d926d13fb87ff503f9e"
             )
           else if (Properties.isMac)
             Map(
-            "29.2" -> ( if (isAarch64) "bd07450f76d149d094842feab58e6240673120c8a317a1c51d45ba30c34e85ef" else "69ca05fbe838123091cf4d6d2675352f36cf55f49e2e6fb3b52fcf32b5e8dd9f"),
-              "30.2" -> (if (isAarch64) "c2ecab62891de22228043815cb6211549a32272be3d5d052ff19847d3420bd10"
-              else "99d5cee9b9c37be506396c30837a4b98e320bfea71c474d6120a7e8eb6075c7b"),
-              "31.0" -> (if (isAarch64) "a2d7a13b4da53d4a3e4c517f3a0269e2429813417bb320d3b268993cfdc545d0"
-              else "56824dd705bc2a3b22d42e8aa02ed53498d491ff7c2c8aa96831333871887ead")
+            "29.4" -> ( if (isAarch64) "ab9d71a1fe9b32a284b3456fd62e209c7d5d08ddfa2534d048c3f6e610cdb37a" else "b2e13a7f4f430c52ca96a4fca8f041b0a23ea8ea97267357751cdd9de7606cf2"),
+              "30.3" -> (if (isAarch64) "c42480fd26dd0b12c984e8063a1879165c94525c475162deb3ea2c3054dd5c2c"
+              else "24897a2e40596df5e4206499935aac0fe045c58b3de3170ce92ebbb2ebc765a3"),
+              "31.1" -> (if (isAarch64) "16a097c09fbd7eb78b240ce1dae123663ea2e5e377cfd6a951e71e227e23cf2f"
+              else "bc506958d0f387c1ea770bdc7c7192a505fa645ff62cabcc7761fa7eb89e867e")
             )
           else if (Properties.isWin)
             Map(
-              "29.2" -> "83f90a5bab1fc30849862aa1db88906b91e0730b78993c085f9e547a1c3cce79",
-              "30.2" -> "0d7e1f16f8823aa26d29b44855ff6dbac11c03d75631a6c1d2ea5fab3a84fdf8",
-              "31.0" -> "82fd2c504a0f20a31d4d13bd407783d6fc7bf17622d0ce85228a9b92694e03f0"
+              "29.4" -> "31e03b841bf2bbe711cf0179d3466678989fcbd46e5ef9bef957a20fa32e0e42",
+              "30.3" -> "5fa956b48c358148ff83c1338648d2b82e2e05e193e362ee2f8e76a59bc87c0f",
+              "31.1" -> "c99ef173471c58e6766d9eebd12e6c35349082eeed3939bc99eed58ef57db587"
             )
           else sys.error(s"Unsupported OS: ${Properties.osName}")
 
