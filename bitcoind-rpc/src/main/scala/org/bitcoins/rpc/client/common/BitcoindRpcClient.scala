@@ -437,15 +437,15 @@ object BitcoindVersion
   val known: Vector[BitcoindVersion] = standard
 
   case object V29 extends BitcoindVersion {
-    override def toString: String = "v29.2"
+    override def toString: String = "v29.4"
   }
 
   case object V30 extends BitcoindVersion {
-    override def toString: String = "v30.2"
+    override def toString: String = "v30.3"
   }
 
   case object V31 extends BitcoindVersion {
-    override def toString: String = "v31.0"
+    override def toString: String = "v31.1"
   }
 
   case object Unknown extends BitcoindVersion {
