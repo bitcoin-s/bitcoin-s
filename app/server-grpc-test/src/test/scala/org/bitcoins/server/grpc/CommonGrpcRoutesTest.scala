@@ -49,10 +49,11 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
     }
   }
 
-  it must "authenticate with the configured password" in { _ =>
+  it must "authenticate with the configured password" in { clientServer =>
     val password = "topsecret"
     val port = RpcUtil.randomPort
     val dlcNode = MockDLCNodeApi.fresh()
+    val walletApi = clientServer.walletApi
     val server = new ServerGrpc(
       datadir = FileUtil.tmpDir().toPath,
       rpchost = "localhost",
@@ -61,8 +62,9 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
       chainApi = MockChainApi,
       network = network,
       startedTorConfigF = Future.unit,
-      nodeApiF = Future.successful(MockNodeApi),
-      dlcNodeF = Future.successful(dlcNode)
+      nodeApiF = Future.successful(clientServer.nodeApi),
+      dlcNodeF = Future.successful(dlcNode),
+      walletApiF = Future.successful(walletApi)
     )
     val clientSettings = org.apache.pekko.grpc.GrpcClientSettings
       .connectToServiceAt("localhost", port)
@@ -87,11 +89,12 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
       }
   }
 
-  it must "reject authentication with an invalid password" in { _ =>
+  it must "reject authentication with an invalid password" in { clientServer =>
     val serverPassword = "topsecret"
     val clientPassword = "wrong-password"
     val port = RpcUtil.randomPort
     val dlcNode = MockDLCNodeApi.fresh()
+    val walletApi = clientServer.walletApi
     val server = new ServerGrpc(
       datadir = FileUtil.tmpDir().toPath,
       rpchost = "localhost",
@@ -101,7 +104,8 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
       network = network,
       startedTorConfigF = Future.unit,
       nodeApiF = Future.successful(MockNodeApi),
-      dlcNodeF = Future.successful(dlcNode)
+      dlcNodeF = Future.successful(dlcNode),
+      walletApiF = Future.successful(walletApi)
     )
     val clientSettings = org.apache.pekko.grpc.GrpcClientSettings
       .connectToServiceAt("localhost", port)
