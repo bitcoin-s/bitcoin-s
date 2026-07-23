@@ -483,4 +483,28 @@ class ExtKeyTest extends BitcoinSUnitTest {
       ExtPrivateKey(LegacyMainNetPriv, Some(seedBytes), BIP32Path.empty)
     masterPriv.toString must be(s"Masked(ExtPrivateKeyImpl)")
   }
+
+  it must "fail to create a master key from a seed shorter than 128 bits" in {
+    val tooShort = ByteVector.fill(ExtKey.minSeedLength - 1)(0x00)
+    assertThrows[IllegalArgumentException] {
+      ExtPrivateKey(LegacyMainNetPriv, Some(tooShort), BIP32Path.empty)
+    }
+  }
+
+  it must "fail to create a master key from a seed longer than 512 bits" in {
+    val tooLong = ByteVector.fill(ExtKey.maxSeedLength + 1)(0x00)
+    assertThrows[IllegalArgumentException] {
+      ExtPrivateKey(LegacyMainNetPriv, Some(tooLong), BIP32Path.empty)
+    }
+  }
+
+  it must "succeed in creating a master key from the minimum seed length" in {
+    val minSeed = ByteVector.fill(ExtKey.minSeedLength)(0x00)
+    ExtPrivateKey(LegacyMainNetPriv, Some(minSeed), BIP32Path.empty)
+  }
+
+  it must "succeed in creating a master key from the maximum seed length" in {
+    val maxSeed = ByteVector.fill(ExtKey.maxSeedLength)(0x00)
+    ExtPrivateKey(LegacyMainNetPriv, Some(maxSeed), BIP32Path.empty)
+  }
 }

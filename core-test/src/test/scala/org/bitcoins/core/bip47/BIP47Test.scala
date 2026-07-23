@@ -13,7 +13,7 @@ class BIP47Test extends BitcoinSUnitTest {
   )
 
   val testSeedBob: ByteVector = ByteVector.fromValidHex(
-    "87eaaac5a539ab028df44d9110f5b2a8ef4edce19cf8a7e4cffd5f4d826a7f53a0a1a10b2e4f8e35ad0c3f5e0c6d7c7e8d2a6f9b8c7d6e5f4a3b2c1d0e9f8a7b6"
+    "87eaaac5a539ab028df44d9110f5b2a8ef4edce19cf8a7e4cffd5f4d826a7f53a0a1a10b2e4f8e35ad0c3f5e0c6d7c7e8d2a6f9b8c7d6e5f4a3b2c1d0e9f8a7b"
   )
 
   it must "create a payment code from seed" in {

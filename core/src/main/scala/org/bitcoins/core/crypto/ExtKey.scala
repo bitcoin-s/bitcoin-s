@@ -113,6 +113,16 @@ object ExtKey extends Factory[ExtKey] with StringFactory[ExtKey] {
 
   val masterFingerprint: ByteVector = ByteVector.fromValidHex("00000000")
 
+  /** Minimum seed length in bytes (128 bits) as defined by BIP32
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#master-key-generation]]
+    */
+  val minSeedLength: Int = 16
+
+  /** Maximum seed length in bytes (512 bits) as defined by BIP32
+    * [[https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#master-key-generation]]
+    */
+  val maxSeedLength: Int = 64
+
   val prefixes: Vector[String] = Vector("xprv", "xpub", "tprv", "tpub")
 
   /** Takes in a base58 string and tries to convert it to an extended key */
@@ -376,6 +386,10 @@ object ExtPrivateKey
       case Some(bytes) => bytes
       case None        => ECPrivateKey().bytes
     }
+    require(
+      seed.length >= ExtKey.minSeedLength && seed.length <= ExtKey.maxSeedLength,
+      s"Seed must be between ${ExtKey.minSeedLength} and ${ExtKey.maxSeedLength} bytes (128-512 bits) as defined by BIP32, got ${seed.length} bytes"
+    )
     val i =
       CryptoUtil.hmac512(key = BIP32_KEY, data = seed)
     val (masterPrivBytes, chaincodeBytes) = i.splitAt(32)
