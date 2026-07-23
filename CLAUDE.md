@@ -11,20 +11,33 @@ support, an oracle server, and RPC clients for bitcoind/eclair/lnd/c-lightning. 
 
 ## Build & Test Commands
 
-Build system is SBT. Modules follow the pattern `<module>` (main code) / `<module>-test` (tests) — e.g.
-`core` / `core-test`, `wallet` / `wallet-test`. A few cross-platform modules (`crypto`, `core`,
-`testkit-core`, `async-utils`) build for both JVM and JS via `crossProject`; these must be addressed as
-`cryptoJVM`/`cryptoJS` etc. rather than the bare module name in sbt commands.
+Build system is SBT. Modules follow the pattern `<module>` (main code) / `<module>-test` (tests) on
+disk — e.g. `core` / `core-test`, `wallet` / `wallet-test` — but **sbt project IDs on the command line
+are always the camelCase form with no hyphens**, derived from the directory name: `core-test` on disk is
+`coreTest`/`coreTestJVM` as an sbt id, `wallet-test` is `walletTest`, `dlc-wallet-test` is
+`dlcWalletTest`, `bitcoind-rpc-test` is `bitcoindRpcTest`, etc. A hyphenated id like `core-test/test` is
+never valid sbt syntax — check `build.sbt` for the exact `lazy val <id> = ...` if unsure.
+
+A few modules (`crypto`, `core`, `testkit-core`, `async-utils`) build for both JVM and JS via
+`crossProject`, and **this applies to their test modules too**: there is no plain `coreTest` or
+`cryptoTest` project you can run tasks against directly — only the JVM/JS instances exist as real sbt
+projects, so it's always `coreTestJVM`/`coreTestJS`, `cryptoTestJVM`/`cryptoTestJS`,
+`asyncUtilsTestJVM`/`asyncUtilsTestJS`. (`testkit-core` itself has no separate test module — it's a
+fixtures library other tests depend on — so only `testkitCoreJVM`/`testkitCoreJS` exist, for compiling
+it.) Every other domain/RPC/app module (`wallet`, `chain`, `node`, `dlc-wallet`, `bitcoind-rpc`, `cli`,
+etc.) is a plain single-platform `project`, so `<module>Test` alone is correct for those — no JVM/JS
+suffix, and no such suffix exists to add.
 
 ```bash
 sbt compile                       # compile main sources
 sbt Test/compile                  # compile test sources
-sbt <module>Test/test             # run all tests in a module, e.g. sbt walletTest/test
+sbt <module>Test/test             # run all tests in a single-platform module, e.g. sbt walletTest/test
 sbt "<module>Test/testOnly *TestClassName"
 sbt "<module>Test/testOnly *TestClassName -- -z \"test name pattern\""
 sbt scalafmtCheckAll               # check formatting (CI-enforced)
 sbt scalafmtAll                    # auto-format everything — run before committing
-sbt cryptoTestJVM/test             # cross-platform module test invocation (JVM side)
+sbt coreTestJVM/test               # cross-platform module test invocation (JVM side) — NOT coreTest or core-test
+sbt cryptoTestJVM/test             # same for crypto
 sbt cryptoTestJS/test              # cross-platform module test invocation (JS side)
 ```
 
@@ -37,7 +50,7 @@ session, use `sbt --client` instead so they share one persistent background sbt 
 ```bash
 sbt --client compile
 sbt --client walletTest/test
-sbt --client "core-test/testOnly *SomeSpec"
+sbt --client "coreTestJVM/testOnly *SomeSpec"
 ```
 
 The first `--client` call boots the background server (slow, one-time per checkout); every subsequent

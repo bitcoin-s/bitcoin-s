@@ -968,44 +968,38 @@ object PSBT extends Factory[PSBT] with StringFactory[PSBT] {
 
     val globalBytes = bytes.drop(magicBytes.size)
 
-    val global: GlobalPSBTMap = GlobalPSBTMap.fromBytes(globalBytes)
+    val (global, globalConsumed) = GlobalPSBTMap.parseWithSize(globalBytes)
 
     val tx = global.unsignedTransaction.transaction
 
     @tailrec
-    def mapLoop[MapType <: PSBTMap[PSBTRecord]](
+    def mapLoop[RecordType <: PSBTRecord, MapType <: PSBTMap[RecordType]](
         bytes: ByteVector,
         numMaps: Int,
         accum: Vector[MapType],
-        factory: Factory[MapType]): Vector[MapType] = {
+        factory: PSBTMapFactory[RecordType, MapType])
+        : (Vector[MapType], ByteVector) = {
       if (numMaps <= 0 || bytes.isEmpty) {
-        accum
+        (accum, bytes)
       } else {
-        val newMap = factory.fromBytes(bytes)
-        mapLoop(bytes.drop(newMap.bytes.size),
-                numMaps - 1,
-                accum :+ newMap,
-                factory)
+        val (newMap, consumed) = factory.parseWithSize(bytes)
+        mapLoop(bytes.drop(consumed), numMaps - 1, accum :+ newMap, factory)
       }
     }
 
-    val inputBytes = globalBytes.drop(global.bytes.size)
+    val inputBytes = globalBytes.drop(globalConsumed)
 
-    val inputMaps = mapLoop[InputPSBTMap](inputBytes,
-                                          tx.inputs.size,
-                                          Vector.empty,
-                                          InputPSBTMap)
+    val (inputMaps, outputBytes) = mapLoop[InputPSBTRecord, InputPSBTMap](
+      inputBytes,
+      tx.inputs.size,
+      Vector.empty,
+      InputPSBTMap)
 
-    val outputBytes =
-      inputBytes.drop(inputMaps.foldLeft(0)(_ + _.bytes.size.toInt))
-
-    val outputMaps = mapLoop[OutputPSBTMap](outputBytes,
-                                            tx.outputs.size,
-                                            Vector.empty,
-                                            OutputPSBTMap)
-
-    val remainingBytes =
-      outputBytes.drop(outputMaps.foldLeft(0)(_ + _.bytes.size.toInt))
+    val (outputMaps, remainingBytes) =
+      mapLoop[OutputPSBTRecord, OutputPSBTMap](outputBytes,
+                                               tx.outputs.size,
+                                               Vector.empty,
+                                               OutputPSBTMap)
 
     require(remainingBytes.isEmpty,
             s"The PSBT should be empty now, got: $remainingBytes")
