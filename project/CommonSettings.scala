@@ -473,14 +473,15 @@ object CommonSettings {
       .++(cryptoJlinkIgnore)
       .++(byteBuddyJlinkIgnore)
       .++(nettySvmJlinkIgnore)
-      .++(Vector(
-        // https://github.com/janino-compiler/janino/blob/f6bb39d3137ad2e99b41ecc48aaaf8ab2644bd1c/janino/pom.xml#L37
-        "org.codehaus.janino" -> "org.apache.tools.ant",
-        "com.github.benmanes.caffeine" -> "javax.annotation",
-        "com.github.benmanes.caffeine.cache" -> "javax.annotation",
-        "com.github.benmanes.caffeine.cache.stats" -> "javax.annotation",
-        "monix.execution.misc" -> "scala.tools.nsc"
-      ))
+      .++(
+        Vector(
+          // https://github.com/janino-compiler/janino/blob/f6bb39d3137ad2e99b41ecc48aaaf8ab2644bd1c/janino/pom.xml#L37
+          "org.codehaus.janino" -> "org.apache.tools.ant",
+          "com.github.benmanes.caffeine" -> "javax.annotation",
+          "com.github.benmanes.caffeine.cache" -> "javax.annotation",
+          "com.github.benmanes.caffeine.cache.stats" -> "javax.annotation",
+          "monix.execution.misc" -> "scala.tools.nsc"
+        ))
     JlinkIgnore.byPackagePrefix(appServerIgnore: _*)
   }
 
