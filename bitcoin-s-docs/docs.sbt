@@ -1,5 +1,11 @@
 lazy val publishWebsite = taskKey[Unit]("Publish website")
 
+// website/ is still classic Docusaurus v1 (see website/package.json),
+// but sbt-mdoc 2.9.1 changed DocusaurusPlugin's default to V3, which
+// runs `yarn deploy` instead of `yarn publish-gh-pages` and breaks
+// docusaurusPublishGhpages. Pin back to V1 until the site is migrated.
+docusaurusVersion := DocusaurusVersion.V1
+
 publishWebsite := Def
   .sequential(
     Compile / unidoc,
