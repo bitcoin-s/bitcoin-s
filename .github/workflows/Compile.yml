@@ -13,11 +13,11 @@ jobs:
       DISABLE_SECP256K1: "true"
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Setup JDK
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v5
         with:
           # for some reason there seems to be a bug in the temurin runtime with jlink/jdeps
           # this can likely be reverted back to temurin in the future
@@ -27,7 +27,7 @@ jobs:
       - name: Install sbt
         uses: sbt/setup-sbt@v1
       - name: Cache
-        uses: actions/cache@v3
+        uses: actions/cache@v6
         with:
           path: |
             ~/.ivy2/cache
