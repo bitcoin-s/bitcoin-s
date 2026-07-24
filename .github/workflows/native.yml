@@ -28,10 +28,10 @@ jobs:
             local_path: app/cli/target/native-image/bitcoin-s-cli
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: olafurpg/setup-scala@v13
+      - uses: olafurpg/setup-scala@v14
         with:
           # from https://github.com/graalvm/graalvm-ce-builds/releases
           java-version: graalvm@21.0.2=tgz+https://github.com/graalvm/graalvm-ce-builds/releases/download/jdk-21.0.2/graalvm-community-jdk-21.0.2_${{runner.os}}-x64_bin.tar.gz
@@ -41,7 +41,7 @@ jobs:
         if: ${{ matrix.os != 'windows-latest' }}
       - run: echo $(pwd)
         shell: bash
-      - uses: actions/upload-artifact@master
+      - uses: actions/upload-artifact@v7
         with:
           path: ${{ matrix.local_path }}
           name: ${{ matrix.uploaded_filename }}
