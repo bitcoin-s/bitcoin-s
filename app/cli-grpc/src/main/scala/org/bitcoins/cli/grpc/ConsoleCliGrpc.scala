@@ -4,18 +4,30 @@ import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.grpc.GrpcClientSettings
 import org.bitcoins.cli.CliCommand.{
   AddDLCOffer,
+  EstimateFee,
+  GetAccounts,
+  GetAddressLabels,
+  GetAddresses,
+  GetBalances,
   GetBestBlockHash,
   GetBlockCount,
   GetConnectionCount,
   GetDLCHostAddress,
   GetFilterCount,
   GetFilterHeaderCount,
+  GetFundedAddresses,
   GetInfo,
   GetMedianTimePast,
+  GetReservedUtxos,
+  GetSpentAddresses,
+  GetUnusedAddresses,
+  GetUtxos,
   GetVersion,
   IncomingOffersList,
+  IsEmpty,
   OfferSend,
   RemoveDLCOffer,
+  WalletInfo,
   ZipDataDir
 }
 import org.bitcoins.cli.{Config, ConsoleCli}
@@ -29,9 +41,23 @@ import org.bitcoins.commons.rpc.{
   ContactAdd,
   ContactsList,
   CreateContractInfo,
+  CreateNewAccount,
   DLCContactAdd,
+  DropAddressLabel,
+  DropAddressLabels,
+  GetAddressInfo,
+  GetAddressLabel,
+  GetAddressTags,
+  GetBalance,
   GetBlockHeader,
+  GetConfirmedBalance,
+  GetNewAddress,
+  GetTransaction,
+  GetUnconfirmedBalance,
+  LabelAddress,
+  LockUnspent,
   OracleServerCliCommand,
+  Rescan,
   ServerlessCliCommand
 }
 import org.bitcoins.commons.rpc.CliCommand.NoCommand
@@ -50,8 +76,20 @@ import org.bitcoins.server.grpc.{
   ContactsListRequest,
   ContactsListResponse,
   CreateContractInfoRequest,
+  CreateNewAccountRequest,
   DLCRoutesClient,
   DlcContactAddRequest,
+  DropAddressLabelRequest,
+  DropAddressLabelsRequest,
+  EstimateFeeRequest,
+  GetAccountsRequest,
+  GetAddressInfoRequest,
+  GetAddressLabelRequest,
+  GetAddressLabelsRequest,
+  GetAddressTagsRequest,
+  GetAddressesRequest,
+  GetBalanceRequest,
+  GetBalancesRequest,
   GetBestBlockHashRequest,
   GetBlockCountRequest,
   GetBlockHeaderRequest,
@@ -60,17 +98,32 @@ import org.bitcoins.server.grpc.{
   GetDlcHostAddressRequest,
   GetFilterCountRequest,
   GetFilterHeaderCountRequest,
+  GetFundedAddressesRequest,
   GetInfoRequest,
   GetMedianTimePastRequest,
+  GetNewAddressRequest,
+  GetReservedUtxosRequest,
+  GetSpentAddressesRequest,
+  GetTransactionRequest,
+  GetUnusedAddressesRequest,
+  GetUtxosRequest,
+  GetUtxosResponse,
   GetVersionRequest,
   GetVersionResponse,
+  GetWalletInfoRequest,
   GrpcAuth,
   IncomingOfferListResponse,
   IncomingOffersListRequest,
+  IsEmptyRequest,
+  LabelAddressRequest,
+  LockUnspentRequest,
   NodeRoutesClient,
   OfferAddRequest,
   OfferRemoveRequest,
   OfferSendRequest,
+  OutPoint,
+  RescanRequest,
+  WalletRoutesClient,
   ZipDataDirRequest
 }
 import scopt.OParser
@@ -161,6 +214,7 @@ object ConsoleCliGrpc {
     val chainClient = ChainRoutesClient(clientSettings)
     val nodeClient = NodeRoutesClient(clientSettings)
     val dlcClient = DLCRoutesClient(clientSettings)
+    val walletClient = WalletRoutesClient(clientSettings)
 
     val responseF = command match {
       case GetVersion =>
@@ -199,6 +253,84 @@ object ConsoleCliGrpc {
         nodeClient
           .getConnectionCount(GetConnectionCountRequest())
           .map(r => jsValueToString(Num(r.count)))
+      case IsEmpty =>
+        walletClient
+          .isEmpty(IsEmptyRequest())
+          .map(r => jsValueToString(ujson.Bool(r.empty)))
+      case command: GetBalance =>
+        walletClient
+          .getBalance(GetBalanceRequest(isSats = command.isSats))
+          .map(r => jsValueToString(Num(r.balance)))
+      case command: GetConfirmedBalance =>
+        walletClient
+          .getConfirmedBalance(GetBalanceRequest(isSats = command.isSats))
+          .map(r => jsValueToString(Num(r.balance)))
+      case command: GetUnconfirmedBalance =>
+        walletClient
+          .getUnconfirmedBalance(GetBalanceRequest(isSats = command.isSats))
+          .map(r => jsValueToString(Num(r.balance)))
+      case command: GetBalances =>
+        walletClient
+          .getBalances(GetBalancesRequest(isSats = command.isSats))
+          .map { response =>
+            jsValueToString(
+              ujson.Obj(
+                "confirmed" -> Num(response.confirmed),
+                "unconfirmed" -> Num(response.unconfirmed),
+                "reserved" -> Num(response.reserved),
+                "total" -> Num(response.total)
+              ))
+          }
+      case GetUtxos =>
+        walletClient
+          .getUtxos(GetUtxosRequest())
+          .map(formatUtxos)
+      case GetReservedUtxos =>
+        walletClient
+          .getReservedUtxos(GetReservedUtxosRequest())
+          .map(formatUtxos)
+      case GetAddresses =>
+        walletClient
+          .getAddresses(GetAddressesRequest())
+          .map(r => formatStringArray(r.addresses))
+      case GetSpentAddresses =>
+        walletClient
+          .getSpentAddresses(GetSpentAddressesRequest())
+          .map(r => formatStringArray(r.addresses))
+      case GetFundedAddresses =>
+        walletClient
+          .getFundedAddresses(GetFundedAddressesRequest())
+          .map { response =>
+            val json = ujson.Arr.from(
+              response.fundedAddresses.map(fa =>
+                ujson.Obj(
+                  "address" -> Str(fa.address),
+                  "value" -> Num(fa.valueSats.toDouble)
+                ))
+            )
+            jsValueToString(json)
+          }
+      case GetUnusedAddresses =>
+        walletClient
+          .getUnusedAddresses(GetUnusedAddressesRequest())
+          .map(r => formatStringArray(r.addresses))
+      case GetAccounts =>
+        walletClient
+          .getAccounts(GetAccountsRequest())
+          .map(r => formatStringArray(r.xpubs))
+      case GetAddressLabels =>
+        walletClient
+          .getAddressLabels(GetAddressLabelsRequest())
+          .map { response =>
+            val json = ujson.Arr.from(
+              response.addressLabels.map(labels =>
+                ujson.Obj(
+                  "address" -> Str(labels.address),
+                  "labels" -> ujson.Arr.from(labels.labels.map(Str(_)))
+                ))
+            )
+            jsValueToString(json)
+          }
       case GetDLCHostAddress =>
         dlcClient
           .getDlcHostAddress(GetDlcHostAddressRequest())
@@ -279,6 +411,96 @@ object ConsoleCliGrpc {
                 "contactId" -> Str(response.contactId)
               ))
           }
+      case WalletInfo =>
+        walletClient
+          .getWalletInfo(GetWalletInfoRequest())
+          .map { response =>
+            jsValueToString(
+              ujson.Obj(
+                "walletName" -> Str(response.walletName),
+                "rootXpub" -> Str(response.rootXpub),
+                "xpub" -> Str(response.xpub),
+                "hdAccount" -> Str(response.hdAccount),
+                "height" -> Num(response.height.toDouble),
+                "blockHash" -> Str(response.blockHash),
+                "rescan" -> ujson.Bool(response.rescan),
+                "imported" -> ujson.Bool(response.imported)
+              ))
+          }
+      case command: GetNewAddress =>
+        walletClient
+          .getNewAddress(
+            GetNewAddressRequest(label = command.labelOpt.map(_.name)))
+          .map(r => jsValueToString(Str(r.address)))
+      case command: GetTransaction =>
+        walletClient
+          .getTransaction(GetTransactionRequest(txid = command.txId.hex))
+          .map(r => jsValueToString(r.txHex.map(Str(_)).getOrElse(ujson.Null)))
+      case command: GetAddressTags =>
+        walletClient
+          .getAddressTags(
+            GetAddressTagsRequest(address = command.address.value))
+          .map(r => jsValueToString(ujson.Arr.from(r.tags.map(Str(_)))))
+      case command: GetAddressLabel =>
+        walletClient
+          .getAddressLabel(
+            GetAddressLabelRequest(address = command.address.value))
+          .map(r => jsValueToString(ujson.Arr.from(r.labels.map(Str(_)))))
+      case command: LabelAddress =>
+        walletClient
+          .labelAddress(
+            LabelAddressRequest(address = command.address.value,
+                                label = command.label.name))
+          .map(r => jsValueToString(Str(r.message)))
+      case command: DropAddressLabel =>
+        walletClient
+          .dropAddressLabel(
+            DropAddressLabelRequest(address = command.address.value,
+                                    label = command.label))
+          .map(r => jsValueToString(Str(r.message)))
+      case command: DropAddressLabels =>
+        walletClient
+          .dropAddressLabels(
+            DropAddressLabelsRequest(address = command.address.value))
+          .map(r => jsValueToString(Str(r.message)))
+      case command: LockUnspent =>
+        val outpoints = command.outputParam.map { op =>
+          OutPoint(txid = op.txid.hex, vout = op.vout.toLong)
+        }
+        walletClient
+          .lockUnspent(
+            LockUnspentRequest(unlock = command.unlock, outpoints = outpoints))
+          .map(r => jsValueToString(ujson.Bool(r.success)))
+      case command: GetAddressInfo =>
+        walletClient
+          .getAddressInfo(
+            GetAddressInfoRequest(address = command.address.value))
+          .map { r =>
+            jsValueToString(
+              ujson.Obj(
+                "pubkey" -> r.pubkey.map(Str(_)).getOrElse(ujson.Null),
+                "hdPath" -> r.hdPath.map(Str(_)).getOrElse(ujson.Null)
+              ))
+          }
+      case command: CreateNewAccount =>
+        walletClient
+          .createNewAccount(
+            CreateNewAccountRequest(purpose = command.purpose.toString))
+          .map(r => formatStringArray(r.xpubs))
+      case command: Rescan =>
+        walletClient
+          .rescan(
+            RescanRequest(
+              ignoreCreationTime = command.ignoreCreationTime,
+              batchSize = command.batchSize,
+              startBlock = command.startBlock.map(_.toString),
+              endBlock = command.endBlock.map(_.toString)
+            ))
+          .map(r => jsValueToString(Str(r.message)))
+      case EstimateFee =>
+        walletClient
+          .estimateFee(EstimateFeeRequest())
+          .map(r => jsValueToString(Num(r.satsPerVbyte)))
       case NoCommand =>
         Future.failed(
           new IllegalArgumentException("You need to provide a command!"))
@@ -295,6 +517,7 @@ object ConsoleCliGrpc {
           _ <- chainClient.close()
           _ <- nodeClient.close()
           _ <- dlcClient.close()
+          _ <- walletClient.close()
         } yield result
       case Failure(err) =>
         for {
@@ -302,6 +525,7 @@ object ConsoleCliGrpc {
           _ <- chainClient.close()
           _ <- nodeClient.close()
           _ <- dlcClient.close()
+          _ <- walletClient.close()
           result <- Future.failed(err)
         } yield result
     }
@@ -392,6 +616,24 @@ object ConsoleCliGrpc {
         upickle.default.writeJs(c)(using Picklers.contactDbPickler))
     )
 
+    jsValueToString(json)
+  }
+
+  private def formatUtxos(response: GetUtxosResponse): String = {
+    val json = ujson.Arr.from(
+      response.utxos.map(utxo =>
+        ujson.Obj(
+          "outpoint" -> ujson.Obj("txid" -> Str(utxo.txid),
+                                  "vout" -> Num(utxo.vout.toDouble)),
+          "value" -> Num(utxo.valueSats.toDouble)
+        ))
+    )
+
+    jsValueToString(json)
+  }
+
+  private def formatStringArray(values: Seq[String]): String = {
+    val json = ujson.Arr.from(values.map(Str(_)))
     jsValueToString(json)
   }
 }
