@@ -62,7 +62,7 @@ object FrostJson {
       (__ \ "expected_secnonce").read[FrostNoncePriv] and
       (__ \ "expected_pubnonce").read[FrostNoncePub] and
       (__ \ "comment").read[String]
-  )(NonceGenTestVector.apply _)
+  )(NonceGenTestVector.apply)
   implicit val nonceGenTestVectorsReads: Reads[NonceGenTestVectors] =
     Json.reads[NonceGenTestVectors]
 
@@ -98,20 +98,20 @@ object FrostJson {
       (__ \ "participant_identifiers").read[Seq[Long]].map(_.toVector) and
       (__ \ "expected_aggnonce").read[FrostNoncePub] and
       (__ \ "comment").readNullable[String]
-  )(NonceAggValidTestCase.apply _)
+  )(NonceAggValidTestCase.apply)
 
   implicit val nonceAggErrorReads: Reads[NonceAggError] = (
     (__ \ "type").read[String] and
       (__ \ "id").read[Int] and
       (__ \ "contrib").read[String]
-  )(NonceAggError.apply _)
+  )(NonceAggError.apply)
 
   implicit val nonceAggErrorTestCaseReads: Reads[NonceAggErrorTestCase] = (
     (__ \ "pubnonce_indices").read[Seq[Int]].map(_.toVector) and
       (__ \ "participant_identifiers").read[Seq[Long]].map(_.toVector) and
       (__ \ "error").read[NonceAggError] and
       (__ \ "comment").readNullable[String]
-  )(NonceAggErrorTestCase.apply _)
+  )(NonceAggErrorTestCase.apply)
 
   implicit val nonceAggTestVectorsReads: Reads[NonceAggTestVectors] = (
     (__ \ "pubnonces").read[Seq[ByteVector]].map(_.toVector) and
@@ -119,7 +119,7 @@ object FrostJson {
         .read[Seq[NonceAggValidTestCase]]
         .map(_.toVector) and
       (__ \ "error_test_cases").read[Seq[NonceAggErrorTestCase]].map(_.toVector)
-  )(NonceAggTestVectors.apply _)
+  )(NonceAggTestVectors.apply)
 
   // --- Sign / Verify vectors ---
   case class SignVerifyVectors(
@@ -198,14 +198,14 @@ object FrostJson {
       (__ \ "signer_index").read[Int] and
       (__ \ "expected").read[ByteVector] and
       (__ \ "comment").readNullable[String]
-  )(SignValidTestCase.apply _)
+  )(SignValidTestCase.apply)
 
   implicit val signErrorReads: Reads[SignError] = (
     (__ \ "type").read[String] and
       (__ \ "message").readNullable[String] and
       (__ \ "id").readNullable[Int] and
       (__ \ "contrib").readNullable[String]
-  )(SignError.apply _)
+  )(SignError.apply)
 
   implicit val signErrorTestCaseReads: Reads[SignErrorTestCase] = (
     (__ \ "id_indices").read[Seq[Int]].map(_.toVector) and
@@ -217,7 +217,7 @@ object FrostJson {
       (__ \ "secnonce_index").readNullable[Int] and
       (__ \ "error").read[SignError] and
       (__ \ "comment").readNullable[String]
-  )(SignErrorTestCase.apply _)
+  )(SignErrorTestCase.apply)
 
   implicit val verifyFailReads: Reads[VerifyFailTestCase] = (
     (__ \ "psig").read[ByteVector] and
@@ -227,7 +227,7 @@ object FrostJson {
       (__ \ "msg_index").read[Int] and
       (__ \ "signer_index").read[Int] and
       (__ \ "comment").readNullable[String]
-  )(VerifyFailTestCase.apply _)
+  )(VerifyFailTestCase.apply)
 
   implicit val verifyErrorReads: Reads[VerifyErrorTestCase] = (
     (__ \ "psig").read[ByteVector] and
@@ -238,7 +238,7 @@ object FrostJson {
       (__ \ "signer_index").read[Int] and
       (__ \ "error").read[SignError] and
       (__ \ "comment").readNullable[String]
-  )(VerifyErrorTestCase.apply _)
+  )(VerifyErrorTestCase.apply)
 
   implicit val signVerifyVectorsReads: Reads[SignVerifyVectors] = (
     (__ \ "n").read[Int] and
@@ -261,7 +261,7 @@ object FrostJson {
       (__ \ "verify_error_test_cases")
         .read[Seq[VerifyErrorTestCase]]
         .map(_.toVector)
-  )(SignVerifyVectors.apply _)
+  )(SignVerifyVectors.apply)
 
   // --- Tweak vectors ---
   case class TweakValidTestCase(
@@ -314,7 +314,7 @@ object FrostJson {
       (__ \ "signer_index").read[Int] and
       (__ \ "expected").read[ByteVector] and
       (__ \ "comment").readNullable[String]
-  )(TweakValidTestCase.apply _)
+  )(TweakValidTestCase.apply)
 
   implicit val tweakErrorReads: Reads[TweakErrorTestCase] = (
     (__ \ "id_indices").read[Seq[Int]].map(_.toVector) and
@@ -328,7 +328,7 @@ object FrostJson {
       (__ \ "signer_index").read[Int] and
       (__ \ "error").read[SignError] and
       (__ \ "comment").readNullable[String]
-  )(TweakErrorTestCase.apply _)
+  )(TweakErrorTestCase.apply)
 
   implicit val tweakVectorsReads: Reads[TweakVectors] = (
     (__ \ "n").read[Int] and
@@ -346,7 +346,7 @@ object FrostJson {
         .read[Seq[TweakValidTestCase]]
         .map(_.toVector) and
       (__ \ "error_test_cases").read[Seq[TweakErrorTestCase]].map(_.toVector)
-  )(TweakVectors.apply _)
+  )(TweakVectors.apply)
 
   // --- Sig aggregation vectors ---
   case class SigAggValidTestCase(
@@ -390,14 +390,14 @@ object FrostJson {
       (__ \ "psigs").read[Seq[ByteVector]].map(_.toVector) and
       (__ \ "expected").read[SchnorrDigitalSignature] and
       (__ \ "comment").readNullable[String]
-  )(SigAggValidTestCase.apply _)
+  )(SigAggValidTestCase.apply)
 
   implicit val sigAggErrorReads: Reads[SigAggError] = (
     (__ \ "type").read[String] and
       (__ \ "message").readNullable[String] and
       (__ \ "id").readNullable[Int] and
       (__ \ "contrib").readNullable[String]
-  )(SigAggError.apply _)
+  )(SigAggError.apply)
 
   implicit val sigAggErrorTestCaseReads: Reads[SigAggErrorTestCase] = (
     (__ \ "id_indices").read[Seq[Int]].map(_.toVector) and
@@ -409,7 +409,7 @@ object FrostJson {
       (__ \ "psigs").read[Seq[ByteVector]].map(_.toVector) and
       (__ \ "error").read[SigAggError] and
       (__ \ "comment").readNullable[String]
-  )(SigAggErrorTestCase.apply _)
+  )(SigAggErrorTestCase.apply)
 
   case class SigAggVectors(
       n: Int,
@@ -437,7 +437,7 @@ object FrostJson {
         .read[Seq[SigAggValidTestCase]]
         .map(_.toVector) and
       (__ \ "error_test_cases").read[Seq[SigAggErrorTestCase]].map(_.toVector)
-  )(SigAggVectors.apply _)
+  )(SigAggVectors.apply)
 
   // --- Deterministic signing vectors (det_sign_vectors.json) ---
   case class DetSignValidTestCase(
@@ -494,7 +494,7 @@ object FrostJson {
       (__ \ "signer_index").read[Int] and
       (__ \ "expected").read[Seq[ByteVector]].map(_.toVector) and
       (__ \ "comment").readNullable[String]
-  )(DetSignValidTestCase.apply _)
+  )(DetSignValidTestCase.apply)
 
   implicit val detSignErrorReads: Reads[DetSignErrorTestCase] = (
     (__ \ "rand").readNullable[ByteVector] and
@@ -508,7 +508,7 @@ object FrostJson {
       (__ \ "signer_id").readNullable[Int] and
       (__ \ "error").read[SignError] and
       (__ \ "comment").readNullable[String]
-  )(DetSignErrorTestCase.apply _)
+  )(DetSignErrorTestCase.apply)
 
   implicit val detSignVectorsReads: Reads[DetSignVectors] = (
     (__ \ "n").read[Int] and
@@ -522,6 +522,6 @@ object FrostJson {
         .read[Seq[DetSignValidTestCase]]
         .map(_.toVector) and
       (__ \ "error_test_cases").read[Seq[DetSignErrorTestCase]].map(_.toVector)
-  )(DetSignVectors.apply _)
+  )(DetSignVectors.apply)
 
 }
