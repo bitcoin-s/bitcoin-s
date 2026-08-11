@@ -35,7 +35,9 @@ jobs:
             ~/.ivy2/cache
             ~/.sbt
             ~/.bitcoin-s/binaries
-          key: ${{ runner.os }}-cache
+          key: ${{ runner.os }}-cache-${{ hashFiles('**/*.sbt', 'project/**.scala', 'project/build.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-cache-
       - name: Windows Crypto, Core, and Database tests
         run: sbt cryptoTestJVM/test coreTestJVM/test secp256k1jni/test zmq/test appCommonsTest/test asyncUtilsTestJVM/test asyncUtilsTestJS/test appServerTest/test serverGrpcTest/test cliGrpcTest/test
         shell: bash

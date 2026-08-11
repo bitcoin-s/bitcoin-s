@@ -34,6 +34,8 @@ jobs:
             ~/.ivy2/cache
             ~/.sbt
             ~/.bitcoin-s/binaries
-          key: ${{ runner.os }}-postgres-cache
+          key: ${{ runner.os }}-postgres-cache-${{ hashFiles('**/*.sbt', 'project/**.scala', 'project/build.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-postgres-cache-
       - name: run tests
         run: sbt dbCommonsTest/test walletTest/test dlcWalletTest/test chainTest/test dlcOracleTest/test nodeTest/test

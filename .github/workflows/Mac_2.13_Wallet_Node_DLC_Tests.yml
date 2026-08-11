@@ -30,6 +30,8 @@ jobs:
             ~/.ivy2/cache
             ~/.sbt
             ~/.bitcoin-s/binaries
-          key: ${{ runner.os }}-wallet-node-dlc-test-cache
+          key: ${{ runner.os }}-wallet-node-dlc-test-cache-${{ hashFiles('**/*.sbt', 'project/**.scala', 'project/build.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-wallet-node-dlc-test-cache-
       - name: run tests
         run: sbt coverage walletTest/test dlcWalletTest/test wallet/coverageReport wallet/coverageAggregate wallet/coveralls nodeTest/test node/coverageReport node/coverageAggregate node/coveralls dlcOracleTest/test dlcOracle/coverageReport dlcOracle/coveralls

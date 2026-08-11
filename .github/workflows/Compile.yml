@@ -33,6 +33,8 @@ jobs:
             ~/.ivy2/cache
             ~/.sbt
             ~/.bitcoin-s/binaries
-          key: ${{ runner.os }}-compile-cache
+          key: ${{ runner.os }}-compile-cache-${{ hashFiles('**/*.sbt', 'project/**.scala', 'project/build.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-compile-cache-
       - name: Compile and Check Formatting
         run: sbt +test:compile scalafmtCheckAll cryptoTestJVM/test coreTestJVM/test appServer/universal:packageBin oracleServer/universal:packageBin cli/universal:packageBin docs/mdoc
