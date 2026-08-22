@@ -89,7 +89,7 @@ sealed abstract class LockTimeInterpreter {
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       program.stack.head match {
-        case ScriptNumber.negativeOne =>
+        case s: ScriptNumber if s < ScriptNumber.zero =>
           program.failExecution(ScriptErrorNegativeLockTime)
         case s: ScriptNumber
             if ScriptFlagUtil.requireMinimalData(
