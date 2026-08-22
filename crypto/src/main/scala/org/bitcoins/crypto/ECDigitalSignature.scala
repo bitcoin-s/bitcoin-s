@@ -38,6 +38,12 @@ case class ECDigitalSignature(bytes: ByteVector) extends DigitalSignature {
   lazy val decodeSignature: (BigInt, BigInt) =
     CryptoUtil.decodeSignature(this)
 
+  /** Same as [[decodeSignature]], but returns None rather than a fallback r=s=0
+    * pair when [[bytes]] is not a lax-DER decodable signature.
+    */
+  lazy val decodeSignatureOpt: Option[(BigInt, BigInt)] =
+    DERSignatureUtil.parseDERLax(bytes)
+
   /** Represents the r value found in a elliptic curve digital signature */
   def r: BigInt = {
     decodeSignature._1
@@ -75,12 +81,21 @@ case class ECDigitalSignature(bytes: ByteVector) extends DigitalSignature {
   }
 
   def hashTypeOpt: Option[HashType] = {
-    val trailingBytes = bytes.drop(ECDigitalSignature.fromRS(r, s).bytes.length)
+    decodeSignatureOpt match {
+      case Some((decodedR, decodedS)) =>
+        val trailingBytes =
+          bytes.drop(ECDigitalSignature.fromRS(decodedR, decodedS).bytes.length)
 
-    if (trailingBytes.nonEmpty && trailingBytes.length <= 4) {
-      Some(HashType.fromBytes(trailingBytes))
-    } else {
-      None
+        if (trailingBytes.nonEmpty && trailingBytes.length <= 4) {
+          Some(HashType.fromBytes(trailingBytes))
+        } else {
+          None
+        }
+      case None =>
+        // bytes isn't a lax-DER decodable signature, so there's no reliable
+        // way to know where the signature ends and a trailing hash type
+        // byte would begin
+        None
     }
   }
 
@@ -166,8 +181,12 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     */
   def fromFrontOfBytesWithSigHash(bytes: ByteVector): ECDigitalSignature = {
     val sigWithoutSigHash = fromFrontOfBytes(bytes)
-    ECDigitalSignature(
-      sigWithoutSigHash.bytes :+ bytes.drop(sigWithoutSigHash.byteSize).head)
+    val remainingBytes = bytes.drop(sigWithoutSigHash.byteSize)
+    require(
+      remainingBytes.nonEmpty,
+      s"No sighash byte found after the DER signature in $bytes"
+    )
+    ECDigitalSignature(sigWithoutSigHash.bytes :+ remainingBytes.head)
   }
 
   def apply(r: BigInt, s: BigInt): ECDigitalSignature = fromRS(r, s)

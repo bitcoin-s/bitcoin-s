@@ -198,7 +198,11 @@ object HashType extends Factory[HashType] {
     * https://github.com/bitcoin/bitcoin/blob/b83264d9c7a8ddb79f64bd9540caddc8632ef31f/src/script/interpreter.cpp#L186
     */
   def isDefinedHashtypeSignature(sig: ECDigitalSignature): Boolean = {
-    sig.bytes.nonEmpty && hashTypeBytes.contains(sig.bytes.last)
+    // SIGHASH_DEFAULT (0x00) is only a defined hashtype for taproot
+    // signatures; Bitcoin Core's CheckSignatureEncoding rejects 0x00 as an
+    // ECDSA hashtype byte
+    sig.bytes.nonEmpty && sig.bytes.last != sigHashDefaultByte &&
+    hashTypeBytes.contains(sig.bytes.last)
   }
 
   //    (hash_type <= 0x03 || (hash_type >= 0x81 && hash_type <= 0x83))
