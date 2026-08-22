@@ -18,8 +18,7 @@ import org.bitcoins.core.script.locktime.{
   OP_CHECKSEQUENCEVERIFY
 }
 import org.bitcoins.core.script.result.ScriptErrorNegativeLockTime
-import org.bitcoins.core.script.stack.OP_IFDUP
-import org.bitcoins.core.script.stack.StackInterpreter
+import org.bitcoins.core.script.stack.{OP_IFDUP, OP_ROLL, StackInterpreter}
 import org.bitcoins.core.script.{
   ExecutedScriptProgram,
   PreExecutionScriptProgram
@@ -159,6 +158,25 @@ class ScriptArithmeticSecurityTest extends BitcoinSUnitTest {
       )
     val newProgram = StackInterpreter.opIfDup(program)
     newProgram.stack must be(stack)
+  }
+
+  it must "move the nth stack element to the top with OP_ROLL even when duplicate values are on the stack" in {
+    // Finding 7 (Low): core/src/main/scala/org/bitcoins/core/script/stack/StackInterpreter.scala:170-173
+    // removes the rolled element with stack.tail.diff(List(newStackTop)), which removes the FIRST
+    // equal element instead of the element at depth n.
+    // Correct behavior (Core): the element at depth n is moved to the top.
+    val a = ScriptConstant("aa")
+    val b = ScriptConstant("bb")
+    val stack = List(ScriptNumber(2), a, b, a)
+    val script = List(OP_ROLL)
+    val program =
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
+    val newProgram = StackInterpreter.opRoll(program)
+    // the second 'a' (depth 2) moves to the top; the first 'a' stays at depth 1
+    newProgram.stack must be(List(a, a, b))
   }
 
   private def buildTxSigComponent(flags: Seq[ScriptFlag]): TxSigComponent = {
