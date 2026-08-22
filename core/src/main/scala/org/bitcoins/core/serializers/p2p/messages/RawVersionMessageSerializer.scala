@@ -53,7 +53,13 @@ trait RawVersionMessageSerializer extends RawBitcoinSerializer[VersionMessage] {
     val startHeight = Int32(
       bytes.slice(startHeightStartIndex, startHeightStartIndex + 4).reverse)
 
-    val relay = bytes(startHeightStartIndex + 4) != 0
+    // the relay byte is optional (added in protocol version 70001, BIP37);
+    // older peers omit it entirely, so default to relay=true rather than
+    // indexing unconditionally and throwing when it's absent
+    val relay =
+      if (bytes.size > startHeightStartIndex + 4)
+        bytes(startHeightStartIndex + 4) != 0
+      else true
 
     VersionMessage(
       version = version,
