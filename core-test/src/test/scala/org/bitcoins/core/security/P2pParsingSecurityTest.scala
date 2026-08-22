@@ -6,8 +6,10 @@ import org.bitcoins.core.p2p.{
   NetworkHeader,
   NetworkMessage,
   NetworkPayload,
+  VerAckMessage,
   VersionMessage
 }
+import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
@@ -106,5 +108,43 @@ class P2pParsingSecurityTest extends BitcoinSUnitTest {
 
     val msg = NetworkMessage.fromBytes(streamBytes)
     msg.payload.bytes.size must be(header.payloadSize.toInt)
+  }
+
+  it must "not wedge forever on unparseable bytes at the start of the stream" in {
+    // Finding: parseIndividualMessages never drops bytes that deterministically
+    // fail to parse, so the same failing parse is retried on every subsequent
+    // chunk and no later valid message is ever surfaced, see
+    // core/src/main/scala/org/bitcoins/core/util/NetworkUtil.scala:202-207
+    // Correct behavior: the parser must either skip the bad bytes or fail
+    // cleanly -- it must not silently return empty forever while a valid
+    // message sits later in the stream.
+    // A "filterload" message whose declared payload (1 byte) is too short to
+    // contain a bloom filter: the header parses fine, but the payload parse
+    // fails deterministically (RawBloomFilterSerializer reads the flags byte
+    // at index 9).
+    val badPayload = ByteVector(0.toByte)
+    val badHeader =
+      NetworkHeader(RegTest,
+                    "filterload",
+                    UInt32(badPayload.size),
+                    CryptoUtil.doubleSHA256(badPayload).bytes.take(4))
+    val badBytes = badHeader.bytes ++ badPayload
+
+    val validMessage = NetworkMessage(RegTest, VerAckMessage)
+
+    // feed the stream chunk by chunk, as a TCP stream would arrive
+    val (firstMessages, leftover) =
+      NetworkUtil.parseIndividualMessages(badBytes)
+    val secondAttempt =
+      Try(NetworkUtil.parseIndividualMessages(leftover ++ validMessage.bytes))
+
+    secondAttempt match {
+      case Failure(_) =>
+        succeed // failing cleanly on the garbage is acceptable
+      case Success((secondMessages, _)) =>
+        // the valid trailing message must eventually be surfaced
+        (firstMessages ++ secondMessages).map(_.payload) must contain(
+          VerAckMessage)
+    }
   }
 }
