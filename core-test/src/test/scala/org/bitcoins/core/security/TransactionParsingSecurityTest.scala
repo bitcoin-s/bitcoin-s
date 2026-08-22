@@ -1,5 +1,6 @@
 package org.bitcoins.core.security
 
+import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.serializers.blockchain.RawBlockSerializer
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
@@ -106,5 +107,21 @@ class TransactionParsingSecurityTest extends BitcoinSUnitTest {
       Transaction.fromBytes(hex"0100000000")
     }
     ex.isInstanceOf[IndexOutOfBoundsException] must be(false)
+  }
+
+  it must "reject truncated and non-canonical CompactSizeUInt varints" in {
+    // Finding 4 (Low): CompactSizeUInt.parseCompactSizeUInt
+    // (core/src/main/scala/org/bitcoins/core/protocol/CompactSizeUInt.scala:122-136)
+    // silently pads truncated multi-byte varints and accepts non-canonical
+    // encodings. Correct behavior: both are rejected.
+
+    // 0xfd prefix requires 2 more bytes, only 1 is present
+    CompactSizeUInt.fromBytesT(hex"fd01").isFailure must be(true)
+
+    // non-canonical: value 1 must use the 1-byte form, not the 0xfd form
+    CompactSizeUInt.fromBytesT(hex"fd0100").isFailure must be(true)
+
+    // non-canonical: value 253 must use the 0xfd form, not the 0xfe form
+    CompactSizeUInt.fromBytesT(hex"fefd000000").isFailure must be(true)
   }
 }
