@@ -18,6 +18,8 @@ import org.bitcoins.core.script.locktime.{
   OP_CHECKSEQUENCEVERIFY
 }
 import org.bitcoins.core.script.result.ScriptErrorNegativeLockTime
+import org.bitcoins.core.script.stack.OP_IFDUP
+import org.bitcoins.core.script.stack.StackInterpreter
 import org.bitcoins.core.script.{
   ExecutedScriptProgram,
   PreExecutionScriptProgram
@@ -141,6 +143,22 @@ class ScriptArithmeticSecurityTest extends BitcoinSUnitTest {
     newProgram.asInstanceOf[ExecutedScriptProgram].error.isDefined must be(
       true
     )
+  }
+
+  it must "not duplicate a non-canonical zero encoding with OP_IFDUP (Bitcoin Core treats it as false)" in {
+    // Finding 6 (Medium): core/src/main/scala/org/bitcoins/core/script/stack/StackInterpreter.scala:38
+    // only compares the stack top against ScriptNumber.zero (the empty vector); Core's CastToBool
+    // treats every all-zero byte encoding (and negative zero) as false.
+    // Correct behavior: "00" is false, so OP_IFDUP leaves the stack unchanged.
+    val stack = List(ScriptConstant("00"))
+    val script = List(OP_IFDUP)
+    val program =
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
+    val newProgram = StackInterpreter.opIfDup(program)
+    newProgram.stack must be(stack)
   }
 
   private def buildTxSigComponent(flags: Seq[ScriptFlag]): TxSigComponent = {

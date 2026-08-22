@@ -7,6 +7,7 @@ import org.bitcoins.core.script.{
   ExecutionInProgressScriptProgram,
   StartedScriptProgram
 }
+import org.bitcoins.core.util.BitcoinScriptUtil
 
 import scala.util.{Failure, Success, Try}
 
@@ -35,7 +36,9 @@ sealed abstract class StackInterpreter {
     require(program.script.headOption.contains(OP_IFDUP),
             "Top of the script stack must be OP_DUP")
     if (program.stack.nonEmpty) {
-      if (program.stack.head == ScriptNumber.zero)
+      // Core's CastToBool treats every all-zero byte encoding (and negative
+      // zero) as false, not just the canonical empty-vector zero
+      if (!BitcoinScriptUtil.castToBool(program.stack.head))
         return program.updateScript(program.script.tail)
       program.updateStackAndScript(program.stack.head :: program.stack,
                                    program.script.tail)
