@@ -178,4 +178,32 @@ class CryptoParsingSecurityTest extends BitcoinSCryptoTest {
       ECDigitalSignature.fromFrontOfBytesWithSigHash(strictDerNoSigHash)
     }
   }
+
+  behavior of "Sha1Digest parsing"
+
+  it must "reject wrong-length inputs for Sha1Digest and Sha1DigestBE" in {
+    // Finding: Sha1Digest.fromBytes and Sha1DigestBE.fromBytes have no length
+    // checks, unlike e.g. Sha256Digest (HashDigest.scala:33,50-52).
+    // Correct behavior: reject anything that is not exactly 20 bytes.
+    val nineteenBytes = ByteVector(Array.fill(19)(1.toByte))
+    val twentyBytes = ByteVector(Array.fill(20)(1.toByte))
+    val twentyOneBytes = ByteVector(Array.fill(21)(1.toByte))
+
+    // positive control: exactly 20 bytes must keep working
+    Sha1Digest.fromBytes(twentyBytes).bytes must be(twentyBytes)
+    Sha1DigestBE.fromBytes(twentyBytes).bytes must be(twentyBytes)
+
+    intercept[IllegalArgumentException] {
+      Sha1Digest.fromBytes(nineteenBytes)
+    }
+    intercept[IllegalArgumentException] {
+      Sha1Digest.fromBytes(twentyOneBytes)
+    }
+    intercept[IllegalArgumentException] {
+      Sha1DigestBE.fromBytes(nineteenBytes)
+    }
+    intercept[IllegalArgumentException] {
+      Sha1DigestBE.fromBytes(twentyOneBytes)
+    }
+  }
 }
