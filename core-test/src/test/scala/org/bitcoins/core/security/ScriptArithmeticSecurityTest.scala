@@ -2,12 +2,19 @@ package org.bitcoins.core.security
 
 import org.bitcoins.core.crypto.{BaseTxSigComponent, TxSigComponent}
 import org.bitcoins.core.currency.CurrencyUnits
-import org.bitcoins.core.protocol.transaction.TransactionOutput
+import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.protocol.transaction.{
+  BaseTransaction,
+  EmptyTransaction,
+  TransactionInput,
+  TransactionOutput
+}
 import org.bitcoins.core.script.arithmetic.{ArithmeticInterpreter, OP_1ADD}
 import org.bitcoins.core.script.constant.{ScriptConstant, ScriptNumber}
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptVerifyNone}
 import org.bitcoins.core.script.locktime.{
   LockTimeInterpreter,
+  OP_CHECKLOCKTIMEVERIFY,
   OP_CHECKSEQUENCEVERIFY
 }
 import org.bitcoins.core.script.result.ScriptErrorNegativeLockTime
@@ -95,6 +102,45 @@ class ScriptArithmeticSecurityTest extends BitcoinSUnitTest {
       parsed.size must be(1)
       parsed.head.toString.startsWith("OP_SUCCESS") must be(true)
     }
+  }
+
+  it must "fail OP_CHECKLOCKTIMEVERIFY with a non-minimally encoded locktime when the minimal data flag is set" in {
+    // Finding 5 (Low): core/src/main/scala/org/bitcoins/core/script/locktime/LockTimeInterpreter.scala:33-71
+    // opCheckLockTimeVerify never checks ScriptFlagUtil.requireMinimalData / isShortestEncoding
+    // (unlike opCheckSequenceVerify at LockTimeInterpreter.scala:95-97).
+    // Correct behavior: a non-minimal locktime operand fails when SCRIPT_VERIFY_MINIMALDATA is set
+    // (Core's CScriptNum enforces fRequireMinimal for CLTV too).
+    val stack = Seq(ScriptNumber("0100")) // non-minimal encoding of 1
+    val script = Seq(OP_CHECKLOCKTIMEVERIFY)
+    val oldInput = TestUtil.transaction.inputs.head
+    val input = TransactionInput(
+      oldInput.previousOutput,
+      oldInput.scriptSignature,
+      UInt32.zero
+    )
+    val tx = BaseTransaction(
+      EmptyTransaction.version,
+      Vector(input),
+      EmptyTransaction.outputs,
+      UInt32(1)
+    )
+    val t = BaseTxSigComponent(
+      transaction = tx,
+      inputIndex = TestUtil.testProgram.txSignatureComponent.inputIndex,
+      output = TransactionOutput(
+        CurrencyUnits.zero,
+        TestUtil.testProgram.txSignatureComponent.scriptPubKey
+      ),
+      // standard flags include ScriptVerifyMinimalData
+      flags = TestUtil.testProgram.flags
+    )
+    val program = PreExecutionScriptProgram(t).toExecutionInProgress
+      .updateStackAndScript(stack, script)
+    val newProgram = LockTimeInterpreter.opCheckLockTimeVerify(program)
+    newProgram.isInstanceOf[ExecutedScriptProgram] must be(true)
+    newProgram.asInstanceOf[ExecutedScriptProgram].error.isDefined must be(
+      true
+    )
   }
 
   private def buildTxSigComponent(flags: Seq[ScriptFlag]): TxSigComponent = {
