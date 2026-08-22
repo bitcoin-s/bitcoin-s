@@ -810,7 +810,10 @@ sealed trait FeeFilterMessage extends ControlPayload {
   def feeRate: SatoshisPerKiloByte
 
   def satPerByte: SatoshisPerByte = {
-    feeRate.toSatPerByte
+    // a peer-supplied fee rate is not guaranteed to be evenly divisible by
+    // 1000, so round rather than demanding exact divisibility (which would
+    // throw for a perfectly valid, just non-round, feerate)
+    feeRate.toSatPerByteRounded
   }
 
   override def commandName: String = NetworkPayload.feeFilterCommandName
@@ -1671,8 +1674,11 @@ object NetworkPayload {
       networkHeader: NetworkHeader,
       payloadBytes: ByteVector): NetworkPayload = {
     // the commandName in the network header tells us what payload type this is
-    val deserializer: ByteVector => NetworkPayload = readers(
-      networkHeader.commandName)
+    val deserializer: ByteVector => NetworkPayload = readers.getOrElse(
+      networkHeader.commandName,
+      throw new IllegalArgumentException(
+        s"Unknown command name for network payload: ${networkHeader.commandName}")
+    )
     deserializer(payloadBytes)
   }
 

@@ -129,7 +129,10 @@ sealed abstract class ScriptInterpreter {
     executedProgram.error match {
       case Some(err) => err
       case None =>
-        if (hasUnexpectedWitness(program)) {
+        if (
+          program.flags.contains(ScriptVerifyWitness) && hasUnexpectedWitness(
+            program)
+        ) {
           // note: the 'program' value we pass above is intentional, we need to check the original program
           // as the 'executedProgram' may have had the scriptPubKey value changed to the rebuilt ScriptPubKey of the witness program
           ScriptErrorWitnessUnexpected
@@ -644,10 +647,19 @@ sealed abstract class ScriptInterpreter {
       } else {
         taprootWitness match {
           case keypath: TaprootKeyPath =>
-            val program = checkSchnorrSignature(
-              keypath,
-              taprootSPK.pubKey.schnorrPublicKey,
-              program = scriptPubKeyExecutedProgram)
+            // taprootSPK.pubKey throws if the output key's 32 bytes are not
+            // a valid x-only coordinate (see TaprootScriptPubKey.isValidAsm,
+            // which classifies a v1 32-byte program as taproot purely
+            // structurally, independent of key validity) -- that must fail
+            // key-path signature verification, not crash the interpreter
+            val program = Try(taprootSPK.pubKey.schnorrPublicKey) match {
+              case Success(schnorrPubKey) =>
+                checkSchnorrSignature(keypath,
+                                      schnorrPubKey,
+                                      program = scriptPubKeyExecutedProgram)
+              case Failure(_) =>
+                scriptPubKeyExecutedProgram.failExecution(ScriptErrorSchnorrSig)
+            }
             Success(program)
           case _: TaprootUnknownPath =>
             // is this right? I believe to maintain softfork compatibility we
@@ -1320,6 +1332,14 @@ sealed abstract class ScriptInterpreter {
         case (reservedOperation: ReservedOperation) :: _ =>
           (program.failExecution(ScriptErrorBadOpCode),
            calcOpCount(opCount, reservedOperation))
+        // BIP342 OP_SUCCESSx opcodes only take on their "succeed immediately"
+        // semantics inside Tapscript, which this generic interpreter loop
+        // does not (yet) evaluate with awareness of; outside that context
+        // they remain invalid opcodes, matching their pre-BIP342 behavior as
+        // unassigned/reserved opcodes.
+        case (opSuccess: OP_SUCCESSx) :: _ =>
+          (program.failExecution(ScriptErrorBadOpCode),
+           calcOpCount(opCount, opSuccess))
         // splice operations
         case OP_SIZE :: _ =>
           val programOrError = SpliceInterpreter.opSize(program)
@@ -1388,8 +1408,15 @@ sealed abstract class ScriptInterpreter {
   def checkTransaction(transaction: Transaction): Boolean = {
     val inputOutputsNotZero =
       !(transaction.inputs.isEmpty || transaction.outputs.isEmpty)
-    val txNotLargerThanBlock = transaction.bytes.size < Consensus.maxBlockSize
-    val txNotHeavierThanBlock = transaction.weight < Consensus.maxBlockWeight
+    // Bitcoin Core's CheckTransaction only checks the witness-stripped base
+    // size scaled by WITNESS_SCALE_FACTOR against MAX_BLOCK_WEIGHT
+    // (GetSerializeSize(TX_NO_WITNESS(tx)) * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT).
+    // There is no separate check against the legacy 1MB MAX_BLOCK_SIZE using
+    // the full witness-inclusive size, so a transaction with a small base
+    // size but a large witness (well within the weight limit) must not be
+    // rejected just because its total serialized size exceeds 1MB.
+    val txNotHeavierThanBlock =
+      transaction.baseSize * Consensus.weightScalar <= Consensus.maxBlockWeight
     val outputsSpendValidAmountsOfMoney = !transaction.outputs.exists(o =>
       o.value < CurrencyUnits.zero || o.value > Consensus.maxMoney)
 
@@ -1406,7 +1433,7 @@ sealed abstract class ScriptInterpreter {
     } else {
       !transaction.inputs.exists(_.previousOutput == EmptyTransactionOutPoint)
     }
-    inputOutputsNotZero && txNotLargerThanBlock && txNotHeavierThanBlock && outputsSpendValidAmountsOfMoney &&
+    inputOutputsNotZero && txNotHeavierThanBlock && outputsSpendValidAmountsOfMoney &&
     allOutputsValidMoneyRange && noDuplicateInputs && isValidScriptSigForCoinbaseTx
   }
 

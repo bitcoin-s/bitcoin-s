@@ -206,7 +206,9 @@ trait BitcoinScriptUtil {
         case h :: t =>
           h match {
             case scriptOp: ScriptOperation =>
-              if (scriptOp.opCode < OP_16.opCode) {
+              // Core's IsPushOnly allows all opcodes up to and including
+              // OP_16 (script.cpp), not just strictly less than it
+              if (scriptOp.opCode <= OP_16.opCode) {
                 loop(t)
               } else {
                 false
@@ -429,16 +431,31 @@ trait BitcoinScriptUtil {
       txSignatureComponent: TxSigComponent,
       signature: ECDigitalSignature,
       script: Seq[ScriptToken]): Seq[ScriptToken] = {
-    val scriptForChecking =
-      calculateScriptForSigning(txSignatureComponent, script)
     txSignatureComponent.sigVersion match {
       case SigVersionBase =>
+        val scriptForChecking =
+          calculateScriptForSigning(txSignatureComponent, script)
         removeSignatureFromScript(signature, scriptForChecking)
       case SigVersionWitnessV0 | SigVersionTaprootKeySpend |
           SigVersionTapscript =>
         // BIP143 removes requirement for calling FindAndDelete
         // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki#no-findanddelete
-        scriptForChecking
+        //
+        // `script` is either (a) the scriptCode as tracked by the
+        // interpreter (BitcoinScriptUtil.removeOpCodeSeparator), i.e. a
+        // suffix of the full witness scriptCode truncated after the last
+        // executed OP_CODESEPARATOR, or (b) a placeholder like the funding
+        // output's raw asm, from callers that expect the full scriptCode to
+        // be rebuilt from the witness stack. calculateScriptForSigning
+        // always rebuilds the latter (it has no notion of OP_CODESEPARATOR
+        // truncation); honor the former when `script` is actually a suffix
+        // of that rebuilt scriptCode, otherwise fall back to the rebuild.
+        val rebuiltScript =
+          calculateScriptForSigning(txSignatureComponent, script)
+        val scriptIsTruncatedSuffix =
+          script.size <= rebuiltScript.size &&
+            rebuiltScript.takeRight(script.size) == script
+        if (scriptIsTruncatedSuffix) script else rebuiltScript
     }
   }
 
@@ -546,15 +563,22 @@ trait BitcoinScriptUtil {
   def removeSignatureFromScript(
       signature: ECDigitalSignature,
       script: Seq[ScriptToken]): Seq[ScriptToken] = {
-    if (script.contains(ScriptConstant(signature.hex))) {
-      // replicates this line in bitcoin core
-      // https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L872
-      val sigIndex = script.indexOf(ScriptConstant(signature.hex))
-      // remove sig and it's corresponding BytesToPushOntoStack
-      val sigRemoved =
-        script.slice(0, sigIndex - 1) ++ script.slice(sigIndex + 1, script.size)
-      sigRemoved
-    } else script
+    // Core's FindAndDelete removes ALL occurrences, not just the first, so
+    // we loop until none remain
+    // https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L872
+    @tailrec
+    def loop(scriptTokens: Seq[ScriptToken]): Seq[ScriptToken] = {
+      if (scriptTokens.contains(ScriptConstant(signature.hex))) {
+        val sigIndex = scriptTokens.indexOf(ScriptConstant(signature.hex))
+        // remove sig and it's corresponding BytesToPushOntoStack
+        val sigRemoved =
+          scriptTokens.slice(0, sigIndex - 1) ++ scriptTokens.slice(
+            sigIndex + 1,
+            scriptTokens.size)
+        loop(sigRemoved)
+      } else scriptTokens
+    }
+    loop(script)
   }
 
   /** Removes the list of [[ECDigitalSignature ECDigitalSignature]] from the
@@ -658,9 +682,18 @@ trait BitcoinScriptUtil {
     }
   }
 
+  /** @param strict
+    *   when true, require that exactly `len` bytes (the declared script length)
+    *   were actually available, rejecting truncated input. This must default to
+    *   false: some internal callers (e.g. TransactionSignatureSerializer's
+    *   legacy sighash algorithm, which mirrors Bitcoin Core's CScript handling)
+    *   deliberately construct a script from just a length-prefix with no bytes
+    *   following it as a placeholder, and are not parsing untrusted wire data.
+    */
   def parseScript[T <: Script](
       bytes: ByteVector,
-      f: Vector[ScriptToken] => T): T = {
+      f: Vector[ScriptToken] => T,
+      strict: Boolean = false): T = {
     val compactSizeUInt = CompactSizeUInt.parseCompactSizeUInt(bytes)
     // TODO: Figure out a better way to do this, we can theoretically have numbers larger than Int.MaxValue,
     // but scala collections don't allow you to use 'slice' with longs
@@ -668,6 +701,11 @@ trait BitcoinScriptUtil {
     val scriptPubKeyBytes =
       bytes.slice(compactSizeUInt.byteSize.toInt,
                   len + compactSizeUInt.byteSize.toInt)
+    if (strict) {
+      require(
+        scriptPubKeyBytes.length == len,
+        s"Declared script length $len exceeds the ${scriptPubKeyBytes.length} available bytes")
+    }
     val script: Vector[ScriptToken] = ScriptParser.fromBytes(scriptPubKeyBytes)
     f(script)
   }

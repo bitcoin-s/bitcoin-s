@@ -27,6 +27,10 @@ sealed abstract class RawScriptWitnessParser
         val elementSize = CompactSizeUInt.parseCompactSizeUInt(remainingBytes)
         val (_, stackElementBytes) =
           remainingBytes.splitAt(elementSize.byteSize.toInt)
+        require(
+          stackElementBytes.length >= elementSize.num.toInt,
+          s"Witness stack element declares length ${elementSize.num} but only ${stackElementBytes.length} bytes remain"
+        )
         val stackElement = stackElementBytes.take(elementSize.num.toInt)
         val (_, newRemainingBytes) =
           stackElementBytes.splitAt(stackElement.size)

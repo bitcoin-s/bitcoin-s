@@ -144,7 +144,10 @@ sealed abstract class NumberUtil extends CryptoNumberUtil {
       noSignBit.toByteVector
     }
 
-    val significand = nBits.bytes.head
+    // unsigned: nBits.bytes.head is a signed Scala Byte, so an exponent
+    // byte >= 0x80 (128-255) would otherwise wrap negative and take the
+    // wrong branch below
+    val significand = nBits.bytes.head & 0xff
 
     // if the most significant bit is set, we have a negative number
     val signum = if (noSignificand.bits.head) {

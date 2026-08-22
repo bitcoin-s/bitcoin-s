@@ -197,21 +197,29 @@ abstract class NetworkUtil {
             val newRemainingBytes =
               remainingBytes.drop(NetworkHeader.bytesSize + payloadBytes.size)
 
-            // If it's a message type we know, try to parse it
-            if (NetworkPayload.commandNames.contains(header.commandName)) {
+            val haveFullPayload = payloadBytes.size == header.payloadSize.toInt
+
+            if (!haveFullPayload) {
+              // don't have the full declared payload yet, wait for more bytes
+              (accum, remainingBytes)
+            } else if (
+              NetworkPayload.commandNames.contains(header.commandName)
+            ) {
+              // If it's a message type we know, try to parse it
               Try(NetworkMessage(header.bytes ++ payloadBytes)) match {
                 case Success(message) =>
                   loop(newRemainingBytes, accum :+ message)
                 case Failure(_) =>
-                  // Can't parse message yet, we need to wait for more bytes
-                  (accum, remainingBytes)
+                  // We already have the full declared payload, so this parse
+                  // failure is deterministic -- more bytes will never fix it.
+                  // Drop this message and continue rather than wedging
+                  // forever on the same bytes.
+                  loop(newRemainingBytes, accum)
               }
-            } else if (payloadBytes.size == header.payloadSize.toInt) { // If we've received the entire unknown message
-              loop(newRemainingBytes, accum)
             } else {
-              // If we can't parse the entire unknown message, continue on until we can
-              // so we properly skip it
-              (accum, remainingBytes)
+              // Unknown command, but we've received the entire message --
+              // skip over it
+              loop(newRemainingBytes, accum)
             }
           case Failure(_) =>
             // this case means that our TCP frame was not aligned with bitcoin protocol

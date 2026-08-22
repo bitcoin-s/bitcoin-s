@@ -11,6 +11,7 @@ import org.bitcoins.crypto.*
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
+import scala.util.{Failure, Success, Try}
 
 /** Created by chris on 2/16/16. Responsible for checking digital signatures on
   * inputs against their respective public keys
@@ -80,12 +81,22 @@ trait TransactionSignatureChecker {
     if (!validHashType) {
       ScriptErrorSchnorrSigHashType
     } else {
-      val hash =
+      // hashForSignature throws for a taproot SIGHASH_SINGLE with no
+      // corresponding output (BIP341 requires that to fail validation,
+      // unlike the legacy sighash algorithm's placeholder error hash) --
+      // that must surface as a clean script failure here, not an uncaught
+      // exception escaping the interpreter
+      Try(
         TransactionSignatureSerializer.hashForSignature(txSigComponent,
                                                         hashType,
                                                         taprootOptions)
-      val result = pubKey.verify(hash, schnorrSignature)
-      if (result) ScriptOk else ScriptErrorSchnorrSig
+      ) match {
+        case Success(hash) =>
+          val result = pubKey.verify(hash, schnorrSignature)
+          if (result) ScriptOk else ScriptErrorSchnorrSig
+        case Failure(_) =>
+          ScriptErrorSchnorrSig
+      }
     }
   }
 
@@ -130,7 +141,8 @@ trait TransactionSignatureChecker {
         ) {
           SignatureValidationErrorNotStrictDerEncoding
         } else if (
-          ScriptFlagUtil.requireLowSValue(flags) && !DERSignatureUtil
+          ScriptFlagUtil.requireLowSValue(
+            flags) && signature.bytes.nonEmpty && !DERSignatureUtil
             .isLowS(signature)
         ) {
           SignatureValidationErrorHighSValue
@@ -158,6 +170,22 @@ trait TransactionSignatureChecker {
             ByteVector(0.toByte, 0.toByte, 0.toByte, hashTypeByte))
           val spk = ScriptPubKey.fromAsm(sigsRemovedScript)
           val hashForSignature = txSignatureComponent match {
+            case w: WitnessTxSigComponentRaw =>
+              // BIP143 commits to the scriptCode after the last executed
+              // OP_CODESEPARATOR (sigsRemovedScript/spk above), not the raw
+              // witness script -- rebuild the component with the stripped
+              // script so the sighash actually commits to it, mirroring the
+              // BaseTxSigComponent/WitnessTxSigComponentRebuilt cases below
+              val sigsRemovedTxSigComponent = WitnessTxSigComponentRebuilt(
+                wtx = w.transaction,
+                inputIndex = w.inputIndex,
+                output = TransactionOutput(w.fundingOutput.value, spk),
+                witScriptPubKey = w.scriptPubKey,
+                flags = w.flags)
+              TransactionSignatureSerializer.hashForSignature(
+                sigsRemovedTxSigComponent,
+                hashType,
+                TaprootSerializationOptions.empty)
             case w: WitnessTxSigComponent =>
               TransactionSignatureSerializer.hashForSignature(
                 w,
@@ -204,18 +232,25 @@ trait TransactionSignatureChecker {
       hashType: HashType,
       taprootOptions: TaprootSerializationOptions,
       flags: Seq[ScriptFlag]): TransactionSignatureCheckerResult = {
-    val hash =
+    // hashForSignature throws for a taproot SIGHASH_SINGLE with no
+    // corresponding output (BIP341 requires that to fail validation,
+    // unlike the legacy sighash algorithm's placeholder error hash) --
+    // that must surface as a clean signature check failure here, not an
+    // uncaught exception escaping the interpreter
+    Try(
       TransactionSignatureSerializer.hashForSignature(txSignatureComponent,
                                                       hashType,
                                                       taprootOptions)
-    val result = pubKey.verify(hash, signature)
-    if (result) {
-      SignatureValidationSuccess
-    } else {
-      nullFailCheckSchnorrSig(sigs = Vector(signature),
-                              result =
-                                SignatureValidationErrorIncorrectSignatures,
-                              flags = flags)
+    ) match {
+      case Failure(_) =>
+        tapscriptNullFailCheck(signature)
+      case Success(hash) =>
+        val result = pubKey.verify(hash, signature)
+        if (result) {
+          SignatureValidationSuccess
+        } else {
+          tapscriptNullFailCheck(signature)
+        }
     }
   }
 
@@ -246,18 +281,25 @@ trait TransactionSignatureChecker {
       sigs: List[ECDigitalSignature],
       pubKeys: List[ECPublicKeyBytes],
       flags: Seq[ScriptFlag],
-      requiredSigs: Long): TransactionSignatureCheckerResult = {
+      requiredSigs: Long,
+      originalSigs: List[ECDigitalSignature] = null)
+      : TransactionSignatureCheckerResult = {
     require(requiredSigs >= 0,
             s"requiredSigs cannot be negative, got $requiredSigs")
+    // NULLFAIL (BIP146) applies to every signature originally provided to
+    // OP_CHECKMULTISIG, not just the ones remaining at the point validation
+    // is determined to have failed -- a signature that matched earlier and
+    // was "consumed" (sigs.tail'd away) must still be checked.
+    val allSigs = if (originalSigs == null) sigs else originalSigs
     if (sigs.size > pubKeys.size) {
       // this is how bitcoin core treats this. If there are ever any more
       // signatures than public keys remaining we immediately return
       // false https://github.com/bitcoin/bitcoin/blob/8c1dbc5e9ddbafb77e60e8c4e6eb275a3a76ac12/src/script/interpreter.cpp#L943-L945
-      nullFailCheck(sigs, SignatureValidationErrorIncorrectSignatures, flags)
+      nullFailCheck(allSigs, SignatureValidationErrorIncorrectSignatures, flags)
     } else if (requiredSigs > sigs.size) {
       // for the case when we do not have enough sigs left to check to meet the required signature threshold
       // https://github.com/bitcoin/bitcoin/blob/8c1dbc5e9ddbafb77e60e8c4e6eb275a3a76ac12/src/script/interpreter.cpp#L990-L991
-      nullFailCheck(sigs, SignatureValidationErrorSignatureCount, flags)
+      nullFailCheck(allSigs, SignatureValidationErrorSignatureCount, flags)
     } else if (sigs.nonEmpty && pubKeys.nonEmpty) {
       val sig = sigs.head
       val pubKey = pubKeys.head
@@ -270,7 +312,8 @@ trait TransactionSignatureChecker {
                                   sigs.tail,
                                   pubKeys.tail,
                                   flags,
-                                  requiredSigs - 1)
+                                  requiredSigs - 1,
+                                  allSigs)
         case SignatureValidationErrorIncorrectSignatures |
             SignatureValidationErrorNullFail =>
           // notice we pattern match on 'SignatureValidationErrorNullFail' here, this is because
@@ -281,21 +324,22 @@ trait TransactionSignatureChecker {
                                   sigs,
                                   pubKeys.tail,
                                   flags,
-                                  requiredSigs)
+                                  requiredSigs,
+                                  allSigs)
         case x @ (SignatureValidationErrorNotStrictDerEncoding |
             SignatureValidationErrorSignatureCount |
             SignatureValidationErrorPubKeyEncoding |
             SignatureValidationErrorHighSValue |
             SignatureValidationErrorHashType |
             SignatureValidationErrorWitnessPubKeyType) =>
-          nullFailCheck(sigs, x, flags)
+          nullFailCheck(allSigs, x, flags)
       }
     } else if (sigs.isEmpty) {
       // means that we have checked all of the sigs against the public keys
       // validation succeeds
       SignatureValidationSuccess
     } else
-      nullFailCheck(sigs, SignatureValidationErrorIncorrectSignatures, flags)
+      nullFailCheck(allSigs, SignatureValidationErrorIncorrectSignatures, flags)
 
   }
 
@@ -314,15 +358,20 @@ trait TransactionSignatureChecker {
     } else result
   }
 
-  private def nullFailCheckSchnorrSig(
-      sigs: Seq[SchnorrDigitalSignature],
-      result: TransactionSignatureCheckerResult,
-      flags: Seq[ScriptFlag]): TransactionSignatureCheckerResult = {
-    val nullFailEnabled = ScriptFlagUtil.requireScriptVerifyNullFail(flags)
-    if (nullFailEnabled && !result.isValid && sigs.exists(_.bytes.nonEmpty)) {
-      // we need to check that all signatures were empty byte vectors, else this fails because of BIP146 and nullfail
+  /** BIP342 makes NULLFAIL mandatory for tapscript signature checks, regardless
+    * of whether the SCRIPT_VERIFY_NULLFAIL flag is set: an invalid non-empty
+    * signature must always fail the script immediately, not push false and
+    * continue like the legacy/segwit v0 OP_CHECKSIG "soft fail" behavior does.
+    * An empty signature is a valid way to signal "no signature provided" and
+    * continues to soft-fail (push false).
+    */
+  private def tapscriptNullFailCheck(
+      signature: SchnorrDigitalSignature): TransactionSignatureCheckerResult = {
+    if (signature.bytes.nonEmpty) {
       SignatureValidationErrorNullFail
-    } else result
+    } else {
+      SignatureValidationErrorIncorrectSignatures
+    }
   }
 
   /** Removes the hash type from the [[ECDigitalSignature]] */

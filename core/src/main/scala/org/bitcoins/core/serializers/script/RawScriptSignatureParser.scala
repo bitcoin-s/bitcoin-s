@@ -13,7 +13,9 @@ sealed abstract class RawScriptSignatureParser
   def read(bytes: ByteVector): ScriptSignature = {
     if (bytes.isEmpty) EmptyScriptSignature
     else {
-      BitcoinScriptUtil.parseScript(bytes = bytes, f = ScriptSignature.fromAsm)
+      BitcoinScriptUtil.parseScript(bytes = bytes,
+                                    f = ScriptSignature.fromAsm,
+                                    strict = true)
     }
   }
 

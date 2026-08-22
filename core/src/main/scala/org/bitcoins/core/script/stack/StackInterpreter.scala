@@ -7,6 +7,7 @@ import org.bitcoins.core.script.{
   ExecutionInProgressScriptProgram,
   StartedScriptProgram
 }
+import org.bitcoins.core.util.BitcoinScriptUtil
 
 import scala.util.{Failure, Success, Try}
 
@@ -35,7 +36,9 @@ sealed abstract class StackInterpreter {
     require(program.script.headOption.contains(OP_IFDUP),
             "Top of the script stack must be OP_DUP")
     if (program.stack.nonEmpty) {
-      if (program.stack.head == ScriptNumber.zero)
+      // Core's CastToBool treats every all-zero byte encoding (and negative
+      // zero) as false, not just the canonical empty-vector zero
+      if (!BitcoinScriptUtil.castToBool(program.stack.head))
         return program.updateScript(program.script.tail)
       program.updateStackAndScript(program.stack.head :: program.stack,
                                    program.script.tail)
@@ -167,10 +170,15 @@ sealed abstract class StackInterpreter {
         else if (
           number.toLong >= 0 && number.toLong < program.stack.tail.size
         ) {
-          val newStackTop = program.stack.tail(number.toInt)
-          // removes the old instance of the stack top, appends the new index to the head
-          val newStack = newStackTop :: program.stack.tail
-            .diff(List(newStackTop))
+          val idx = number.toInt
+          val rest = program.stack.tail
+          val newStackTop = rest(idx)
+          // remove the element at depth idx by position, not by value --
+          // rest.diff(List(newStackTop)) would remove the FIRST element
+          // equal to newStackTop, which is wrong when duplicate values
+          // are on the stack
+          val newStack =
+            newStackTop :: (rest.take(idx) ++ rest.drop(idx + 1))
           program.updateStackAndScript(newStack, program.script.tail)
         } else {
           program.failExecution(ScriptErrorInvalidStackOperation)

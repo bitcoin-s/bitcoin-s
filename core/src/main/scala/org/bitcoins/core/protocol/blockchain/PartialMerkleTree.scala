@@ -1,12 +1,12 @@
 package org.bitcoins.core.protocol.blockchain
 
+import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util._
 import org.bitcoins.crypto.{CryptoUtil, DoubleSha256Digest}
 import scodec.bits.BitVector
 
 import scala.annotation.tailrec
-import scala.math._
 
 /** Created by chris on 8/7/16. Represents a subset of known txids inside of a
   * [[org.bitcoins.core.protocol.blockchain.Block Block]] in a way that allows
@@ -274,10 +274,35 @@ object PartialMerkleTree {
     *   the bits used indicate the structure of the partial merkle tree
     * @return
     */
+  /** A minimal valid serialized transaction is at least 60 bytes, matching
+    * Bitcoin Core's MIN_TRANSACTION_WEIGHT (merkleblock.cpp), used below to cap
+    * the declared transaction count to a value that could plausibly fit in a
+    * block.
+    */
+  private val minTransactionWeight: Long = 60
+
   def apply(
       transactionCount: UInt32,
       hashes: Vector[DoubleSha256Digest],
       bits: BitVector): PartialMerkleTree = {
+    // sanity checks mirroring Bitcoin Core's CPartialMerkleTree::ExtractMatches
+    // (merkleblock.cpp) -- reject degenerate/absurd inputs cleanly before
+    // attempting to reconstruct the tree, rather than crashing or silently
+    // accepting them
+    require(transactionCount != UInt32.zero,
+            "PartialMerkleTree must have at least 1 transaction")
+    require(
+      transactionCount.toLong <= Consensus.maxBlockWeight / minTransactionWeight,
+      s"PartialMerkleTree transaction count is too high, got=$transactionCount"
+    )
+    require(
+      hashes.size <= transactionCount.toInt,
+      s"Cannot have more hashes than transactions, got ${hashes.size} hashes for $transactionCount transactions"
+    )
+    require(
+      bits.size >= hashes.size,
+      s"Must have at least one bit per hash, got ${bits.size} bits for ${hashes.size} hashes"
+    )
     val tree = reconstruct(transactionCount.toInt, hashes, bits)
     PartialMerkleTree(tree, transactionCount, bits, hashes)
   }
@@ -320,8 +345,14 @@ object PartialMerkleTree {
         pos: Int): (BinaryTreeDoubleSha256Digest,
                     Vector[DoubleSha256Digest],
                     BitVector) = {
+      require(
+        remainingMatches.nonEmpty,
+        "Traversal ran out of bits while reconstructing the partial merkle tree")
       if (height == maxHeight) {
         // means we have a txid node
+        require(
+          remainingHashes.nonEmpty,
+          "Traversal ran out of hashes while reconstructing the partial merkle tree")
         (LeafDoubleSha256Digest(remainingHashes.head),
          remainingHashes.tail,
          remainingMatches.tail)
@@ -361,6 +392,9 @@ object PartialMerkleTree {
           val node = NodeDoubleSha256Digest(nodeHash, leftNode, rightNode)
           (node, rightRemainingHashes, rightRemainingBits)
         } else {
+          require(
+            remainingHashes.nonEmpty,
+            "Traversal ran out of hashes while reconstructing the partial merkle tree")
           (LeafDoubleSha256Digest(remainingHashes.head),
            remainingHashes.tail,
            remainingMatches.tail)
@@ -386,10 +420,20 @@ object PartialMerkleTree {
   }
 
   /** Calculates the maximum height for a binary tree with the number of
-    * transactions specified
+    * transactions specified. Mirrors Bitcoin Core's integer-exact loop (`while
+    * (CalcTreeWidth(nHeight) > 1) nHeight++;` in merkleblock.cpp) rather than a
+    * floating point log2, which can disagree with Core at exact powers of two
+    * due to double-precision rounding (e.g. computing 30 instead of 29 for n =
+    * 2^29).
     */
-  def calcMaxHeight(numTransactions: Int): Int =
-    Math.ceil((log(numTransactions) / log(2))).toInt
+  def calcMaxHeight(numTransactions: Long): Int = {
+    @tailrec
+    def loop(height: Int): Int = {
+      val width = (numTransactions + (1L << height) - 1) >> height
+      if (width > 1) loop(height + 1) else height
+    }
+    loop(0)
+  }
 
   /** Determines if the right sub tree can exists inside of the partial merkle
     * tree This function should only be used to determine if a right sub tree

@@ -267,8 +267,12 @@ sealed abstract class Bech32mAddress extends BitcoinAddress {
 
   override def isStandard: Boolean = {
     scriptPubKey match {
-      case _: WitnessScriptPubKeyV0         => false // shouldn't be possible
-      case _: TaprootScriptPubKey           => true
+      case _: WitnessScriptPubKeyV0     => false // shouldn't be possible
+      case taproot: TaprootScriptPubKey =>
+        // a v1 32-byte witness program whose 32 bytes are not a valid x-only
+        // coordinate is structurally taproot but not standard -- Bitcoin
+        // Core's IsWitnessStandard requires a valid taproot output key
+        Try(taproot.pubKey).isSuccess
       case _: UnassignedWitnessScriptPubKey => false
     }
   }
