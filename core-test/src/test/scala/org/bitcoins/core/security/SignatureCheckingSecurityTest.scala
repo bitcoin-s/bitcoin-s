@@ -3,6 +3,7 @@ package org.bitcoins.core.security
 import org.bitcoins.core.crypto.{
   BaseTxSigComponent,
   SignatureValidationErrorIncorrectSignatures,
+  SignatureValidationErrorNotStrictDerEncoding,
   SignatureValidationSuccess,
   TaprootSerializationOptions,
   TaprootTxSigComponent,
@@ -20,6 +21,7 @@ import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.constant.{OP_0, ScriptConstant}
 import org.bitcoins.core.script.flag.{
   ScriptFlag,
+  ScriptFlagUtil,
   ScriptVerifyDiscourageUpgradableWitnessProgram,
   ScriptVerifyLowS,
   ScriptVerifyNullFail
@@ -365,5 +367,37 @@ class SignatureCheckingSecurityTest extends BitcoinSUnitTest {
     val component = BaseTxSigComponent(spendingTx, inputIndex, output, flags)
     val result = ScriptInterpreter.run(PreExecutionScriptProgram(component))
     result must be(ScriptErrorSigNullFail)
+  }
+
+  it must "require strict DER encoding when only the LOW_S flag is set" in {
+    // Finding (Low): the DER-encoding check is skipped when only the LOW_S
+    // flag is set
+    // (core/src/main/scala/org/bitcoins/core/script/flag/ScriptFlagUtil.scala:12-14).
+    // Correct behavior: Core's CheckSignatureEncoding applies the DER check
+    // whenever DERSIG, LOW_S or STRICTENC is set.
+    ScriptFlagUtil.requiresStrictDerEncoding(Seq(ScriptVerifyLowS)) must be(
+      true)
+
+    val pubKey = privKey1.publicKey
+    val spk = P2PKHScriptPubKey(pubKey)
+    val (creditingTx, outputIndex) =
+      TransactionTestUtil.buildCreditingTransaction(spk)
+    val (spendingTx, inputIndex) =
+      TransactionTestUtil.buildSpendingTransaction(creditingTx,
+                                                   EmptyScriptSignature,
+                                                   outputIndex)
+    val component =
+      BaseTxSigComponent(spendingTx,
+                         inputIndex,
+                         TransactionOutput(CurrencyUnits.zero, spk),
+                         Seq(ScriptVerifyLowS))
+    val nonDerSig = ECDigitalSignature(ByteVector.fill(71)(0xff.toByte))
+    val result = TransactionSignatureChecker.checkSignature(
+      txSignatureComponent = component,
+      script = spk.asm,
+      pubKey = pubKey.toPublicKeyBytes(),
+      signature = nonDerSig,
+      flags = Seq(ScriptVerifyLowS))
+    result must be(SignatureValidationErrorNotStrictDerEncoding)
   }
 }
