@@ -563,15 +563,22 @@ trait BitcoinScriptUtil {
   def removeSignatureFromScript(
       signature: ECDigitalSignature,
       script: Seq[ScriptToken]): Seq[ScriptToken] = {
-    if (script.contains(ScriptConstant(signature.hex))) {
-      // replicates this line in bitcoin core
-      // https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L872
-      val sigIndex = script.indexOf(ScriptConstant(signature.hex))
-      // remove sig and it's corresponding BytesToPushOntoStack
-      val sigRemoved =
-        script.slice(0, sigIndex - 1) ++ script.slice(sigIndex + 1, script.size)
-      sigRemoved
-    } else script
+    // Core's FindAndDelete removes ALL occurrences, not just the first, so
+    // we loop until none remain
+    // https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L872
+    @tailrec
+    def loop(scriptTokens: Seq[ScriptToken]): Seq[ScriptToken] = {
+      if (scriptTokens.contains(ScriptConstant(signature.hex))) {
+        val sigIndex = scriptTokens.indexOf(ScriptConstant(signature.hex))
+        // remove sig and it's corresponding BytesToPushOntoStack
+        val sigRemoved =
+          scriptTokens.slice(0, sigIndex - 1) ++ scriptTokens.slice(
+            sigIndex + 1,
+            scriptTokens.size)
+        loop(sigRemoved)
+      } else scriptTokens
+    }
+    loop(script)
   }
 
   /** Removes the list of [[ECDigitalSignature ECDigitalSignature]] from the

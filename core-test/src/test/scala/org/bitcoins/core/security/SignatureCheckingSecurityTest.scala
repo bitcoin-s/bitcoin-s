@@ -33,6 +33,7 @@ import org.bitcoins.core.script.result.{
   ScriptErrorSigNullFail,
   ScriptOk
 }
+import org.bitcoins.core.script.stack.OP_DROP
 import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.core.util.BitcoinScriptUtil
 import org.bitcoins.crypto.*
@@ -439,5 +440,21 @@ class SignatureCheckingSecurityTest extends BitcoinSUnitTest {
     val component = BaseTxSigComponent(spendingTx, inputIndex, output, flags)
     val result = ScriptInterpreter.run(PreExecutionScriptProgram(component))
     result must be(ScriptOk)
+  }
+
+  it must "remove all occurrences of a signature with legacy FindAndDelete" in {
+    // Finding (Low): legacy FindAndDelete removes only the first whole-token
+    // occurrence of the signature instead of all occurrences
+    // (core/src/main/scala/org/bitcoins/core/util/BitcoinScriptUtil.scala:546-578).
+    // Correct behavior: Core's FindAndDelete removes all occurrences.
+    val sig = ECDigitalSignature(
+      "304402204e45e16932b8af514961a1d3a1a25fdf3f4f7732e9d624c6c61548ab5fb8cd410220181522ec8eca07de4860a4acdd12909d831cc56cbbac4622082221a8768d1d0901")
+    val sigPush = BitcoinScriptUtil.calculatePushOp(sig.bytes) ++ Vector(
+      ScriptConstant(sig.bytes))
+    // the same signature pushed twice in one script
+    val script = sigPush ++ Vector(OP_DROP) ++ sigPush ++ Vector(OP_DROP)
+    val result = BitcoinScriptUtil.removeSignatureFromScript(sig, script)
+    assert(!result.contains(ScriptConstant(sig.hex)),
+           s"All occurrences of the signature must be removed, got=$result")
   }
 }
