@@ -431,16 +431,31 @@ trait BitcoinScriptUtil {
       txSignatureComponent: TxSigComponent,
       signature: ECDigitalSignature,
       script: Seq[ScriptToken]): Seq[ScriptToken] = {
-    val scriptForChecking =
-      calculateScriptForSigning(txSignatureComponent, script)
     txSignatureComponent.sigVersion match {
       case SigVersionBase =>
+        val scriptForChecking =
+          calculateScriptForSigning(txSignatureComponent, script)
         removeSignatureFromScript(signature, scriptForChecking)
       case SigVersionWitnessV0 | SigVersionTaprootKeySpend |
           SigVersionTapscript =>
         // BIP143 removes requirement for calling FindAndDelete
         // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki#no-findanddelete
-        scriptForChecking
+        //
+        // `script` is either (a) the scriptCode as tracked by the
+        // interpreter (BitcoinScriptUtil.removeOpCodeSeparator), i.e. a
+        // suffix of the full witness scriptCode truncated after the last
+        // executed OP_CODESEPARATOR, or (b) a placeholder like the funding
+        // output's raw asm, from callers that expect the full scriptCode to
+        // be rebuilt from the witness stack. calculateScriptForSigning
+        // always rebuilds the latter (it has no notion of OP_CODESEPARATOR
+        // truncation); honor the former when `script` is actually a suffix
+        // of that rebuilt scriptCode, otherwise fall back to the rebuild.
+        val rebuiltScript =
+          calculateScriptForSigning(txSignatureComponent, script)
+        val scriptIsTruncatedSuffix =
+          script.size <= rebuiltScript.size &&
+            rebuiltScript.takeRight(script.size) == script
+        if (scriptIsTruncatedSuffix) script else rebuiltScript
     }
   }
 

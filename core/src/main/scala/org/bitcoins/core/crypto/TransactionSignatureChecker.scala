@@ -158,6 +158,22 @@ trait TransactionSignatureChecker {
             ByteVector(0.toByte, 0.toByte, 0.toByte, hashTypeByte))
           val spk = ScriptPubKey.fromAsm(sigsRemovedScript)
           val hashForSignature = txSignatureComponent match {
+            case w: WitnessTxSigComponentRaw =>
+              // BIP143 commits to the scriptCode after the last executed
+              // OP_CODESEPARATOR (sigsRemovedScript/spk above), not the raw
+              // witness script -- rebuild the component with the stripped
+              // script so the sighash actually commits to it, mirroring the
+              // BaseTxSigComponent/WitnessTxSigComponentRebuilt cases below
+              val sigsRemovedTxSigComponent = WitnessTxSigComponentRebuilt(
+                wtx = w.transaction,
+                inputIndex = w.inputIndex,
+                output = TransactionOutput(w.fundingOutput.value, spk),
+                witScriptPubKey = w.scriptPubKey,
+                flags = w.flags)
+              TransactionSignatureSerializer.hashForSignature(
+                sigsRemovedTxSigComponent,
+                hashType,
+                TaprootSerializationOptions.empty)
             case w: WitnessTxSigComponent =>
               TransactionSignatureSerializer.hashForSignature(
                 w,
