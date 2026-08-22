@@ -3,6 +3,7 @@ package org.bitcoins.core.security
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.serializers.blockchain.RawBlockSerializer
+import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.*
 
@@ -123,5 +124,15 @@ class TransactionParsingSecurityTest extends BitcoinSUnitTest {
 
     // non-canonical: value 253 must use the 0xfd form, not the 0xfe form
     CompactSizeUInt.fromBytesT(hex"fefd000000").isFailure must be(true)
+  }
+
+  it must "reject witness stack elements whose declared length exceeds the remaining bytes" in {
+    // Finding 5 (Low): RawScriptWitnessParser.read clamps the stack element
+    // length with ByteVector.take instead of failing
+    // (core/src/main/scala/org/bitcoins/core/serializers/script/RawScriptWitnessParser.scala:30),
+    // silently mutating witness data. Correct behavior: a declared element
+    // length larger than the remaining bytes is rejected.
+    // 1 stack item, declared element length 2, only 1 byte available.
+    Try(RawScriptWitnessParser.read(hex"0102ff")).isFailure must be(true)
   }
 }
