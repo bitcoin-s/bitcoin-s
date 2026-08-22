@@ -1,7 +1,8 @@
 package org.bitcoins.core.security
 
+import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.config.RegTest
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.p2p.{
   NetworkHeader,
   NetworkMessage,
@@ -9,6 +10,7 @@ import org.bitcoins.core.p2p.{
   VerAckMessage,
   VersionMessage
 }
+import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.util.NetworkUtil
 import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
@@ -145,6 +147,48 @@ class P2pParsingSecurityTest extends BitcoinSUnitTest {
         // the valid trailing message must eventually be surfaced
         (firstMessages ++ secondMessages).map(_.payload) must contain(
           VerAckMessage)
+    }
+  }
+
+  it must "reject bloom filters that violate the BIP37 maxSize/maxHashFuncs limits" in {
+    // Finding: the bloom filter parser lacks the BIP37 maxSize (36000 bytes)
+    // and maxHashFuncs (50) caps, so a crafted filter makes contains/insert
+    // burn CPU, see
+    // core/src/main/scala/org/bitcoins/core/serializers/bloom/RawBloomFilterSerializer.scala:15-27
+    // and core/src/main/scala/org/bitcoins/core/bloom/BloomFilter.scala:56,116
+    // Correct behavior: parsed filters violating the BIP37 limits must be
+    // rejected at parse time.
+    // NB: we intentionally only assert the missing parse-time validation;
+    // actually calling contains/insert on such a filter would burn CPU.
+    val tooManyHashFuncsBytes =
+      CompactSizeUInt(UInt64(1)).bytes ++
+        ByteVector(0.toByte) ++
+        UInt32(BloomFilter.maxHashFuncs.toLong + 1).bytes.reverse ++
+        UInt32.zero.bytes.reverse ++
+        ByteVector(1.toByte) // BLOOM_UPDATE_ALL
+
+    Try(BloomFilter.fromBytes(tooManyHashFuncsBytes)) match {
+      case Success(filter) =>
+        fail(
+          s"Bloom filter with hashFuncs > 50 must be rejected, but parsed to: $filter")
+      case Failure(_) =>
+        succeed
+    }
+
+    val tooBigSize = BloomFilter.maxSize.toInt + 1
+    val tooBigFilterBytes =
+      CompactSizeUInt(UInt64(tooBigSize)).bytes ++
+        ByteVector.fill(tooBigSize)(0.toByte) ++
+        UInt32.one.bytes.reverse ++
+        UInt32.zero.bytes.reverse ++
+        ByteVector(1.toByte) // BLOOM_UPDATE_ALL
+
+    Try(BloomFilter.fromBytes(tooBigFilterBytes)) match {
+      case Success(filter) =>
+        fail(
+          s"Bloom filter with filterSize > 36000 must be rejected, but parsed to: $filter")
+      case Failure(_) =>
+        succeed
     }
   }
 }
