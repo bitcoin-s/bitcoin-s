@@ -228,7 +228,7 @@ sealed abstract class CryptoGenerators {
   def digitalSignatureWithSigHash: Gen[ECDigitalSignature] = {
     for {
       sig <- digitalSignature
-      sigHash <- hashType
+      sigHash <- preTaprootHashType
     } yield {
       ECDigitalSignature(sig.bytes :+ sigHash.byte)
     }
@@ -323,7 +323,7 @@ sealed abstract class CryptoGenerators {
     * including it here would generate ECDSA signatures with an explicit 0x00
     * trailing byte that Bitcoin Core rejects as an undefined hashtype.
     */
-  def hashType: Gen[HashType] =
+  def preTaprootHashType: Gen[HashType] =
     Gen.oneOf(HashType.hashTypes.filterNot(_ == HashType.sigHashDefault))
 
   def extVersion: Gen[ExtKeyVersion] = {

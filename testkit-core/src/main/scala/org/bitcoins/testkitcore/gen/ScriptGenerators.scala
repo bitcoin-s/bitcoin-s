@@ -48,7 +48,7 @@ sealed abstract class ScriptGenerators {
   def p2pkScriptSignature: Gen[P2PKScriptSignature] =
     for {
       sig <- CryptoGenerators.digitalSignature
-      hashType <- CryptoGenerators.hashType
+      hashType <- CryptoGenerators.preTaprootHashType
       digitalSignature = sig.appendHashType(hashType)
     } yield P2PKScriptSignature(digitalSignature)
 
@@ -56,7 +56,7 @@ sealed abstract class ScriptGenerators {
     for {
       privKey <- CryptoGenerators.privateKey
       hash <- CryptoGenerators.doubleSha256Digest
-      hashType <- CryptoGenerators.hashType
+      hashType <- CryptoGenerators.preTaprootHashType
       signature = privKey.sign(hash).appendHashType(hashType)
 
     } yield P2PKHScriptSignature(signature, privKey.publicKey)
@@ -65,7 +65,7 @@ sealed abstract class ScriptGenerators {
     for {
       privKey <- CryptoGenerators.privateKey
       hash <- CryptoGenerators.doubleSha256Digest
-      hashType <- CryptoGenerators.hashType
+      hashType <- CryptoGenerators.preTaprootHashType
       signature = privKey.sign(hash).appendHashType(hashType)
       beforeTimeout <- NumberGenerator.bool
     } yield P2PKWithTimeoutScriptSignature(beforeTimeout, signature)
@@ -74,7 +74,7 @@ sealed abstract class ScriptGenerators {
     val signatures: Gen[Seq[ECDigitalSignature]] = for {
       numKeys <- Gen.choose(1, Consensus.maxPublicKeysPerMultiSig)
       hash <- CryptoGenerators.doubleSha256Digest
-      hashType <- CryptoGenerators.hashType
+      hashType <- CryptoGenerators.preTaprootHashType
       privKeys <- CryptoGenerators.privateKeySeq(numKeys)
     } yield for {
       privKey <- privKeys
@@ -609,7 +609,7 @@ sealed abstract class ScriptGenerators {
       : Gen[(P2PKScriptSignature, P2PKScriptPubKey, ECPrivateKey)] =
     for {
       privateKey <- CryptoGenerators.privateKey
-      hashType <- CryptoGenerators.hashType
+      hashType <- CryptoGenerators.preTaprootHashType
       publicKey = privateKey.publicKey
       scriptPubKey = P2PKScriptPubKey(publicKey)
       (creditingTx, outputIndex) =
@@ -651,7 +651,7 @@ sealed abstract class ScriptGenerators {
       : Gen[(P2PKHScriptSignature, P2PKHScriptPubKey, ECPrivateKey)] = {
     for {
       privateKey <- CryptoGenerators.privateKey
-      hashType <- CryptoGenerators.hashType
+      hashType <- CryptoGenerators.preTaprootHashType
       publicKey = privateKey.publicKey
       scriptPubKey = P2PKHScriptPubKey(publicKey)
       (creditingTx, outputIndex) =
@@ -687,7 +687,7 @@ sealed abstract class ScriptGenerators {
   ] =
     for {
       (spk, privKeys) <- p2pkWithTimeoutScriptPubKey
-      hashType <- CryptoGenerators.hashType
+      hashType <- CryptoGenerators.preTaprootHashType
     } yield {
       val privKey = privKeys.head
       val emptyScriptSig = EmptyScriptSignature
@@ -734,7 +734,7 @@ sealed abstract class ScriptGenerators {
       (privateKeysWithExtra, requiredSigs) <-
         CryptoGenerators.privateKeySeqWithRequiredSigs
       privateKeys = privateKeysWithExtra.take(requiredSigs)
-      hashType <- CryptoGenerators.hashType
+      hashType <- CryptoGenerators.preTaprootHashType
       publicKeys = privateKeys.map(_.publicKey)
       multiSigScriptPubKey =
         MultiSignatureScriptPubKey(requiredSigs, publicKeys)
@@ -872,7 +872,7 @@ sealed abstract class ScriptGenerators {
   ): Gen[(CLTVScriptSignature, CLTVScriptPubKey, Seq[ECPrivateKey])] =
     for {
       (scriptPubKey, privKeys) <- nonLocktimeRawScriptPubKey(defaultMaxDepth)
-      hashType <- CryptoGenerators.hashType
+      hashType <- CryptoGenerators.preTaprootHashType
       cltv = CLTVScriptPubKey(cltvLockTime, scriptPubKey)
     } yield scriptPubKey match {
       case m: MultiSignatureScriptPubKey =>
@@ -938,7 +938,7 @@ sealed abstract class ScriptGenerators {
   ): Gen[(CSVScriptSignature, CSVScriptPubKey, Seq[ECPrivateKey])] =
     for {
       (scriptPubKey, privKeys) <- nonLocktimeRawScriptPubKey(defaultMaxDepth)
-      hashType <- CryptoGenerators.hashType
+      hashType <- CryptoGenerators.preTaprootHashType
       csv = CSVScriptPubKey(csvScriptNum, scriptPubKey)
     } yield scriptPubKey match {
       case m: MultiSignatureScriptPubKey =>
