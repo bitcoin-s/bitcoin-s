@@ -712,7 +712,7 @@ We must also create a generator for our `ScriptSignature` type, even if we did n
     for {
       privKey <- CryptoGenerators.privateKey
       hash <- CryptoGenerators.doubleSha256Digest
-      hashType <- CryptoGenerators.hashType
+      hashType <- CryptoGenerators.preTaprootHashType
       signature = ECDigitalSignature.fromBytes(
         privKey.sign(hash).bytes ++ ByteVector.fromByte(hashType.byte))
       beforeTimeout <- NumberGenerator.bool
@@ -730,7 +730,7 @@ Lastly, we need to construct a generator that returns both a `ScriptPubKey` and 
     (ConditionalScriptSignature, P2PKWithTimeoutScriptPubKey, ECPrivateKey)] =
     for {
       (spk, privKeys) <- p2pkWithTimeoutScriptPubKey
-      hashType <- CryptoGenerators.hashType
+      hashType <- CryptoGenerators.preTaprootHashType
     } yield {
       val emptyScriptSig = P2PKWithTimeoutScriptSignature(beforeTimeout = true,
                                                           ECDigitalSignature.empty)
