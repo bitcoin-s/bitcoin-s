@@ -206,4 +206,19 @@ class CryptoParsingSecurityTest extends BitcoinSCryptoTest {
       Sha1DigestBE.fromBytes(twentyOneBytes)
     }
   }
+
+  behavior of "CryptoBytesUtil hex handling"
+
+  it must "treat uppercase hex consistently between isHex and decodeHex" in {
+    // Finding: isHex rejects uppercase hex (regex ^[0-9a-f]+$) while
+    // decodeHex accepts it (CryptoBytesUtil.scala:50-53), an inconsistent
+    // pair. Correct behavior: the two agree on what valid hex is.
+    val upper = "DEADBEEF"
+    val lower = "deadbeef"
+
+    // decodeHex accepts uppercase; isHex must agree
+    CryptoBytesUtil.decodeHex(upper) must be(ByteVector.fromValidHex(lower))
+    CryptoBytesUtil.isHex(lower) must be(true)
+    CryptoBytesUtil.isHex(upper) must be(true)
+  }
 }
