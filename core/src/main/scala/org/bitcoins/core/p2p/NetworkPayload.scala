@@ -810,7 +810,10 @@ sealed trait FeeFilterMessage extends ControlPayload {
   def feeRate: SatoshisPerKiloByte
 
   def satPerByte: SatoshisPerByte = {
-    feeRate.toSatPerByte
+    // a peer-supplied fee rate is not guaranteed to be evenly divisible by
+    // 1000, so round rather than demanding exact divisibility (which would
+    // throw for a perfectly valid, just non-round, feerate)
+    feeRate.toSatPerByteRounded
   }
 
   override def commandName: String = NetworkPayload.feeFilterCommandName

@@ -2,8 +2,10 @@ package org.bitcoins.core.security
 
 import org.bitcoins.core.bloom.BloomFilter
 import org.bitcoins.core.config.RegTest
+import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.{UInt32, UInt64}
 import org.bitcoins.core.p2p.{
+  FeeFilterMessage,
   NetworkHeader,
   NetworkMessage,
   NetworkPayload,
@@ -189,6 +191,29 @@ class P2pParsingSecurityTest extends BitcoinSUnitTest {
           s"Bloom filter with filterSize > 36000 must be rejected, but parsed to: $filter")
       case Failure(_) =>
         succeed
+    }
+  }
+
+  it must "parse a feefilter message with a feerate not divisible by 1000 without throwing" in {
+    // Finding: FeeFilterMessage.satPerByte throws on peer-supplied feerates
+    // not divisible by 1000, see
+    // core/src/main/scala/org/bitcoins/core/p2p/NetworkPayload.scala:812 and
+    // core/src/main/scala/org/bitcoins/core/currency/FeeUnit.scala:130-148
+    // (actual path: core/src/main/scala/org/bitcoins/core/wallet/fee/FeeUnit.scala)
+    // Correct behavior: a feefilter message with any peer-supplied feerate
+    // must be usable without throwing; satPerByte must round instead of
+    // demanding exact divisibility.
+    // 999 sat/kb in little endian, as it appears on the wire
+    val feeFilterBytes = ByteVector.fromValidHex("e703000000000000")
+    val feeFilterMessage = FeeFilterMessage.fromBytes(feeFilterBytes)
+
+    feeFilterMessage.feeRate.currencyUnit.satoshis must be(Satoshis(999))
+
+    Try(feeFilterMessage.satPerByte) match {
+      case Success(_) =>
+        succeed
+      case Failure(ex) =>
+        fail(s"satPerByte must not throw for feerate 999 sat/kb, got: $ex")
     }
   }
 }
