@@ -105,4 +105,40 @@ class CryptoParsingSecurityTest extends BitcoinSCryptoTest {
       SchnorrDigitalSignature.fromBytes(sig65WithZeroHashType)
     }
   }
+
+  behavior of "ECDigitalSignature.fromBytes"
+
+  it must "not treat garbage bytes that silently decode to r=s=0 as a valid low-S or hash-typed signature" in {
+    // Finding: arbitrary garbage bytes are silently accepted as an
+    // ECDigitalSignature whose r and s both decode to 0
+    // (DERSignatureUtil.scala:65-70, ECDigitalSignature.scala:77-85,131-147).
+    //
+    // ECDigitalSignature.fromBytes/apply itself must stay lenient and NOT
+    // throw: it is called directly on untrusted, attacker-controlled
+    // scriptSig bytes in consensus-critical script execution (e.g.
+    // CryptoInterpreter.opCheckSig/opCheckMultiSig) with no Try wrapper, so
+    // a malformed signature must fail verification cleanly rather than
+    // crash script validation with an uncaught exception. Instead, the
+    // derived accessors that silently treated an undecodable signature as
+    // if it validly decoded to r=s=0 (isLowS, hashTypeOpt) must correctly
+    // report that the bytes are not a valid DER signature.
+    val garbageShort = ByteVector.fromValidHex("deadbeef")
+    val garbageLong = ByteVector.fromValidHex(
+      "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20")
+
+    // must not throw -- garbage bytes are still representable so callers
+    // like the script interpreter can cleanly fail signature checks
+    val sigShort = ECDigitalSignature.fromBytes(garbageShort)
+    val sigLong = ECDigitalSignature.fromBytes(garbageLong)
+
+    // r=s=0 is trivially "low S", but undecodable garbage must not be
+    // reported as having a low (i.e. validly encoded) S value
+    DERSignatureUtil.isLowS(sigShort) must be(false)
+    DERSignatureUtil.isLowS(sigLong) must be(false)
+
+    // there's no reliable way to locate a trailing hash type byte without a
+    // validly decoded signature
+    sigShort.hashTypeOpt must be(None)
+    sigLong.hashTypeOpt must be(None)
+  }
 }
