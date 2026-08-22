@@ -3,6 +3,7 @@ package org.bitcoins.core.security
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.core.serializers.blockchain.RawBlockSerializer
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
+import scodec.bits.*
 
 import scala.util.Try
 
@@ -93,5 +94,17 @@ class TransactionParsingSecurityTest extends BitcoinSUnitTest {
     Try(
       org.bitcoins.core.serializers.script.RawScriptPubKeyParser
         .read(truncatedScript)).isFailure must be(true)
+  }
+
+  it must "fail with a parse error (not a raw index exception) on very short transaction input" in {
+    // Finding 3 (Low): Transaction.fromBytes does unchecked bytes(4)/bytes(5)
+    // indexing
+    // (core/src/main/scala/org/bitcoins/core/protocol/transaction/Transaction.scala:127-128),
+    // so input shorter than 6 bytes throws a raw IndexOutOfBoundsException.
+    // Correct behavior: a proper parse failure (e.g. IllegalArgumentException).
+    val ex = intercept[Exception] {
+      Transaction.fromBytes(hex"0100000000")
+    }
+    ex.isInstanceOf[IndexOutOfBoundsException] must be(false)
   }
 }
