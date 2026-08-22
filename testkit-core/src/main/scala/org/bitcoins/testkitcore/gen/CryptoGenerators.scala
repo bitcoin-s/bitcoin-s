@@ -309,8 +309,14 @@ sealed abstract class CryptoGenerators {
       hash = CryptoUtil.sha256Hash160(pubKey.bytes)
     } yield hash
 
-  /** Generates a random [[HashType HashType]] */
-  def hashType: Gen[HashType] = Gen.oneOf(HashType.hashTypes)
+  /** Generates a random [[HashType HashType]] for legacy/segwit v0 (ECDSA)
+    * signing. SIGHASH_DEFAULT is deliberately excluded: it is a taproot-only
+    * hash type (see [[taprootHashType]] below) and is not a defined hashtype
+    * for ECDSA signatures (HashType.hashTypeBytes /
+    * isDefinedHashtypeSignature).
+    */
+  def hashType: Gen[HashType] =
+    Gen.oneOf(HashType.hashTypes.filterNot(_ == HashType.sigHashDefault))
 
   def extVersion: Gen[ExtKeyVersion] = {
     Gen.oneOf(ExtKeyVersion.all)

@@ -504,4 +504,16 @@ class SignatureCheckingSecurityTest extends BitcoinSUnitTest {
       s"The uint256-one error hash only applies to the legacy sighash algorithm, a segwit v0 sighash must not return it"
     )
   }
+
+  it must "not count 0x00 as a defined hashtype byte for STRICTENC" in {
+    // Finding (Info): isDefinedHashtypeSignature counts the 0x00 byte as a
+    // defined ECDSA hashtype, unlike Core's STRICTENC
+    // (crypto/src/main/scala/org/bitcoins/crypto/HashType.scala:119-128,200-202).
+    // Correct behavior: Core's IsDefinedHashtypeSignature rejects a 0x00
+    // hashtype byte.
+    val sigEndingInZero = ECDigitalSignature(
+      ByteVector.fromValidHex("3006020101020101") ++ ByteVector.fromByte(
+        0x00.toByte))
+    HashType.isDefinedHashtypeSignature(sigEndingInZero) must be(false)
+  }
 }
