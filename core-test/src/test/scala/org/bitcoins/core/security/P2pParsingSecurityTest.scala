@@ -1,6 +1,14 @@
 package org.bitcoins.core.security
 
-import org.bitcoins.core.p2p.{NetworkMessage, VersionMessage}
+import org.bitcoins.core.config.RegTest
+import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.p2p.{
+  NetworkHeader,
+  NetworkMessage,
+  NetworkPayload,
+  VersionMessage
+}
+import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
@@ -54,6 +62,26 @@ class P2pParsingSecurityTest extends BitcoinSUnitTest {
           s"Network message with a corrupted checksum must be rejected, but parsed to: $msg")
       case Failure(_) =>
         succeed
+    }
+  }
+
+  it must "produce a clean parse error for an unknown command name" in {
+    // Finding: an unknown command string throws NoSuchElementException at
+    // core/src/main/scala/org/bitcoins/core/p2p/NetworkPayload.scala:1674
+    // Correct behavior: an unknown command must produce a clean, descriptive
+    // parse error (or a handled unknown-payload type), not a raw
+    // NoSuchElementException from a Map lookup.
+    val header =
+      NetworkHeader(RegTest,
+                    "madeup",
+                    UInt32.zero,
+                    CryptoUtil.doubleSHA256(ByteVector.empty).bytes.take(4))
+
+    Try(NetworkPayload(header, ByteVector.empty)) match {
+      case Failure(_: NoSuchElementException) =>
+        fail("Unknown command name must not throw a raw NoSuchElementException")
+      case _ =>
+        succeed // a descriptive failure or a handled unknown payload is fine
     }
   }
 }
