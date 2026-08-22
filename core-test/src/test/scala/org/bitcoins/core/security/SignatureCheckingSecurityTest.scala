@@ -14,9 +14,12 @@ import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script.*
 import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.script.PreExecutionScriptProgram
-import org.bitcoins.core.script.flag.ScriptVerifyDiscourageUpgradableWitnessProgram
+import org.bitcoins.core.script.flag.{
+  ScriptFlag,
+  ScriptVerifyDiscourageUpgradableWitnessProgram
+}
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
-import org.bitcoins.core.script.result.ScriptOk
+import org.bitcoins.core.script.result.{ScriptErrorSchnorrSigHashType, ScriptOk}
 import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.crypto.*
 import org.bitcoins.testkitcore.util.{BitcoinSUnitTest, TransactionTestUtil}
@@ -33,9 +36,49 @@ class SignatureCheckingSecurityTest extends BitcoinSUnitTest {
 
   behavior of "Signature checking security"
 
-  // fixed, deterministic key -- no randomness in this spec
+  // fixed, deterministic keys — no randomness in this spec
   private val privKey1: ECPrivateKey =
     ECPrivateKey.fromFieldElement(FieldElement.one)
+  private val privKey2: ECPrivateKey =
+    ECPrivateKey.fromBytes(ByteVector.fill(32)(2.toByte))
+  private val noncePrivKey: ECPrivateKey =
+    ECPrivateKey.fromBytes(ByteVector.fill(32)(3.toByte))
+
+  /** Builds a single input taproot script path spend of a single tapleaf.
+    * Returns the sig component and the tapleaf hash so callers can compute the
+    * BIP341 sighash themselves.
+    */
+  private def buildTapscriptSpend(
+      leafScriptBytes: ByteVector,
+      witnessStack: Vector[ByteVector],
+      flags: Seq[ScriptFlag]): (TaprootTxSigComponent, Sha256Digest) = {
+    val leafSPK =
+      ScriptPubKey.fromAsmBytes(leafScriptBytes).asInstanceOf[RawScriptPubKey]
+    val internalKey = privKey2.toXOnly
+    val leaf = TapLeaf(LeafVersion.Tapscript, leafSPK)
+    val (keyParity, taprootSPK) =
+      TaprootScriptPubKey.fromInternalKeyTapscriptTree(internalKey, leaf)
+    val controlBlock =
+      TapscriptControlBlock.fromSingleLeaf(LeafVersion.Tapscript,
+                                           internalKey,
+                                           keyParity)
+    val witness = TaprootScriptPath(controlBlock, None, leafSPK, witnessStack)
+    val amount = Satoshis(10000)
+    val (creditingTx, outputIndex) =
+      TransactionTestUtil.buildCreditingTransaction(taprootSPK, Some(amount))
+    val (spendingTx, inputIndex) =
+      TransactionTestUtil.buildSpendingTransaction(creditingTx,
+                                                   EmptyScriptSignature,
+                                                   outputIndex,
+                                                   Some((witness, amount)))
+    val wtx = spendingTx.asInstanceOf[WitnessTransaction]
+    val outpoint = wtx.inputs(inputIndex.toInt).previousOutput
+    val outputMap = PreviousOutputMap(
+      Map(outpoint -> creditingTx.outputs(outputIndex.toInt)))
+    val component = TaprootTxSigComponent(wtx, inputIndex, outputMap, flags)
+    val tapLeafHash = TaprootScriptPath.computeTapleafHash(leaf)
+    (component, tapLeafHash)
+  }
 
   it must "not treat a v1 witness program with an invalid x coordinate as anyone-can-spend" in {
     // Finding (High): a taproot (v1) 32-byte witness program whose x-only key
@@ -140,5 +183,31 @@ class SignatureCheckingSecurityTest extends BitcoinSUnitTest {
       signature = sig,
       flags = flags)
     result must be(SignatureValidationSuccess)
+  }
+
+  it must "reject a 65-byte tapscript signature with an explicit SIGHASH_DEFAULT byte" in {
+    // Finding (Medium): tapscript accepts a 65-byte signature whose last byte
+    // is 0x00 (explicit SIGHASH_DEFAULT), violating BIP341
+    // (core/src/main/scala/org/bitcoins/core/script/crypto/CryptoInterpreter.scala:157-172,228-240,
+    // crypto/src/main/scala/org/bitcoins/crypto/HashType.scala:205-216).
+    // Correct behavior: validation fails with ScriptErrorSchnorrSigHashType.
+    val flags = Policy.standardFlags
+    // <x-only pubkey> OP_CHECKSIG
+    val leafScriptBytes = ByteVector.fromValidHex("20") ++
+      privKey1.toXOnly.bytes ++ ByteVector.fromValidHex("ac")
+    // build a placeholder spend to compute the BIP341 sighash, then sign it
+    val (placeholderComponent, tapLeafHash) =
+      buildTapscriptSpend(leafScriptBytes, Vector.empty, flags)
+    val sighash = TransactionSignatureSerializer.hashForSignature(
+      placeholderComponent,
+      HashType.sigHashDefault,
+      TaprootSerializationOptions(Some(tapLeafHash), None, None))
+    val sig64 = privKey1.schnorrSignWithNonce(sighash.bytes, noncePrivKey)
+    // explicitly append SIGHASH_DEFAULT (0x00) — not allowed by BIP341
+    val sig65 = sig64.bytes ++ ByteVector.fromByte(0x00.toByte)
+    val (component, _) =
+      buildTapscriptSpend(leafScriptBytes, Vector(sig65), flags)
+    val result = ScriptInterpreter.run(PreExecutionScriptProgram(component))
+    result must be(ScriptErrorSchnorrSigHashType)
   }
 }
