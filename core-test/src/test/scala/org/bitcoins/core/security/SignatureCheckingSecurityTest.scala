@@ -17,7 +17,8 @@ import org.bitcoins.core.protocol.transaction.*
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.flag.{
   ScriptFlag,
-  ScriptVerifyDiscourageUpgradableWitnessProgram
+  ScriptVerifyDiscourageUpgradableWitnessProgram,
+  ScriptVerifyNullFail
 }
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.{ScriptErrorSchnorrSigHashType, ScriptOk}
@@ -259,5 +260,30 @@ class SignatureCheckingSecurityTest extends BitcoinSUnitTest {
     assert(
       hashT.isFailure,
       s"BIP341 requires taproot SIGHASH_SINGLE with no corresponding output to fail validation, got=$hashT")
+  }
+
+  it must "fail a tapscript OP_CHECKSIG immediately on an invalid non-empty signature" in {
+    // Finding (Medium): tapscript OP_CHECKSIG with an invalid non-empty
+    // signature pushes 0 and continues when NULLFAIL is not set
+    // (core/src/main/scala/org/bitcoins/core/script/crypto/CryptoInterpreter.scala:129-135,
+    // core/src/main/scala/org/bitcoins/core/crypto/TransactionSignatureChecker.scala:200-220,317-326).
+    // Correct behavior per BIP342 (and Core, which fails with
+    // SCRIPT_ERR_SCHNORR_SIG): script execution fails immediately.
+    val flags = Policy.standardFlags.filterNot(_ == ScriptVerifyNullFail)
+    // <x-only pubkey> OP_CHECKSIG OP_DROP OP_TRUE
+    // if an invalid signature only pushed 0, this script would succeed
+    val leafScriptBytes = ByteVector.fromValidHex("20") ++
+      privKey1.toXOnly.bytes ++ ByteVector.fromValidHex("ac7551")
+    // a well-formed 64-byte schnorr signature over a different message, so it
+    // is invalid for this input's sighash
+    val invalidSig =
+      privKey1.schnorrSignWithNonce(ByteVector.fill(32)(0x55.toByte),
+                                    noncePrivKey)
+    val (component, _) =
+      buildTapscriptSpend(leafScriptBytes, Vector(invalidSig.bytes), flags)
+    val result = ScriptInterpreter.run(PreExecutionScriptProgram(component))
+    assert(
+      result != ScriptOk,
+      s"An invalid non-empty tapscript signature must fail the script immediately, got=$result")
   }
 }
