@@ -15,7 +15,9 @@ import org.bitcoins.core.script.{
   ExecutedScriptProgram,
   PreExecutionScriptProgram
 }
+import org.bitcoins.core.serializers.script.ScriptParser
 import org.bitcoins.testkitcore.util.{BitcoinSUnitTest, TestUtil}
+import scodec.bits.ByteVector
 
 /** Security reproduction tests for script number / opcode semantics. Every test
   * in this file asserts the CORRECT (Bitcoin Core compatible) behavior, so each
@@ -78,6 +80,21 @@ class ScriptArithmeticSecurityTest extends BitcoinSUnitTest {
     newProgram.asInstanceOf[ExecutedScriptProgram].error.isDefined must be(
       true
     )
+  }
+
+  it must "parse opcode bytes 0xbb-0xff as OP_SUCCESS187-254 operations" in {
+    // Finding 4 (High): core/src/main/scala/org/bitcoins/core/script/ScriptOperationFactory.scala:64-66
+    // and core/src/main/scala/org/bitcoins/core/serializers/script/ScriptParser.scala:175 —
+    // fromByte does a Map lookup with no fallback for unassigned opcode bytes; per BIP342
+    // bytes 187-254 are OP_SUCCESS187-254 and must be parseable/usable.
+    // NOTE: in this snapshot these bytes do NOT throw NoSuchElementException; they parse to
+    // ReservedOperation.UndefinedOP_NOP (ReservedOperations.scala:97-100), which is still
+    // wrong per BIP342 — they are OP_SUCCESSx operations, not reserved NOPs.
+    (187 to 254).foreach { opCode =>
+      val parsed = ScriptParser.fromBytes(ByteVector(opCode.toByte))
+      parsed.size must be(1)
+      parsed.head.toString.startsWith("OP_SUCCESS") must be(true)
+    }
   }
 
   private def buildTxSigComponent(flags: Seq[ScriptFlag]): TxSigComponent = {
