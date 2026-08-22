@@ -200,9 +200,15 @@ sealed abstract class DERSignatureUtil {
     *   if the S value is the low version
     */
   def isLowS(signature: ByteVector): Boolean = {
+    // use parseDERLax directly rather than decodeSignature, which silently
+    // falls back to r=s=0 (trivially "low") for bytes that aren't a valid
+    // DER signature at all
     val result = Try {
-      val (_, s) = decodeSignature(signature)
-      s.bigInteger.compareTo(CryptoParams.halfCurveOrder) <= 0
+      DERSignatureUtil.parseDERLax(signature) match {
+        case Some((_, s)) =>
+          s.bigInteger.compareTo(CryptoParams.halfCurveOrder) <= 0
+        case None => false
+      }
     }
     result match {
       case Success(bool) => bool
