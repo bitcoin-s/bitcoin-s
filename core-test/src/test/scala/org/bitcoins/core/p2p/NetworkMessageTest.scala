@@ -19,7 +19,14 @@ class NetworkMessageTest extends BitcoinSUnitTest {
       // since we only support protocol version > 7, i added it manually
       // this means the payload size is bumped by 1 byte in the NetworkHeader from 100 -> 101
       // and a relay byte "00" is appended to the end of the payload
-      "F9BEB4D976657273696F6E000000000065000000358d4932" +
+      //
+      // Since checksums are now verified at parse time, the checksum field
+      // below is the correct doubleSHA256 of the actual (101 byte, with the
+      // appended relay byte) payload -- the wiki page's original checksum
+      // was only ever valid for the unmodified 100 byte payload, which
+      // can't round-trip through VersionMessage: write() always re-emits
+      // the (optional-on-read, always-written) relay byte.
+      "F9BEB4D976657273696F6E000000000065000000030ecc57" +
         "62EA0000010000000000000011B2D05000000000010000000000000000000000000000000000FFFF000000000000010000000000000000000000000000000000FFFF0000000000003B2EB35D8CE617650F2F5361746F7368693A302E372E322FC03E0300" +
         "00"
     }.toLowerCase

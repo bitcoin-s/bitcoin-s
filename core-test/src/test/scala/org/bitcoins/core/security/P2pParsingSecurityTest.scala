@@ -1,6 +1,6 @@
 package org.bitcoins.core.security
 
-import org.bitcoins.core.p2p.VersionMessage
+import org.bitcoins.core.p2p.{NetworkMessage, VersionMessage}
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
@@ -31,6 +31,29 @@ class P2pParsingSecurityTest extends BitcoinSUnitTest {
         assert(!ex.isInstanceOf[IndexOutOfBoundsException],
                s"Version message without relay byte must not throw " +
                  s"IndexOutOfBoundsException, got: $ex")
+    }
+  }
+
+  it must "reject a network message with a corrupted checksum" in {
+    // Finding: p2p message checksums are never verified, see
+    // core/src/main/scala/org/bitcoins/core/p2p/NetworkPayload.scala:1674 and
+    // core/src/main/scala/org/bitcoins/core/serializers/p2p/RawNetworkMessageSerializer.scala:11-20
+    // Correct behavior: a message whose checksum does not match
+    // doubleSHA256(payload) must be rejected.
+    // This is the version message from the bitcoin wiki used in
+    // NetworkMessageTest, with the last checksum nibble flipped (32 -> 33).
+    val corruptedChecksumHex = {
+      "f9beb4d976657273696f6e000000000065000000358d4933" +
+        "62EA0000010000000000000011B2D05000000000010000000000000000000000000000000000FFFF000000000000010000000000000000000000000000000000FFFF0000000000003B2EB35D8CE617650F2F5361746F7368693A302E372E322FC03E0300" +
+        "00"
+    }.toLowerCase
+
+    Try(NetworkMessage.fromHex(corruptedChecksumHex)) match {
+      case Success(msg) =>
+        fail(
+          s"Network message with a corrupted checksum must be rejected, but parsed to: $msg")
+      case Failure(_) =>
+        succeed
     }
   }
 }

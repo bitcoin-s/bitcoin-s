@@ -2,6 +2,7 @@ package org.bitcoins.core.serializers.p2p
 
 import org.bitcoins.core.p2p._
 import org.bitcoins.core.serializers.RawBitcoinSerializer
+import org.bitcoins.crypto.CryptoUtil
 import scodec.bits.ByteVector
 
 trait RawNetworkMessageSerializer extends RawBitcoinSerializer[NetworkMessage] {
@@ -14,6 +15,13 @@ trait RawNetworkMessageSerializer extends RawBitcoinSerializer[NetworkMessage] {
       throw new RuntimeException(
         s"We do not have enough bytes for payload! Expected=${header.payloadSize.toInt} got=${payloadBytes.length}")
     } else {
+      val declaredPayloadBytes = payloadBytes.take(header.payloadSize.toInt)
+      val actualChecksum =
+        CryptoUtil.doubleSHA256(declaredPayloadBytes).bytes.take(4)
+      require(
+        actualChecksum == header.checksum,
+        s"Checksum does not match, expected=${header.checksum}, got=$actualChecksum"
+      )
       val payload = NetworkPayload(header, payloadBytes)
       val n = NetworkMessage(header, payload)
       n
