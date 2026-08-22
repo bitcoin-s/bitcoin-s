@@ -275,7 +275,10 @@ sealed abstract class DERSignatureUtil {
         lengthByteUnProcessed <- nextOption()
         length <- {
           if ((lengthByteUnProcessed & 0x80) != 0) {
-            var lenByte = lengthByteUnProcessed - 0x80
+            // treat the byte as unsigned before subtracting, mirroring
+            // Bitcoin Core's `lenbyte & 0x7f` (pubkey.cpp) -- as a signed
+            // Scala Byte, 0x81 - 0x80 wrongly yields -255 instead of 1
+            var lenByte = (lengthByteUnProcessed & 0xff) - 0x80
 
             while (
               lenByte > 0 && iterator.hasNext && iterator.head == 0.toByte
@@ -315,7 +318,8 @@ sealed abstract class DERSignatureUtil {
       totalLengthByteUnProcessed <- nextOption()
       _ <- {
         if ((totalLengthByteUnProcessed & 0x80) != 0) {
-          val processedTotalLengthByte = totalLengthByteUnProcessed - 0x80
+          val processedTotalLengthByte =
+            (totalLengthByteUnProcessed & 0xff) - 0x80
           moveIterForward(processedTotalLengthByte)
         } else {
           Some(())
