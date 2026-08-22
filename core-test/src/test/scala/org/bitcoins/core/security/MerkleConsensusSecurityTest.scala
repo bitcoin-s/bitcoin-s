@@ -4,6 +4,7 @@ import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.{
+  BlockHeader,
   MainNetChainParams,
   PartialMerkleTree
 }
@@ -133,5 +134,27 @@ class MerkleConsensusSecurityTest extends BitcoinSUnitTest {
     assert(tx.baseSize * Consensus.weightScalar <= Consensus.maxBlockWeight)
     assert(tx.bytes.size > Consensus.maxBlockSize)
     ScriptInterpreter.checkTransaction(tx) must be(true)
+  }
+
+  it must "return zero block proof for a zero target" in {
+    // Finding 5 (Low): getBlockProof only special-cases a negative or
+    // overflowed target, but not a zero target
+    // (core/src/main/scala/org/bitcoins/core/protocol/blockchain/BlockHeader.scala:205-213).
+    // Bitcoin Core's GetBlockProof explicitly checks
+    // `fNegative || fOverflow || bnTarget == 0` before dividing
+    // (pow.cpp) -- with nBits encoding a target of exactly zero, dividing
+    // by (target + 1) = 1 wrongly produces the enormous value 2^256
+    // instead of the correct proof-of-work contribution of zero.
+    val genesisHeader = MainNetChainParams.genesisBlock.blockHeader
+    val zeroTargetHeader = BlockHeader(
+      genesisHeader.version,
+      genesisHeader.previousBlockHash,
+      genesisHeader.merkleRootHash,
+      genesisHeader.time,
+      UInt32.zero,
+      genesisHeader.nonce
+    )
+
+    BlockHeader.getBlockProof(zeroTargetHeader) must be(BigInt(0))
   }
 }

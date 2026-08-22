@@ -205,7 +205,7 @@ object BlockHeader extends Factory[BlockHeader] {
   def getBlockProof(header: BlockHeader): BigInt = {
     val target = NumberUtil.targetExpansion(header.nBits)
 
-    if (target.isNegative || target.isOverflow) {
+    if (target.isNegative || target.isOverflow || target.target == BigInt(0)) {
       BigInt(0)
     } else {
       (BigInt(1) << 256) / (target.target + BigInt(1))
