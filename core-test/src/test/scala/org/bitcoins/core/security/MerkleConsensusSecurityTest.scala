@@ -176,4 +176,24 @@ class MerkleConsensusSecurityTest extends BitcoinSUnitTest {
 
     target.target must not be BigInt(0)
   }
+
+  it must "include the 80-byte header and txCount varint in Block.blockWeight" in {
+    // Finding 7 (Low): blockWeight only sums the weight of the transactions,
+    // omitting the fixed 80-byte block header and the txCount CompactSizeUInt
+    // (core/src/main/scala/org/bitcoins/core/protocol/blockchain/Block.scala:45).
+    // Bitcoin Core's GetBlockWeight scales the WHOLE serialized block (header
+    // and txCount included, not just the transaction list) by
+    // WITNESS_SCALE_FACTOR in its base-size term
+    // (::GetSerializeSize(block, ... NO_WITNESS) * (WITNESS_SCALE_FACTOR - 1) +
+    // ::GetSerializeSize(block, ...), block.cpp). The header and txCount carry
+    // no witness data, so they must count at the full scale factor (4), the
+    // same way legacy (non-segwit) transaction bytes do.
+    val block = MainNetChainParams.genesisBlock
+
+    val expectedWeight =
+      (block.blockHeader.bytes.size + block.txCount.bytes.size) *
+        Consensus.weightScalar + block.transactions.map(_.weight).sum
+
+    block.blockWeight must be(expectedWeight)
+  }
 }
