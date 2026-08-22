@@ -7,7 +7,6 @@ import org.bitcoins.crypto.{CryptoUtil, DoubleSha256Digest}
 import scodec.bits.BitVector
 
 import scala.annotation.tailrec
-import scala.math._
 
 /** Created by chris on 8/7/16. Represents a subset of known txids inside of a
   * [[org.bitcoins.core.protocol.blockchain.Block Block]] in a way that allows
@@ -421,10 +420,20 @@ object PartialMerkleTree {
   }
 
   /** Calculates the maximum height for a binary tree with the number of
-    * transactions specified
+    * transactions specified. Mirrors Bitcoin Core's integer-exact loop (`while
+    * (CalcTreeWidth(nHeight) > 1) nHeight++;` in merkleblock.cpp) rather than a
+    * floating point log2, which can disagree with Core at exact powers of two
+    * due to double-precision rounding (e.g. computing 30 instead of 29 for n =
+    * 2^29).
     */
-  def calcMaxHeight(numTransactions: Int): Int =
-    Math.ceil((log(numTransactions) / log(2))).toInt
+  def calcMaxHeight(numTransactions: Long): Int = {
+    @tailrec
+    def loop(height: Int): Int = {
+      val width = (numTransactions + (1L << height) - 1) >> height
+      if (width > 1) loop(height + 1) else height
+    }
+    loop(0)
+  }
 
   /** Determines if the right sub tree can exists inside of the partial merkle
     * tree This function should only be used to determine if a right sub tree

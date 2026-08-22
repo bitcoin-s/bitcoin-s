@@ -68,4 +68,20 @@ class MerkleConsensusSecurityTest extends BitcoinSUnitTest {
       RawMerkleBlockSerializer.read(merkleBlockBytes)
     }
   }
+
+  it must "compute calcMaxHeight with integer-exact results for large transaction counts" in {
+    // Finding 3 (Low): float-based calcMaxHeight disagrees with Bitcoin
+    // Core's integer loop at n = 2^29 and n = 2^31
+    // (core/src/main/scala/org/bitcoins/core/protocol/blockchain/PartialMerkleTree.scala:391-392).
+    // Correct behavior: exact powers of two return their exponent (Core's
+    // CalcTreeWidth loop gives 29 and 31); the log2 double computation
+    // rounds to 30 and 32.
+    //
+    // Note: 1 << 31 overflows as a 32-bit Int (wraps to Int.MinValue), so
+    // calcMaxHeight must accept a Long to even be able to represent 2^31 as
+    // an argument; 1L << 31 avoids that overflow by doing the shift in
+    // 64-bit Long arithmetic from the start.
+    PartialMerkleTree.calcMaxHeight(1 << 29) must be(29)
+    PartialMerkleTree.calcMaxHeight(1L << 31) must be(31)
+  }
 }
