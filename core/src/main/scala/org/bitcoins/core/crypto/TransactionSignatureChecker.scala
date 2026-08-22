@@ -141,7 +141,8 @@ trait TransactionSignatureChecker {
         ) {
           SignatureValidationErrorNotStrictDerEncoding
         } else if (
-          ScriptFlagUtil.requireLowSValue(flags) && !DERSignatureUtil
+          ScriptFlagUtil.requireLowSValue(
+            flags) && signature.bytes.nonEmpty && !DERSignatureUtil
             .isLowS(signature)
         ) {
           SignatureValidationErrorHighSValue
