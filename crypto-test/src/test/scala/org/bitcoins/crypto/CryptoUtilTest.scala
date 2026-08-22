@@ -266,4 +266,17 @@ class CryptoUtilTest extends BitcoinSCryptoTest {
     hash.hex must be(expected)
     hash.flip.flip.hex must be(expected)
   }
+
+  it must "treat uppercase hex consistently between isHex and decodeHex" in {
+    // isHex previously used a lowercase-only regex (^[0-9a-f]+$) while
+    // decodeHex (backed by scodec's fromValidHex) happily accepts
+    // uppercase hex, so the two disagreed on what counts as valid hex.
+    val upper = "DEADBEEF"
+    val lower = "deadbeef"
+
+    // decodeHex accepts uppercase; isHex must agree
+    CryptoBytesUtil.decodeHex(upper) must be(ByteVector.fromValidHex(lower))
+    CryptoBytesUtil.isHex(lower) must be(true)
+    CryptoBytesUtil.isHex(upper) must be(true)
+  }
 }
