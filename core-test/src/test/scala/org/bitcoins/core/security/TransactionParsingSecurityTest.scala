@@ -1,7 +1,10 @@
 package org.bitcoins.core.security
 
 import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.serializers.blockchain.RawBlockSerializer
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
+
+import scala.util.Try
 
 /** Security reproduction tests for transaction, witness and CompactSizeUInt
   * parsing. Each test asserts the CORRECT/SAFE behavior, so every test here
@@ -9,6 +12,25 @@ import org.bitcoins.testkitcore.util.BitcoinSUnitTest
   * checklist.
   */
 class TransactionParsingSecurityTest extends BitcoinSUnitTest {
+
+  // genesis block coinbase tx, same fixture as RawBlockSerializerTest
+  // https://en.bitcoin.it/wiki/Genesis_block
+  private val genesisCoinbaseTx =
+    "01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff4" +
+      "d04ffff001d0104455468652054696d65732030332f4a616e2f32303039204368616e63656c6c6f72206f6e2062726" +
+      "96e6b206f66207365636f6e64206261696c6f757420666f722062616e6b73ffffffff0100f2052a01000000434104678" +
+      "afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c3" +
+      "84df7ba0b8d578a4c702b6bf11d5fac00000000"
+
+  private val genesisBlockHeader =
+    "01000000" + // version
+      "0000000000000000000000000000000000000000000000000000000000000000" + // prev block hash
+      "3ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a" + // merkle root
+      "29ab5f49" + // timestamp
+      "ffff001d" + // nbits
+      "1dac2b7c" // nonce
+
+  private val genesisBlock = genesisBlockHeader + "01" + genesisCoinbaseTx
 
   behavior of "Transaction parsing security"
 
@@ -39,5 +61,37 @@ class TransactionParsingSecurityTest extends BitcoinSUnitTest {
         // item 2 is parsed out of the locktime bytes below
         "00000000" // locktime
     Transaction.fromHexT(malformedWitnessTx).isFailure must be(true)
+  }
+
+  it must "reject trailing garbage and truncated fields in transactions, blocks, and scripts" in {
+    // Finding 2 (Medium): parsers accept trailing garbage and silently
+    // zero-pad/clamp truncated fields:
+    // - BaseTransaction.fromBytes takes lockTime as lockTimeBytes.take(4) and
+    //   ignores bytes after it
+    //   (core/src/main/scala/org/bitcoins/core/protocol/transaction/Transaction.scala:201-212);
+    //   WitnessTransaction.fromBytes has the same pattern at lines 330-334.
+    // - RawBlockSerializer.read discards the leftover bytes after the last tx
+    //   (core/src/main/scala/org/bitcoins/core/serializers/blockchain/RawBlockSerializer.scala:17).
+    // - BitcoinScriptUtil.parseScript clamps a declared script length to the
+    //   available bytes instead of failing
+    //   (core/src/main/scala/org/bitcoins/core/util/BitcoinScriptUtil.scala:664-672).
+    // Correct behavior: all of these inputs are rejected.
+
+    // trailing garbage after a valid base transaction
+    Transaction.fromHexT(genesisCoinbaseTx + "deadbeef").isFailure must be(true)
+
+    // truncated locktime (last byte removed) must not be zero-padded
+    Transaction.fromHexT(genesisCoinbaseTx.dropRight(2)).isFailure must be(true)
+
+    // trailing garbage after a valid block
+    Try(RawBlockSerializer.read(genesisBlock + "deadbeef")).isFailure must be(
+      true)
+
+    // scriptPubKey declares 25 bytes but only 24 are present
+    val truncatedScript =
+      "1976a9143b75df7c44a47fed51374aef67bb7e7ae071b0a788"
+    Try(
+      org.bitcoins.core.serializers.script.RawScriptPubKeyParser
+        .read(truncatedScript)).isFailure must be(true)
   }
 }
