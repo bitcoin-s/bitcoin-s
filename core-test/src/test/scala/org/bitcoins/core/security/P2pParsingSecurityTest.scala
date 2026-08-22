@@ -84,4 +84,27 @@ class P2pParsingSecurityTest extends BitcoinSUnitTest {
         succeed // a descriptive failure or a handled unknown payload is fine
     }
   }
+
+  it must "not interpret trailing bytes beyond payloadSize as part of the payload" in {
+    // Finding: the payload is not sliced to the declared `payloadSize`, see
+    // core/src/main/scala/org/bitcoins/core/serializers/p2p/RawNetworkMessageSerializer.scala:11-20
+    // Correct behavior: only `payloadSize` bytes after the header may be
+    // interpreted as the payload; trailing bytes belong to the next message
+    // in the stream and must be left alone.
+    // RejectMessage is used because its `extra` field consumes all remaining
+    // bytes, so trailing bytes leak into the parsed payload.
+    // payload: message="tx", code=0x10, reason="", no extra data
+    val payloadBytes = ByteVector.fromValidHex("0274781000")
+    val header =
+      NetworkHeader(RegTest,
+                    "reject",
+                    UInt32(payloadBytes.size),
+                    CryptoUtil.doubleSHA256(payloadBytes).bytes.take(4))
+    // simulate framing where the next message's bytes follow immediately
+    val trailingBytes = ByteVector.fromValidHex("f9beb4d976657261")
+    val streamBytes = header.bytes ++ payloadBytes ++ trailingBytes
+
+    val msg = NetworkMessage.fromBytes(streamBytes)
+    msg.payload.bytes.size must be(header.payloadSize.toInt)
+  }
 }

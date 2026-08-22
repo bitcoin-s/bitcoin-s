@@ -22,7 +22,7 @@ trait RawNetworkMessageSerializer extends RawBitcoinSerializer[NetworkMessage] {
         actualChecksum == header.checksum,
         s"Checksum does not match, expected=${header.checksum}, got=$actualChecksum"
       )
-      val payload = NetworkPayload(header, payloadBytes)
+      val payload = NetworkPayload(header, declaredPayloadBytes)
       val n = NetworkMessage(header, payload)
       n
     }
