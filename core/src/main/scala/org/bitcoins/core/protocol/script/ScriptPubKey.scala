@@ -1449,13 +1449,20 @@ case class TaprootScriptPubKey(override val asm: Vector[ScriptToken])
   override def witnessProgram: Seq[ScriptToken] = asm.tail.tail
   override val scriptType: ScriptType = ScriptType.WITNESS_V1_TAPROOT
 
-  val pubKey: XOnlyPubKey = {
+  // lazy: a v1 32-byte witness program is structurally taproot even when its
+  // 32 bytes are not a valid x-only coordinate (see isValidAsm above); parsing
+  // untrusted/on-chain data as a TaprootScriptPubKey must not throw merely by
+  // constructing it, only spending it should fail
+  lazy val pubKey: XOnlyPubKey = {
     require(asm(2).bytes.length == 32,
             s"pubKeyBytes must be 32 bytes in length, got=${asm(2).byteSize}")
     XOnlyPubKey.fromBytes(asm(2).bytes)
   }
 
-  override def toString = s"${ScriptDescriptorType.TR.toString}(${pubKey.hex})"
+  override def toString = {
+    val pubKeyStr = Try(pubKey.hex).getOrElse(s"invalid:${asm(2).hex}")
+    s"${ScriptDescriptorType.TR.toString}($pubKeyStr)"
+  }
 }
 
 object TaprootScriptPubKey extends ScriptFactory[TaprootScriptPubKey] {
@@ -1490,12 +1497,17 @@ object TaprootScriptPubKey extends ScriptFactory[TaprootScriptPubKey] {
 
   override def isValidAsm(asm: Seq[ScriptToken]): Boolean = {
     val asmBytes = BytesUtil.toByteVector(asm)
+    // Classification is purely structural (witness v1, 32-byte program),
+    // matching Bitcoin Core: a v1 32-byte witness program is unambiguously
+    // Taproot regardless of whether its 32 bytes form a valid x-only
+    // coordinate. Requiring cryptographic validity here would misclassify
+    // an invalid-x-coordinate taproot output as an unassigned (future,
+    // anyone-can-spend) witness version instead of a taproot output that
+    // must fail validation.
     asm.length == 3 &&
     asm.headOption.contains(OP_1) &&
     asmBytes.size == 34 &&
-    WitnessScriptPubKey.isValidAsm(asm) &&
-    // have to make sure we have a valid xonly pubkey, not just 32 bytes
-    XOnlyPubKey.fromBytesT(asm(2).bytes).isSuccess
+    WitnessScriptPubKey.isValidAsm(asm)
   }
 
   /** Computes a [[TaprootScriptPubKey]] from a given internal key with no

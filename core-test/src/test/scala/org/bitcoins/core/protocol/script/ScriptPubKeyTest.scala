@@ -48,7 +48,7 @@ class ScriptPubKeyTest extends BitcoinSUnitTest {
     assert(witSPKV1.pubKey == pubKey)
   }
 
-  it must "fail to construct a valid witness spk v1 when the coordinate is not on the curve" in {
+  it must "construct a witness spk v1 when the coordinate is not on the curve, but fail to access its pubKey" in {
     // all zeroes
     val pubKey = ByteVector.fill(32)(0.toByte)
     // reconstruct asm
@@ -56,8 +56,13 @@ class ScriptPubKeyTest extends BitcoinSUnitTest {
       ScriptConstant(pubKey)
     ))
 
+    // classification is structural (witness v1, 32-byte program), so
+    // construction itself must not throw -- otherwise parsing untrusted/
+    // on-chain data containing such an output would crash instead of
+    // classifying it as taproot (see SignatureCheckingSecurityTest)
+    val spk = TaprootScriptPubKey.fromAsm(asm)
     assertThrows[IllegalArgumentException] {
-      TaprootScriptPubKey.fromAsm(asm)
+      spk.pubKey
     }
   }
 
