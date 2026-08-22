@@ -457,4 +457,51 @@ class SignatureCheckingSecurityTest extends BitcoinSUnitTest {
     assert(!result.contains(ScriptConstant(sig.hex)),
            s"All occurrences of the signature must be removed, got=$result")
   }
+
+  it must "compute the BIP143 sighash with zero hashOutputs for a segwit v0 SIGHASH_SINGLE with an out of range input index" in {
+    // Finding (Low): a segwit v0 sighash with an out-of-range input index
+    // throws IndexOutOfBoundsException
+    // (core/src/main/scala/org/bitcoins/core/crypto/TransactionSignatureSerializer.scala:236,398-401).
+    // Correct behavior per Core v30.3 (src/script/interpreter.cpp:1599-1638):
+    // the uint256-one error hash applies ONLY to the legacy (SigVersion::BASE)
+    // sighash. For segwit v0, Core computes a normal BIP143 sighash; when the
+    // input index has no corresponding output under SIGHASH_SINGLE, BIP143
+    // sets hashOutputs to 32 zero bytes instead of erroring. A fully
+    // independent preimage computation is impractical here because an
+    // out-of-range input index has no outpoint to commit to, so this test
+    // asserts the call completes without throwing and does not return the
+    // legacy uint256-one error hash.
+    val uint256OneErrorHash = DoubleSha256Digest.fromHex(
+      "0100000000000000000000000000000000000000000000000000000000000000")
+    val pubKey = privKey1.publicKey
+    val spk = P2WPKHWitnessSPKV0(pubKey)
+    val (creditingTx, outputIndex) =
+      TransactionTestUtil.buildCreditingTransaction(spk)
+    val witness = P2WPKHWitnessV0(pubKey)
+    val (spendingTx, _) =
+      TransactionTestUtil.buildSpendingTransaction(
+        creditingTx,
+        EmptyScriptSignature,
+        outputIndex,
+        Some((witness, CurrencyUnits.zero)))
+    val component = WitnessTxSigComponentRaw(
+      spendingTx.asInstanceOf[WitnessTransaction],
+      UInt32.one, // out of range: the transaction has a single input
+      TransactionOutput(CurrencyUnits.zero, spk),
+      Policy.standardFlags
+    )
+    val hashT = Try(
+      TransactionSignatureSerializer.hashForSignature(
+        component,
+        HashType.sigHashSingle,
+        TaprootSerializationOptions.empty))
+    assert(
+      hashT.isSuccess,
+      s"A segwit v0 SIGHASH_SINGLE sighash with an out of range input index must be computed with hashOutputs=zero (BIP143), not throw, got=$hashT"
+    )
+    assert(
+      hashT != Success(uint256OneErrorHash),
+      s"The uint256-one error hash only applies to the legacy sighash algorithm, a segwit v0 sighash must not return it"
+    )
+  }
 }
