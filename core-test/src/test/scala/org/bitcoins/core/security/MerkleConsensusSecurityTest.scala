@@ -1,10 +1,26 @@
 package org.bitcoins.core.security
 
+import org.bitcoins.core.consensus.Consensus
+import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.blockchain.{
   MainNetChainParams,
   PartialMerkleTree
 }
+import org.bitcoins.core.protocol.script.{
+  EmptyScriptPubKey,
+  EmptyScriptSignature,
+  ScriptWitness
+}
+import org.bitcoins.core.protocol.transaction.{
+  TransactionConstants,
+  TransactionInput,
+  TransactionOutPoint,
+  TransactionOutput,
+  TransactionWitness,
+  WitnessTransaction
+}
+import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.serializers.blockchain.RawMerkleBlockSerializer
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
@@ -83,5 +99,39 @@ class MerkleConsensusSecurityTest extends BitcoinSUnitTest {
     // 64-bit Long arithmetic from the start.
     PartialMerkleTree.calcMaxHeight(1 << 29) must be(29)
     PartialMerkleTree.calcMaxHeight(1L << 31) must be(31)
+  }
+
+  it must "use Core's witness-stripped base size check in checkTransaction" in {
+    // Finding 4 (Low): checkTransaction rejects any transaction whose full,
+    // witness-inclusive serialized size exceeds the legacy 1MB MAX_BLOCK_SIZE
+    // (core/src/main/scala/org/bitcoins/core/script/interpreter/ScriptInterpreter.scala:1391).
+    // Bitcoin Core's CheckTransaction has no such check -- it only rejects a
+    // transaction whose witness-STRIPPED base size, scaled by
+    // WITNESS_SCALE_FACTOR (4), exceeds MAX_BLOCK_WEIGHT:
+    // GetSerializeSize(TX_NO_WITNESS(tx)) * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT
+    // (consensus/tx_check.cpp). A transaction with a tiny base size but a
+    // large witness (well within the weight limit) is legitimate and must
+    // not be rejected just because its total wire size exceeds 1MB.
+    val outPoint = TransactionOutPoint(
+      DoubleSha256Digest(
+        "01272b2b1c8c33a1b4e9ab111db41c9ac275e686fbd9c5d482e586d03e9e0552"
+      ).flip,
+      UInt32.zero
+    )
+    val input =
+      TransactionInput(outPoint, EmptyScriptSignature, UInt32.zero)
+    val output = TransactionOutput(Satoshis.zero, EmptyScriptPubKey)
+    val hugeWitness = ScriptWitness(Vector(ByteVector.fill(2000000)(0x00)))
+    val tx = WitnessTransaction(
+      TransactionConstants.version,
+      Vector(input),
+      Vector(output),
+      TransactionConstants.lockTime,
+      TransactionWitness(Vector(hugeWitness))
+    )
+
+    assert(tx.baseSize * Consensus.weightScalar <= Consensus.maxBlockWeight)
+    assert(tx.bytes.size > Consensus.maxBlockSize)
+    ScriptInterpreter.checkTransaction(tx) must be(true)
   }
 }

@@ -1388,8 +1388,15 @@ sealed abstract class ScriptInterpreter {
   def checkTransaction(transaction: Transaction): Boolean = {
     val inputOutputsNotZero =
       !(transaction.inputs.isEmpty || transaction.outputs.isEmpty)
-    val txNotLargerThanBlock = transaction.bytes.size < Consensus.maxBlockSize
-    val txNotHeavierThanBlock = transaction.weight < Consensus.maxBlockWeight
+    // Bitcoin Core's CheckTransaction only checks the witness-stripped base
+    // size scaled by WITNESS_SCALE_FACTOR against MAX_BLOCK_WEIGHT
+    // (GetSerializeSize(TX_NO_WITNESS(tx)) * WITNESS_SCALE_FACTOR > MAX_BLOCK_WEIGHT).
+    // There is no separate check against the legacy 1MB MAX_BLOCK_SIZE using
+    // the full witness-inclusive size, so a transaction with a small base
+    // size but a large witness (well within the weight limit) must not be
+    // rejected just because its total serialized size exceeds 1MB.
+    val txNotHeavierThanBlock =
+      transaction.baseSize * Consensus.weightScalar <= Consensus.maxBlockWeight
     val outputsSpendValidAmountsOfMoney = !transaction.outputs.exists(o =>
       o.value < CurrencyUnits.zero || o.value > Consensus.maxMoney)
 
@@ -1406,7 +1413,7 @@ sealed abstract class ScriptInterpreter {
     } else {
       !transaction.inputs.exists(_.previousOutput == EmptyTransactionOutPoint)
     }
-    inputOutputsNotZero && txNotLargerThanBlock && txNotHeavierThanBlock && outputsSpendValidAmountsOfMoney &&
+    inputOutputsNotZero && txNotHeavierThanBlock && outputsSpendValidAmountsOfMoney &&
     allOutputsValidMoneyRange && noDuplicateInputs && isValidScriptSigForCoinbaseTx
   }
 
