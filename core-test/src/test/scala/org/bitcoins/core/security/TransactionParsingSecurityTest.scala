@@ -1,7 +1,7 @@
 package org.bitcoins.core.security
 
 import org.bitcoins.core.protocol.CompactSizeUInt
-import org.bitcoins.core.protocol.transaction.Transaction
+import org.bitcoins.core.protocol.transaction.{Transaction, WitnessTransaction}
 import org.bitcoins.core.serializers.blockchain.RawBlockSerializer
 import org.bitcoins.core.serializers.script.RawScriptWitnessParser
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
@@ -134,5 +134,19 @@ class TransactionParsingSecurityTest extends BitcoinSUnitTest {
     // length larger than the remaining bytes is rejected.
     // 1 stack item, declared element length 2, only 1 byte available.
     Try(RawScriptWitnessParser.read(hex"0102ff")).isFailure must be(true)
+  }
+
+  it must "reject a witness transaction with a flag byte other than 1" in {
+    // Finding 6 (Info): WitnessTransaction.fromBytes only requires flag != 0
+    // (core/src/main/scala/org/bitcoins/core/protocol/transaction/Transaction.scala:317-323).
+    // BIP144 defines the flag as 0x01 and Bitcoin Core rejects any other
+    // value. Correct behavior: reject.
+    // This is a valid witness tx (txid c586389e5e4b3acb9d6c8be1c19ae8ab2795397633176f5a6442a261bbdefc3a,
+    // same fixture as TransactionTest) with the flag byte changed 01 -> 02.
+    val invalidFlagTx =
+      "02000000" + // version
+        "00" + "02" + // marker 0, INVALID flag 2
+        "0140d43a99926d43eb0e619bf0b3d83b4a31f60c176beecfb9d35bf45e54d0f7420100000017160014a4b4ca48de0b3fffc15404a1acdc8dbaae226955ffffffff0100e1f5050000000017a9144a1154d50b03292b3024370901711946cb7cccc387024830450221008604ef8f6d8afa892dee0f31259b6ce02dd70c545cfcfed8148179971876c54a022076d771d6e91bed212783c9b06e0de600fab2d518fad6f15a2b191d7fbd262a3e0121039d25ab79f41f75ceaf882411fd41fa670a4c672c23ffaf0e361a969cde0692e800000000"
+    WitnessTransaction.fromHexT(invalidFlagTx).isFailure must be(true)
   }
 }
