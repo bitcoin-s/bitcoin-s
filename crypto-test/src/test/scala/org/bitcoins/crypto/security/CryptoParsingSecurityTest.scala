@@ -165,4 +165,17 @@ class CryptoParsingSecurityTest extends BitcoinSCryptoTest {
     HashType.isDefinedHashtypeSignature(sigWithAllHashType) must be(true)
     HashType.isDefinedHashtypeSignature(sigWithZeroHashType) must be(false)
   }
+
+  behavior of "ECDigitalSignature.fromFrontOfBytesWithSigHash"
+
+  it must "fail cleanly with an IllegalArgumentException when the sighash byte is absent" in {
+    // Finding: fromFrontOfBytesWithSigHash throws NoSuchElementException
+    // (from `.head` on an empty ByteVector) when the input has no sighash byte
+    // after the DER signature (ECDigitalSignature.scala:167-171).
+    // Correct behavior: a clean, documented failure such as
+    // IllegalArgumentException (or an Option/Try-returning API).
+    intercept[IllegalArgumentException] {
+      ECDigitalSignature.fromFrontOfBytesWithSigHash(strictDerNoSigHash)
+    }
+  }
 }
