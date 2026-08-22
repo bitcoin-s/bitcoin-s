@@ -12,8 +12,8 @@ class BitcoinSUtilTest extends BitcoinSUnitTest {
 
     BytesUtil.isHex("") must be(false)
 
-    // don't allow upper case hex chars
-    BytesUtil.isHex("ABCDEF0123456789") must be(false)
+    // isHex must agree with decodeHex, which accepts uppercase hex too
+    BytesUtil.isHex("ABCDEF0123456789") must be(true)
 
     BytesUtil.isHex("g") must be(false)
 
