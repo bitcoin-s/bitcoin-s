@@ -87,4 +87,22 @@ class CryptoParsingSecurityTest extends BitcoinSCryptoTest {
       SchnorrNonce.fromBytes(longInput)
     }
   }
+
+  behavior of "SchnorrDigitalSignature.fromBytes"
+
+  it must "reject a 65 byte signature with a trailing 0x00 sighash byte" in {
+    // Finding: a 65-byte schnorr signature whose sighash byte is 0x00 is
+    // accepted (SchnorrDigitalSignature.scala:34-43), violating BIP340/341
+    // which require sig[64] != 0x00 for 65-byte signatures.
+    // Correct behavior: reject the 0x00 trailing byte.
+
+    // positive control: a plain 64 byte signature must keep working
+    val sig64 = SchnorrDigitalSignature.dummy.bytes
+    SchnorrDigitalSignature.fromBytes(sig64).bytes must be(sig64)
+
+    val sig65WithZeroHashType = sig64.:+(0x00.toByte)
+    intercept[IllegalArgumentException] {
+      SchnorrDigitalSignature.fromBytes(sig65WithZeroHashType)
+    }
+  }
 }
