@@ -10,7 +10,12 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput
 }
 import org.bitcoins.core.script.arithmetic.{ArithmeticInterpreter, OP_1ADD}
-import org.bitcoins.core.script.constant.{ScriptConstant, ScriptNumber}
+import org.bitcoins.core.script.constant.{
+  BytesToPushOntoStack,
+  OP_16,
+  ScriptConstant,
+  ScriptNumber
+}
 import org.bitcoins.core.script.flag.{ScriptFlag, ScriptVerifyNone}
 import org.bitcoins.core.script.locktime.{
   LockTimeInterpreter,
@@ -24,6 +29,7 @@ import org.bitcoins.core.script.{
   PreExecutionScriptProgram
 }
 import org.bitcoins.core.serializers.script.ScriptParser
+import org.bitcoins.core.util.BitcoinScriptUtil
 import org.bitcoins.testkitcore.util.{BitcoinSUnitTest, TestUtil}
 import scodec.bits.ByteVector
 
@@ -177,6 +183,15 @@ class ScriptArithmeticSecurityTest extends BitcoinSUnitTest {
     val newProgram = StackInterpreter.opRoll(program)
     // the second 'a' (depth 2) moves to the top; the first 'a' stays at depth 1
     newProgram.stack must be(List(a, a, b))
+  }
+
+  it must "count a scriptSig ending in OP_16 as push-only" in {
+    // Finding 8 (Low): core/src/main/scala/org/bitcoins/core/util/BitcoinScriptUtil.scala:202-220
+    // isPushOnly uses scriptOp.opCode < OP_16.opCode, rejecting OP_16 itself; Core's IsPushOnly
+    // (script.cpp) allows all opcodes up to and including OP_16.
+    // Correct behavior: OP_16 counts as a push.
+    val asm = Seq(BytesToPushOntoStack(1), ScriptConstant("ff"), OP_16)
+    BitcoinScriptUtil.isPushOnly(asm) must be(true)
   }
 
   private def buildTxSigComponent(flags: Seq[ScriptFlag]): TxSigComponent = {

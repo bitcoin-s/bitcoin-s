@@ -206,7 +206,9 @@ trait BitcoinScriptUtil {
         case h :: t =>
           h match {
             case scriptOp: ScriptOperation =>
-              if (scriptOp.opCode < OP_16.opCode) {
+              // Core's IsPushOnly allows all opcodes up to and including
+              // OP_16 (script.cpp), not just strictly less than it
+              if (scriptOp.opCode <= OP_16.opCode) {
                 loop(t)
               } else {
                 false
