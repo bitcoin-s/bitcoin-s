@@ -253,7 +253,14 @@ sealed abstract class CryptoGenerators {
       sigNoHashType = privKey.schnorrSign(hash.bytes)
       hashType <- taprootHashType
     } yield {
-      sigNoHashType.appendHashType(hashType)
+      // BIP341 states that if we use default sighash we don't append the
+      // hash type byte (see Sign.schnorrSignWithHashType); a 65 byte
+      // signature with an explicit 0x00 trailing byte is invalid
+      if (hashType == HashType.sigHashDefault) {
+        sigNoHashType
+      } else {
+        sigNoHashType.appendHashType(hashType)
+      }
     }
   }
   def schnorrDigitalSignature: Gen[SchnorrDigitalSignature] = {
@@ -309,8 +316,15 @@ sealed abstract class CryptoGenerators {
       hash = CryptoUtil.sha256Hash160(pubKey.bytes)
     } yield hash
 
-  /** Generates a random [[HashType HashType]] */
-  def hashType: Gen[HashType] = Gen.oneOf(HashType.hashTypes)
+  /** Generates a random [[HashType HashType]] to append to a legacy/segwit v0
+    * ECDSA signature. Excludes SIGHASH_DEFAULT: that hashtype byte is only
+    * meaningful for taproot/schnorr signatures (see [[taprootHashType]]) and
+    * ECDigitalSignature.appendHashType always appends the byte verbatim, so
+    * including it here would generate ECDSA signatures with an explicit 0x00
+    * trailing byte that Bitcoin Core rejects as an undefined hashtype.
+    */
+  def hashType: Gen[HashType] =
+    Gen.oneOf(HashType.hashTypes.filterNot(_ == HashType.sigHashDefault))
 
   def extVersion: Gen[ExtKeyVersion] = {
     Gen.oneOf(ExtKeyVersion.all)

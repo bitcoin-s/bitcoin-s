@@ -23,6 +23,10 @@ class CryptoParsingSecurityTest extends BitcoinSCryptoTest {
   private val validXOnlyHex =
     "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
 
+  // strict DER encoding of (r, s) above, no sighash byte appended
+  private val strictDerNoSigHash: ByteVector =
+    ByteVector.fromValidHex("3044" + "0220" + rHex + "0220" + sHex)
+
   behavior of "DERSignatureUtil.parseDERLax"
 
   it must "parse long-form length bytes the same way Bitcoin Core's lax DER parser does" in {
@@ -140,5 +144,25 @@ class CryptoParsingSecurityTest extends BitcoinSCryptoTest {
     // validly decoded signature
     sigShort.hashTypeOpt must be(None)
     sigLong.hashTypeOpt must be(None)
+  }
+
+  behavior of "HashType.isDefinedHashtypeSignature"
+
+  it must "not count 0x00 as a defined ECDSA hashtype" in {
+    // Finding: isDefinedHashtypeSignature counts 0x00 as a defined ECDSA
+    // hashtype because hashTypeBytes includes sigHashDefaultByte
+    // (HashType.scala:119-128,200-202). Bitcoin Core's
+    // CheckSignatureEncoding rejects 0x00 for ECDSA signatures.
+    // Correct behavior: 0x00 is not a defined hashtype.
+
+    // same strict DER signature, once with 0x01 (SIGHASH_ALL) and once with
+    // 0x00 appended as the sighash byte
+    val sigWithAllHashType =
+      ECDigitalSignature.fromBytes(strictDerNoSigHash.:+(0x01.toByte))
+    val sigWithZeroHashType =
+      ECDigitalSignature.fromBytes(strictDerNoSigHash.:+(0x00.toByte))
+
+    HashType.isDefinedHashtypeSignature(sigWithAllHashType) must be(true)
+    HashType.isDefinedHashtypeSignature(sigWithZeroHashType) must be(false)
   }
 }
