@@ -61,6 +61,25 @@ class ScriptArithmeticSecurityTest extends BitcoinSUnitTest {
     )
   }
 
+  it must "fail gracefully with a ScriptError on numeric operands larger than 8 bytes instead of throwing NumberFormatException" in {
+    // Finding 3 (High): core/src/main/scala/org/bitcoins/core/script/constant/ScriptNumberUtil.scala:108
+    // parses operand hex with java.lang.Long.parseLong; a >8-byte operand overflows and throws
+    // NumberFormatException, which escapes the interpreter (ArithmeticInterpreter.scala:306;
+    // same pattern at ArithmeticInterpreter.scala:357-368 and LockTimeInterpreter.scala:67,116).
+    // Correct behavior: a script evaluation error, not a crash.
+    val stack = List(ScriptConstant("ffffffffffffffff7f")) // 9-byte operand
+    val script = List(OP_1ADD)
+    val t = buildTxSigComponent(Seq(ScriptVerifyNone))
+    val program = PreExecutionScriptProgram(t).toExecutionInProgress
+      .updateStackAndScript(stack, script)
+    // currently throws NumberFormatException out of the interpreter
+    val newProgram = ArithmeticInterpreter.op1Add(program)
+    newProgram.isInstanceOf[ExecutedScriptProgram] must be(true)
+    newProgram.asInstanceOf[ExecutedScriptProgram].error.isDefined must be(
+      true
+    )
+  }
+
   private def buildTxSigComponent(flags: Seq[ScriptFlag]): TxSigComponent = {
     BaseTxSigComponent(
       transaction = TestUtil.transaction,
