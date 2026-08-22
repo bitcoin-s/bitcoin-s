@@ -132,11 +132,37 @@ object Transaction extends Factory[Transaction] {
         // these transactions will not have a script witness associated with them making them invalid
         // witness transactions (you need to have a witness to be considered a witness tx)
         // see: https://github.com/bitcoin-s/bitcoin-s/blob/01d89df1b7c6bc4b1594406d54d5e6019705c654/core-test/src/test/scala/org/bitcoins/core/protocol/transaction/TransactionTest.scala#L88
-        try {
-          WitnessTransaction.fromBytes(bytes)
-        } catch {
-          case scala.util.control.NonFatal(_) =>
+        //
+        // This mirrors how Bitcoin Core actually disambiguates the
+        // marker/flag bytes: Core reads the input vector first, and only
+        // reinterprets the following byte as a witness flag if that read
+        // comes back empty (see UnserializeTransaction in
+        // primitives/transaction.h). So the fallback to reinterpreting as a
+        // base transaction is only ever considered when the witness-format
+        // input vector itself came back empty; once a non-empty input
+        // vector has parsed successfully, the bytes are unambiguously meant
+        // to be a witness transaction, and any later failure (e.g. a
+        // malformed witness stack or truncated locktime) is a genuine parse
+        // error that must not be silently reinterpreted as an unrelated
+        // base transaction.
+        scala.util.Try(WitnessTransaction.parseInputsAndOutputs(bytes)) match {
+          case scala.util.Failure(_) =>
             BaseTransaction.fromBytes(bytes)
+          case scala.util.Success((version, inputs, outputs, witnessBytes))
+              if inputs.isEmpty =>
+            scala.util
+              .Try {
+                WitnessTransaction.fromParsedInputsAndOutputs(version,
+                                                              inputs,
+                                                              outputs,
+                                                              witnessBytes)
+              }
+              .getOrElse(BaseTransaction.fromBytes(bytes))
+          case scala.util.Success((version, inputs, outputs, witnessBytes)) =>
+            WitnessTransaction.fromParsedInputsAndOutputs(version,
+                                                          inputs,
+                                                          outputs,
+                                                          witnessBytes)
         }
       } else {
         BaseTransaction.fromBytes(bytes)
@@ -311,6 +337,27 @@ object WitnessTransaction extends Factory[WitnessTransaction] {
     * [[https://github.com/bitcoin/bitcoin/blob/e8cfe1ee2d01c493b758a67ad14707dca15792ea/src/primitives/transaction.h#L244-L251]]
     */
   override def fromBytes(bytes: ByteVector): WitnessTransaction = {
+    val (version, inputs, outputs, witnessBytes) =
+      parseInputsAndOutputs(bytes)
+    fromParsedInputsAndOutputs(version, inputs, outputs, witnessBytes)
+  }
+
+  /** Parses the version and BIP141 marker/flag/input-vector/output-vector
+    * portion of a witness-serialized transaction, without parsing the witness
+    * stacks or locktime that follow.
+    *
+    * Exposed separately (rather than folded into [[fromBytes]]) so
+    * [[Transaction.fromBytes]] can distinguish a failure here -- which can mean
+    * the bytes were never really witness-formatted to begin with, see the
+    * marker/flag ambiguity noted there -- from a failure while parsing the
+    * witness/locktime section of bytes that unambiguously did parse as a
+    * witness transaction's input/output vectors.
+    */
+  private[transaction] def parseInputsAndOutputs(
+      bytes: ByteVector): (Int32,
+                           Vector[TransactionInput],
+                           Vector[TransactionOutput],
+                           ByteVector) = {
     val versionBytes = bytes.take(4)
     val version = Int32(versionBytes.reverse)
     val marker = bytes(4)
@@ -326,6 +373,18 @@ object WitnessTransaction extends Factory[WitnessTransaction] {
       BytesUtil.parseCmpctSizeUIntSeq(txInputBytes, TransactionInput)
     val (outputs, witnessBytes) =
       BytesUtil.parseCmpctSizeUIntSeq(outputBytes, TransactionOutput)
+    (version, inputs, outputs, witnessBytes)
+  }
+
+  /** Parses the witness stacks and locktime following an already-parsed
+    * input/output vector pair (see [[parseInputsAndOutputs]]) and builds the
+    * resulting [[WitnessTransaction]].
+    */
+  private[transaction] def fromParsedInputsAndOutputs(
+      version: Int32,
+      inputs: Vector[TransactionInput],
+      outputs: Vector[TransactionOutput],
+      witnessBytes: ByteVector): WitnessTransaction = {
     val witness = TransactionWitness(witnessBytes, inputs.size)
     val lockTimeBytes = witnessBytes.drop(witness.byteSize)
     require(
