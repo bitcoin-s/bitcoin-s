@@ -89,6 +89,30 @@ class HashTypeTest extends BitcoinSCryptoTest {
     HashType(105512910).isInstanceOf[SIGHASH_ANYONECANPAY] must be(true)
   }
 
+  it must "not count 0x00 as a defined ECDSA hashtype" in {
+    // isDefinedHashtypeSignature previously counted 0x00 as a defined ECDSA
+    // hashtype because hashTypeBytes included sigHashDefaultByte. Bitcoin
+    // Core's CheckSignatureEncoding rejects 0x00 for ECDSA signatures --
+    // SIGHASH_DEFAULT is only a defined hashtype for taproot/schnorr
+    // signatures.
+    val rHex =
+      "4c2dd8a9b6f8d425fcd8ee9a20ac73b619906a6367eac6cb93e70375225ec016"
+    val sHex =
+      "356878eff111ff3663d7e6bf08947f94443845e0dcc54961664d922f7660b80c"
+    val strictDerNoSigHash: ByteVector =
+      ByteVector.fromValidHex("3044" + "0220" + rHex + "0220" + sHex)
+
+    // same strict DER signature, once with 0x01 (SIGHASH_ALL) and once with
+    // 0x00 appended as the sighash byte
+    val sigWithAllHashType =
+      ECDigitalSignature.fromBytes(strictDerNoSigHash.:+(0x01.toByte))
+    val sigWithZeroHashType =
+      ECDigitalSignature.fromBytes(strictDerNoSigHash.:+(0x00.toByte))
+
+    HashType.isDefinedHashtypeSignature(sigWithAllHashType) must be(true)
+    HashType.isDefinedHashtypeSignature(sigWithZeroHashType) must be(false)
+  }
+
   it must "have serialization symmetry" in {
     forAll(NumberGenerator.ints.map(ByteVector.fromInt(_))) { i32 =>
       val hashType = HashType.fromBytes(i32)

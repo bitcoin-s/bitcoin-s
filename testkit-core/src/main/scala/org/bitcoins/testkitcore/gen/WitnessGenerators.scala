@@ -95,7 +95,7 @@ sealed abstract class WitnessGenerators {
     for {
       privKey <- CryptoGenerators.privateKey
       amount <- CurrencyUnitGenerator.satoshis
-      hashType <- CryptoGenerators.hashType
+      hashType <- CryptoGenerators.preTaprootHashType
       witScriptPubKey = P2WPKHWitnessSPKV0(privKey.publicKey)
       unsignedScriptWitness = P2WPKHWitnessV0(privKey.publicKey)
       unsignedWTxSigComponent = createUnsignedRawWTxSigComponent(
@@ -122,7 +122,7 @@ sealed abstract class WitnessGenerators {
     for {
       (scriptPubKey, privKeys) <- ScriptGenerators.p2pkScriptPubKey
       amount <- CurrencyUnitGenerator.satoshis
-      hashType <- CryptoGenerators.hashType
+      hashType <- CryptoGenerators.preTaprootHashType
       witScriptPubKey = P2WSHWitnessSPKV0(scriptPubKey)
       unsignedScriptWitness = P2WSHWitnessV0(scriptPubKey)
       u = createUnsignedRawWTxSigComponent(
@@ -155,7 +155,7 @@ sealed abstract class WitnessGenerators {
     for {
       (scriptPubKey, privKey) <- ScriptGenerators.p2pkhScriptPubKey
       amount <- CurrencyUnitGenerator.satoshis
-      hashType <- CryptoGenerators.hashType
+      hashType <- CryptoGenerators.preTaprootHashType
       witScriptPubKey = P2WSHWitnessSPKV0(scriptPubKey)
       unsignedScriptWitness = P2WSHWitnessV0(scriptPubKey)
       u = createUnsignedRawWTxSigComponent(
@@ -190,7 +190,7 @@ sealed abstract class WitnessGenerators {
     for {
       (scriptPubKey, privKeys) <- ScriptGenerators.multiSigScriptPubKey
       amount <- CurrencyUnitGenerator.satoshis
-      hashType <- CryptoGenerators.hashType
+      hashType <- CryptoGenerators.preTaprootHashType
       witScriptPubKey = P2WSHWitnessSPKV0(scriptPubKey)
       unsignedScriptWitness = P2WSHWitnessV0(scriptPubKey)
       u = createUnsignedRawWTxSigComponent(
