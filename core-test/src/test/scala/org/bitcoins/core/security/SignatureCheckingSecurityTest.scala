@@ -24,7 +24,8 @@ import org.bitcoins.core.script.flag.{
   ScriptFlagUtil,
   ScriptVerifyDiscourageUpgradableWitnessProgram,
   ScriptVerifyLowS,
-  ScriptVerifyNullFail
+  ScriptVerifyNullFail,
+  ScriptVerifyWitness
 }
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.{
@@ -399,5 +400,44 @@ class SignatureCheckingSecurityTest extends BitcoinSUnitTest {
       signature = nonDerSig,
       flags = Seq(ScriptVerifyLowS))
     result must be(SignatureValidationErrorNotStrictDerEncoding)
+  }
+
+  it must "not enforce WITNESS_UNEXPECTED when the ScriptVerifyWitness flag is not set" in {
+    // Finding (Low): WITNESS_UNEXPECTED is enforced even without the
+    // ScriptVerifyWitness flag
+    // (core/src/main/scala/org/bitcoins/core/script/interpreter/ScriptInterpreter.scala:132,1434-1451).
+    // Correct behavior: Core only performs this check when
+    // SCRIPT_VERIFY_WITNESS is set.
+    val pubKey = privKey1.publicKey
+    val spk = P2PKHScriptPubKey(pubKey)
+    val amount = Satoshis(10000)
+    val (creditingTx, outputIndex) =
+      TransactionTestUtil.buildCreditingTransaction(spk, Some(amount))
+    val witness = P2WPKHWitnessV0(pubKey)
+    // placeholder transaction to compute the legacy sighash
+    val (placeholderTx, inputIndex) =
+      TransactionTestUtil.buildSpendingTransaction(creditingTx,
+                                                   EmptyScriptSignature,
+                                                   outputIndex,
+                                                   Some((witness, amount)))
+    val flags = Policy.standardFlags.filterNot(_ == ScriptVerifyWitness)
+    val output = TransactionOutput(amount, spk)
+    val placeholderComponent =
+      BaseTxSigComponent(placeholderTx, inputIndex, output, flags)
+    val hash = TransactionSignatureSerializer.hashForSignature(
+      placeholderComponent,
+      HashType.sigHashAll,
+      TaprootSerializationOptions.empty)
+    val sig = privKey1.sign(hash.bytes).appendHashType(HashType.sigHashAll)
+    val scriptSig = P2PKHScriptSignature(sig, pubKey)
+    // the spending transaction carries an unused witness for this input
+    val (spendingTx, _) =
+      TransactionTestUtil.buildSpendingTransaction(creditingTx,
+                                                   scriptSig,
+                                                   outputIndex,
+                                                   Some((witness, amount)))
+    val component = BaseTxSigComponent(spendingTx, inputIndex, output, flags)
+    val result = ScriptInterpreter.run(PreExecutionScriptProgram(component))
+    result must be(ScriptOk)
   }
 }

@@ -129,7 +129,10 @@ sealed abstract class ScriptInterpreter {
     executedProgram.error match {
       case Some(err) => err
       case None =>
-        if (hasUnexpectedWitness(program)) {
+        if (
+          program.flags.contains(ScriptVerifyWitness) && hasUnexpectedWitness(
+            program)
+        ) {
           // note: the 'program' value we pass above is intentional, we need to check the original program
           // as the 'executedProgram' may have had the scriptPubKey value changed to the rebuilt ScriptPubKey of the witness program
           ScriptErrorWitnessUnexpected
