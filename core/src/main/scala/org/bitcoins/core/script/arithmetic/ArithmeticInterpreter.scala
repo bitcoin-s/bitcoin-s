@@ -303,7 +303,12 @@ sealed abstract class ArithmeticInterpreter {
         ) {
           program.failExecution(ScriptErrorUnknownError)
         } else {
-          val interpretedNumber = ScriptNumber(ScriptNumberUtil.toLong(s.hex))
+          // preserve the original byte-level encoding (as the binary
+          // arithmetic operations below already do) rather than
+          // re-deriving a ScriptNumber from its Long value, which would
+          // silently minimize a non-minimal operand's size and bypass the
+          // isLargerThan4Bytes consensus check that runs next
+          val interpretedNumber = ScriptNumber(s.hex)
           val newProgram =
             program.updateStack(interpretedNumber :: program.stack.tail)
           performUnaryArithmeticOperation(newProgram, op)
