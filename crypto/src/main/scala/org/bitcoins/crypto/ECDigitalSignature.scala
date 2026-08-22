@@ -181,8 +181,12 @@ object ECDigitalSignature extends Factory[ECDigitalSignature] {
     */
   def fromFrontOfBytesWithSigHash(bytes: ByteVector): ECDigitalSignature = {
     val sigWithoutSigHash = fromFrontOfBytes(bytes)
-    ECDigitalSignature(
-      sigWithoutSigHash.bytes :+ bytes.drop(sigWithoutSigHash.byteSize).head)
+    val remainingBytes = bytes.drop(sigWithoutSigHash.byteSize)
+    require(
+      remainingBytes.nonEmpty,
+      s"No sighash byte found after the DER signature in $bytes"
+    )
+    ECDigitalSignature(sigWithoutSigHash.bytes :+ remainingBytes.head)
   }
 
   def apply(r: BigInt, s: BigInt): ECDigitalSignature = fromRS(r, s)

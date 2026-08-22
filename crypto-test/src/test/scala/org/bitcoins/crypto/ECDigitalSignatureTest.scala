@@ -128,6 +128,23 @@ class ECDigitalSignatureTest extends BitcoinSCryptoTest {
     }
   }
 
+  it must "fail cleanly with an IllegalArgumentException when the sighash byte is absent" in {
+    // fromFrontOfBytesWithSigHash previously threw NoSuchElementException
+    // (from `.head` on an empty ByteVector) when the input had no sighash
+    // byte after the DER signature. Correct behavior: a clean, documented
+    // failure such as IllegalArgumentException.
+    val rHex =
+      "4c2dd8a9b6f8d425fcd8ee9a20ac73b619906a6367eac6cb93e70375225ec016"
+    val sHex =
+      "356878eff111ff3663d7e6bf08947f94443845e0dcc54961664d922f7660b80c"
+    val strictDerNoSigHash: ByteVector =
+      ByteVector.fromValidHex("3044" + "0220" + rHex + "0220" + sHex)
+
+    intercept[IllegalArgumentException] {
+      ECDigitalSignature.fromFrontOfBytesWithSigHash(strictDerNoSigHash)
+    }
+  }
+
   it must "not view an incorrectly encoded sig_hash byte as strictly encoded" in {
     forAll(CryptoGenerators.digitalSignature, CryptoGenerators.hashType) {
       case (sig, hashType) =>
