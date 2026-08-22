@@ -404,6 +404,18 @@ sealed abstract class TransactionSignatureSerializer {
       (hashType.isInstanceOf[SIGHASH_SINGLE] || hashType
         .isInstanceOf[SIGHASH_SINGLE_ANYONECANPAY]) &&
       inputIndex >= UInt32(spendingTransaction.outputs.size) &&
+      txSigComponent.sigVersion.isInstanceOf[SigVersionTaproot]
+    ) {
+      // BIP341 requires taproot SIGHASH_SINGLE with no corresponding output
+      // to fail validation outright, unlike the legacy (SigVersionBase)
+      // sighash algorithm's uint256-one placeholder error hash
+      throw new IllegalArgumentException(
+        "BIP341 requires taproot SIGHASH_SINGLE with no corresponding " +
+          s"output to fail validation, inputIndex=$inputIndex")
+    } else if (
+      (hashType.isInstanceOf[SIGHASH_SINGLE] || hashType
+        .isInstanceOf[SIGHASH_SINGLE_ANYONECANPAY]) &&
+      inputIndex >= UInt32(spendingTransaction.outputs.size) &&
       txSigComponent.sigVersion != SigVersionWitnessV0
     ) {
       errorHash
