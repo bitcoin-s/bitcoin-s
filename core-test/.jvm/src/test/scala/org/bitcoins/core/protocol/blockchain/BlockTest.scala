@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol.blockchain
 
+import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.protocol.transaction.Transaction
 import org.bitcoins.testkitcore.gen.BlockchainElementsGenerator
 import org.bitcoins.testkitcore.util.BitcoinSJvmTest
@@ -73,5 +74,21 @@ class BlockTest extends BitcoinSJvmTest {
     forAllParallel(BlockchainElementsGenerator.block) { block =>
       assert(Block(block.hex) == block)
     }
+  }
+
+  it must "include the 80-byte header and txCount varint in blockWeight" in {
+    // Bitcoin Core's GetBlockWeight scales the WHOLE serialized block
+    // (header and txCount included, not just the transaction list) by
+    // WITNESS_SCALE_FACTOR in its base-size term (block.cpp). The header
+    // and txCount carry no witness data, so they must count at the full
+    // scale factor (4), the same way legacy (non-segwit) transaction bytes
+    // do.
+    val block = MainNetChainParams.genesisBlock
+
+    val expectedWeight =
+      (block.blockHeader.bytes.size + block.txCount.bytes.size) *
+        Consensus.weightScalar + block.transactions.map(_.weight).sum
+
+    block.blockWeight must be(expectedWeight)
   }
 }

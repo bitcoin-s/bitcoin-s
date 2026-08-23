@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol.blockchain
 
+import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.number.UInt64
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.transaction.Transaction
@@ -42,7 +43,15 @@ sealed abstract class Block extends NetworkElement {
     * Block weight is defined as Base size * 3 + Total size
     * [[https://github.com/bitcoin/bitcoin/blob/7490ae8b699d2955b665cf849d86ff5bb5245c28/src/primitives/block.cpp#L35]]
     */
-  def blockWeight: Long = transactions.map(_.weight).sum
+  def blockWeight: Long = {
+    // the 80-byte header and the txCount varint carry no witness data, so
+    // they contribute at the full WITNESS_SCALE_FACTOR the same way
+    // Bitcoin Core's GetBlockWeight includes the whole serialized block
+    // (not just the transactions) in both its base-size and total-size terms
+    val headerAndTxCountWeight =
+      (blockHeader.bytes.size + txCount.bytes.size) * Consensus.weightScalar
+    headerAndTxCountWeight + transactions.map(_.weight).sum
+  }
 }
 
 /** Companion object for creating Blocks
