@@ -552,6 +552,16 @@ class TransactionTest extends BitcoinSUnitTest {
     Transaction.fromHexT(genesisCoinbaseTx.dropRight(2)).isFailure must be(true)
   }
 
+  it must "fail with a parse error (not a raw index exception) on very short transaction input" in {
+    // Transaction.fromBytes used to do unchecked bytes(4)/bytes(5) indexing,
+    // so input shorter than 6 bytes threw a raw IndexOutOfBoundsException
+    // instead of a proper parse failure.
+    val ex = intercept[Exception] {
+      Transaction.fromBytes(hex"0100000000")
+    }
+    ex.isInstanceOf[IndexOutOfBoundsException] must be(false)
+  }
+
   private def findInput(
       tx: Transaction,
       outPoint: TransactionOutPoint

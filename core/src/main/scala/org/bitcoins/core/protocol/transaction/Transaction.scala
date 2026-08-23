@@ -124,7 +124,7 @@ object Transaction extends Factory[Transaction] {
     // https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#transaction-id
     val tx = {
       if (
-        bytes(4) == WitnessTransaction.marker && bytes(
+        bytes.length > 5 && bytes(4) == WitnessTransaction.marker && bytes(
           5) == WitnessTransaction.flag
       ) {
         // this throw/catch is _still_ necessary for the case where we have unsigned base transactions
