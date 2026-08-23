@@ -86,6 +86,26 @@ class ArithmeticInterpreterTest extends BitcoinSUnitTest {
       .error must be(Some(ScriptErrorUnknownError))
   }
 
+  it must "fail gracefully with a ScriptError on numeric operands larger than 8 bytes instead of throwing NumberFormatException" in {
+    // ScriptNumber construction eagerly derives a Long value via ScriptNumberUtil.toLong, which
+    // parses the operand's hex with java.lang.Long.parseLong -- a >8-byte operand overflows that
+    // parse and throws NumberFormatException. That must be caught and turned into a script error
+    // rather than escaping the interpreter as an uncaught crash.
+    val stack = List(ScriptConstant("ffffffffffffffff7f")) // 9-byte operand
+    val script = List(OP_1ADD)
+    val t = buildTxSigComponent(Seq(ScriptVerifyNone))
+    val program = PreExecutionScriptProgram(t).toExecutionInProgress
+      .updateStackAndScript(stack, script)
+    val newProgram = AI.op1Add(program)
+    newProgram.isInstanceOf[ExecutedScriptProgram] must be(true)
+    // matches Bitcoin Core: CScriptNum parsing failures are caught and
+    // mapped to SCRIPT_ERR_UNKNOWN_ERROR, same as the oversized-operand
+    // case above
+    newProgram
+      .asInstanceOf[ExecutedScriptProgram]
+      .error must be(Some(ScriptErrorUnknownError))
+  }
+
   private def buildTxSigComponent(flags: Seq[ScriptFlag]): TxSigComponent = {
     BaseTxSigComponent(
       transaction = TestUtil.transaction,

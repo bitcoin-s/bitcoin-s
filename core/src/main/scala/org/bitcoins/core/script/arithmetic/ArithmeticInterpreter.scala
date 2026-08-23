@@ -15,6 +15,7 @@ import org.bitcoins.core.script.{
 import org.bitcoins.core.util.BitcoinScriptUtil
 
 import scala.annotation.tailrec
+import scala.util.{Failure, Success, Try}
 
 /** Created by chris on 1/25/16.
   */
@@ -263,6 +264,17 @@ sealed abstract class ArithmeticInterpreter {
   private def isLargerThan4Bytes(scriptNumber: ScriptNumber): Boolean =
     scriptNumber.bytes.size > 4
 
+  /** Safely interprets a ScriptConstant as a ScriptNumber. ScriptNumber
+    * construction eagerly derives a Long value from the operand's bytes
+    * (ScriptNumberUtil.toLong), which throws NumberFormatException for a
+    * non-minimal operand wider than 8 bytes -- an untrusted, attacker
+    * controlled scriptSig/witness value. Bitcoin Core's CScriptNum constructor
+    * rejects such operands with a caught scriptnum_error instead of letting an
+    * unrepresentable value escape as a crash, so we do the same here.
+    */
+  private def interpretNumber(constant: ScriptConstant): Try[ScriptNumber] =
+    Try(ScriptNumber(constant.hex))
+
   /** Performs the given arithmetic operation on the stack head
     * @param program
     *   the program whose stack top is used as an argument for the arithmetic
@@ -308,10 +320,14 @@ sealed abstract class ArithmeticInterpreter {
           // re-deriving a ScriptNumber from its Long value, which would
           // silently minimize a non-minimal operand's size and bypass the
           // isLargerThan4Bytes consensus check that runs next
-          val interpretedNumber = ScriptNumber(s.hex)
-          val newProgram =
-            program.updateStack(interpretedNumber :: program.stack.tail)
-          performUnaryArithmeticOperation(newProgram, op)
+          interpretNumber(s) match {
+            case Success(interpretedNumber) =>
+              val newProgram =
+                program.updateStack(interpretedNumber :: program.stack.tail)
+              performUnaryArithmeticOperation(newProgram, op)
+            case Failure(_) =>
+              program.failExecution(ScriptErrorUnknownError)
+          }
         }
       case Some(_: ScriptToken) =>
         // pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
@@ -359,22 +375,34 @@ sealed abstract class ArithmeticInterpreter {
           }
         case (x: ScriptConstant, _: ScriptNumber) =>
           // interpret x as a number
-          val interpretedNumber = ScriptNumber(x.hex)
-          val newProgram =
-            program.updateStack(interpretedNumber :: program.stack.tail)
-          performBinaryArithmeticOperation(newProgram, op)
+          interpretNumber(x) match {
+            case Success(interpretedNumber) =>
+              val newProgram =
+                program.updateStack(interpretedNumber :: program.stack.tail)
+              performBinaryArithmeticOperation(newProgram, op)
+            case Failure(_) =>
+              program.failExecution(ScriptErrorUnknownError)
+          }
         case (x: ScriptNumber, y: ScriptConstant) =>
-          val interpretedNumber = ScriptNumber(y.hex)
-          val newProgram =
-            program.updateStack(x :: interpretedNumber :: program.stack.tail)
-          performBinaryArithmeticOperation(newProgram, op)
+          interpretNumber(y) match {
+            case Success(interpretedNumber) =>
+              val newProgram = program.updateStack(
+                x :: interpretedNumber :: program.stack.tail)
+              performBinaryArithmeticOperation(newProgram, op)
+            case Failure(_) =>
+              program.failExecution(ScriptErrorUnknownError)
+          }
         case (x: ScriptConstant, y: ScriptConstant) =>
           // interpret x and y as a number
-          val interpretedNumberX = ScriptNumber(x.hex)
-          val interpretedNumberY = ScriptNumber(y.hex)
-          val newProgram = program.updateStack(
-            interpretedNumberX :: interpretedNumberY :: program.stack.tail.tail)
-          performBinaryArithmeticOperation(newProgram, op)
+          (interpretNumber(x), interpretNumber(y)) match {
+            case (Success(interpretedNumberX), Success(interpretedNumberY)) =>
+              val newProgram = program.updateStack(
+                interpretedNumberX ::
+                  interpretedNumberY :: program.stack.tail.tail)
+              performBinaryArithmeticOperation(newProgram, op)
+            case _ =>
+              program.failExecution(ScriptErrorUnknownError)
+          }
         case (_: ScriptToken, _: ScriptToken) =>
           // pretty sure that an error is thrown inside of CScriptNum which in turn is caught by interpreter.cpp here
           // https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
