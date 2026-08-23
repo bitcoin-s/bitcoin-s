@@ -6,7 +6,7 @@ import org.bitcoins.core.script.constant._
 import org.bitcoins.core.script.control.ControlOperations
 import org.bitcoins.core.script.crypto.CryptoOperation
 import org.bitcoins.core.script.locktime.LocktimeOperation
-import org.bitcoins.core.script.reserved.ReservedOperation
+import org.bitcoins.core.script.reserved.{OpSuccessOperation, ReservedOperation}
 import org.bitcoins.core.script.splice.SpliceOperation
 import org.bitcoins.core.script.stack.StackOperation
 import org.bitcoins.core.util.BytesUtil
@@ -94,7 +94,8 @@ object ScriptOperation extends ScriptOperationFactory[ScriptOperation] {
       ArithmeticOperation.operations ++
       BytesToPushOntoStack.operations ++
       SpliceOperation.operations ++
-      ScriptNumberOperation.operations
+      ScriptNumberOperation.operations ++
+      OpSuccessOperation.operations
   }
 
   /** This contains duplicate operations There is an optimization here by moving

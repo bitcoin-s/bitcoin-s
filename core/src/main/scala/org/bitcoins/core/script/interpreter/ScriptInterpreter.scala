@@ -1320,6 +1320,14 @@ sealed abstract class ScriptInterpreter {
         case (reservedOperation: ReservedOperation) :: _ =>
           (program.failExecution(ScriptErrorBadOpCode),
            calcOpCount(opCount, reservedOperation))
+        // BIP342 OP_SUCCESSx opcodes only take on their "succeed immediately"
+        // semantics inside Tapscript, which this generic interpreter loop
+        // does not (yet) evaluate with awareness of; outside that context
+        // they remain invalid opcodes, matching their pre-BIP342 behavior as
+        // unassigned/reserved opcodes.
+        case (opSuccess: OP_SUCCESSx) :: _ =>
+          (program.failExecution(ScriptErrorBadOpCode),
+           calcOpCount(opCount, opSuccess))
         // splice operations
         case OP_SIZE :: _ =>
           val programOrError = SpliceInterpreter.opSize(program)
