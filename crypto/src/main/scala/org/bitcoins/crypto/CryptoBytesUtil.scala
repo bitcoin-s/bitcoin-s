@@ -49,7 +49,8 @@ trait CryptoBytesUtil {
   /** Tests if a given string is a hexadecimal string. */
   def isHex(str: String): Boolean = {
     // check valid characters & hex strings have to have an even number of chars
-    str.matches("^[0-9a-f]+$") && (str.length % 2 == 0)
+    // matches decodeHex, which accepts both lowercase and uppercase hex
+    str.matches("^[0-9a-fA-F]+$") && (str.length % 2 == 0)
   }
 
   /** Converts a two character hex string to its byte representation. */

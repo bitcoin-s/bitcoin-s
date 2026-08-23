@@ -30,7 +30,12 @@ object Sha1Digest extends Factory[Sha1Digest] {
     override def toString = s"Sha1DigestImpl($hex)"
     // $COVERAGE-ON$
   }
-  override def fromBytes(bytes: ByteVector): Sha1Digest = Sha1DigestImpl(bytes)
+  override def fromBytes(bytes: ByteVector): Sha1Digest = {
+    require(bytes.length == 20,
+            // $COVERAGE-OFF$
+            "Sha1Digest must always be 20 bytes, got: " + bytes.length)
+    Sha1DigestImpl(bytes)
+  }
 }
 
 sealed trait Sha1DigestBE extends Any with HashDigest {
@@ -48,6 +53,9 @@ object Sha1DigestBE extends Factory[Sha1DigestBE] {
   }
 
   override def fromBytes(bytes: ByteVector): Sha1DigestBE = {
+    require(bytes.length == 20,
+            // $COVERAGE-OFF$
+            "Sha1DigestBE must always be 20 bytes, got: " + bytes.length)
     Sha1DigestBEImpl(bytes)
   }
 }

@@ -124,7 +124,7 @@ case class ECPublicKeyBytes(bytes: ByteVector)
   /** Parse these bytes into the bitcoin-s internal public key type. */
   def toPublicKey: ECPublicKey = ECPublicKey(bytes)
 
-  def toSchnorrPubKey: SchnorrPublicKey = SchnorrPublicKey.fromBytes(bytes)
+  def toSchnorrPubKey: SchnorrPublicKey = toPublicKey.schnorrPublicKey
 
   override private[crypto] def fromBytes(bytes: ByteVector): this.type =
     ECPublicKeyBytes(bytes).asInstanceOf[this.type]
@@ -243,7 +243,7 @@ case class ECPrivateKey(bytes: ByteVector)
   def toXOnly: XOnlyPubKey = schnorrPublicKey.toXOnly
 
   def schnorrNonce: SchnorrNonce = {
-    SchnorrNonce(publicKey.bytes)
+    publicKey.schnorrNonce
   }
 
   def fieldElement: FieldElement = FieldElement(bytes)
@@ -334,9 +334,10 @@ case class ECPublicKey(bytes: ByteVector)
     schnorrPublicKey.computeSigPoint(data, nonce)
   }
 
-  def schnorrPublicKey: SchnorrPublicKey = SchnorrPublicKey(bytes)
+  def schnorrPublicKey: SchnorrPublicKey = SchnorrPublicKey(
+    compressedBytes.tail)
 
-  def schnorrNonce: SchnorrNonce = SchnorrNonce(bytes)
+  def schnorrNonce: SchnorrNonce = SchnorrNonce(compressedBytes.tail)
 
   def adaptorVerify(
       msg: ByteVector,
@@ -422,7 +423,7 @@ case class ECPublicKey(bytes: ByteVector)
     CryptoUtil.tweakMultiply(this, tweak)
   }
 
-  def toXOnly: XOnlyPubKey = XOnlyPubKey(bytes.drop(1))
+  def toXOnly: XOnlyPubKey = XOnlyPubKey(compressedBytes.tail)
 
   def parity: KeyParity = KeyParity.fromByte(bytes.head)
 

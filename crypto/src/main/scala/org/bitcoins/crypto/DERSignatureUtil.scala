@@ -200,9 +200,15 @@ sealed abstract class DERSignatureUtil {
     *   if the S value is the low version
     */
   def isLowS(signature: ByteVector): Boolean = {
+    // use parseDERLax directly rather than decodeSignature, which silently
+    // falls back to r=s=0 (trivially "low") for bytes that aren't a valid
+    // DER signature at all
     val result = Try {
-      val (_, s) = decodeSignature(signature)
-      s.bigInteger.compareTo(CryptoParams.halfCurveOrder) <= 0
+      DERSignatureUtil.parseDERLax(signature) match {
+        case Some((_, s)) =>
+          s.bigInteger.compareTo(CryptoParams.halfCurveOrder) <= 0
+        case None => false
+      }
     }
     result match {
       case Success(bool) => bool
@@ -275,7 +281,10 @@ sealed abstract class DERSignatureUtil {
         lengthByteUnProcessed <- nextOption()
         length <- {
           if ((lengthByteUnProcessed & 0x80) != 0) {
-            var lenByte = lengthByteUnProcessed - 0x80
+            // treat the byte as unsigned before subtracting, mirroring
+            // Bitcoin Core's `lenbyte & 0x7f` (pubkey.cpp) -- as a signed
+            // Scala Byte, 0x81 - 0x80 wrongly yields -255 instead of 1
+            var lenByte = (lengthByteUnProcessed & 0xff) - 0x80
 
             while (
               lenByte > 0 && iterator.hasNext && iterator.head == 0.toByte
@@ -315,7 +324,8 @@ sealed abstract class DERSignatureUtil {
       totalLengthByteUnProcessed <- nextOption()
       _ <- {
         if ((totalLengthByteUnProcessed & 0x80) != 0) {
-          val processedTotalLengthByte = totalLengthByteUnProcessed - 0x80
+          val processedTotalLengthByte =
+            (totalLengthByteUnProcessed & 0xff) - 0x80
           moveIterForward(processedTotalLengthByte)
         } else {
           Some(())

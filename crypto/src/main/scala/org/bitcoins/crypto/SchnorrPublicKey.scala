@@ -2,7 +2,6 @@ package org.bitcoins.crypto
 
 import scodec.bits.ByteVector
 
-import scala.annotation.tailrec
 import scala.util.Try
 
 case class SchnorrPublicKey(bytes: ByteVector) extends PublicKey {
@@ -75,23 +74,12 @@ case class SchnorrPublicKey(bytes: ByteVector) extends PublicKey {
 
 object SchnorrPublicKey extends Factory[SchnorrPublicKey] {
 
-  @tailrec
   def fromBytes(bytes: ByteVector): SchnorrPublicKey = {
-    require(bytes.length <= 33,
-            s"XOnlyPublicKey must be less than 33 bytes, got $bytes")
-    if (bytes.length == 32)
-      new SchnorrPublicKey(bytes)
-    else if (bytes.length < 32) {
-      // means we need to pad the private key with 0 bytes so we have 32 bytes
-      SchnorrPublicKey.fromBytes(bytes.padLeft(32))
-    } else if (bytes.length == 33) {
-      // this is for the case when java serialies a BigInteger to 33 bytes to hold the signed num representation
-      SchnorrPublicKey.fromBytes(bytes.tail)
-    } else {
-      throw new IllegalArgumentException(
-        "XOnlyPublicKey cannot be greater than 33 bytes in size, got: " +
-          CryptoBytesUtil.encodeHex(bytes) + " which is of size: " + bytes.size)
-    }
+    require(
+      bytes.length == 32,
+      "SchnorrPublicKey must be exactly 32 bytes, got: " +
+        CryptoBytesUtil.encodeHex(bytes) + " which is of size: " + bytes.size)
+    new SchnorrPublicKey(bytes)
   }
 
   def apply(xCoor: CurveCoordinate): SchnorrPublicKey = {

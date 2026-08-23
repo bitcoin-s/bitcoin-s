@@ -34,6 +34,10 @@ object SchnorrDigitalSignature extends Factory[SchnorrDigitalSignature] {
   override def fromBytes(bytes: ByteVector): SchnorrDigitalSignature = {
     require(bytes.length == 64 || bytes.length == 65,
             s"SchnorrDigitalSignature must be exactly 64 bytes, got $bytes")
+    require(
+      bytes.length != 65 || bytes(64) != 0x00.toByte,
+      s"A 65 byte SchnorrDigitalSignature must not have an explicit 0x00 (SIGHASH_DEFAULT) trailing byte, got $bytes"
+    )
     val r = bytes.take(32)
     val s = bytes.drop(32).take(32)
     val hashTypeOpt = if (bytes.length == 65) Some(bytes(64)) else None

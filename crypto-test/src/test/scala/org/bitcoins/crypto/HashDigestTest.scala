@@ -43,4 +43,33 @@ class HashDigestTest extends BitcoinSCryptoTest {
     }
   }
 
+  behavior of "Sha1Digest"
+
+  it must "reject wrong-length inputs for Sha1Digest and Sha1DigestBE" in {
+    // Sha1Digest.fromBytes and Sha1DigestBE.fromBytes previously had no
+    // length checks, unlike every other hash digest type in the same file
+    // (Sha256Digest, RipeMd160Digest, Sha256Hash160Digest, Sha3_256Digest
+    // all validate their expected length).
+    val nineteenBytes = ByteVector(Array.fill(19)(1.toByte))
+    val twentyBytes = ByteVector(Array.fill(20)(1.toByte))
+    val twentyOneBytes = ByteVector(Array.fill(21)(1.toByte))
+
+    // positive control: exactly 20 bytes must keep working
+    Sha1Digest.fromBytes(twentyBytes).bytes must be(twentyBytes)
+    Sha1DigestBE.fromBytes(twentyBytes).bytes must be(twentyBytes)
+
+    intercept[IllegalArgumentException] {
+      Sha1Digest.fromBytes(nineteenBytes)
+    }
+    intercept[IllegalArgumentException] {
+      Sha1Digest.fromBytes(twentyOneBytes)
+    }
+    intercept[IllegalArgumentException] {
+      Sha1DigestBE.fromBytes(nineteenBytes)
+    }
+    intercept[IllegalArgumentException] {
+      Sha1DigestBE.fromBytes(twentyOneBytes)
+    }
+  }
+
 }

@@ -49,6 +49,36 @@ class ECDigitalSignatureTest extends BitcoinSCryptoTest {
     hex must be(emptySignature)
   }
 
+  it must "not treat garbage bytes that silently decode to r=s=0 as a valid low-S or hash-typed signature" in {
+    // ECDigitalSignature.fromBytes/apply itself must stay lenient and NOT
+    // throw: it is called directly on untrusted, attacker-controlled
+    // scriptSig bytes in consensus-critical script execution (e.g.
+    // CryptoInterpreter.opCheckSig/opCheckMultiSig) with no Try wrapper, so
+    // a malformed signature must fail verification cleanly rather than
+    // crash script validation with an uncaught exception. Instead, the
+    // derived accessors that previously silently treated an undecodable
+    // signature as if it validly decoded to r=s=0 (isLowS, hashTypeOpt)
+    // must correctly report that the bytes are not a valid DER signature.
+    val garbageShort = ByteVector.fromValidHex("deadbeef")
+    val garbageLong = ByteVector.fromValidHex(
+      "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20")
+
+    // must not throw -- garbage bytes are still representable so callers
+    // like the script interpreter can cleanly fail signature checks
+    val sigShort = ECDigitalSignature.fromBytes(garbageShort)
+    val sigLong = ECDigitalSignature.fromBytes(garbageLong)
+
+    // r=s=0 is trivially "low S", but undecodable garbage must not be
+    // reported as having a low (i.e. validly encoded) S value
+    DERSignatureUtil.isLowS(sigShort) must be(false)
+    DERSignatureUtil.isLowS(sigLong) must be(false)
+
+    // there's no reliable way to locate a trailing hash type byte without a
+    // validly decoded signature
+    sigShort.hashTypeOpt must be(None)
+    sigLong.hashTypeOpt must be(None)
+  }
+
   it must "must be der encoded" in {
     forAll(CryptoGenerators.digitalSignature) { signature =>
       assert(signature.isDEREncoded)
@@ -95,6 +125,23 @@ class ECDigitalSignatureTest extends BitcoinSCryptoTest {
     forAll(CryptoGenerators.digitalSignature) { case sig: ECDigitalSignature =>
       val raw = sig.toRawRS
       assert(ECDigitalSignature.fromRS(raw) == sig)
+    }
+  }
+
+  it must "fail cleanly with an IllegalArgumentException when the sighash byte is absent" in {
+    // fromFrontOfBytesWithSigHash previously threw NoSuchElementException
+    // (from `.head` on an empty ByteVector) when the input had no sighash
+    // byte after the DER signature. Correct behavior: a clean, documented
+    // failure such as IllegalArgumentException.
+    val rHex =
+      "4c2dd8a9b6f8d425fcd8ee9a20ac73b619906a6367eac6cb93e70375225ec016"
+    val sHex =
+      "356878eff111ff3663d7e6bf08947f94443845e0dcc54961664d922f7660b80c"
+    val strictDerNoSigHash: ByteVector =
+      ByteVector.fromValidHex("3044" + "0220" + rHex + "0220" + sHex)
+
+    intercept[IllegalArgumentException] {
+      ECDigitalSignature.fromFrontOfBytesWithSigHash(strictDerNoSigHash)
     }
   }
 
