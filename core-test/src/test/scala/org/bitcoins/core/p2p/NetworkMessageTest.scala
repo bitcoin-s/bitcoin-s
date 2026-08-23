@@ -1,7 +1,11 @@
 package org.bitcoins.core.p2p
 
+import org.bitcoins.core.config.RegTest
+import org.bitcoins.core.number.UInt32
+import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.testkitcore.node.P2PMessageTestUtil
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
+import scodec.bits.ByteVector
 
 class NetworkMessageTest extends BitcoinSUnitTest {
 
@@ -47,5 +51,24 @@ class NetworkMessageTest extends BitcoinSUnitTest {
     assertThrows[IllegalArgumentException] {
       NetworkMessage.fromHex(corruptedChecksumHex)
     }
+  }
+
+  it must "not interpret trailing bytes beyond payloadSize as part of the payload" in {
+    // RejectMessage is used because its `extra` field consumes all
+    // remaining bytes, so trailing bytes not sliced off at payloadSize
+    // would leak into the parsed payload.
+    // payload: message="tx", code=0x10, reason="", no extra data
+    val payloadBytes = ByteVector.fromValidHex("0274781000")
+    val header =
+      NetworkHeader(RegTest,
+                    "reject",
+                    UInt32(payloadBytes.size),
+                    CryptoUtil.doubleSHA256(payloadBytes).bytes.take(4))
+    // simulate framing where the next message's bytes follow immediately
+    val trailingBytes = ByteVector.fromValidHex("f9beb4d976657261")
+    val streamBytes = header.bytes ++ payloadBytes ++ trailingBytes
+
+    val msg = NetworkMessage.fromBytes(streamBytes)
+    msg.payload.bytes.size must be(header.payloadSize.toInt)
   }
 }
