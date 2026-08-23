@@ -66,9 +66,21 @@ case class ValueIterator(value: ByteVector) {
 
   def takeBigSizePrefixedList[E](takeFunc: () => E): Vector[E] = {
     val len = takeBigSize()
-    0.until(len.toInt).toVector.map { _ =>
-      takeFunc()
+    val declaredCount = len.toInt
+    // every element consumes at least one byte, so a declared count greater
+    // than the remaining bytes can never be satisfied -- reject it before
+    // allocating anything proportional to the (attacker-controlled) count
+    require(
+      declaredCount <= current.length,
+      s"Declared count $declaredCount exceeds the ${current.length} remaining bytes"
+    )
+    val builder = Vector.newBuilder[E]
+    var i = 0
+    while (i < declaredCount) {
+      builder += takeFunc()
+      i += 1
     }
+    builder.result()
   }
 
   def takeU16(): UInt16 = {
