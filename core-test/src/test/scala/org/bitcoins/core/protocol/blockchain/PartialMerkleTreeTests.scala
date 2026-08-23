@@ -449,4 +449,18 @@ class PartialMerkleTreeTests extends BitcoinSUnitTest {
       PartialMerkleTree(UInt32(5), Vector.fill(8)(h), BitVector.high(8))
     }
   }
+
+  it must "compute calcMaxHeight with integer-exact results for large transaction counts" in {
+    // calcMaxHeight used a floating-point log2, which disagrees with Bitcoin
+    // Core's integer loop (`while (CalcTreeWidth(nHeight) > 1) nHeight++;` in
+    // merkleblock.cpp) at exact powers of two due to double-precision
+    // rounding -- e.g. computing 30 instead of 29 for n = 2^29.
+    //
+    // Note: 1 << 31 overflows as a 32-bit Int (wraps to Int.MinValue), so
+    // calcMaxHeight must accept a Long to even be able to represent 2^31 as
+    // an argument; 1L << 31 avoids that overflow by doing the shift in
+    // 64-bit Long arithmetic from the start.
+    PartialMerkleTree.calcMaxHeight(1 << 29) must be(29)
+    PartialMerkleTree.calcMaxHeight(1L << 31) must be(31)
+  }
 }
