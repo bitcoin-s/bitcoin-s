@@ -1,13 +1,17 @@
 package org.bitcoins.core.crypto
 
-import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.constant.ScriptToken
-import org.bitcoins.core.script.flag.{ScriptFlag, ScriptVerifyNullFail}
+import org.bitcoins.core.script.flag.{
+  ScriptFlag,
+  ScriptVerifyLowS,
+  ScriptVerifyNullFail
+}
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
 import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.script.util.PreviousOutputMap
@@ -884,5 +888,32 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
     assert(
       result != ScriptOk,
       s"An invalid non-empty tapscript signature must fail the script immediately, got=$result")
+  }
+
+  it must "not fail an empty signature with the LOW_S check" in {
+    // Core's CheckSignatureEncoding exempts the empty signature from all
+    // encoding checks, including LOW_S -- an empty signature combined with
+    // the LOW_S flag must just be an "incorrect signature", not a hard
+    // ScriptErrorSigHighS failure.
+    val pubKey = privKey1.publicKey
+    val spk = P2PKHScriptPubKey(pubKey)
+    val (creditingTx, outputIndex) =
+      TransactionTestUtil.buildCreditingTransaction(spk)
+    val (spendingTx, inputIndex) =
+      TransactionTestUtil.buildSpendingTransaction(creditingTx,
+                                                   EmptyScriptSignature,
+                                                   outputIndex)
+    val component =
+      BaseTxSigComponent(spendingTx,
+                         inputIndex,
+                         TransactionOutput(CurrencyUnits.zero, spk),
+                         Seq(ScriptVerifyLowS))
+    val result = TransactionSignatureChecker.checkSignature(
+      txSignatureComponent = component,
+      script = spk.asm,
+      pubKey = pubKey.toPublicKeyBytes(),
+      signature = ECDigitalSignature.empty,
+      flags = Seq(ScriptVerifyLowS))
+    result must be(SignatureValidationErrorIncorrectSignatures)
   }
 }
