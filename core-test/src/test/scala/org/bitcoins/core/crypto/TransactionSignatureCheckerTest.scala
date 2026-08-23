@@ -5,7 +5,11 @@ import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
+import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.constant.ScriptToken
+import org.bitcoins.core.script.flag.{ScriptFlag, ScriptVerifyNullFail}
+import org.bitcoins.core.script.interpreter.ScriptInterpreter
+import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.script.util.PreviousOutputMap
 import org.bitcoins.crypto._
 import org.bitcoins.testkitcore.util.{BitcoinSUnitTest, TransactionTestUtil}
@@ -17,9 +21,49 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
 
   behavior of "TransactionSignatureChecker"
 
-  // fixed, deterministic key -- no randomness in this security regression test
+  // fixed, deterministic keys -- no randomness in these security regression tests
   private val privKey1: ECPrivateKey =
     ECPrivateKey.fromFieldElement(FieldElement.one)
+  private val privKey2: ECPrivateKey =
+    ECPrivateKey.fromBytes(ByteVector.fill(32)(2.toByte))
+  private val noncePrivKey: ECPrivateKey =
+    ECPrivateKey.fromBytes(ByteVector.fill(32)(3.toByte))
+
+  /** Builds a single input taproot script path spend of a single tapleaf.
+    * Returns the sig component and the tapleaf hash so callers can compute the
+    * BIP341 sighash themselves.
+    */
+  private def buildTapscriptSpend(
+      leafScriptBytes: ByteVector,
+      witnessStack: Vector[ByteVector],
+      flags: Seq[ScriptFlag]): (TaprootTxSigComponent, Sha256Digest) = {
+    val leafSPK =
+      ScriptPubKey.fromAsmBytes(leafScriptBytes).asInstanceOf[RawScriptPubKey]
+    val internalKey = privKey2.toXOnly
+    val leaf = TapLeaf(LeafVersion.Tapscript, leafSPK)
+    val (keyParity, taprootSPK) =
+      TaprootScriptPubKey.fromInternalKeyTapscriptTree(internalKey, leaf)
+    val controlBlock =
+      TapscriptControlBlock.fromSingleLeaf(LeafVersion.Tapscript,
+                                           internalKey,
+                                           keyParity)
+    val witness = TaprootScriptPath(controlBlock, None, leafSPK, witnessStack)
+    val amount = Satoshis(10000)
+    val (creditingTx, outputIndex) =
+      TransactionTestUtil.buildCreditingTransaction(taprootSPK, Some(amount))
+    val (spendingTx, inputIndex) =
+      TransactionTestUtil.buildSpendingTransaction(creditingTx,
+                                                   EmptyScriptSignature,
+                                                   outputIndex,
+                                                   Some((witness, amount)))
+    val wtx = spendingTx.asInstanceOf[WitnessTransaction]
+    val outpoint = wtx.inputs(inputIndex.toInt).previousOutput
+    val outputMap = PreviousOutputMap(
+      Map(outpoint -> creditingTx.outputs(outputIndex.toInt)))
+    val component = TaprootTxSigComponent(wtx, inputIndex, outputMap, flags)
+    val tapLeafHash = TaprootScriptPath.computeTapleafHash(leaf)
+    (component, tapLeafHash)
+  }
 
   // Positive Test Cases
 
@@ -820,4 +864,25 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
     result must be(SignatureValidationSuccess)
   }
 
+  it must "fail a tapscript OP_CHECKSIG immediately on an invalid non-empty signature" in {
+    // BIP342 makes NULLFAIL mandatory for tapscript regardless of flags: an
+    // invalid non-empty signature must always fail the script immediately,
+    // unlike the flag-gated legacy/segwit v0 OP_CHECKSIG "soft fail" behavior.
+    val flags = Policy.standardFlags.filterNot(_ == ScriptVerifyNullFail)
+    // <x-only pubkey> OP_CHECKSIG OP_DROP OP_TRUE
+    // if an invalid signature only pushed 0, this script would succeed
+    val leafScriptBytes = ByteVector.fromValidHex("20") ++
+      privKey1.toXOnly.bytes ++ ByteVector.fromValidHex("ac7551")
+    // a well-formed 64-byte schnorr signature over a different message, so it
+    // is invalid for this input's sighash
+    val invalidSig =
+      privKey1.schnorrSignWithNonce(ByteVector.fill(32)(0x55.toByte),
+                                    noncePrivKey)
+    val (component, _) =
+      buildTapscriptSpend(leafScriptBytes, Vector(invalidSig.bytes), flags)
+    val result = ScriptInterpreter.run(PreExecutionScriptProgram(component))
+    assert(
+      result != ScriptOk,
+      s"An invalid non-empty tapscript signature must fail the script immediately, got=$result")
+  }
 }

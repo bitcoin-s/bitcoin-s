@@ -242,19 +242,13 @@ trait TransactionSignatureChecker {
                                                       taprootOptions)
     ) match {
       case Failure(_) =>
-        nullFailCheckSchnorrSig(sigs = Vector(signature),
-                                result =
-                                  SignatureValidationErrorIncorrectSignatures,
-                                flags = flags)
+        tapscriptNullFailCheck(signature)
       case Success(hash) =>
         val result = pubKey.verify(hash, signature)
         if (result) {
           SignatureValidationSuccess
         } else {
-          nullFailCheckSchnorrSig(sigs = Vector(signature),
-                                  result =
-                                    SignatureValidationErrorIncorrectSignatures,
-                                  flags = flags)
+          tapscriptNullFailCheck(signature)
         }
     }
   }
@@ -354,15 +348,20 @@ trait TransactionSignatureChecker {
     } else result
   }
 
-  private def nullFailCheckSchnorrSig(
-      sigs: Seq[SchnorrDigitalSignature],
-      result: TransactionSignatureCheckerResult,
-      flags: Seq[ScriptFlag]): TransactionSignatureCheckerResult = {
-    val nullFailEnabled = ScriptFlagUtil.requireScriptVerifyNullFail(flags)
-    if (nullFailEnabled && !result.isValid && sigs.exists(_.bytes.nonEmpty)) {
-      // we need to check that all signatures were empty byte vectors, else this fails because of BIP146 and nullfail
+  /** BIP342 makes NULLFAIL mandatory for tapscript signature checks, regardless
+    * of whether the SCRIPT_VERIFY_NULLFAIL flag is set: an invalid non-empty
+    * signature must always fail the script immediately, not push false and
+    * continue like the legacy/segwit v0 OP_CHECKSIG "soft fail" behavior does.
+    * An empty signature is a valid way to signal "no signature provided" and
+    * continues to soft-fail (push false).
+    */
+  private def tapscriptNullFailCheck(
+      signature: SchnorrDigitalSignature): TransactionSignatureCheckerResult = {
+    if (signature.bytes.nonEmpty) {
       SignatureValidationErrorNullFail
-    } else result
+    } else {
+      SignatureValidationErrorIncorrectSignatures
+    }
   }
 
   /** Removes the hash type from the [[ECDigitalSignature]] */
