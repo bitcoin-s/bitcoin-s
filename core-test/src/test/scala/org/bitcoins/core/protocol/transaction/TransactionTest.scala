@@ -530,6 +530,28 @@ class TransactionTest extends BitcoinSUnitTest {
     Transaction.fromHexT(malformedWitnessTx).isFailure must be(true)
   }
 
+  it must "reject trailing garbage and a truncated locktime in a base transaction" in {
+    // Transaction.fromHex used to have no way to detect trailing garbage
+    // (fromBytes is also used as the per-element parser when deserializing a
+    // sequence of transactions sharing one buffer, so it can't reject
+    // trailing bytes itself), and BaseTransaction.fromBytes took locktime as
+    // lockTimeBytes.take(4), silently zero-padding a truncated locktime
+    // instead of failing.
+    // genesis block coinbase tx, https://en.bitcoin.it/wiki/Genesis_block
+    val genesisCoinbaseTx =
+      "01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff4" +
+        "d04ffff001d0104455468652054696d65732030332f4a616e2f32303039204368616e63656c6c6f72206f6e2062726" +
+        "96e6b206f66207365636f6e64206261696c6f757420666f722062616e6b73ffffffff0100f2052a01000000434104678" +
+        "afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c3" +
+        "84df7ba0b8d578a4c702b6bf11d5fac00000000"
+
+    // trailing garbage after a valid base transaction
+    Transaction.fromHexT(genesisCoinbaseTx + "deadbeef").isFailure must be(true)
+
+    // truncated locktime (last byte removed) must not be zero-padded
+    Transaction.fromHexT(genesisCoinbaseTx.dropRight(2)).isFailure must be(true)
+  }
+
   private def findInput(
       tx: Transaction,
       outPoint: TransactionOutPoint

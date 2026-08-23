@@ -27,8 +27,15 @@ trait ScriptFactory[T <: Script] extends Factory[T] {
     */
   def fromAsm(asm: Seq[ScriptToken]): T
 
-  def fromBytes(bytes: ByteVector): T = {
-    BitcoinScriptUtil.parseScript(bytes = bytes, f = fromAsm)
+  def fromBytes(bytes: ByteVector): T = fromBytes(bytes, strict = true)
+
+  /** @param strict
+    *   see [[org.bitcoins.core.util.BitcoinScriptUtil.parseScript]]. Only pass
+    *   false for a deliberate, non-wire-data placeholder construction -- never
+    *   when parsing untrusted bytes.
+    */
+  def fromBytes(bytes: ByteVector, strict: Boolean): T = {
+    BitcoinScriptUtil.parseScript(bytes = bytes, f = fromAsm, strict = strict)
   }
 
   /** Scripts are serialized with a

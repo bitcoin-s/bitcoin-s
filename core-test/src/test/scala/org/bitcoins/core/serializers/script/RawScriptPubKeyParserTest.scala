@@ -10,6 +10,8 @@ import org.bitcoins.testkitcore.util.TestUtil
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
+import scala.util.Try
+
 /** Created by chris on 1/12/16.
   */
 class RawScriptPubKeyParserTest extends BitcoinSUnitTest {
@@ -59,6 +61,15 @@ class RawScriptPubKeyParserTest extends BitcoinSUnitTest {
       "ca4cae606563686f2022553246736447566b58312b5a536e587574356542793066794778625456415675534a6c376a6a334878416945325364667657734f53474f36633338584d7439435c6e543249584967306a486956304f376e775236644546673d3d22203e20743b206f70656e73736c20656e63202d7061737320706173733a5b314a564d7751432d707269766b65792d6865785d202d64202d6165732d3235362d636263202d61202d696e2074607576a914bfd7436b6265aa9de506f8a994f881ff08cc287288ac"
     )
 
+  }
+
+  it must "reject a scriptPubKey whose declared length exceeds the available bytes" in {
+    // parseScript(strict = true) used to clamp a declared script length to
+    // the available bytes instead of failing. scriptPubKey declares 25 bytes
+    // but only 24 are present.
+    val truncatedScript =
+      "1976a9143b75df7c44a47fed51374aef67bb7e7ae071b0a788"
+    Try(RawScriptPubKeyParser.read(truncatedScript)).isFailure must be(true)
   }
 
 }

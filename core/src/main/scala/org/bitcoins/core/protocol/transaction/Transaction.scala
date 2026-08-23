@@ -180,6 +180,27 @@ object Transaction extends Factory[Transaction] {
     tx
   }
 
+  /** Note: unlike [[fromBytes]], this requires `hex` to decode to EXACTLY one
+    * transaction with no trailing bytes left over. [[fromBytes]] itself cannot
+    * enforce that: it also serves as the per-element parser when deserializing
+    * a sequence of transactions sharing one buffer (e.g. a block's transaction
+    * list in RawBlockSerializer), where bytes trailing a single parsed
+    * transaction are the start of the next one, not garbage. A hex string, by
+    * contrast, is always meant to represent exactly one transaction --
+    * mirroring Bitcoin Core's own split between its stream-based tx
+    * deserializer (never checks for leftover bytes) and DecodeHexTx (which
+    * explicitly checks the stream is empty afterward).
+    */
+  override def fromHex(hex: String): Transaction = {
+    val bytes = org.bitcoins.crypto.CryptoBytesUtil.decodeHex(hex)
+    val tx = fromBytes(bytes)
+    require(
+      tx.bytes.length == bytes.length,
+      s"${bytes.length - tx.bytes.length} trailing bytes after a complete transaction"
+    )
+    tx
+  }
+
   /** This allows us to accurately type transaction input's
     * [[org.bitcoins.core.protocol.script.ScriptSignature]] as we have the
     * corresponding [[org.bitcoins.core.protocol.script.ScriptPubKey]] the input
@@ -241,6 +262,15 @@ object BaseTransaction extends Factory[BaseTransaction] {
       BytesUtil.parseCmpctSizeUIntSeq(txInputBytes, TransactionInput)
     val (outputs, lockTimeBytes) =
       BytesUtil.parseCmpctSizeUIntSeq(outputBytes, TransactionOutput)
+    // intentionally >= rather than ==: fromBytes is used to parse a single
+    // transaction out of a longer byte string that may have more data
+    // trailing the locktime (e.g. the next transaction in a block), and is
+    // not itself responsible for rejecting trailing garbage -- see the
+    // Transaction.fromHex doc comment above, which is the entry point that
+    // enforces "exactly one transaction, no trailing bytes"
+    require(
+      lockTimeBytes.length >= 4,
+      s"Must have at least 4 bytes for locktime, got=${lockTimeBytes.length}")
     val lockTime = UInt32(lockTimeBytes.take(4).reverse)
 
     BaseTransaction(version, inputs, outputs, lockTime)
