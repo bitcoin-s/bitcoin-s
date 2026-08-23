@@ -1,10 +1,15 @@
 package org.bitcoins.core.script.arithmetic
 
+import org.bitcoins.core.crypto.{BaseTxSigComponent, TxSigComponent}
+import org.bitcoins.core.currency.CurrencyUnits
+import org.bitcoins.core.protocol.transaction.TransactionOutput
 import org.bitcoins.core.script.constant._
+import org.bitcoins.core.script.flag.{ScriptFlag, ScriptVerifyNone}
 import org.bitcoins.core.script.result._
 import org.bitcoins.core.script.{
   ExecutedScriptProgram,
-  ExecutionInProgressScriptProgram
+  ExecutionInProgressScriptProgram,
+  PreExecutionScriptProgram
 }
 import org.bitcoins.core.util.ScriptProgramTestUtil
 import org.bitcoins.testkitcore.util.TestUtil
@@ -58,6 +63,39 @@ class ArithmeticInterpreterTest extends BitcoinSUnitTest {
       ScriptProgramTestUtil.toExecutedScriptProgram(AI.op1Add(program))
     newProgram.error must be(Some(ScriptErrorInvalidStackOperation))
 
+  }
+
+  it must "fail a 5-byte numeric operand to OP_1ADD like Bitcoin Core's 4-byte CScriptNum limit" in {
+    // a non-minimal 5-byte encoding of a small number (e.g. 255) must not be silently
+    // shrunk to <= 4 bytes before the isLargerThan4Bytes consensus check runs, or that
+    // check is bypassed whenever SCRIPT_VERIFY_MINIMALDATA is not set
+    val stack =
+      List(ScriptConstant("ff00000000")) // 5-byte non-minimal encoding of 255
+    val script = List(OP_1ADD)
+    val t = buildTxSigComponent(Seq(ScriptVerifyNone))
+    val program = PreExecutionScriptProgram(t).toExecutionInProgress
+      .updateStackAndScript(stack, script)
+    val newProgram = AI.op1Add(program)
+    newProgram.isInstanceOf[ExecutedScriptProgram] must be(true)
+    // matches Bitcoin Core: the CScriptNum constructor throws
+    // scriptnum_error for an oversized operand, which interpreter.cpp
+    // catches and maps to SCRIPT_ERR_UNKNOWN_ERROR
+    // https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L999-L1002
+    newProgram
+      .asInstanceOf[ExecutedScriptProgram]
+      .error must be(Some(ScriptErrorUnknownError))
+  }
+
+  private def buildTxSigComponent(flags: Seq[ScriptFlag]): TxSigComponent = {
+    BaseTxSigComponent(
+      transaction = TestUtil.transaction,
+      inputIndex = TestUtil.testProgram.txSignatureComponent.inputIndex,
+      output = TransactionOutput(
+        CurrencyUnits.zero,
+        TestUtil.testProgram.txSignatureComponent.scriptPubKey
+      ),
+      flags = flags
+    )
   }
 
   it must "perform an OP_1SUB correctly" in {
