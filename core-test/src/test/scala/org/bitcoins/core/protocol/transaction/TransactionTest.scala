@@ -502,6 +502,34 @@ class TransactionTest extends BitcoinSUnitTest {
     assert(tx.hex == hex)
   }
 
+  it must "reject a malformed witness transaction instead of silently re-parsing it as a base transaction" in {
+    // Transaction.fromBytes used to catch any failure while parsing the
+    // witness section and silently re-parse the SAME bytes as a base
+    // transaction, dropping the witness intent. Correct behavior: parsing
+    // fails.
+    // The bytes below have a valid marker/flag, 1 input and 1 output, but the
+    // witness section declares 2 stack items whose encoding consumes bytes
+    // into the locktime, leaving only 3 locktime bytes. WitnessTransaction
+    // parsing fails; the old fallback would then parse the bytes as a base tx
+    // (0 inputs, 1 garbage output).
+    val malformedWitnessTx =
+      "01000000" + // version
+        "0001" + // witness marker + flag
+        "01" + // 1 input
+        "0000000000000000000000000000000000000000000000000000000000000000" + // prev txid
+        "00000000" + // vout
+        "00" + // empty scriptSig
+        "ffffffff" + // sequence
+        "01" + // 1 output
+        "0000000000000000" + // 0 satoshis
+        "00" + // empty scriptPubKey
+        "02" + // witness: 2 stack items
+        "01" + "aa" + // item 1: len 1
+        // item 2 is parsed out of the locktime bytes below
+        "00000000" // locktime
+    Transaction.fromHexT(malformedWitnessTx).isFailure must be(true)
+  }
+
   private def findInput(
       tx: Transaction,
       outPoint: TransactionOutPoint
