@@ -47,6 +47,10 @@ sealed abstract class LockTimeInterpreter {
         case s: ScriptNumber if s < ScriptNumber.zero =>
           program.failExecution(ScriptErrorNegativeLockTime)
         case s: ScriptNumber
+            if ScriptFlagUtil.requireMinimalData(
+              program.flags) && !s.isShortestEncoding =>
+          program.failExecution(ScriptErrorUnknownError)
+        case s: ScriptNumber
             if s >= ScriptNumber(500000000) && transaction.lockTime < UInt32(
               500000000) =>
           program.failExecution(ScriptErrorUnsatisfiedLocktime)

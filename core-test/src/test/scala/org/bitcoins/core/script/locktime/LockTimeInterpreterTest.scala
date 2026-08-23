@@ -190,6 +190,43 @@ class LockTimeInterpreterTest extends BitcoinSUnitTest {
     )
   }
 
+  it must "mark the transaction as invalid if the stack top is a non-minimally encoded locktime and the minimal data flag is set" in {
+    // opCheckLockTimeVerify never checked ScriptFlagUtil.requireMinimalData / isShortestEncoding on
+    // its operand, unlike opCheckSequenceVerify which already enforces this for CSV. Bitcoin Core's
+    // CScriptNum constructor enforces fRequireMinimal for both CLTV and CSV operands identically.
+    val stack = Seq(ScriptNumber("0100")) // non-minimal encoding of 1
+    val script = Seq(OP_CHECKLOCKTIMEVERIFY)
+    val oldInput = TestUtil.transaction.inputs.head
+    val input = TransactionInput(
+      oldInput.previousOutput,
+      oldInput.scriptSignature,
+      UInt32.zero
+    )
+    val tx = BaseTransaction(
+      EmptyTransaction.version,
+      Vector(input),
+      EmptyTransaction.outputs,
+      UInt32(1)
+    )
+    val t = BaseTxSigComponent(
+      transaction = tx,
+      inputIndex = TestUtil.testProgram.txSignatureComponent.inputIndex,
+      output = TransactionOutput(
+        CurrencyUnits.zero,
+        TestUtil.testProgram.txSignatureComponent.scriptPubKey
+      ),
+      // standard flags include ScriptVerifyMinimalData
+      flags = TestUtil.testProgram.flags
+    )
+    val program = PreExecutionScriptProgram(t).toExecutionInProgress
+      .updateStackAndScript(stack, script)
+    val newProgram = LTI.opCheckLockTimeVerify(program)
+    newProgram.isInstanceOf[ExecutedScriptProgram] must be(true)
+    newProgram.asInstanceOf[ExecutedScriptProgram].error.isDefined must be(
+      true
+    )
+  }
+
   it must "mark the transaction as valid if the locktime on the tx is < 500000000 && stack top is < 500000000" in {
     val stack = Seq(ScriptNumber(0))
     val script = Seq(OP_CHECKLOCKTIMEVERIFY)
