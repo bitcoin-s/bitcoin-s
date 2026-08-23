@@ -326,7 +326,7 @@ object TxUtil {
       // See this link for more info on variance in size on ECDigitalSignatures
       // https://en.bitcoin.it/wiki/Elliptic_Curve_Digital_Signature_Algorithm
 
-      val acceptableVariance = 40 * feeRate.toLong
+      val acceptableVariance = Math.multiplyExact(40L, feeRate.toLong)
       val min = Satoshis(-acceptableVariance)
       val max = Satoshis(acceptableVariance)
       val difference = estimatedFee - actualFee
