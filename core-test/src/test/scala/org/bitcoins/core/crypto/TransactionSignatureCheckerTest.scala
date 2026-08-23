@@ -6,15 +6,16 @@ import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.PreExecutionScriptProgram
-import org.bitcoins.core.script.constant.ScriptToken
+import org.bitcoins.core.script.constant.{OP_0, ScriptConstant, ScriptToken}
 import org.bitcoins.core.script.flag.{
   ScriptFlag,
   ScriptVerifyLowS,
   ScriptVerifyNullFail
 }
 import org.bitcoins.core.script.interpreter.ScriptInterpreter
-import org.bitcoins.core.script.result.ScriptOk
+import org.bitcoins.core.script.result.{ScriptErrorSigNullFail, ScriptOk}
 import org.bitcoins.core.script.util.PreviousOutputMap
+import org.bitcoins.core.util.BitcoinScriptUtil
 import org.bitcoins.crypto._
 import org.bitcoins.testkitcore.util.{BitcoinSUnitTest, TransactionTestUtil}
 import scodec.bits.ByteVector
@@ -211,7 +212,8 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
         List(p2shMultiSig1, p2shMultiSig2),
         List(p2shMultiPubKey1, p2shMultiPubKey2),
         Policy.standardFlags,
-        2
+        2,
+        originalSigs = List(p2shMultiSig1, p2shMultiSig2)
       )
 
     assert(result3.isValid, s"result: $result3")
@@ -363,7 +365,8 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
         List(p2wshSig1, p2wshSig2),
         List(p2wshPubKey1, p2wshPubKey2),
         Policy.standardFlags,
-        2
+        2,
+        originalSigs = List(p2wshSig1, p2wshSig2)
       )
 
     assert(result3.isValid, s"result: $result3")
@@ -566,7 +569,8 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
         List(p2shMultiSig1, p2shMultiSig2),
         List(incorrectPubKey, p2shMultiPubKey2),
         Policy.standardFlags,
-        2
+        2,
+        originalSigs = List(p2shMultiSig1, p2shMultiSig2)
       )
 
     assert(!result3.isValid, s"result: $result3")
@@ -610,7 +614,8 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
         List(p2shMultiSig1, p2shMultiSig2),
         List(p2shMultiPubKey1, incorrectPubKey),
         Policy.standardFlags,
-        2
+        2,
+        originalSigs = List(p2shMultiSig1, p2shMultiSig2)
       )
 
     assert(!result3.isValid, s"result: $result3")
@@ -632,7 +637,8 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
         List(p2shMultiSig1, p2shMultiSig2),
         List(p2shMultiPubKey1, p2shMultiPubKey2),
         Policy.standardFlags,
-        1
+        1,
+        originalSigs = List(p2shMultiSig1, p2shMultiSig2)
       )
     )
 
@@ -643,7 +649,8 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
         List(p2shMultiSig1, p2shMultiSig2),
         List(p2shMultiPubKey1, p2shMultiPubKey2),
         Policy.standardFlags,
-        -1
+        -1,
+        originalSigs = List(p2shMultiSig1, p2shMultiSig2)
       )
     )
   }
@@ -763,7 +770,8 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
         List(p2wshSig1, p2wshSig2),
         List(incorrectPubKey, p2wshPubKey2),
         Policy.standardFlags,
-        2
+        2,
+        originalSigs = List(p2wshSig1, p2wshSig2)
       )
 
     assert(!result3.isValid, s"result: $result3")
@@ -808,7 +816,8 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
         List(p2wshSig1, p2wshSig2),
         List(p2wshPubKey1, incorrectPubKey),
         Policy.standardFlags,
-        2
+        2,
+        originalSigs = List(p2wshSig1, p2wshSig2)
       )
 
     assert(!result3.isValid, s"result: $result3")
@@ -915,5 +924,47 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
       signature = ECDigitalSignature.empty,
       flags = Seq(ScriptVerifyLowS))
     result must be(SignatureValidationErrorIncorrectSignatures)
+  }
+
+  it must "apply NULLFAIL to all signatures in OP_CHECKMULTISIG, including consumed ones" in {
+    // NULLFAIL (BIP146) applies to every signature originally provided to
+    // OP_CHECKMULTISIG, not just the ones remaining once validation is
+    // determined to have failed -- a signature that matched earlier and was
+    // consumed must still fail the script if overall validation fails.
+    // LOW_S is removed to decouple this test from the empty-signature LOW_S case.
+    val flags = Policy.standardFlags.filterNot(_ == ScriptVerifyLowS)
+    val pubKey1 = privKey1.publicKey
+    val pubKey2 = privKey2.publicKey
+    val multiSigSPK = MultiSignatureScriptPubKey(2, Vector(pubKey1, pubKey2))
+    val amount = Satoshis(10000)
+    val (creditingTx, outputIndex) =
+      TransactionTestUtil.buildCreditingTransaction(multiSigSPK, Some(amount))
+    val (placeholderTx, inputIndex) =
+      TransactionTestUtil.buildSpendingTransaction(creditingTx,
+                                                   EmptyScriptSignature,
+                                                   outputIndex)
+    val output = TransactionOutput(amount, multiSigSPK)
+    val placeholderComponent =
+      BaseTxSigComponent(placeholderTx, inputIndex, output, flags)
+    val hash = TransactionSignatureSerializer.hashForSignature(
+      placeholderComponent,
+      HashType.sigHashAll,
+      TaprootSerializationOptions.empty)
+    // pubKey2 is pushed last in the multisig script, so it is checked first
+    val validSig =
+      privKey2.sign(hash.bytes).appendHashType(HashType.sigHashAll)
+    val sigPush = BitcoinScriptUtil.calculatePushOp(validSig.bytes) ++ Vector(
+      ScriptConstant(validSig.bytes))
+    // dummy, empty signature, valid signature — the valid signature is on top
+    // of the stack and is checked (and consumed) first
+    val scriptSig =
+      NonStandardScriptSignature.fromAsm(Vector(OP_0, OP_0) ++ sigPush)
+    val (spendingTx, _) =
+      TransactionTestUtil.buildSpendingTransaction(creditingTx,
+                                                   scriptSig,
+                                                   outputIndex)
+    val component = BaseTxSigComponent(spendingTx, inputIndex, output, flags)
+    val result = ScriptInterpreter.run(PreExecutionScriptProgram(component))
+    result must be(ScriptErrorSigNullFail)
   }
 }

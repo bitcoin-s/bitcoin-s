@@ -270,6 +270,12 @@ trait TransactionSignatureChecker {
     *   correct
     * @param flags
     *   the script verify flags which are rules to verify the signatures
+    * @param originalSigs
+    *   the full signature list as originally provided to OP_CHECKMULTISIG,
+    *   before any were consumed off the front of `sigs` by a successful match
+    *   -- needed for the NULLFAIL check below. Callers making the initial
+    *   (non-recursive) call should pass the same list as `sigs` (or
+    *   `List.empty` if there are no signatures to check).
     * @return
     *   a boolean indicating if all of the signatures are valid against the
     *   given public keys
@@ -281,18 +287,26 @@ trait TransactionSignatureChecker {
       sigs: List[ECDigitalSignature],
       pubKeys: List[ECPublicKeyBytes],
       flags: Seq[ScriptFlag],
-      requiredSigs: Long): TransactionSignatureCheckerResult = {
+      requiredSigs: Long,
+      originalSigs: List[ECDigitalSignature])
+      : TransactionSignatureCheckerResult = {
     require(requiredSigs >= 0,
             s"requiredSigs cannot be negative, got $requiredSigs")
+    // NULLFAIL (BIP146) applies to every signature originally provided to
+    // OP_CHECKMULTISIG, not just the ones remaining at the point validation
+    // is determined to have failed -- a signature that matched earlier and
+    // was "consumed" (sigs.tail'd away) must still be checked.
     if (sigs.size > pubKeys.size) {
       // this is how bitcoin core treats this. If there are ever any more
       // signatures than public keys remaining we immediately return
       // false https://github.com/bitcoin/bitcoin/blob/8c1dbc5e9ddbafb77e60e8c4e6eb275a3a76ac12/src/script/interpreter.cpp#L943-L945
-      nullFailCheck(sigs, SignatureValidationErrorIncorrectSignatures, flags)
+      nullFailCheck(originalSigs,
+                    SignatureValidationErrorIncorrectSignatures,
+                    flags)
     } else if (requiredSigs > sigs.size) {
       // for the case when we do not have enough sigs left to check to meet the required signature threshold
       // https://github.com/bitcoin/bitcoin/blob/8c1dbc5e9ddbafb77e60e8c4e6eb275a3a76ac12/src/script/interpreter.cpp#L990-L991
-      nullFailCheck(sigs, SignatureValidationErrorSignatureCount, flags)
+      nullFailCheck(originalSigs, SignatureValidationErrorSignatureCount, flags)
     } else if (sigs.nonEmpty && pubKeys.nonEmpty) {
       val sig = sigs.head
       val pubKey = pubKeys.head
@@ -305,7 +319,8 @@ trait TransactionSignatureChecker {
                                   sigs.tail,
                                   pubKeys.tail,
                                   flags,
-                                  requiredSigs - 1)
+                                  requiredSigs - 1,
+                                  originalSigs)
         case SignatureValidationErrorIncorrectSignatures |
             SignatureValidationErrorNullFail =>
           // notice we pattern match on 'SignatureValidationErrorNullFail' here, this is because
@@ -316,21 +331,24 @@ trait TransactionSignatureChecker {
                                   sigs,
                                   pubKeys.tail,
                                   flags,
-                                  requiredSigs)
+                                  requiredSigs,
+                                  originalSigs)
         case x @ (SignatureValidationErrorNotStrictDerEncoding |
             SignatureValidationErrorSignatureCount |
             SignatureValidationErrorPubKeyEncoding |
             SignatureValidationErrorHighSValue |
             SignatureValidationErrorHashType |
             SignatureValidationErrorWitnessPubKeyType) =>
-          nullFailCheck(sigs, x, flags)
+          nullFailCheck(originalSigs, x, flags)
       }
     } else if (sigs.isEmpty) {
       // means that we have checked all of the sigs against the public keys
       // validation succeeds
       SignatureValidationSuccess
     } else
-      nullFailCheck(sigs, SignatureValidationErrorIncorrectSignatures, flags)
+      nullFailCheck(originalSigs,
+                    SignatureValidationErrorIncorrectSignatures,
+                    flags)
 
   }
 

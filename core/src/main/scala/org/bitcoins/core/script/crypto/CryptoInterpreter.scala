@@ -392,7 +392,8 @@ sealed abstract class CryptoInterpreter {
               signatures,
               pubKeys,
               flags,
-              mRequiredSignatures.toLong)
+              mRequiredSignatures.toLong,
+              originalSigs = signatures)
 
           // remove the extra OP_0 (null dummy) for OP_CHECKMULTISIG from the stack
           val restOfStack = stackWithoutPubKeysAndSignatures.tail
