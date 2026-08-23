@@ -347,6 +347,24 @@ class StackInterpreterTest extends BitcoinSUnitTest {
     )
   }
 
+  it must "move the nth stack element to the top with OP_ROLL even when duplicate values are on the stack" in {
+    // removing the rolled element by value (stack.tail.diff(List(newStackTop))) removes the FIRST
+    // equal element instead of the element at depth n; Bitcoin Core's OP_ROLL removes and reinserts
+    // strictly by index
+    val a = ScriptConstant("aa")
+    val b = ScriptConstant("bb")
+    val stack = List(ScriptNumber(2), a, b, a)
+    val script = List(OP_ROLL)
+    val program =
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
+    val newProgram = SI.opRoll(program)
+    // the second 'a' (depth 2) moves to the top; the first 'a' stays at depth 1
+    newProgram.stack must be(List(a, a, b))
+  }
+
   it must "evaluate an OP_ROT correctly" in {
     val stack =
       List(ScriptConstant("14"), ScriptConstant("15"), ScriptConstant("16"))

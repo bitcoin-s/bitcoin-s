@@ -170,10 +170,15 @@ sealed abstract class StackInterpreter {
         else if (
           number.toLong >= 0 && number.toLong < program.stack.tail.size
         ) {
-          val newStackTop = program.stack.tail(number.toInt)
-          // removes the old instance of the stack top, appends the new index to the head
-          val newStack = newStackTop :: program.stack.tail
-            .diff(List(newStackTop))
+          val idx = number.toInt
+          val rest = program.stack.tail
+          val newStackTop = rest(idx)
+          // remove the element at depth idx by position, not by value --
+          // rest.diff(List(newStackTop)) would remove the FIRST element
+          // equal to newStackTop, which is wrong when duplicate values
+          // are on the stack
+          val newStack =
+            newStackTop :: (rest.take(idx) ++ rest.drop(idx + 1))
           program.updateStackAndScript(newStack, program.script.tail)
         } else {
           program.failExecution(ScriptErrorInvalidStackOperation)
