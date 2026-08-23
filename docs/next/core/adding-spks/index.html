@@ -483,7 +483,7 @@
     <span class="hljs-keyword">for</span> {
       privKey &lt;- <span class="hljs-type">CryptoGenerators</span>.privateKey
       hash &lt;- <span class="hljs-type">CryptoGenerators</span>.doubleSha256Digest
-      hashType &lt;- <span class="hljs-type">CryptoGenerators</span>.hashType
+      hashType &lt;- <span class="hljs-type">CryptoGenerators</span>.preTaprootHashType
       signature = <span class="hljs-type">ECDigitalSignature</span>.fromBytes(
         privKey.sign(hash).bytes ++ <span class="hljs-type">ByteVector</span>.fromByte(hashType.byte))
       beforeTimeout &lt;- <span class="hljs-type">NumberGenerator</span>.bool
@@ -496,7 +496,7 @@
     (<span class="hljs-type">ConditionalScriptSignature</span>, <span class="hljs-type">P2PKWithTimeoutScriptPubKey</span>, <span class="hljs-type">ECPrivateKey</span>)] =
     <span class="hljs-keyword">for</span> {
       (spk, privKeys) &lt;- p2pkWithTimeoutScriptPubKey
-      hashType &lt;- <span class="hljs-type">CryptoGenerators</span>.hashType
+      hashType &lt;- <span class="hljs-type">CryptoGenerators</span>.preTaprootHashType
     } <span class="hljs-keyword">yield</span> {
       <span class="hljs-keyword">val</span> emptyScriptSig = <span class="hljs-type">P2PKWithTimeoutScriptSignature</span>(beforeTimeout = <span class="hljs-literal">true</span>,
                                                           <span class="hljs-type">ECDigitalSignature</span>.empty)
