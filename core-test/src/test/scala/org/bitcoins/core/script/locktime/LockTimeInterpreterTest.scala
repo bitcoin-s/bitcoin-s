@@ -288,6 +288,24 @@ class LockTimeInterpreterTest extends BitcoinSUnitTest {
     )
   }
 
+  it must "mark the script as invalid for OP_CHECKSEQUENCEVERIFY if the stack top is any negative value, not just negativeOne" in {
+    // negatives other than -1 (e.g. -2) have the BIP68 disable flag (1 << 31) set in their
+    // two's-complement bit pattern, so they must still fail with ScriptErrorNegativeLockTime
+    // rather than falling through to the "disable flag set, treat as NOP" branch.
+    val stack = List(ScriptNumber(-2))
+    val script = List(OP_CHECKSEQUENCEVERIFY)
+    val program =
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
+    val newProgram = LTI.opCheckSequenceVerify(program)
+    newProgram.isInstanceOf[ExecutedScriptProgram] must be(true)
+    newProgram.asInstanceOf[ExecutedScriptProgram].error must be(
+      Some(ScriptErrorNegativeLockTime)
+    )
+  }
+
   it must "mark the script as invalid for OP_CHECKSEQUENCEVERIFY if we are requiring minimal encoding of numbers and the stack top is not minimal" in {
     val stack = List(ScriptNumber("0100"))
     val script = List(OP_CHECKSEQUENCEVERIFY)
