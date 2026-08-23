@@ -126,13 +126,38 @@ object CompactSizeUInt extends Factory[CompactSizeUInt] {
     if (firstByte < 253)
       CompactSizeUInt(UInt64(firstByte), 1)
     // 16 bit number
-    else if (firstByte.toInt == 253)
-      CompactSizeUInt(UInt64(bytes.slice(1, 3).reverse), 3)
+    else if (firstByte.toInt == 253) {
+      require(
+        bytes.length >= 3,
+        s"Not enough bytes to parse a 16 bit CompactSizeUInt, got ${bytes.length}")
+      val num = UInt64(bytes.slice(1, 3).reverse)
+      require(
+        num.toBigInt >= 253,
+        s"Non-canonical CompactSizeUInt encoding, $num does not need the 0xfd prefix")
+      CompactSizeUInt(num, 3)
+    }
     // 32 bit number
-    else if (firstByte.toInt == 254)
-      CompactSizeUInt(UInt64(bytes.slice(1, 5).reverse), 5)
+    else if (firstByte.toInt == 254) {
+      require(
+        bytes.length >= 5,
+        s"Not enough bytes to parse a 32 bit CompactSizeUInt, got ${bytes.length}")
+      val num = UInt64(bytes.slice(1, 5).reverse)
+      require(
+        num.toBigInt > 0xffffL,
+        s"Non-canonical CompactSizeUInt encoding, $num does not need the 0xfe prefix")
+      CompactSizeUInt(num, 5)
+    }
     // 64 bit number
-    else CompactSizeUInt(UInt64(bytes.slice(1, 9).reverse), 9)
+    else {
+      require(
+        bytes.length >= 9,
+        s"Not enough bytes to parse a 64 bit CompactSizeUInt, got ${bytes.length}")
+      val num = UInt64(bytes.slice(1, 9).reverse)
+      require(
+        num.toBigInt > UInt32.max.toBigInt,
+        s"Non-canonical CompactSizeUInt encoding, $num does not need the 0xff prefix")
+      CompactSizeUInt(num, 9)
+    }
   }
 
   def parse(bytes: ByteVector): CompactSizeUInt = parseCompactSizeUInt(bytes)
