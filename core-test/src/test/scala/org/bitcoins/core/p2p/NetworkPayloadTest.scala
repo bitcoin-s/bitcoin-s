@@ -1,9 +1,11 @@
 package org.bitcoins.core.p2p
 
 import org.bitcoins.core.config.TestNet3
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.testkitcore.gen.p2p.P2PGenerator
 import org.bitcoins.testkitcore.node.P2PMessageTestUtil
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
+import scodec.bits.ByteVector
 
 class NetworkPayloadTest extends BitcoinSUnitTest {
 
@@ -33,6 +35,19 @@ class NetworkPayloadTest extends BitcoinSUnitTest {
       val bytes = p2p.bytes
       val parser = NetworkPayload.readers(p2p.commandName)
       assert(parser(bytes) == p2p)
+    }
+  }
+
+  it must "produce a clean parse error for an unknown command name" in {
+    // an empty payload's checksum is always doubleSHA256("") -- see
+    // NetworkHeader's scaladoc
+    val header = NetworkHeader(TestNet3,
+                               "madeup",
+                               UInt32.zero,
+                               ByteVector.fromValidHex("5df6e0e2"))
+
+    assertThrows[IllegalArgumentException] {
+      NetworkPayload(header, ByteVector.empty)
     }
   }
 }

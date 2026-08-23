@@ -1671,8 +1671,11 @@ object NetworkPayload {
       networkHeader: NetworkHeader,
       payloadBytes: ByteVector): NetworkPayload = {
     // the commandName in the network header tells us what payload type this is
-    val deserializer: ByteVector => NetworkPayload = readers(
-      networkHeader.commandName)
+    val deserializer: ByteVector => NetworkPayload = readers.getOrElse(
+      networkHeader.commandName,
+      throw new IllegalArgumentException(
+        s"Unknown command name for network payload: ${networkHeader.commandName}")
+    )
     deserializer(payloadBytes)
   }
 
