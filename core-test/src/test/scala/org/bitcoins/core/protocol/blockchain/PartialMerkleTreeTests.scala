@@ -412,4 +412,41 @@ class PartialMerkleTreeTests extends BitcoinSUnitTest {
         assert(partialMerkleTree2 == partialMerkleTree)
     }
   }
+
+  it must "reject crafted inputs with a clean error instead of crashing or accepting them" in {
+    // mirrors the sanity checks in Bitcoin Core's
+    // CPartialMerkleTree::ExtractMatches (merkleblock.cpp): zero/absurd
+    // transaction counts and truncated bits/hashes must be rejected cleanly
+    // (IllegalArgumentException) instead of crashing on `.head` of an empty
+    // collection during tree traversal, or being silently accepted.
+    val h = DoubleSha256Digest(
+      "01272b2b1c8c33a1b4e9ab111db41c9ac275e686fbd9c5d482e586d03e9e0552"
+    )
+
+    // zero transactions: calcMaxHeight(0) degenerates and the traversal
+    // crashes on `.head` of the empty bits/hashes instead of rejecting
+    intercept[IllegalArgumentException] {
+      PartialMerkleTree(UInt32.zero, Vector.empty, BitVector.empty)
+    }
+
+    // absurd transaction count: Bitcoin Core rejects
+    // nTransactions > MAX_BLOCK_WEIGHT / MIN_TRANSACTION_WEIGHT (= 66,666)
+    intercept[IllegalArgumentException] {
+      PartialMerkleTree(UInt32(100000L), Vector.empty, BitVector.low(8))
+    }
+
+    // fewer hashes than the traversal consumes: crashes with `.head` on the
+    // empty hash vector (root bit set forces traversal into both children)
+    val rootSetBits =
+      BitVector.bits(Seq(true, false, false, false, false, false, false, false))
+    intercept[IllegalArgumentException] {
+      PartialMerkleTree(UInt32.two, Vector(h), rootSetBits)
+    }
+
+    // fewer bits than the traversal consumes: all-true flags force recursion
+    // past the end of the 8 provided bits, crashing on `.head`
+    intercept[IllegalArgumentException] {
+      PartialMerkleTree(UInt32(5), Vector.fill(8)(h), BitVector.high(8))
+    }
+  }
 }

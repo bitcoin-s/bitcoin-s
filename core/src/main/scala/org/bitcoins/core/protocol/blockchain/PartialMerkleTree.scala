@@ -1,5 +1,6 @@
 package org.bitcoins.core.protocol.blockchain
 
+import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.util._
 import org.bitcoins.crypto.{CryptoUtil, DoubleSha256Digest}
@@ -274,10 +275,35 @@ object PartialMerkleTree {
     *   the bits used indicate the structure of the partial merkle tree
     * @return
     */
+  /** A minimal valid serialized transaction is at least 60 bytes, matching
+    * Bitcoin Core's MIN_TRANSACTION_WEIGHT (merkleblock.cpp), used below to cap
+    * the declared transaction count to a value that could plausibly fit in a
+    * block.
+    */
+  private val minTransactionWeight: Long = 60
+
   def apply(
       transactionCount: UInt32,
       hashes: Vector[DoubleSha256Digest],
       bits: BitVector): PartialMerkleTree = {
+    // sanity checks mirroring Bitcoin Core's CPartialMerkleTree::ExtractMatches
+    // (merkleblock.cpp) -- reject degenerate/absurd inputs cleanly before
+    // attempting to reconstruct the tree, rather than crashing or silently
+    // accepting them
+    require(transactionCount != UInt32.zero,
+            "PartialMerkleTree must have at least 1 transaction")
+    require(
+      transactionCount.toLong <= Consensus.maxBlockWeight / minTransactionWeight,
+      s"PartialMerkleTree transaction count is too high, got=$transactionCount"
+    )
+    require(
+      hashes.size <= transactionCount.toInt,
+      s"Cannot have more hashes than transactions, got ${hashes.size} hashes for $transactionCount transactions"
+    )
+    require(
+      bits.size >= hashes.size,
+      s"Must have at least one bit per hash, got ${bits.size} bits for ${hashes.size} hashes"
+    )
     val tree = reconstruct(transactionCount.toInt, hashes, bits)
     PartialMerkleTree(tree, transactionCount, bits, hashes)
   }
@@ -320,8 +346,14 @@ object PartialMerkleTree {
         pos: Int): (BinaryTreeDoubleSha256Digest,
                     Vector[DoubleSha256Digest],
                     BitVector) = {
+      require(
+        remainingMatches.nonEmpty,
+        "Traversal ran out of bits while reconstructing the partial merkle tree")
       if (height == maxHeight) {
         // means we have a txid node
+        require(
+          remainingHashes.nonEmpty,
+          "Traversal ran out of hashes while reconstructing the partial merkle tree")
         (LeafDoubleSha256Digest(remainingHashes.head),
          remainingHashes.tail,
          remainingMatches.tail)
@@ -361,6 +393,9 @@ object PartialMerkleTree {
           val node = NodeDoubleSha256Digest(nodeHash, leftNode, rightNode)
           (node, rightRemainingHashes, rightRemainingBits)
         } else {
+          require(
+            remainingHashes.nonEmpty,
+            "Traversal ran out of hashes while reconstructing the partial merkle tree")
           (LeafDoubleSha256Digest(remainingHashes.head),
            remainingHashes.tail,
            remainingMatches.tail)

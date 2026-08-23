@@ -3,6 +3,7 @@ package org.bitcoins.core.serializers.blockchain
 import org.bitcoins.core.number.{Int32, UInt32}
 import org.bitcoins.core.protocol.blockchain.{
   BlockHeader,
+  MainNetChainParams,
   MerkleBlock,
   PartialMerkleTree
 }
@@ -13,7 +14,7 @@ import org.bitcoins.core.util.{
 }
 import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
-import scodec.bits.BitVector
+import scodec.bits.{BitVector, ByteVector}
 
 /** Created by chris on 8/22/16.
   */
@@ -156,5 +157,25 @@ class RawMerkleBlockSerializerTest extends BitcoinSUnitTest {
       "d1eb1f82f9d261b8273b525b02ff1a"
     val merkleBlock = MerkleBlock(hex)
     merkleBlock.hex must be(hex)
+  }
+
+  it must "reject a crafted merkleblock declaring zero transactions with a clean error" in {
+    // mirrors the sanity checks in Bitcoin Core's
+    // CPartialMerkleTree::ExtractMatches (merkleblock.cpp) -- a merkleblock
+    // parsed off the wire that declares zero transactions must be rejected
+    // cleanly (IllegalArgumentException) rather than crashing or being
+    // silently accepted, since RawMerkleBlockSerializer.read constructs a
+    // PartialMerkleTree from the parsed fields.
+    val merkleBlockBytes = {
+      val headerBytes = MainNetChainParams.genesisBlock.blockHeader.bytes
+      val txCountLE = ByteVector.low(4) // nTransactions = 0
+      val hashCount = ByteVector(0.toByte)
+      val flagCount = ByteVector(1.toByte)
+      val flags = ByteVector(0.toByte)
+      headerBytes ++ txCountLE ++ hashCount ++ flagCount ++ flags
+    }
+    intercept[IllegalArgumentException] {
+      RawMerkleBlockSerializer.read(merkleBlockBytes)
+    }
   }
 }
