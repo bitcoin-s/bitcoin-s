@@ -1,22 +1,25 @@
 package org.bitcoins.core.crypto
 
+import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script.{
-  MultiSignatureScriptPubKey,
-  ScriptPubKey
-}
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
 import org.bitcoins.core.script.constant.ScriptToken
 import org.bitcoins.core.script.util.PreviousOutputMap
-import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey, ECPublicKeyBytes}
-import org.bitcoins.testkitcore.util.BitcoinSUnitTest
+import org.bitcoins.crypto._
+import org.bitcoins.testkitcore.util.{BitcoinSUnitTest, TransactionTestUtil}
+import scodec.bits.ByteVector
 
 /** Created by chris on 2/29/16.
   */
 class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
 
   behavior of "TransactionSignatureChecker"
+
+  // fixed, deterministic key -- no randomness in this security regression test
+  private val privKey1: ECPrivateKey =
+    ECPrivateKey.fromFieldElement(FieldElement.one)
 
   // Positive Test Cases
 
@@ -761,6 +764,60 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
       )
 
     assert(!result3.isValid, s"result: $result3")
+  }
+
+  it must "commit the segwit v0 sighash to the scriptCode after the last executed OP_CODESEPARATOR" in {
+    // BIP143 commits the sighash to the scriptCode after the last executed
+    // OP_CODESEPARATOR, not the full witness script.
+    val pubKey = privKey1.publicKey
+    // <pubkey> OP_CODESEPARATOR OP_CHECKSIG
+    val fullScriptBytes = ByteVector.fromValidHex("21") ++ pubKey.bytes ++
+      ByteVector.fromValidHex("abac")
+    val witnessScript = ScriptPubKey
+      .fromAsmBytes(fullScriptBytes)
+      .asInstanceOf[RawScriptPubKey]
+    // the scriptCode Core would use: everything after the last OP_CODESEPARATOR
+    val strippedScript =
+      ScriptPubKey.fromAsmBytes(ByteVector.fromValidHex("ac"))
+    val p2wsh = P2WSHWitnessSPKV0(witnessScript)
+    val amount = Satoshis(10000)
+    val (creditingTx, outputIndex) =
+      TransactionTestUtil.buildCreditingTransaction(p2wsh, Some(amount))
+    val witness = P2WSHWitnessV0(witnessScript, Vector.empty)
+    val (spendingTx, inputIndex) =
+      TransactionTestUtil.buildSpendingTransaction(creditingTx,
+                                                   EmptyScriptSignature,
+                                                   outputIndex,
+                                                   Some((witness, amount)))
+    val wtx = spendingTx.asInstanceOf[WitnessTransaction]
+    val flags = Policy.standardFlags
+    val rawComponent =
+      WitnessTxSigComponentRaw(wtx,
+                               inputIndex,
+                               TransactionOutput(amount, p2wsh),
+                               flags)
+    // manually compute the expected BIP143 sighash with the post-codeseparator
+    // scriptCode, and sign that hash
+    val expectedHashComponent =
+      WitnessTxSigComponentRebuilt(wtx = wtx,
+                                   inputIndex = inputIndex,
+                                   output =
+                                     TransactionOutput(amount, strippedScript),
+                                   witScriptPubKey = p2wsh,
+                                   flags = flags)
+    val expectedHash = TransactionSignatureSerializer.hashForSignature(
+      expectedHashComponent,
+      HashType.sigHashAll,
+      TaprootSerializationOptions.empty)
+    val sig =
+      privKey1.sign(expectedHash.bytes).appendHashType(HashType.sigHashAll)
+    val result = TransactionSignatureChecker.checkSignature(
+      txSignatureComponent = rawComponent,
+      script = strippedScript.asm,
+      pubKey = pubKey.toPublicKeyBytes(),
+      signature = sig,
+      flags = flags)
+    result must be(SignatureValidationSuccess)
   }
 
 }
