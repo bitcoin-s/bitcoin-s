@@ -1,7 +1,8 @@
 package org.bitcoins.core.bloom
 
 import org.bitcoins.core.crypto._
-import org.bitcoins.core.number.UInt32
+import org.bitcoins.core.number.{UInt32, UInt64}
+import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.blockchain.Block
 import org.bitcoins.core.protocol.transaction.{Transaction, TransactionOutPoint}
 import org.bitcoins.crypto._
@@ -303,5 +304,29 @@ class BloomFilterTest extends BitcoinSUnitTest {
 
     empty.data must be(ByteVector.empty)
     BloomFilter.fromBytes(empty.bytes) must be(empty)
+  }
+
+  it must "reject a filterSize larger than the BIP37 maxSize limit" in {
+    Try(
+      BloomFilter(
+        filterSize = CompactSizeUInt(UInt64(BloomFilter.maxSize.toLong + 1)),
+        data = ByteVector.empty,
+        hashFuncs = UInt32.one,
+        tweak = UInt32.zero,
+        flags = BloomUpdateAll
+      )
+    ).isFailure must be(true)
+  }
+
+  it must "reject a hashFuncs count larger than the BIP37 maxHashFuncs limit" in {
+    Try(
+      BloomFilter(
+        filterSize = CompactSizeUInt(UInt64.one),
+        data = ByteVector(0.toByte),
+        hashFuncs = UInt32(BloomFilter.maxHashFuncs.toLong + 1),
+        tweak = UInt32.zero,
+        flags = BloomUpdateAll
+      )
+    ).isFailure must be(true)
   }
 }

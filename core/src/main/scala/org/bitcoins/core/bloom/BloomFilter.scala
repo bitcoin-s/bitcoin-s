@@ -402,6 +402,13 @@ object BloomFilter extends Factory[BloomFilter] {
       hashFuncs: UInt32,
       tweak: UInt32,
       flags: BloomFlag): BloomFilter = {
+    require(
+      filterSize.num.toLong <= maxSize.toLong,
+      s"Bloom filter size cannot be larger than $maxSize, got $filterSize")
+    require(
+      hashFuncs.toLong <= maxHashFuncs.toLong,
+      s"Bloom filter hashFuncs cannot be larger than $maxHashFuncs, got $hashFuncs"
+    )
     BloomFilterImpl(filterSize, data, hashFuncs, tweak, flags)
   }
 
