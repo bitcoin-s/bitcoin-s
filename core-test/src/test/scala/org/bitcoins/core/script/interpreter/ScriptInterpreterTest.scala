@@ -14,14 +14,22 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput,
   WitnessTransaction
 }
+import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.script.PreExecutionScriptProgram
-import org.bitcoins.core.script.flag.ScriptFlagFactory
+import org.bitcoins.core.script.flag.{
+  ScriptFlagFactory,
+  ScriptVerifyDiscourageUpgradableWitnessProgram
+}
 import org.bitcoins.core.script.interpreter.testprotocol.CoreTestCase
+import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.script.util.PreviousOutputMap
+import org.bitcoins.crypto.SchnorrDigitalSignature
 import org.bitcoins.testkitcore.util.{BitcoinSUnitTest, TransactionTestUtil}
+import scodec.bits.ByteVector
 import upickle.default.*
 
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 /** Created by chris on 1/6/16.
   */
@@ -175,6 +183,48 @@ class ScriptInterpreterTest extends BitcoinSUnitTest {
           PreviousOutputMap(Map(EmptyTransactionOutPoint -> prevOut))
         )
     )
+  }
+
+  it must "not treat a v1 witness program with an invalid x coordinate as anyone-can-spend" in {
+    // a v1 32-byte witness program is unambiguously taproot regardless of
+    // whether its 32 bytes are a valid x-only coordinate (0xffff...ff >= the
+    // secp256k1 field size, so it cannot be a valid x coordinate); spending
+    // such an output must fail validation, not be classified as an
+    // anyone-can-spend unassigned witness program
+    val invalidProgram = ByteVector.fill(32)(0xff.toByte)
+    val spkBytes = ByteVector.fromValidHex("5120") ++ invalidProgram
+    Try(ScriptPubKey.fromAsmBytes(spkBytes)) match {
+      case Failure(_) =>
+        // rejecting the invalid taproot output key at parse time is acceptable
+        succeed
+      case Success(spk) =>
+        assert(
+          !spk.isInstanceOf[UnassignedWitnessScriptPubKey],
+          s"A v1 32-byte witness program must be classified as taproot, not as an unassigned witness program, got=$spk"
+        )
+        val amount = Satoshis(10000)
+        val (creditingTx, outputIndex) =
+          TransactionTestUtil.buildCreditingTransaction(spk, Some(amount))
+        val witness =
+          ScriptWitness(Vector(SchnorrDigitalSignature.dummy.bytes))
+        val (spendingTx, inputIndex) =
+          TransactionTestUtil.buildSpendingTransaction(creditingTx,
+                                                       EmptyScriptSignature,
+                                                       outputIndex,
+                                                       Some((witness, amount)))
+        val flags = Policy.standardFlags.filterNot(
+          _ == ScriptVerifyDiscourageUpgradableWitnessProgram)
+        val wtx = spendingTx.asInstanceOf[WitnessTransaction]
+        val outpoint = wtx.inputs(inputIndex.toInt).previousOutput
+        val outputMap =
+          PreviousOutputMap(Map(outpoint -> TransactionOutput(amount, spk)))
+        val component =
+          TaprootTxSigComponent(wtx, inputIndex, outputMap, flags)
+        val result = ScriptInterpreter.run(PreExecutionScriptProgram(component))
+        assert(
+          result != ScriptOk,
+          s"Spending a v1 witness program with an invalid x-only key must fail validation, got=$result")
+    }
   }
 }
 

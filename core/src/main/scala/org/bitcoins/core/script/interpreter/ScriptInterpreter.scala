@@ -644,10 +644,19 @@ sealed abstract class ScriptInterpreter {
       } else {
         taprootWitness match {
           case keypath: TaprootKeyPath =>
-            val program = checkSchnorrSignature(
-              keypath,
-              taprootSPK.pubKey.schnorrPublicKey,
-              program = scriptPubKeyExecutedProgram)
+            // taprootSPK.pubKey throws if the output key's 32 bytes are not
+            // a valid x-only coordinate (see TaprootScriptPubKey.isValidAsm,
+            // which classifies a v1 32-byte program as taproot purely
+            // structurally, independent of key validity) -- that must fail
+            // key-path signature verification, not crash the interpreter
+            val program = Try(taprootSPK.pubKey.schnorrPublicKey) match {
+              case Success(schnorrPubKey) =>
+                checkSchnorrSignature(keypath,
+                                      schnorrPubKey,
+                                      program = scriptPubKeyExecutedProgram)
+              case Failure(_) =>
+                scriptPubKeyExecutedProgram.failExecution(ScriptErrorSchnorrSig)
+            }
             Success(program)
           case _: TaprootUnknownPath =>
             // is this right? I believe to maintain softfork compatibility we
