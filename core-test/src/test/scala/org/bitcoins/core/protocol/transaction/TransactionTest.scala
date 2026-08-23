@@ -149,6 +149,20 @@ class TransactionTest extends BitcoinSUnitTest {
     tx2.baseSize must be(106)
   }
 
+  it must "reject a witness transaction with a flag byte other than 1" in {
+    // WitnessTransaction.fromBytes used to only require flag != 0. BIP144
+    // defines the flag as exactly 0x01 and Bitcoin Core rejects any other
+    // value.
+    // Same fixture as the sipa 3rd segwit tx above
+    // (c586389e5e4b3acb9d6c8be1c19ae8ab2795397633176f5a6442a261bbdefc3a),
+    // with the flag byte changed 01 -> 02.
+    val invalidFlagTx =
+      "02000000" + // version
+        "00" + "02" + // marker 0, INVALID flag 2
+        "0140d43a99926d43eb0e619bf0b3d83b4a31f60c176beecfb9d35bf45e54d0f7420100000017160014a4b4ca48de0b3fffc15404a1acdc8dbaae226955ffffffff0100e1f5050000000017a9144a1154d50b03292b3024370901711946cb7cccc387024830450221008604ef8f6d8afa892dee0f31259b6ce02dd70c545cfcfed8148179971876c54a022076d771d6e91bed212783c9b06e0de600fab2d518fad6f15a2b191d7fbd262a3e0121039d25ab79f41f75ceaf882411fd41fa670a4c672c23ffaf0e361a969cde0692e800000000"
+    WitnessTransaction.fromHexT(invalidFlagTx).isFailure must be(true)
+  }
+
   it must "parse a transaction with an OP_PUSHDATA4 op code but not enough data to push" in {
     val hex =
       "01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff2a03f35c0507062f503253482ffe4ecb3b55fefbde06000963676d696e6572343208040000000000000000ffffffff0100f90295000000001976a91496621bc1c9d1e5a1293e401519365de820792bbc88ac00000000"

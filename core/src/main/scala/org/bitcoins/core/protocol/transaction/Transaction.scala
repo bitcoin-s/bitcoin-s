@@ -405,8 +405,8 @@ object WitnessTransaction extends Factory[WitnessTransaction] {
       "Incorrect marker for witness transaction, the marker MUST be 0 for the marker according to BIP141, got: " + marker)
     val flag = bytes(5)
     require(
-      flag.toInt != 0,
-      "Incorrect flag for witness transaction, this must NOT be 0 according to BIP141, got: " + flag)
+      flag == WitnessTransaction.flag,
+      "Incorrect flag for witness transaction, BIP141 defines the flag as exactly 1, got: " + flag)
     val txInputBytes = bytes.slice(6, bytes.size)
     val (inputs, outputBytes) =
       BytesUtil.parseCmpctSizeUIntSeq(txInputBytes, TransactionInput)
