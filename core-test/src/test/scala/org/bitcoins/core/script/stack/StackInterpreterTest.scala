@@ -149,6 +149,21 @@ class StackInterpreterTest extends BitcoinSUnitTest {
 
   }
 
+  it must "not duplicate a non-canonical zero encoding with OP_IFDUP (Bitcoin Core treats it as false)" in {
+    // Core's CastToBool treats every all-zero byte encoding (and negative zero) as false, not just
+    // the canonical empty-vector zero, so a non-canonical zero like "00" must leave the stack
+    // unchanged rather than being duplicated
+    val stack = List(ScriptConstant("00"))
+    val script = List(OP_IFDUP)
+    val program =
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
+    val newProgram = SI.opIfDup(program)
+    newProgram.stack must be(stack)
+  }
+
   it must "evaluate an OP_NIP correctly" in {
     val stack = List(OP_0, OP_1)
     val script = List(OP_NIP)
