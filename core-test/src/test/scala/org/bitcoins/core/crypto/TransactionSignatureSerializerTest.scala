@@ -12,7 +12,7 @@ import org.bitcoins.core.wallet.builder.StandardNonInteractiveFinalizer
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.*
 import org.bitcoins.testkitcore.gen.{CreditingTxGen, ScriptGenerators}
-import org.bitcoins.testkitcore.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.{BitcoinSUnitTest, TransactionTestUtil}
 import scodec.bits.ByteVector
 
 import scala.util.Try
@@ -1230,4 +1230,53 @@ class TransactionSignatureSerializerTest extends BitcoinSUnitTest {
     assert(serialize.toHex == expected)
   }
 
+  it must "fail validation for taproot SIGHASH_SINGLE with no corresponding output" in {
+    // BIP341 requires taproot SIGHASH_SINGLE with a missing corresponding
+    // output to fail validation outright -- there is no placeholder hash
+    // concept in BIP341's tagged-hash sighash algorithm, unlike the legacy
+    // (SigVersionBase) sighash algorithm's uint256-one error hash.
+    val privKey1: ECPrivateKey = ECPrivateKey.fromFieldElement(FieldElement.one)
+    val taprootSPK = TaprootScriptPubKey(privKey1.toXOnly)
+    val amount1 = Satoshis(10000)
+    val amount2 = Satoshis(20000)
+    val (creditingTx1, _) =
+      TransactionTestUtil.buildCreditingTransaction(taprootSPK, Some(amount1))
+    val (creditingTx2, _) =
+      TransactionTestUtil.buildCreditingTransaction(taprootSPK, Some(amount2))
+    val outpoint1 = TransactionOutPoint(creditingTx1.txId, UInt32.zero)
+    val outpoint2 = TransactionOutPoint(creditingTx2.txId, UInt32.zero)
+    val inputs = Vector(
+      TransactionInput(outpoint1,
+                       EmptyScriptSignature,
+                       TransactionConstants.sequence),
+      TransactionInput(outpoint2,
+                       EmptyScriptSignature,
+                       TransactionConstants.sequence)
+    )
+    // only one output, so input index 1 has no corresponding output
+    val outputs =
+      Vector(TransactionOutput(Satoshis(5000), EmptyScriptPubKey))
+    val witness =
+      TransactionWitness(Vector(TaprootKeyPath.dummy, TaprootKeyPath.dummy))
+    val wtx = WitnessTransaction(
+      TransactionConstants.version,
+      inputs,
+      outputs,
+      TransactionConstants.lockTime,
+      witness
+    )
+    val outputMap = PreviousOutputMap(
+      Map(outpoint1 -> creditingTx1.outputs.head,
+          outpoint2 -> creditingTx2.outputs.head))
+    val component =
+      TaprootTxSigComponent(wtx, UInt32.one, outputMap, Policy.standardFlags)
+    val hashT = Try(
+      TransactionSignatureSerializer.hashForSignature(
+        component,
+        HashType.sigHashSingle,
+        TaprootSerializationOptions.empty))
+    assert(
+      hashT.isFailure,
+      s"BIP341 requires taproot SIGHASH_SINGLE with no corresponding output to fail validation, got=$hashT")
+  }
 }

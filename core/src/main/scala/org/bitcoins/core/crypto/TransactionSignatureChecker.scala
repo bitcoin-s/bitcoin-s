@@ -11,6 +11,7 @@ import org.bitcoins.crypto.*
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
+import scala.util.{Failure, Success, Try}
 
 /** Created by chris on 2/16/16. Responsible for checking digital signatures on
   * inputs against their respective public keys
@@ -80,12 +81,22 @@ trait TransactionSignatureChecker {
     if (!validHashType) {
       ScriptErrorSchnorrSigHashType
     } else {
-      val hash =
+      // hashForSignature throws for a taproot SIGHASH_SINGLE with no
+      // corresponding output (BIP341 requires that to fail validation,
+      // unlike the legacy sighash algorithm's placeholder error hash) --
+      // that must surface as a clean script failure here, not an uncaught
+      // exception escaping the interpreter
+      Try(
         TransactionSignatureSerializer.hashForSignature(txSigComponent,
                                                         hashType,
                                                         taprootOptions)
-      val result = pubKey.verify(hash, schnorrSignature)
-      if (result) ScriptOk else ScriptErrorSchnorrSig
+      ) match {
+        case Success(hash) =>
+          val result = pubKey.verify(hash, schnorrSignature)
+          if (result) ScriptOk else ScriptErrorSchnorrSig
+        case Failure(_) =>
+          ScriptErrorSchnorrSig
+      }
     }
   }
 
@@ -220,18 +231,31 @@ trait TransactionSignatureChecker {
       hashType: HashType,
       taprootOptions: TaprootSerializationOptions,
       flags: Seq[ScriptFlag]): TransactionSignatureCheckerResult = {
-    val hash =
+    // hashForSignature throws for a taproot SIGHASH_SINGLE with no
+    // corresponding output (BIP341 requires that to fail validation,
+    // unlike the legacy sighash algorithm's placeholder error hash) --
+    // that must surface as a clean signature check failure here, not an
+    // uncaught exception escaping the interpreter
+    Try(
       TransactionSignatureSerializer.hashForSignature(txSignatureComponent,
                                                       hashType,
                                                       taprootOptions)
-    val result = pubKey.verify(hash, signature)
-    if (result) {
-      SignatureValidationSuccess
-    } else {
-      nullFailCheckSchnorrSig(sigs = Vector(signature),
-                              result =
-                                SignatureValidationErrorIncorrectSignatures,
-                              flags = flags)
+    ) match {
+      case Failure(_) =>
+        nullFailCheckSchnorrSig(sigs = Vector(signature),
+                                result =
+                                  SignatureValidationErrorIncorrectSignatures,
+                                flags = flags)
+      case Success(hash) =>
+        val result = pubKey.verify(hash, signature)
+        if (result) {
+          SignatureValidationSuccess
+        } else {
+          nullFailCheckSchnorrSig(sigs = Vector(signature),
+                                  result =
+                                    SignatureValidationErrorIncorrectSignatures,
+                                  flags = flags)
+        }
     }
   }
 
