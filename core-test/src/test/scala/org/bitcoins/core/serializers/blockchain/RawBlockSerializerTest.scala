@@ -8,6 +8,8 @@ import org.bitcoins.crypto.DoubleSha256Digest
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
 import scodec.bits.ByteVector
 
+import scala.util.Try
+
 /** Created by tom on 6/3/16.
   */
 class RawBlockSerializerTest extends BitcoinSUnitTest {
@@ -136,5 +138,11 @@ class RawBlockSerializerTest extends BitcoinSUnitTest {
     block.blockHeader must be(RawBlockHeaderSerializer.read(header))
     block.txCount.num must be(UInt64(txSeq.size))
     block.hex must be(hex)
+  }
+
+  it must "reject trailing garbage after the last transaction in a block" in {
+    // RawBlockSerializer.read used to discard whatever bytes were left over
+    // after parsing the declared transactions instead of failing.
+    Try(RawBlockSerializer.read(hex + "deadbeef")).isFailure must be(true)
   }
 }

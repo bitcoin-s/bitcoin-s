@@ -48,6 +48,17 @@ class TxUtilTest extends BitcoinSUnitTest {
       .isFailure must be(true)
   }
 
+  it should "detect Long overflow in fee multiplication instead of silently wrapping" in {
+    // isValidFeeRange used to compute 40 * feeRate.toLong with plain Long
+    // arithmetic, so an extreme fee rate would silently wrap instead of
+    // failing.
+    val hugeFeeRatePerVByte =
+      SatoshisPerVirtualByte(Satoshis(Long.MaxValue / 40 + 1))
+    an[ArithmeticException] must be thrownBy TxUtil
+      .isValidFeeRange(Satoshis(100), Satoshis(50), hugeFeeRatePerVByte)
+      .get
+  }
+
   it should "detect impossibly high fees" in {
     val newOutput = TransactionOutput(Bitcoins.zero, EmptyScriptPubKey)
     val highFeeTx =

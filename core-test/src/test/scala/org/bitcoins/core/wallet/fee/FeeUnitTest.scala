@@ -168,4 +168,11 @@ class FeeUnitTest extends BitcoinSUnitTest {
         .fromLong(98494)
     )
   }
+
+  it must "detect Long overflow in fee multiplication instead of silently wrapping" in {
+    // FeeUnit.* used to multiply with plain Long arithmetic, so extreme fee
+    // rates would silently wrap to a small/negative fee instead of failing.
+    val hugeFeeRate = SatoshisPerByte(Satoshis(Long.MaxValue / 2))
+    an[ArithmeticException] must be thrownBy (hugeFeeRate * 4L)
+  }
 }

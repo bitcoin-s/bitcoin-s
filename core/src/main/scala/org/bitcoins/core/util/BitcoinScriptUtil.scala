@@ -660,9 +660,20 @@ trait BitcoinScriptUtil {
     }
   }
 
+  /** @param strict
+    *   when true (the default, and the correct choice for parsing untrusted
+    *   wire data), require that exactly `len` bytes (the declared script
+    *   length) were actually available, rejecting truncated input. Only pass
+    *   false for a deliberate, non-wire-data construction like
+    *   TransactionSignatureSerializer's legacy sighash algorithm, which mirrors
+    *   Bitcoin Core's CScript handling by constructing a script from just a
+    *   length-prefix with no bytes following it as a placeholder -- see the
+    *   `strict` overload of `ScriptFactory.fromBytes`.
+    */
   def parseScript[T <: Script](
       bytes: ByteVector,
-      f: Vector[ScriptToken] => T): T = {
+      f: Vector[ScriptToken] => T,
+      strict: Boolean = true): T = {
     val compactSizeUInt = CompactSizeUInt.parseCompactSizeUInt(bytes)
     // TODO: Figure out a better way to do this, we can theoretically have numbers larger than Int.MaxValue,
     // but scala collections don't allow you to use 'slice' with longs
@@ -670,6 +681,11 @@ trait BitcoinScriptUtil {
     val scriptPubKeyBytes =
       bytes.slice(compactSizeUInt.byteSize.toInt,
                   len + compactSizeUInt.byteSize.toInt)
+    if (strict) {
+      require(
+        scriptPubKeyBytes.length == len,
+        s"Declared script length $len exceeds the ${scriptPubKeyBytes.length} available bytes")
+    }
     val script: Vector[ScriptToken] = ScriptParser.fromBytes(scriptPubKeyBytes)
     f(script)
   }

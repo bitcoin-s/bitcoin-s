@@ -1,8 +1,12 @@
 package org.bitcoins.core.protocol.tlv
 
+import org.bitcoins.core.protocol.BigSizeUInt
 import org.bitcoins.core.protocol.dlc.models.ContractInfo
 import org.bitcoins.testkitcore.gen.TLVGen
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
+import scodec.bits.ByteVector
+
+import scala.util.Try
 
 class TLVTest extends BitcoinSUnitTest {
 
@@ -226,4 +230,71 @@ class TLVTest extends BitcoinSUnitTest {
     // https://test.oracle.suredbits.com/contract/numeric/d4d4df2892fb2cfd2e8f030f0e69a568e19668b5d355e7713f69853db09a4c33
     assert(ContractInfo.fromHexOpt(oldHex).isDefined)
   }
+
+  "ValueIterator.takeBigSizePrefixedList" must
+    "not build a result vector proportional to an attacker-controlled count" in {
+      // ValueIterator.takeBigSizePrefixedList used to materialize
+      // `0.until(len.toInt).toVector` from the declared count before parsing
+      // any element. Correct behavior: the declared count is checked against
+      // the remaining bytes first, parsing fails, and no per-element work runs.
+      val declaredCount = 3000000L // millions: wasteful, but no OOM
+      val bytes =
+        BigSizeUInt(declaredCount).bytes ++ ByteVector(0x01, 0x02, 0x03, 0x04)
+      val iter = ValueIterator(bytes)
+
+      var elementParses = 0
+      val result = Try(iter.takeBigSizePrefixedList { () =>
+        elementParses += 1
+        ()
+      })
+
+      assert(
+        result.isFailure,
+        s"Parsing must fail: declared count $declaredCount exceeds the " +
+          s"remaining bytes, but parsing succeeded with " +
+          s"${result.toOption.map(_.length)} elements"
+      )
+      assert(
+        elementParses == 0,
+        s"The element parse function ran $elementParses times even though " +
+          s"the declared count $declaredCount exceeds the remaining bytes")
+    }
+
+  it must
+    "reject an oversized declared count before parsing any element" in {
+      // Correct behavior: parsing fails before the first element parse runs.
+      val declaredCount = 3000000L
+      val iter = ValueIterator(BigSizeUInt(declaredCount).bytes) // 0 elements
+
+      var elementParses = 0
+      val result = Try(iter.takeBigSizePrefixedList { () =>
+        elementParses += 1
+        iter.takeU16() // minimal element read, throws when out of bytes
+      })
+
+      assert(result.isFailure,
+             "Parsing must fail when the declared count exceeds the " +
+               "remaining bytes")
+      assert(
+        elementParses == 0,
+        s"Element parsing started ($elementParses parse attempts) before " +
+          s"the declared count $declaredCount was checked")
+    }
+
+  "ContractDescriptorV0TLV" must
+    "fail when the declared outcome count exceeds the value bytes" in {
+      // ContractDescriptorV0TLV.fromTLVValue uses
+      // ValueIterator.takeBigSizePrefixedList. Correct behavior: a value that
+      // declares millions of outcomes but contains none must fail to parse
+      // instead of trusting the count.
+      val declaredCount = 3000000L
+      val value = BigSizeUInt(declaredCount).bytes // count only, 0 outcomes
+
+      val result = Try(ContractDescriptorV0TLV.fromTLVValue(value))
+
+      assert(
+        result.isFailure,
+        s"Parsing must fail: declared outcome count $declaredCount exceeds " +
+          s"the ${value.length} value bytes")
+    }
 }

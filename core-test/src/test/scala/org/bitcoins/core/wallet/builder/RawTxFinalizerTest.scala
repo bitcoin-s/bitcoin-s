@@ -129,11 +129,15 @@ class RawTxFinalizerTest extends BitcoinSUnitTest {
     val sortedOutputs: Vector[TransactionOutput] = Vector(
       TransactionOutput(
         Satoshis(400057456),
-        ScriptPubKey("76a9144a5fba237213a062f6f57978f796390bdcf8d01588ac")
+        // fromAsmHex, not the CompactSizeUInt-prefixed apply(hex): this hex
+        // is raw script bytes with no length prefix
+        ScriptPubKey.fromAsmHex(
+          "76a9144a5fba237213a062f6f57978f796390bdcf8d01588ac")
       ),
       TransactionOutput(
         Satoshis(40000000000L),
-        ScriptPubKey("76a9145be32612930b8323add2212a4ec03c1562084f8488ac")
+        ScriptPubKey.fromAsmHex(
+          "76a9145be32612930b8323add2212a4ec03c1562084f8488ac")
       )
     )
 

@@ -12,7 +12,8 @@ sealed abstract class FeeUnit {
   final def *(cu: CurrencyUnit): CurrencyUnit = this * cu.satoshis.toLong
   final def *(int: Int): CurrencyUnit = this * int.toLong
 
-  final def *(long: Long): CurrencyUnit = Satoshis(toLong * long / scaleFactor)
+  final def *(long: Long): CurrencyUnit = Satoshis(
+    Math.multiplyExact(toLong, long) / scaleFactor)
   def *(tx: Transaction): CurrencyUnit = calc(tx)
 
   def factory: FeeUnitFactory[FeeUnit]

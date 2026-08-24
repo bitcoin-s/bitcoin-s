@@ -14,8 +14,11 @@ sealed abstract class RawBlockSerializer extends RawBitcoinSerializer[Block] {
   def read(bytes: ByteVector): Block = {
     val blockHeader: BlockHeader = BlockHeader(bytes.take(80))
     val txBytes: ByteVector = bytes.splitAt(80)._2
-    val (transactions, _) = RawSerializerHelper
+    val (transactions, remaining) = RawSerializerHelper
       .parseCmpctSizeUIntSeq[Transaction](txBytes, Transaction(_: ByteVector))
+    require(
+      remaining.isEmpty,
+      s"${remaining.length} trailing bytes after the last transaction in a block")
     Block(blockHeader, transactions)
   }
 

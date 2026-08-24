@@ -90,8 +90,15 @@ sealed abstract class TransactionSignatureSerializer {
           s = input.scriptSignature
         } yield TransactionInput(
           input.previousOutput,
-          NonStandardScriptSignature(s.compactSizeUInt.hex),
-          input.sequence)
+          // strict=false: this is a deliberate placeholder consisting of just
+          // s's compactSizeUInt length-prefix with no script bytes following
+          // it, mirroring Bitcoin Core's CScript retaining only its compact
+          // size while clearing out the actual asm -- not untrusted wire data
+          NonStandardScriptSignature.fromBytes(
+            BytesUtil.decodeHex(s.compactSizeUInt.hex),
+            strict = false),
+          input.sequence
+        )
 
         // make sure all scriptSigs have empty asm
         inputSigsRemoved.foreach(input =>

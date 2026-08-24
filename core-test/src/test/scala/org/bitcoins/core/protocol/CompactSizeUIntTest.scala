@@ -79,9 +79,14 @@ class CompactSizeUIntTest extends BitcoinSUnitTest {
       CompactSizeUInt(UInt64(500000))
     )
 
-    val str3 = "ffffffffff"
+    // 0xff prefix + the full 8 bytes it requires, encoding a value that
+    // actually needs the 9-byte form (previously this was tested with
+    // UInt32.max, which canonically belongs to the 5-byte 0xfe form, using
+    // only 4 of the 8 required bytes and relying on parseCompactSizeUInt
+    // silently truncating instead of requiring the full 9 bytes)
+    val str3 = "ff0000000001000000"
     CompactSizeUInt.parseCompactSizeUInt(str3) must be(
-      CompactSizeUInt(UInt64(4294967295L), 9)
+      CompactSizeUInt(UInt64(4294967296L), 9)
     )
   }
 
@@ -127,5 +132,24 @@ class CompactSizeUIntTest extends BitcoinSUnitTest {
       val emptyBytes: ByteVector = ByteVector.empty
       CompactSizeUInt.parseCompactSizeUInt(emptyBytes)
     }
+  }
+
+  it must "reject truncated and non-canonical CompactSizeUInt varints" in {
+    // parseCompactSizeUInt used to silently pad truncated multi-byte varints
+    // and accept non-canonical encodings instead of rejecting them.
+
+    // 0xfd prefix requires 2 more bytes, only 1 is present
+    CompactSizeUInt.fromBytesT(BytesUtil.decodeHex("fd01")).isFailure must be(
+      true)
+
+    // non-canonical: value 1 must use the 1-byte form, not the 0xfd form
+    CompactSizeUInt
+      .fromBytesT(BytesUtil.decodeHex("fd0100"))
+      .isFailure must be(true)
+
+    // non-canonical: value 253 must use the 0xfd form, not the 0xfe form
+    CompactSizeUInt
+      .fromBytesT(BytesUtil.decodeHex("fefd000000"))
+      .isFailure must be(true)
   }
 }

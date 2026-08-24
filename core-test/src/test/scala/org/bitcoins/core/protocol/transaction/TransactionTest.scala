@@ -149,6 +149,20 @@ class TransactionTest extends BitcoinSUnitTest {
     tx2.baseSize must be(106)
   }
 
+  it must "reject a witness transaction with a flag byte other than 1" in {
+    // WitnessTransaction.fromBytes used to only require flag != 0. BIP144
+    // defines the flag as exactly 0x01 and Bitcoin Core rejects any other
+    // value.
+    // Same fixture as the sipa 3rd segwit tx above
+    // (c586389e5e4b3acb9d6c8be1c19ae8ab2795397633176f5a6442a261bbdefc3a),
+    // with the flag byte changed 01 -> 02.
+    val invalidFlagTx =
+      "02000000" + // version
+        "00" + "02" + // marker 0, INVALID flag 2
+        "0140d43a99926d43eb0e619bf0b3d83b4a31f60c176beecfb9d35bf45e54d0f7420100000017160014a4b4ca48de0b3fffc15404a1acdc8dbaae226955ffffffff0100e1f5050000000017a9144a1154d50b03292b3024370901711946cb7cccc387024830450221008604ef8f6d8afa892dee0f31259b6ce02dd70c545cfcfed8148179971876c54a022076d771d6e91bed212783c9b06e0de600fab2d518fad6f15a2b191d7fbd262a3e0121039d25ab79f41f75ceaf882411fd41fa670a4c672c23ffaf0e361a969cde0692e800000000"
+    WitnessTransaction.fromHexT(invalidFlagTx).isFailure must be(true)
+  }
+
   it must "parse a transaction with an OP_PUSHDATA4 op code but not enough data to push" in {
     val hex =
       "01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff2a03f35c0507062f503253482ffe4ecb3b55fefbde06000963676d696e6572343208040000000000000000ffffffff0100f90295000000001976a91496621bc1c9d1e5a1293e401519365de820792bbc88ac00000000"
@@ -500,6 +514,66 @@ class TransactionTest extends BitcoinSUnitTest {
       "0100000001e2643a9a0c05870ef7acdd91dce45ab3622d7a37302b9bbe87841c1d732cc3c4000000006a473044022043b5e41451ef06608dff4293249132a4f79184729505fbbdc45a5058442c418702207fbc1302fd3aa6c5e45787e8acdc9b79e0b54c60e10f8c5ecf9f192c24ef1a570121028c15a48d980aa15a48ca50636c88cbb2b4d38c549945842fb3fde2a5725d5ec3ffffffff033069c901000000001976a914b594f541ea352015c97f26413d46a2c31c28551c88ac0c030000000000002551211c434e54525052545900000000000000000000000100000000000927c00000000052ae0c030000000000001976a914f1f57da6302ad32eecada4b144d532122dea59dd88ac00000000"
     val tx = Transaction.fromHex(hex)
     assert(tx.hex == hex)
+  }
+
+  it must "reject a malformed witness transaction instead of silently re-parsing it as a base transaction" in {
+    // Transaction.fromBytes used to catch any failure while parsing the
+    // witness section and silently re-parse the SAME bytes as a base
+    // transaction, dropping the witness intent. Correct behavior: parsing
+    // fails.
+    // The bytes below have a valid marker/flag, 1 input and 1 output, but the
+    // witness section declares 2 stack items whose encoding consumes bytes
+    // into the locktime, leaving only 3 locktime bytes. WitnessTransaction
+    // parsing fails; the old fallback would then parse the bytes as a base tx
+    // (0 inputs, 1 garbage output).
+    val malformedWitnessTx =
+      "01000000" + // version
+        "0001" + // witness marker + flag
+        "01" + // 1 input
+        "0000000000000000000000000000000000000000000000000000000000000000" + // prev txid
+        "00000000" + // vout
+        "00" + // empty scriptSig
+        "ffffffff" + // sequence
+        "01" + // 1 output
+        "0000000000000000" + // 0 satoshis
+        "00" + // empty scriptPubKey
+        "02" + // witness: 2 stack items
+        "01" + "aa" + // item 1: len 1
+        // item 2 is parsed out of the locktime bytes below
+        "00000000" // locktime
+    Transaction.fromHexT(malformedWitnessTx).isFailure must be(true)
+  }
+
+  it must "reject trailing garbage and a truncated locktime in a base transaction" in {
+    // Transaction.fromHex used to have no way to detect trailing garbage
+    // (fromBytes is also used as the per-element parser when deserializing a
+    // sequence of transactions sharing one buffer, so it can't reject
+    // trailing bytes itself), and BaseTransaction.fromBytes took locktime as
+    // lockTimeBytes.take(4), silently zero-padding a truncated locktime
+    // instead of failing.
+    // genesis block coinbase tx, https://en.bitcoin.it/wiki/Genesis_block
+    val genesisCoinbaseTx =
+      "01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff4" +
+        "d04ffff001d0104455468652054696d65732030332f4a616e2f32303039204368616e63656c6c6f72206f6e2062726" +
+        "96e6b206f66207365636f6e64206261696c6f757420666f722062616e6b73ffffffff0100f2052a01000000434104678" +
+        "afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c3" +
+        "84df7ba0b8d578a4c702b6bf11d5fac00000000"
+
+    // trailing garbage after a valid base transaction
+    Transaction.fromHexT(genesisCoinbaseTx + "deadbeef").isFailure must be(true)
+
+    // truncated locktime (last byte removed) must not be zero-padded
+    Transaction.fromHexT(genesisCoinbaseTx.dropRight(2)).isFailure must be(true)
+  }
+
+  it must "fail with a parse error (not a raw index exception) on very short transaction input" in {
+    // Transaction.fromBytes used to do unchecked bytes(4)/bytes(5) indexing,
+    // so input shorter than 6 bytes threw a raw IndexOutOfBoundsException
+    // instead of a proper parse failure.
+    val ex = intercept[Exception] {
+      Transaction.fromBytes(hex"0100000000")
+    }
+    ex.isInstanceOf[IndexOutOfBoundsException] must be(false)
   }
 
   private def findInput(
