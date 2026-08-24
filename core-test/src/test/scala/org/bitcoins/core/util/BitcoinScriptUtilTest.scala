@@ -205,6 +205,15 @@ class BitcoinScriptUtilTest extends BitcoinSUnitTest {
     ) must be(false)
   }
 
+  it must "count a scriptSig ending in OP_16 as push-only" in {
+    // Bitcoin Core's IsPushOnly (script.cpp) allows all opcodes up to and including OP_16 -- OP_16
+    // pushes the number 16 onto the stack just like OP_1 through OP_15, so it belongs in the
+    // push-only category with them
+    BitcoinScriptUtil.isPushOnly(
+      Seq(BytesToPushOntoStack(1), ScriptConstant("ff"), OP_16)
+    ) must be(true)
+  }
+
   it must "determine that the script is not push only if it contains an script number operation" in {
     BitcoinScriptUtil.isMinimalPush(BytesToPushOntoStack(1), OP_1) must be(
       false

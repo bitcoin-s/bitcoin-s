@@ -149,6 +149,21 @@ class StackInterpreterTest extends BitcoinSUnitTest {
 
   }
 
+  it must "not duplicate a non-canonical zero encoding with OP_IFDUP (Bitcoin Core treats it as false)" in {
+    // Core's CastToBool treats every all-zero byte encoding (and negative zero) as false, not just
+    // the canonical empty-vector zero, so a non-canonical zero like "00" must leave the stack
+    // unchanged rather than being duplicated
+    val stack = List(ScriptConstant("00"))
+    val script = List(OP_IFDUP)
+    val program =
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
+    val newProgram = SI.opIfDup(program)
+    newProgram.stack must be(stack)
+  }
+
   it must "evaluate an OP_NIP correctly" in {
     val stack = List(OP_0, OP_1)
     val script = List(OP_NIP)
@@ -330,6 +345,24 @@ class StackInterpreterTest extends BitcoinSUnitTest {
     newProgram.asInstanceOf[ExecutedScriptProgram].error must be(
       Some(ScriptErrorInvalidStackOperation)
     )
+  }
+
+  it must "move the nth stack element to the top with OP_ROLL even when duplicate values are on the stack" in {
+    // removing the rolled element by value (stack.tail.diff(List(newStackTop))) removes the FIRST
+    // equal element instead of the element at depth n; Bitcoin Core's OP_ROLL removes and reinserts
+    // strictly by index
+    val a = ScriptConstant("aa")
+    val b = ScriptConstant("bb")
+    val stack = List(ScriptNumber(2), a, b, a)
+    val script = List(OP_ROLL)
+    val program =
+      TestUtil.testProgramExecutionInProgress.updateStackAndScript(
+        stack,
+        script
+      )
+    val newProgram = SI.opRoll(program)
+    // the second 'a' (depth 2) moves to the top; the first 'a' stays at depth 1
+    newProgram.stack must be(List(a, a, b))
   }
 
   it must "evaluate an OP_ROT correctly" in {

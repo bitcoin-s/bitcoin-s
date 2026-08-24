@@ -15,6 +15,7 @@ import org.bitcoins.core.script.{
 }
 
 import scala.annotation.tailrec
+import scala.util.{Failure, Success, Try}
 
 /** Created by chris on 2/8/16.
   */
@@ -46,6 +47,10 @@ sealed abstract class LockTimeInterpreter {
         case s: ScriptNumber if s < ScriptNumber.zero =>
           program.failExecution(ScriptErrorNegativeLockTime)
         case s: ScriptNumber
+            if ScriptFlagUtil.requireMinimalData(
+              program.flags) && !s.isShortestEncoding =>
+          program.failExecution(ScriptErrorUnknownError)
+        case s: ScriptNumber
             if s >= ScriptNumber(500000000) && transaction.lockTime < UInt32(
               500000000) =>
           program.failExecution(ScriptErrorUnsatisfiedLocktime)
@@ -63,8 +68,13 @@ sealed abstract class LockTimeInterpreter {
             program.failExecution(ScriptErrorUnsatisfiedLocktime)
           }
         case s: ScriptConstant =>
-          opCheckLockTimeVerify(
-            program.updateStack(ScriptNumber(s.hex) :: program.stack.tail))
+          interpretNumber(s) match {
+            case Success(interpretedNumber) =>
+              opCheckLockTimeVerify(
+                program.updateStack(interpretedNumber :: program.stack.tail))
+            case Failure(_) =>
+              program.failExecution(ScriptErrorUnknownError)
+          }
         case _: ScriptToken => program.failExecution(ScriptErrorUnknownError)
       }
     }
@@ -89,7 +99,7 @@ sealed abstract class LockTimeInterpreter {
       program.failExecution(ScriptErrorInvalidStackOperation)
     } else {
       program.stack.head match {
-        case ScriptNumber.negativeOne =>
+        case s: ScriptNumber if s < ScriptNumber.zero =>
           program.failExecution(ScriptErrorNegativeLockTime)
         case s: ScriptNumber
             if ScriptFlagUtil.requireMinimalData(
@@ -112,8 +122,13 @@ sealed abstract class LockTimeInterpreter {
             program.failExecution(ScriptErrorUnsatisfiedLocktime)
           }
         case s: ScriptConstant =>
-          opCheckSequenceVerify(
-            program.updateStack(ScriptNumber(s.hex) :: program.stack.tail))
+          interpretNumber(s) match {
+            case Success(interpretedNumber) =>
+              opCheckSequenceVerify(
+                program.updateStack(interpretedNumber :: program.stack.tail))
+            case Failure(_) =>
+              program.failExecution(ScriptErrorUnknownError)
+          }
         case token: ScriptToken =>
           throw new RuntimeException(
             "Stack top must be either a ScriptConstant or a ScriptNumber, we got: " + token)
@@ -298,6 +313,17 @@ sealed abstract class LockTimeInterpreter {
 
   def isLockTimeBitOff(num: Int64): Boolean =
     isLockTimeBitOff(ScriptNumber(num.hex))
+
+  /** Safely interprets a ScriptConstant as a ScriptNumber. ScriptNumber
+    * construction eagerly derives a Long value from the operand's bytes
+    * (ScriptNumberUtil.toLong), which throws NumberFormatException for a
+    * non-minimal operand wider than 8 bytes -- an untrusted, attacker
+    * controlled scriptSig/witness value. Bitcoin Core's CScriptNum constructor
+    * rejects such operands with a caught scriptnum_error instead of letting an
+    * unrepresentable value escape as a crash, so we do the same here.
+    */
+  private def interpretNumber(constant: ScriptConstant): Try[ScriptNumber] =
+    Try(ScriptNumber(constant.hex))
 }
 
 object LockTimeInterpreter extends LockTimeInterpreter

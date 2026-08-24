@@ -429,4 +429,14 @@ class ScriptParserTest extends BitcoinSUnitTest {
     asm must be(expectedAsm)
   }
 
+  it must "parse opcode bytes 0xbb-0xfe as OP_SUCCESS187-254 operations" in {
+    // per BIP342 (Tapscript), bytes 187-254 are individually named OP_SUCCESS187 through
+    // OP_SUCCESS254, distinct from ordinary reserved/NOP opcodes
+    (187 to 254).foreach { opCode =>
+      val parsed = ScriptParser.fromBytes(ByteVector(opCode.toByte))
+      parsed.size must be(1)
+      parsed.head.toString.startsWith("OP_SUCCESS") must be(true)
+    }
+  }
+
 }
