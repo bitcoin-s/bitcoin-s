@@ -56,4 +56,18 @@ class VersionMessageTest extends BitcoinSUnitTest {
     assert(versionMessage.services.nodeNetworkLimited)
     assert(!versionMessage.services.nodeNone)
   }
+
+  it must "handle a version message missing the optional relay byte gracefully" in {
+    // the relay byte is optional (added in protocol version 70001, BIP37);
+    // pre-70001 peers omit it entirely. RawVersionMessageSerializer.read
+    // previously indexed it unconditionally, throwing a raw
+    // IndexOutOfBoundsException instead of defaulting to relay=true the way
+    // Bitcoin Core does when the field is absent. Same message as above,
+    // minus the trailing "01" relay byte.
+    val payloadWithoutRelay =
+      hex"7f1101000d040000000000004ea1035d0000000000000000000000000000000000000000000000000000000000000d04000000000000000000000000000000000000000000000000fa562b93b3113e02122f5361746f7368693a302e31372e302e312f68000000"
+
+    val versionMessage = VersionMessage.fromBytes(payloadWithoutRelay)
+    versionMessage.relay must be(true)
+  }
 }

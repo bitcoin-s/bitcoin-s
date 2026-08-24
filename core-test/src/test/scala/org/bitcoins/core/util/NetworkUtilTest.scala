@@ -2,7 +2,12 @@ package org.bitcoins.core.util
 
 import org.bitcoins.core.config.{RegTest, TestNet3}
 import org.bitcoins.core.number.{Int32, UInt32, UInt64}
-import org.bitcoins.core.p2p.{HeadersMessage, NetworkHeader, NetworkMessage}
+import org.bitcoins.core.p2p.{
+  HeadersMessage,
+  NetworkHeader,
+  NetworkMessage,
+  VerAckMessage
+}
 import org.bitcoins.core.protocol.CompactSizeUInt
 import org.bitcoins.core.protocol.blockchain.{BlockHeader, MainNetChainParams}
 import org.bitcoins.crypto.{CryptoUtil, DoubleSha256Digest}
@@ -169,5 +174,32 @@ class NetworkUtilTest extends BitcoinSUtilTest {
     val (messages, leftover) = NetworkUtil.parseIndividualMessages(header.bytes)
     assert(messages.isEmpty)
     assert(leftover.isEmpty)
+  }
+
+  it must "not wedge forever on unparseable bytes at the start of the stream" in {
+    // A "filterload" message whose declared payload (1 byte) is too short
+    // to contain a bloom filter: the header parses fine, but the payload
+    // parse fails deterministically (RawBloomFilterSerializer reads the
+    // flags byte at index 9). Once the full declared payload is present,
+    // this failure can never be fixed by waiting for more bytes -- the
+    // parser must skip it and keep going rather than wedging forever.
+    val badPayload = ByteVector(0.toByte)
+    val badHeader =
+      NetworkHeader(np,
+                    "filterload",
+                    UInt32(badPayload.size),
+                    CryptoUtil.doubleSHA256(badPayload).bytes.take(4))
+    val badBytes = badHeader.bytes ++ badPayload
+
+    val validMessage = NetworkMessage(np, VerAckMessage)
+
+    // feed the stream chunk by chunk, as a TCP stream would arrive
+    val (firstMessages, leftover) =
+      NetworkUtil.parseIndividualMessages(badBytes)
+    val (secondMessages, _) =
+      NetworkUtil.parseIndividualMessages(leftover ++ validMessage.bytes)
+
+    // the valid trailing message must eventually be surfaced
+    (firstMessages ++ secondMessages).map(_.payload) must contain(VerAckMessage)
   }
 }

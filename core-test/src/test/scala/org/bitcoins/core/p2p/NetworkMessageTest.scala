@@ -1,7 +1,11 @@
 package org.bitcoins.core.p2p
 
+import org.bitcoins.core.config.RegTest
+import org.bitcoins.core.number.UInt32
+import org.bitcoins.crypto.CryptoUtil
 import org.bitcoins.testkitcore.node.P2PMessageTestUtil
 import org.bitcoins.testkitcore.util.BitcoinSUnitTest
+import scodec.bits.ByteVector
 
 class NetworkMessageTest extends BitcoinSUnitTest {
 
@@ -19,11 +23,52 @@ class NetworkMessageTest extends BitcoinSUnitTest {
       // since we only support protocol version > 7, i added it manually
       // this means the payload size is bumped by 1 byte in the NetworkHeader from 100 -> 101
       // and a relay byte "00" is appended to the end of the payload
-      "F9BEB4D976657273696F6E000000000065000000358d4932" +
+      //
+      // Since checksums are now verified at parse time, the checksum field
+      // below is the correct doubleSHA256 of the actual (101 byte, with the
+      // appended relay byte) payload -- the wiki page's original checksum
+      // was only ever valid for the unmodified 100 byte payload, which
+      // can't round-trip through VersionMessage: write() always re-emits
+      // the (optional-on-read, always-written) relay byte.
+      "F9BEB4D976657273696F6E000000000065000000030ecc57" +
         "62EA0000010000000000000011B2D05000000000010000000000000000000000000000000000FFFF000000000000010000000000000000000000000000000000FFFF0000000000003B2EB35D8CE617650F2F5361746F7368693A302E372E322FC03E0300" +
         "00"
     }.toLowerCase
     val networkMsg = NetworkMessage.fromHex(hex)
     networkMsg.hex must be(hex)
+  }
+
+  it must "reject a network message with a corrupted checksum" in {
+    // the version message from the bitcoin wiki example above, with the
+    // last checksum nibble flipped (57 -> 58) so it no longer matches
+    // doubleSHA256 of the payload
+    val corruptedChecksumHex = {
+      "F9BEB4D976657273696F6E000000000065000000030ecc58" +
+        "62EA0000010000000000000011B2D05000000000010000000000000000000000000000000000FFFF000000000000010000000000000000000000000000000000FFFF0000000000003B2EB35D8CE617650F2F5361746F7368693A302E372E322FC03E0300" +
+        "00"
+    }.toLowerCase
+
+    assertThrows[IllegalArgumentException] {
+      NetworkMessage.fromHex(corruptedChecksumHex)
+    }
+  }
+
+  it must "not interpret trailing bytes beyond payloadSize as part of the payload" in {
+    // RejectMessage is used because its `extra` field consumes all
+    // remaining bytes, so trailing bytes not sliced off at payloadSize
+    // would leak into the parsed payload.
+    // payload: message="tx", code=0x10, reason="", no extra data
+    val payloadBytes = ByteVector.fromValidHex("0274781000")
+    val header =
+      NetworkHeader(RegTest,
+                    "reject",
+                    UInt32(payloadBytes.size),
+                    CryptoUtil.doubleSHA256(payloadBytes).bytes.take(4))
+    // simulate framing where the next message's bytes follow immediately
+    val trailingBytes = ByteVector.fromValidHex("f9beb4d976657261")
+    val streamBytes = header.bytes ++ payloadBytes ++ trailingBytes
+
+    val msg = NetworkMessage.fromBytes(streamBytes)
+    msg.payload.bytes.size must be(header.payloadSize.toInt)
   }
 }
