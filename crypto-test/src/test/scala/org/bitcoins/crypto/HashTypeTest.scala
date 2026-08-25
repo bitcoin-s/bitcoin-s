@@ -131,4 +131,15 @@ class HashTypeTest extends BitcoinSCryptoTest {
       assert(HashType.fromByte(hashType.byte) == hashType)
     }
   }
+
+  it must "not count 0x00 as a defined hashtype byte for STRICTENC" in {
+    // Core's IsDefinedHashtypeSignature masks off the ANYONECANPAY bit and
+    // requires the remaining value be in [SIGHASH_ALL, SIGHASH_SINGLE] (1-3)
+    // -- 0x00 (SIGHASH_DEFAULT) is a taproot-only hash type with no meaning
+    // for legacy/segwit v0 ECDSA signatures.
+    val sigEndingInZero = ECDigitalSignature(
+      ByteVector.fromValidHex("3006020101020101") ++ ByteVector.fromByte(
+        0x00.toByte))
+    HashType.isDefinedHashtypeSignature(sigEndingInZero) must be(false)
+  }
 }

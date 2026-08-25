@@ -116,8 +116,12 @@ object HashType extends Factory[HashType] {
                            sigHashSingleAnyoneCanPay,
                            sigHashDefault)
 
+  // SIGHASH_DEFAULT (0x00) is deliberately excluded: it is a taproot-only
+  // hash type (see validTaprootHashTypes below). Core's legacy
+  // IsDefinedHashtypeSignature masks off the ANYONECANPAY bit and requires
+  // the remaining value be in [SIGHASH_ALL, SIGHASH_SINGLE] (1-3), which
+  // does not include 0.
   lazy val hashTypeBytes: Vector[Byte] = Vector(
-    sigHashDefaultByte,
     sigHashAllByte,
     sigHashSingleByte,
     sigHashNoneByte,

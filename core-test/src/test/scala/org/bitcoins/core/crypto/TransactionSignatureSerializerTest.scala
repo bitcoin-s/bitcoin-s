@@ -12,10 +12,10 @@ import org.bitcoins.core.wallet.builder.StandardNonInteractiveFinalizer
 import org.bitcoins.core.wallet.fee.SatoshisPerVirtualByte
 import org.bitcoins.crypto.*
 import org.bitcoins.testkitcore.gen.{CreditingTxGen, ScriptGenerators}
-import org.bitcoins.testkitcore.util.BitcoinSUnitTest
+import org.bitcoins.testkitcore.util.{BitcoinSUnitTest, TransactionTestUtil}
 import scodec.bits.ByteVector
 
-import scala.util.Try
+import scala.util.{Success, Try}
 
 /** Created by chris on 2/19/16.
   */
@@ -1230,4 +1230,97 @@ class TransactionSignatureSerializerTest extends BitcoinSUnitTest {
     assert(serialize.toHex == expected)
   }
 
+  it must "fail validation for taproot SIGHASH_SINGLE with no corresponding output" in {
+    // BIP341 requires taproot SIGHASH_SINGLE with a missing corresponding
+    // output to fail validation outright -- there is no placeholder hash
+    // concept in BIP341's tagged-hash sighash algorithm, unlike the legacy
+    // (SigVersionBase) sighash algorithm's uint256-one error hash.
+    val privKey1: ECPrivateKey = ECPrivateKey.fromFieldElement(FieldElement.one)
+    val taprootSPK = TaprootScriptPubKey(privKey1.toXOnly)
+    val amount1 = Satoshis(10000)
+    val amount2 = Satoshis(20000)
+    val (creditingTx1, _) =
+      TransactionTestUtil.buildCreditingTransaction(taprootSPK, Some(amount1))
+    val (creditingTx2, _) =
+      TransactionTestUtil.buildCreditingTransaction(taprootSPK, Some(amount2))
+    val outpoint1 = TransactionOutPoint(creditingTx1.txId, UInt32.zero)
+    val outpoint2 = TransactionOutPoint(creditingTx2.txId, UInt32.zero)
+    val inputs = Vector(
+      TransactionInput(outpoint1,
+                       EmptyScriptSignature,
+                       TransactionConstants.sequence),
+      TransactionInput(outpoint2,
+                       EmptyScriptSignature,
+                       TransactionConstants.sequence)
+    )
+    // only one output, so input index 1 has no corresponding output
+    val outputs =
+      Vector(TransactionOutput(Satoshis(5000), EmptyScriptPubKey))
+    val witness =
+      TransactionWitness(Vector(TaprootKeyPath.dummy, TaprootKeyPath.dummy))
+    val wtx = WitnessTransaction(
+      TransactionConstants.version,
+      inputs,
+      outputs,
+      TransactionConstants.lockTime,
+      witness
+    )
+    val outputMap = PreviousOutputMap(
+      Map(outpoint1 -> creditingTx1.outputs.head,
+          outpoint2 -> creditingTx2.outputs.head))
+    val component =
+      TaprootTxSigComponent(wtx, UInt32.one, outputMap, Policy.standardFlags)
+    val hashT = Try(
+      TransactionSignatureSerializer.hashForSignature(
+        component,
+        HashType.sigHashSingle,
+        TaprootSerializationOptions.empty))
+    assert(
+      hashT.isFailure,
+      s"BIP341 requires taproot SIGHASH_SINGLE with no corresponding output to fail validation, got=$hashT")
+  }
+
+  it must "compute the BIP143 sighash with zero hashOutputs for a segwit v0 SIGHASH_SINGLE with an out of range input index" in {
+    // Per Core (src/script/interpreter.cpp): the uint256-one error hash
+    // applies ONLY to the legacy (SigVersion::BASE) sighash. For segwit v0,
+    // Core computes a normal BIP143 sighash; when the input index has no
+    // corresponding output under SIGHASH_SINGLE, BIP143 sets hashOutputs to
+    // 32 zero bytes instead of erroring. A fully independent preimage
+    // computation is impractical here because an out-of-range input index has
+    // no outpoint to commit to, so this test asserts the call completes
+    // without throwing and does not return the legacy uint256-one error hash.
+    val uint256OneErrorHash = DoubleSha256Digest.fromHex(
+      "0100000000000000000000000000000000000000000000000000000000000000")
+    val privKey1: ECPrivateKey = ECPrivateKey.fromFieldElement(FieldElement.one)
+    val pubKey = privKey1.publicKey
+    val spk = P2WPKHWitnessSPKV0(pubKey)
+    val (creditingTx, outputIndex) =
+      TransactionTestUtil.buildCreditingTransaction(spk)
+    val witness = P2WPKHWitnessV0(pubKey)
+    val (spendingTx, _) =
+      TransactionTestUtil.buildSpendingTransaction(
+        creditingTx,
+        EmptyScriptSignature,
+        outputIndex,
+        Some((witness, CurrencyUnits.zero)))
+    val component = WitnessTxSigComponentRaw(
+      spendingTx.asInstanceOf[WitnessTransaction],
+      UInt32.one, // out of range: the transaction has a single input
+      TransactionOutput(CurrencyUnits.zero, spk),
+      Policy.standardFlags
+    )
+    val hashT = Try(
+      TransactionSignatureSerializer.hashForSignature(
+        component,
+        HashType.sigHashSingle,
+        TaprootSerializationOptions.empty))
+    assert(
+      hashT.isSuccess,
+      s"A segwit v0 SIGHASH_SINGLE sighash with an out of range input index must be computed with hashOutputs=zero (BIP143), not throw, got=$hashT"
+    )
+    assert(
+      hashT != Success(uint256OneErrorHash),
+      s"The uint256-one error hash only applies to the legacy sighash algorithm, a segwit v0 sighash must not return it"
+    )
+  }
 }

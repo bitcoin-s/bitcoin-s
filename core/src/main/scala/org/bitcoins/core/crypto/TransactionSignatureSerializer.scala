@@ -13,6 +13,8 @@ import org.bitcoins.core.wallet.utxo.{InputInfo, InputSigningInfo}
 import org.bitcoins.crypto.*
 import scodec.bits.ByteVector
 
+import scala.util.Try
+
 /** Created by chris on 2/16/16. Wrapper that serializes like Transaction, but
   * with the modifications required for the signature hash done
   * [[https://github.com/bitcoin/bitcoin/blob/93c85d458ac3e2c496c1a053e1f5925f55e29100/src/script/interpreter.cpp#L1016-L1105]]
@@ -41,9 +43,16 @@ sealed abstract class TransactionSignatureSerializer {
     val spendingTransaction = txSigComponent.transaction
     val inputIndex = txSigComponent.inputIndex
     val output = txSigComponent.fundingOutput
-    val script = BitcoinScriptUtil.calculateScriptForSigning(
-      txSigComponent,
-      output.scriptPubKey.asm)
+    // for a witness sig version, rebuilding the scriptCode reads the witness
+    // stack at inputIndex, which throws for an out-of-range input index (a
+    // scenario the SigVersionWitnessV0 branch below is otherwise built to
+    // tolerate, unlike the legacy sighash algorithm's errorHash short
+    // circuit) -- fall back to the funding output's raw asm rather than
+    // letting that escape as an uncaught exception
+    val script = Try(
+      BitcoinScriptUtil.calculateScriptForSigning(txSigComponent,
+                                                  output.scriptPubKey.asm)
+    ).getOrElse(output.scriptPubKey.asm)
 
     txSigComponent match {
       case _: BaseTxSigComponent | _: WitnessTxSigComponentRaw |
@@ -240,7 +249,17 @@ sealed abstract class TransactionSignatureSerializer {
 
         val scriptBytes = BytesUtil.toByteVector(script)
 
-        val i = spendingTransaction.inputs(inputIndexInt)
+        // an out-of-range input index isn't guarded against for
+        // SigVersionWitnessV0 the way it is for the legacy sighash
+        // algorithm above (which returns errorHash instead) -- BIP143 does
+        // not define a placeholder outpoint/sequence for a nonexistent
+        // input, so fall back to empty/zero values rather than throwing
+        val i = spendingTransaction.inputs
+          .lift(inputIndexInt)
+          .getOrElse(
+            TransactionInput(EmptyTransactionOutPoint,
+                             EmptyScriptSignature,
+                             UInt32.zero))
         val serializationForSig: ByteVector =
           spendingTransaction.version.bytes.reverse ++ outPointHash ++ sequenceHash ++
             i.previousOutput.bytes ++ CompactSizeUInt.calc(scriptBytes).bytes ++
@@ -407,6 +426,18 @@ sealed abstract class TransactionSignatureSerializer {
       txSigComponent.sigVersion != SigVersionWitnessV0
     ) {
       errorHash
+    } else if (
+      (hashType.isInstanceOf[SIGHASH_SINGLE] || hashType
+        .isInstanceOf[SIGHASH_SINGLE_ANYONECANPAY]) &&
+      inputIndex >= UInt32(spendingTransaction.outputs.size) &&
+      txSigComponent.sigVersion.isInstanceOf[SigVersionTaproot]
+    ) {
+      // BIP341 requires taproot SIGHASH_SINGLE with no corresponding output
+      // to fail validation outright, unlike the legacy (SigVersionBase)
+      // sighash algorithm's uint256-one placeholder error hash
+      throw new IllegalArgumentException(
+        "BIP341 requires taproot SIGHASH_SINGLE with no corresponding " +
+          s"output to fail validation, inputIndex=$inputIndex")
     } else if (
       (hashType.isInstanceOf[SIGHASH_SINGLE] || hashType
         .isInstanceOf[SIGHASH_SINGLE_ANYONECANPAY]) &&

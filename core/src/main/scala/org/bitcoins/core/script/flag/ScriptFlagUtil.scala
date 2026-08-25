@@ -10,7 +10,11 @@ trait ScriptFlagUtil {
     * @return
     */
   def requiresStrictDerEncoding(flags: Seq[ScriptFlag]): Boolean = {
-    flags.contains(ScriptVerifyDerSig) || flags.contains(ScriptVerifyStrictEnc)
+    // Core's CheckSignatureEncoding applies the DER check whenever any of
+    // DERSIG, LOW_S, or STRICTENC is set -- LOW_S implies a DER-encoded
+    // signature is required in order to even parse out the S value to check.
+    flags.contains(ScriptVerifyDerSig) || flags.contains(
+      ScriptVerifyLowS) || flags.contains(ScriptVerifyStrictEnc)
   }
 
   /** Checks if we are required to check for strict encoding

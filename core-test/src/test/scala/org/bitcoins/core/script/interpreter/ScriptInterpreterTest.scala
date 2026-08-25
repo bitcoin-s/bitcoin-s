@@ -2,7 +2,9 @@ package org.bitcoins.core.script.interpreter
 
 import org.bitcoins.core.crypto.{
   BaseTxSigComponent,
+  TaprootSerializationOptions,
   TaprootTxSigComponent,
+  TransactionSignatureSerializer,
   WitnessTxSigComponentP2SH,
   WitnessTxSigComponentRaw
 }
@@ -14,14 +16,23 @@ import org.bitcoins.core.protocol.transaction.{
   TransactionOutput,
   WitnessTransaction
 }
+import org.bitcoins.core.currency.Satoshis
+import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.script.PreExecutionScriptProgram
-import org.bitcoins.core.script.flag.ScriptFlagFactory
+import org.bitcoins.core.script.flag.{
+  ScriptFlagFactory,
+  ScriptVerifyDiscourageUpgradableWitnessProgram,
+  ScriptVerifyWitness
+}
 import org.bitcoins.core.script.interpreter.testprotocol.CoreTestCase
+import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.script.util.PreviousOutputMap
+import org.bitcoins.crypto.{HashType, SchnorrDigitalSignature}
 import org.bitcoins.testkitcore.util.{BitcoinSUnitTest, TransactionTestUtil}
+import scodec.bits.ByteVector
 import upickle.default.*
 
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 /** Created by chris on 1/6/16.
   */
@@ -175,6 +186,88 @@ class ScriptInterpreterTest extends BitcoinSUnitTest {
           PreviousOutputMap(Map(EmptyTransactionOutPoint -> prevOut))
         )
     )
+  }
+
+  it must "not treat a v1 witness program with an invalid x coordinate as anyone-can-spend" in {
+    // a v1 32-byte witness program is unambiguously taproot regardless of
+    // whether its 32 bytes are a valid x-only coordinate (0xffff...ff >= the
+    // secp256k1 field size, so it cannot be a valid x coordinate); spending
+    // such an output must fail validation, not be classified as an
+    // anyone-can-spend unassigned witness program
+    val invalidProgram = ByteVector.fill(32)(0xff.toByte)
+    val spkBytes = ByteVector.fromValidHex("5120") ++ invalidProgram
+    Try(ScriptPubKey.fromAsmBytes(spkBytes)) match {
+      case Failure(_) =>
+        // rejecting the invalid taproot output key at parse time is acceptable
+        succeed
+      case Success(spk) =>
+        assert(
+          !spk.isInstanceOf[UnassignedWitnessScriptPubKey],
+          s"A v1 32-byte witness program must be classified as taproot, not as an unassigned witness program, got=$spk"
+        )
+        val amount = Satoshis(10000)
+        val (creditingTx, outputIndex) =
+          TransactionTestUtil.buildCreditingTransaction(spk, Some(amount))
+        val witness =
+          ScriptWitness(Vector(SchnorrDigitalSignature.dummy.bytes))
+        val (spendingTx, inputIndex) =
+          TransactionTestUtil.buildSpendingTransaction(creditingTx,
+                                                       EmptyScriptSignature,
+                                                       outputIndex,
+                                                       Some((witness, amount)))
+        val flags = Policy.standardFlags.filterNot(
+          _ == ScriptVerifyDiscourageUpgradableWitnessProgram)
+        val wtx = spendingTx.asInstanceOf[WitnessTransaction]
+        val outpoint = wtx.inputs(inputIndex.toInt).previousOutput
+        val outputMap =
+          PreviousOutputMap(Map(outpoint -> TransactionOutput(amount, spk)))
+        val component =
+          TaprootTxSigComponent(wtx, inputIndex, outputMap, flags)
+        val result = ScriptInterpreter.run(PreExecutionScriptProgram(component))
+        assert(
+          result != ScriptOk,
+          s"Spending a v1 witness program with an invalid x-only key must fail validation, got=$result")
+    }
+  }
+
+  it must "not enforce WITNESS_UNEXPECTED when the ScriptVerifyWitness flag is not set" in {
+    // Core only performs the WITNESS_UNEXPECTED check when SCRIPT_VERIFY_WITNESS
+    // is set -- a spend carrying an unused witness for a non-witness output
+    // must still succeed when that flag is absent.
+    val privKey1 =
+      org.bitcoins.crypto.ECPrivateKey
+        .fromFieldElement(org.bitcoins.crypto.FieldElement.one)
+    val pubKey = privKey1.publicKey
+    val spk = P2PKHScriptPubKey(pubKey)
+    val amount = Satoshis(10000)
+    val (creditingTx, outputIndex) =
+      TransactionTestUtil.buildCreditingTransaction(spk, Some(amount))
+    val witness = P2WPKHWitnessV0(pubKey)
+    // placeholder transaction to compute the legacy sighash
+    val (placeholderTx, inputIndex) =
+      TransactionTestUtil.buildSpendingTransaction(creditingTx,
+                                                   EmptyScriptSignature,
+                                                   outputIndex,
+                                                   Some((witness, amount)))
+    val flags = Policy.standardFlags.filterNot(_ == ScriptVerifyWitness)
+    val output = TransactionOutput(amount, spk)
+    val placeholderComponent =
+      BaseTxSigComponent(placeholderTx, inputIndex, output, flags)
+    val hash = TransactionSignatureSerializer.hashForSignature(
+      placeholderComponent,
+      HashType.sigHashAll,
+      TaprootSerializationOptions.empty)
+    val sig = privKey1.sign(hash.bytes).appendHashType(HashType.sigHashAll)
+    val scriptSig = P2PKHScriptSignature(sig, pubKey)
+    // the spending transaction carries an unused witness for this input
+    val (spendingTx, _) =
+      TransactionTestUtil.buildSpendingTransaction(creditingTx,
+                                                   scriptSig,
+                                                   outputIndex,
+                                                   Some((witness, amount)))
+    val component = BaseTxSigComponent(spendingTx, inputIndex, output, flags)
+    val result = ScriptInterpreter.run(PreExecutionScriptProgram(component))
+    result must be(ScriptOk)
   }
 }
 

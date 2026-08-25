@@ -1,22 +1,74 @@
 package org.bitcoins.core.crypto
 
+import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
 import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.policy.Policy
-import org.bitcoins.core.protocol.script.{
-  MultiSignatureScriptPubKey,
-  ScriptPubKey
-}
+import org.bitcoins.core.protocol.script._
 import org.bitcoins.core.protocol.transaction._
-import org.bitcoins.core.script.constant.ScriptToken
+import org.bitcoins.core.script.PreExecutionScriptProgram
+import org.bitcoins.core.script.constant.{OP_0, ScriptConstant, ScriptToken}
+import org.bitcoins.core.script.flag.{
+  ScriptFlag,
+  ScriptVerifyLowS,
+  ScriptVerifyNullFail
+}
+import org.bitcoins.core.script.interpreter.ScriptInterpreter
+import org.bitcoins.core.script.result.{ScriptErrorSigNullFail, ScriptOk}
 import org.bitcoins.core.script.util.PreviousOutputMap
-import org.bitcoins.crypto.{ECDigitalSignature, ECPublicKey, ECPublicKeyBytes}
-import org.bitcoins.testkitcore.util.BitcoinSUnitTest
+import org.bitcoins.core.util.BitcoinScriptUtil
+import org.bitcoins.crypto._
+import org.bitcoins.testkitcore.util.{BitcoinSUnitTest, TransactionTestUtil}
+import scodec.bits.ByteVector
 
 /** Created by chris on 2/29/16.
   */
 class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
 
   behavior of "TransactionSignatureChecker"
+
+  // fixed, deterministic keys -- no randomness in these security regression tests
+  private val privKey1: ECPrivateKey =
+    ECPrivateKey.fromFieldElement(FieldElement.one)
+  private val privKey2: ECPrivateKey =
+    ECPrivateKey.fromBytes(ByteVector.fill(32)(2.toByte))
+  private val noncePrivKey: ECPrivateKey =
+    ECPrivateKey.fromBytes(ByteVector.fill(32)(3.toByte))
+
+  /** Builds a single input taproot script path spend of a single tapleaf.
+    * Returns the sig component and the tapleaf hash so callers can compute the
+    * BIP341 sighash themselves.
+    */
+  private def buildTapscriptSpend(
+      leafScriptBytes: ByteVector,
+      witnessStack: Vector[ByteVector],
+      flags: Seq[ScriptFlag]): (TaprootTxSigComponent, Sha256Digest) = {
+    val leafSPK =
+      ScriptPubKey.fromAsmBytes(leafScriptBytes).asInstanceOf[RawScriptPubKey]
+    val internalKey = privKey2.toXOnly
+    val leaf = TapLeaf(LeafVersion.Tapscript, leafSPK)
+    val (keyParity, taprootSPK) =
+      TaprootScriptPubKey.fromInternalKeyTapscriptTree(internalKey, leaf)
+    val controlBlock =
+      TapscriptControlBlock.fromSingleLeaf(LeafVersion.Tapscript,
+                                           internalKey,
+                                           keyParity)
+    val witness = TaprootScriptPath(controlBlock, None, leafSPK, witnessStack)
+    val amount = Satoshis(10000)
+    val (creditingTx, outputIndex) =
+      TransactionTestUtil.buildCreditingTransaction(taprootSPK, Some(amount))
+    val (spendingTx, inputIndex) =
+      TransactionTestUtil.buildSpendingTransaction(creditingTx,
+                                                   EmptyScriptSignature,
+                                                   outputIndex,
+                                                   Some((witness, amount)))
+    val wtx = spendingTx.asInstanceOf[WitnessTransaction]
+    val outpoint = wtx.inputs(inputIndex.toInt).previousOutput
+    val outputMap = PreviousOutputMap(
+      Map(outpoint -> creditingTx.outputs(outputIndex.toInt)))
+    val component = TaprootTxSigComponent(wtx, inputIndex, outputMap, flags)
+    val tapLeafHash = TaprootScriptPath.computeTapleafHash(leaf)
+    (component, tapLeafHash)
+  }
 
   // Positive Test Cases
 
@@ -160,7 +212,8 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
         List(p2shMultiSig1, p2shMultiSig2),
         List(p2shMultiPubKey1, p2shMultiPubKey2),
         Policy.standardFlags,
-        2
+        2,
+        originalSigs = List(p2shMultiSig1, p2shMultiSig2)
       )
 
     assert(result3.isValid, s"result: $result3")
@@ -312,7 +365,8 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
         List(p2wshSig1, p2wshSig2),
         List(p2wshPubKey1, p2wshPubKey2),
         Policy.standardFlags,
-        2
+        2,
+        originalSigs = List(p2wshSig1, p2wshSig2)
       )
 
     assert(result3.isValid, s"result: $result3")
@@ -515,7 +569,8 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
         List(p2shMultiSig1, p2shMultiSig2),
         List(incorrectPubKey, p2shMultiPubKey2),
         Policy.standardFlags,
-        2
+        2,
+        originalSigs = List(p2shMultiSig1, p2shMultiSig2)
       )
 
     assert(!result3.isValid, s"result: $result3")
@@ -559,7 +614,8 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
         List(p2shMultiSig1, p2shMultiSig2),
         List(p2shMultiPubKey1, incorrectPubKey),
         Policy.standardFlags,
-        2
+        2,
+        originalSigs = List(p2shMultiSig1, p2shMultiSig2)
       )
 
     assert(!result3.isValid, s"result: $result3")
@@ -581,7 +637,8 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
         List(p2shMultiSig1, p2shMultiSig2),
         List(p2shMultiPubKey1, p2shMultiPubKey2),
         Policy.standardFlags,
-        1
+        1,
+        originalSigs = List(p2shMultiSig1, p2shMultiSig2)
       )
     )
 
@@ -592,7 +649,8 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
         List(p2shMultiSig1, p2shMultiSig2),
         List(p2shMultiPubKey1, p2shMultiPubKey2),
         Policy.standardFlags,
-        -1
+        -1,
+        originalSigs = List(p2shMultiSig1, p2shMultiSig2)
       )
     )
   }
@@ -712,7 +770,8 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
         List(p2wshSig1, p2wshSig2),
         List(incorrectPubKey, p2wshPubKey2),
         Policy.standardFlags,
-        2
+        2,
+        originalSigs = List(p2wshSig1, p2wshSig2)
       )
 
     assert(!result3.isValid, s"result: $result3")
@@ -757,10 +816,155 @@ class TransactionSignatureCheckerTest extends BitcoinSUnitTest {
         List(p2wshSig1, p2wshSig2),
         List(p2wshPubKey1, incorrectPubKey),
         Policy.standardFlags,
-        2
+        2,
+        originalSigs = List(p2wshSig1, p2wshSig2)
       )
 
     assert(!result3.isValid, s"result: $result3")
   }
 
+  it must "commit the segwit v0 sighash to the scriptCode after the last executed OP_CODESEPARATOR" in {
+    // BIP143 commits the sighash to the scriptCode after the last executed
+    // OP_CODESEPARATOR, not the full witness script.
+    val pubKey = privKey1.publicKey
+    // <pubkey> OP_CODESEPARATOR OP_CHECKSIG
+    val fullScriptBytes = ByteVector.fromValidHex("21") ++ pubKey.bytes ++
+      ByteVector.fromValidHex("abac")
+    val witnessScript = ScriptPubKey
+      .fromAsmBytes(fullScriptBytes)
+      .asInstanceOf[RawScriptPubKey]
+    // the scriptCode Core would use: everything after the last OP_CODESEPARATOR
+    val strippedScript =
+      ScriptPubKey.fromAsmBytes(ByteVector.fromValidHex("ac"))
+    val p2wsh = P2WSHWitnessSPKV0(witnessScript)
+    val amount = Satoshis(10000)
+    val (creditingTx, outputIndex) =
+      TransactionTestUtil.buildCreditingTransaction(p2wsh, Some(amount))
+    val witness = P2WSHWitnessV0(witnessScript, Vector.empty)
+    val (spendingTx, inputIndex) =
+      TransactionTestUtil.buildSpendingTransaction(creditingTx,
+                                                   EmptyScriptSignature,
+                                                   outputIndex,
+                                                   Some((witness, amount)))
+    val wtx = spendingTx.asInstanceOf[WitnessTransaction]
+    val flags = Policy.standardFlags
+    val rawComponent =
+      WitnessTxSigComponentRaw(wtx,
+                               inputIndex,
+                               TransactionOutput(amount, p2wsh),
+                               flags)
+    // manually compute the expected BIP143 sighash with the post-codeseparator
+    // scriptCode, and sign that hash
+    val expectedHashComponent =
+      WitnessTxSigComponentRebuilt(wtx = wtx,
+                                   inputIndex = inputIndex,
+                                   output =
+                                     TransactionOutput(amount, strippedScript),
+                                   witScriptPubKey = p2wsh,
+                                   flags = flags)
+    val expectedHash = TransactionSignatureSerializer.hashForSignature(
+      expectedHashComponent,
+      HashType.sigHashAll,
+      TaprootSerializationOptions.empty)
+    val sig =
+      privKey1.sign(expectedHash.bytes).appendHashType(HashType.sigHashAll)
+    val result = TransactionSignatureChecker.checkSignature(
+      txSignatureComponent = rawComponent,
+      script = strippedScript.asm,
+      pubKey = pubKey.toPublicKeyBytes(),
+      signature = sig,
+      flags = flags)
+    result must be(SignatureValidationSuccess)
+  }
+
+  it must "fail a tapscript OP_CHECKSIG immediately on an invalid non-empty signature" in {
+    // BIP342 makes NULLFAIL mandatory for tapscript regardless of flags: an
+    // invalid non-empty signature must always fail the script immediately,
+    // unlike the flag-gated legacy/segwit v0 OP_CHECKSIG "soft fail" behavior.
+    val flags = Policy.standardFlags.filterNot(_ == ScriptVerifyNullFail)
+    // <x-only pubkey> OP_CHECKSIG OP_DROP OP_TRUE
+    // if an invalid signature only pushed 0, this script would succeed
+    val leafScriptBytes = ByteVector.fromValidHex("20") ++
+      privKey1.toXOnly.bytes ++ ByteVector.fromValidHex("ac7551")
+    // a well-formed 64-byte schnorr signature over a different message, so it
+    // is invalid for this input's sighash
+    val invalidSig =
+      privKey1.schnorrSignWithNonce(ByteVector.fill(32)(0x55.toByte),
+                                    noncePrivKey)
+    val (component, _) =
+      buildTapscriptSpend(leafScriptBytes, Vector(invalidSig.bytes), flags)
+    val result = ScriptInterpreter.run(PreExecutionScriptProgram(component))
+    assert(
+      result != ScriptOk,
+      s"An invalid non-empty tapscript signature must fail the script immediately, got=$result")
+  }
+
+  it must "not fail an empty signature with the LOW_S check" in {
+    // Core's CheckSignatureEncoding exempts the empty signature from all
+    // encoding checks, including LOW_S -- an empty signature combined with
+    // the LOW_S flag must just be an "incorrect signature", not a hard
+    // ScriptErrorSigHighS failure.
+    val pubKey = privKey1.publicKey
+    val spk = P2PKHScriptPubKey(pubKey)
+    val (creditingTx, outputIndex) =
+      TransactionTestUtil.buildCreditingTransaction(spk)
+    val (spendingTx, inputIndex) =
+      TransactionTestUtil.buildSpendingTransaction(creditingTx,
+                                                   EmptyScriptSignature,
+                                                   outputIndex)
+    val component =
+      BaseTxSigComponent(spendingTx,
+                         inputIndex,
+                         TransactionOutput(CurrencyUnits.zero, spk),
+                         Seq(ScriptVerifyLowS))
+    val result = TransactionSignatureChecker.checkSignature(
+      txSignatureComponent = component,
+      script = spk.asm,
+      pubKey = pubKey.toPublicKeyBytes(),
+      signature = ECDigitalSignature.empty,
+      flags = Seq(ScriptVerifyLowS))
+    result must be(SignatureValidationErrorIncorrectSignatures)
+  }
+
+  it must "apply NULLFAIL to all signatures in OP_CHECKMULTISIG, including consumed ones" in {
+    // NULLFAIL (BIP146) applies to every signature originally provided to
+    // OP_CHECKMULTISIG, not just the ones remaining once validation is
+    // determined to have failed -- a signature that matched earlier and was
+    // consumed must still fail the script if overall validation fails.
+    // LOW_S is removed to decouple this test from the empty-signature LOW_S case.
+    val flags = Policy.standardFlags.filterNot(_ == ScriptVerifyLowS)
+    val pubKey1 = privKey1.publicKey
+    val pubKey2 = privKey2.publicKey
+    val multiSigSPK = MultiSignatureScriptPubKey(2, Vector(pubKey1, pubKey2))
+    val amount = Satoshis(10000)
+    val (creditingTx, outputIndex) =
+      TransactionTestUtil.buildCreditingTransaction(multiSigSPK, Some(amount))
+    val (placeholderTx, inputIndex) =
+      TransactionTestUtil.buildSpendingTransaction(creditingTx,
+                                                   EmptyScriptSignature,
+                                                   outputIndex)
+    val output = TransactionOutput(amount, multiSigSPK)
+    val placeholderComponent =
+      BaseTxSigComponent(placeholderTx, inputIndex, output, flags)
+    val hash = TransactionSignatureSerializer.hashForSignature(
+      placeholderComponent,
+      HashType.sigHashAll,
+      TaprootSerializationOptions.empty)
+    // pubKey2 is pushed last in the multisig script, so it is checked first
+    val validSig =
+      privKey2.sign(hash.bytes).appendHashType(HashType.sigHashAll)
+    val sigPush = BitcoinScriptUtil.calculatePushOp(validSig.bytes) ++ Vector(
+      ScriptConstant(validSig.bytes))
+    // dummy, empty signature, valid signature — the valid signature is on top
+    // of the stack and is checked (and consumed) first
+    val scriptSig =
+      NonStandardScriptSignature.fromAsm(Vector(OP_0, OP_0) ++ sigPush)
+    val (spendingTx, _) =
+      TransactionTestUtil.buildSpendingTransaction(creditingTx,
+                                                   scriptSig,
+                                                   outputIndex)
+    val component = BaseTxSigComponent(spendingTx, inputIndex, output, flags)
+    val result = ScriptInterpreter.run(PreExecutionScriptProgram(component))
+    result must be(ScriptErrorSigNullFail)
+  }
 }

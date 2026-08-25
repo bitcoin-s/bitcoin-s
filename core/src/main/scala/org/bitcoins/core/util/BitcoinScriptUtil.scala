@@ -431,16 +431,31 @@ trait BitcoinScriptUtil {
       txSignatureComponent: TxSigComponent,
       signature: ECDigitalSignature,
       script: Seq[ScriptToken]): Seq[ScriptToken] = {
-    val scriptForChecking =
-      calculateScriptForSigning(txSignatureComponent, script)
     txSignatureComponent.sigVersion match {
       case SigVersionBase =>
+        val scriptForChecking =
+          calculateScriptForSigning(txSignatureComponent, script)
         removeSignatureFromScript(signature, scriptForChecking)
       case SigVersionWitnessV0 | SigVersionTaprootKeySpend |
           SigVersionTapscript =>
         // BIP143 removes requirement for calling FindAndDelete
         // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki#no-findanddelete
-        scriptForChecking
+        //
+        // `script` is either (a) the scriptCode as tracked by the
+        // interpreter (BitcoinScriptUtil.removeOpCodeSeparator), i.e. a
+        // suffix of the full witness scriptCode truncated after the last
+        // executed OP_CODESEPARATOR, or (b) a placeholder like the funding
+        // output's raw asm, from callers that expect the full scriptCode to
+        // be rebuilt from the witness stack. calculateScriptForSigning
+        // always rebuilds the latter (it has no notion of OP_CODESEPARATOR
+        // truncation); honor the former when `script` is actually a suffix
+        // of that rebuilt scriptCode, otherwise fall back to the rebuild.
+        val rebuiltScript =
+          calculateScriptForSigning(txSignatureComponent, script)
+        val scriptIsTruncatedSuffix =
+          script.size <= rebuiltScript.size &&
+            rebuiltScript.takeRight(script.size) == script
+        if (scriptIsTruncatedSuffix) script else rebuiltScript
     }
   }
 
@@ -548,15 +563,22 @@ trait BitcoinScriptUtil {
   def removeSignatureFromScript(
       signature: ECDigitalSignature,
       script: Seq[ScriptToken]): Seq[ScriptToken] = {
-    if (script.contains(ScriptConstant(signature.hex))) {
-      // replicates this line in bitcoin core
-      // https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L872
-      val sigIndex = script.indexOf(ScriptConstant(signature.hex))
-      // remove sig and it's corresponding BytesToPushOntoStack
-      val sigRemoved =
-        script.slice(0, sigIndex - 1) ++ script.slice(sigIndex + 1, script.size)
-      sigRemoved
-    } else script
+    // Core's FindAndDelete removes ALL occurrences, not just the first, so
+    // we loop until none remain
+    // https://github.com/bitcoin/bitcoin/blob/master/src/script/interpreter.cpp#L872
+    @tailrec
+    def loop(scriptTokens: Seq[ScriptToken]): Seq[ScriptToken] = {
+      if (scriptTokens.contains(ScriptConstant(signature.hex))) {
+        val sigIndex = scriptTokens.indexOf(ScriptConstant(signature.hex))
+        // remove sig and it's corresponding BytesToPushOntoStack
+        val sigRemoved =
+          scriptTokens.slice(0, sigIndex - 1) ++ scriptTokens.slice(
+            sigIndex + 1,
+            scriptTokens.size)
+        loop(sigRemoved)
+      } else scriptTokens
+    }
+    loop(script)
   }
 
   /** Removes the list of [[ECDigitalSignature ECDigitalSignature]] from the

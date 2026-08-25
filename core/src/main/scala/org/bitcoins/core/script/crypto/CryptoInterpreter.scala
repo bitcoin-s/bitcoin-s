@@ -161,9 +161,16 @@ sealed abstract class CryptoInterpreter {
       Right((sig, HashType.sigHashDefault))
     } else if (sigBytes.length == 65) {
       val hashTypeByte = sigBytes.last
-      val hashType = HashType.fromByte(hashTypeByte)
-      val sig = SchnorrDigitalSignature.fromBytes(sigBytes.dropRight(1))
-      Right((sig, hashType))
+      if (hashTypeByte == HashType.sigHashDefaultByte) {
+        // BIP341: SIGHASH_DEFAULT must never be explicitly encoded as a
+        // trailing hash type byte -- only the 64-byte (implicit) form is
+        // valid for the default hash type
+        Left(ScriptErrorSchnorrSigHashType)
+      } else {
+        val hashType = HashType.fromByte(hashTypeByte)
+        val sig = SchnorrDigitalSignature.fromBytes(sigBytes.dropRight(1))
+        Right((sig, hashType))
+      }
     } else {
       Left(ScriptErrorSchnorrSigSize)
     })
@@ -385,7 +392,8 @@ sealed abstract class CryptoInterpreter {
               signatures,
               pubKeys,
               flags,
-              mRequiredSignatures.toLong)
+              mRequiredSignatures.toLong,
+              originalSigs = signatures)
 
           // remove the extra OP_0 (null dummy) for OP_CHECKMULTISIG from the stack
           val restOfStack = stackWithoutPubKeysAndSignatures.tail
