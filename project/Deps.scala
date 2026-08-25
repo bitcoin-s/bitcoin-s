@@ -79,7 +79,7 @@ object Deps {
     val scalaJsTimeV = "2.7.0"
     val zxingV = "3.5.0"
 
-    val monixV = "3.4.1"
+    val monixV = "3.5.0"
 
     val javaxServletV = "4.0.1"
     val javaxJmsV = "2.0.1"
