@@ -322,6 +322,8 @@ object CommonSettings {
     Vector(
       "ch.qos.logback.core.net" -> "javax.mail",
       "ch.qos.logback.core.net" -> "javax.mail.internet",
+      "ch.qos.logback.core" -> "org.jline.jansi",
+      
       "org.apache.log4j.jmx" -> "com.sun.jdmk.comm",
       "ch.qos.logback.classic" -> "jakarta.servlet.http",
       "ch.qos.logback.classic.helpers" -> "jakarta.servlet",
