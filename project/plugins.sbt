@@ -5,6 +5,8 @@ ThisBuild / libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" 
 // https://github.com/sbt/sbt-native-packager
 addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.11.7")
 
+addSbtPlugin("com.github.sbt" % "sbt-git" % "2.1.0")
+
 // collect code coverage when executing tests
 //https://github.com/scoverage/sbt-scoverage
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "2.4.4")
@@ -31,7 +33,7 @@ addSbtPlugin("ch.epfl.scala" % "sbt-bloop" % "2.1.2")
 
 //tool to publish snapshots to sonatype after CI builds finish
 //https://github.com/olafurpg/sbt-ci-release
-addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.11.2")
+addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.12.1")
 
 // write markdown files with type-checked Scala
 //https://github.com/scalameta/mdoc
