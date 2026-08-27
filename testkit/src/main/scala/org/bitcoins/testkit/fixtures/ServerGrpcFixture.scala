@@ -3,6 +3,7 @@ import org.apache.pekko.grpc.GrpcClientSettings
 import org.apache.pekko.grpc.scaladsl.PekkoGrpcClient
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.config.{BitcoinNetwork, RegTest}
+import org.bitcoins.dlc.node.DLCNode
 import org.bitcoins.node.Node
 import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
@@ -11,12 +12,11 @@ import org.bitcoins.server.grpc.{
   CommonRoutesClient,
   DLCRoutesClient,
   NodeRoutesClient,
-  WalletRoutesClient,
-  ServerGrpc
+  ServerGrpc,
+  WalletRoutesClient
 }
 import org.bitcoins.testkit.BitcoinSTestAppConfig
 import org.bitcoins.testkit.util.FileUtil
-import org.bitcoins.testkit.dlc.MockDLCNodeApi
 import org.bitcoins.testkit.node.{
   NodeTestUtil,
   NodeTestWithCachedBitcoindNewest
@@ -74,7 +74,6 @@ trait ServerGrpcFixture extends NodeTestWithCachedBitcoindNewest {
       port: Int,
       rpcPassword: String = "")(implicit appConfig: BitcoinSAppConfig)
       : Future[(ServerGrpc, ChainApi, Node, DLCWallet, BitcoinSAppConfig)] = {
-    val dlcNode = MockDLCNodeApi.fresh()
     val neutrinoNodeF = cachedBitcoindWithFundsF
       .flatMap(createNeutrinoNodeConnectedToBitcoindCached(_)(appConfig))
     for {
@@ -84,6 +83,8 @@ trait ServerGrpcFixture extends NodeTestWithCachedBitcoindNewest {
         nodeApi = neutrinoNode.node,
         chainQueryApi = chainApi
       )(using appConfig, system)
+      // do we need to start this ? and stop it in the teardown process
+      dlcNode = DLCNode(walletApi)(using system, appConfig.dlcNodeConf)
       nodeCallbacks <- BitcoinSWalletTest.createNeutrinoNodeCallbacksForWallet(
         walletApi.walletApi
       )(using system)
