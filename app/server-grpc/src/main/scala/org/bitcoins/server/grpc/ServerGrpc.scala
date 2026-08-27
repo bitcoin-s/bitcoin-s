@@ -61,7 +61,7 @@ import scala.concurrent.Future
 class ServerGrpc(
     datadir: Path,
     rpchost: String,
-    val port: Int,
+    port: Int,
     rpcPassword: String,
     chainApi: ChainApi,
     network: BitcoinNetwork,

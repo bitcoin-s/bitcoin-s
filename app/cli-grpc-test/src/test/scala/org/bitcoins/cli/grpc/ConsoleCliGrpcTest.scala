@@ -35,7 +35,7 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
   }
 
   it must "execute getversion" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     val expected =
       ujson
         .Obj(
@@ -51,7 +51,7 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
   }
 
   it must "execute zipdatadir" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     val fileName = FileUtil.randomDirName
     val dirName = FileUtil.randomDirName
     val dir = FileUtil.tmpDir().toPath
@@ -67,7 +67,7 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
   }
 
   it must "execute getinfo" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     val chainApi = clientServer.chainApi
     for {
       blockCount <- chainApi.getBlockCount()
@@ -87,7 +87,7 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
   }
 
   it must "execute getblockcount" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     val chainApi = clientServer.chainApi
     for {
       blockCount <- chainApi.getBlockCount()
@@ -98,7 +98,7 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
   }
 
   it must "execute getfiltercount" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     val chainApi = clientServer.chainApi
     for {
       filterCount <- chainApi.getFilterCount()
@@ -109,7 +109,7 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
   }
 
   it must "execute getfilterheadercount" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     val chainApi = clientServer.chainApi
     for {
       filterHeaderCount <- chainApi.getFilterHeaderCount()
@@ -120,7 +120,7 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
   }
 
   it must "execute getbestblockhash" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     val chainApi = clientServer.chainApi
     for {
       bestBlockHash <- chainApi.getBestBlockHash()
@@ -131,7 +131,7 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
   }
 
   it must "execute getblockheader" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     // Use an unknown block hash - should return null
     val unknownHash = DoubleSha256DigestBE.empty.hex
 
@@ -141,7 +141,7 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
   }
 
   it must "execute getmediantimepast" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     val chainApi = clientServer.chainApi
     for {
       medianTimePast <- chainApi.getMedianTimePast()
@@ -152,42 +152,42 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
   }
 
   it must "execute getconnectioncount" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     exec(port, "getconnectioncount").map { response =>
       assert(response.toInt >= 0)
     }
   }
 
   it must "execute isempty" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     exec(port, "isempty").map { response =>
       assert(response == "true")
     }
   }
 
   it must "execute getbalance" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     exec(port, "getbalance").map { response =>
       assert(response == "0")
     }
   }
 
   it must "execute getconfirmedbalance" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     exec(port, "getconfirmedbalance").map { response =>
       assert(response == "0")
     }
   }
 
   it must "execute getunconfirmedbalance" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     exec(port, "getunconfirmedbalance").map { response =>
       assert(response == "0")
     }
   }
 
   it must "execute getbalances" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     exec(port, "getbalances").map { response =>
       val json = ujson.read(response)
       assert(json("confirmed").num == 0)
@@ -198,49 +198,49 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
   }
 
   it must "execute getutxos" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     exec(port, "getutxos").map { response =>
       assert(response == "[]")
     }
   }
 
   it must "execute getreservedutxos" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     exec(port, "getreservedutxos").map { response =>
       assert(response == "[]")
     }
   }
 
   it must "execute getaddresses" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     exec(port, "getaddresses").map { response =>
       assert(response == "[]")
     }
   }
 
   it must "execute getspentaddresses" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     exec(port, "getspentaddresses").map { response =>
       assert(response == "[]")
     }
   }
 
   it must "execute getfundedaddresses" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     exec(port, "getfundedaddresses").map { response =>
       assert(response == "[]")
     }
   }
 
   it must "execute getunusedaddresses" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     exec(port, "getunusedaddresses").map { response =>
       assert(response == "[]")
     }
   }
 
   it must "execute getaccounts" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     exec(port, "getaccounts").map { response =>
       val accounts = ujson.read(response).arr
       assert(accounts.nonEmpty)
@@ -248,14 +248,14 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
   }
 
   it must "execute getaddresslabels" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     exec(port, "getaddresslabels").map { response =>
       assert(response == "[]")
     }
   }
 
   it must "execute getdlchostaddress" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     exec(port, "getdlchostaddress").map { response =>
       val expected =
         s"${MockDLCNodeApi.hostAddress.getHostName}:${MockDLCNodeApi.hostAddress.getPort}"
@@ -264,14 +264,14 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
   }
 
   it must "execute offers-list" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     exec(port, "incoming-offers-list").map { response =>
       assert(response == "[]")
     }
   }
 
   it must "execute addoffer" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     exec(port, "addoffer", MockDLCNodeApi.offerLnMessageHex, "note", "peer-1")
       .map { response =>
         assert(response.nonEmpty)
@@ -279,7 +279,7 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
   }
 
   it must "execute removeoffer" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     exec(port, "removeoffer", org.bitcoins.crypto.Sha256Digest.empty.hex).map {
       response =>
         assert(response == org.bitcoins.crypto.Sha256Digest.empty.hex)
@@ -287,7 +287,7 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
   }
 
   it must "execute contact-add and contacts-list" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     for {
       addResponse <- exec(port,
                           "contact-add",
@@ -304,7 +304,7 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
   }
 
   it must "execute dlc-contact-add" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     exec(port,
          "dlc-contact-add",
          org.bitcoins.crypto.Sha256Digest.empty.hex,
@@ -317,7 +317,7 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
   }
 
   it must "execute offer-send" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     exec(port,
          "offer-send",
          org.bitcoins.crypto.Sha256Digest.empty.hex,
@@ -328,7 +328,7 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
   }
 
   it must "execute walletinfo" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     exec(port, "walletinfo").map { response =>
       val json = ujson.read(response)
       assert(json.obj.contains("walletName"))
@@ -341,21 +341,21 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
   }
 
   it must "execute getnewaddress" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     exec(port, "getnewaddress").map { response =>
       assert(response.nonEmpty)
     }
   }
 
   it must "execute getnewaddress with label" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     exec(port, "getnewaddress", "--label", "test-label").map { response =>
       assert(response.nonEmpty)
     }
   }
 
   it must "execute gettransaction for unknown txid" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     val zeroTxId = "0" * 64
     exec(port, "gettransaction", zeroTxId).map { response =>
       assert(response == "null")
@@ -364,7 +364,7 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
 
   it must "execute getaddresstags returns empty for fresh address" in {
     case clientServer =>
-      val port = clientServer.server.port
+      val port = clientServer.server.getPort
       for {
         addrResponse <- exec(port, "getnewaddress")
         tagsResponse <- exec(port, "getaddresstags", addrResponse)
@@ -375,7 +375,7 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
 
   it must "execute getaddresslabel returns empty for fresh address" in {
     case clientServer =>
-      val port = clientServer.server.port
+      val port = clientServer.server.getPort
       for {
         addrResponse <- exec(port, "getnewaddress")
         labelResponse <- exec(port, "getaddresslabel", addrResponse)
@@ -385,7 +385,7 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
   }
 
   it must "execute labeladdress then getaddresstags" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     val label = "my-test-label"
     for {
       addrResponse <- exec(port, "getnewaddress")
@@ -399,7 +399,7 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
   }
 
   it must "execute labeladdress then getaddresslabel" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     val label = "label-for-label-test"
     for {
       addrResponse <- exec(port, "getnewaddress")
@@ -412,7 +412,7 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
   }
 
   it must "execute dropaddresslabel" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     val label = "drop-me"
     for {
       addrResponse <- exec(port, "getnewaddress")
@@ -427,7 +427,7 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
   }
 
   it must "execute dropaddresslabels" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     for {
       addrResponse <- exec(port, "getnewaddress")
       _ <- exec(port, "labeladdress", addrResponse, "lbl1")
@@ -442,14 +442,14 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
 
   it must "execute lockunspent unlock with empty wallet" in {
     case clientServer =>
-      val port = clientServer.server.port
+      val port = clientServer.server.getPort
       exec(port, "lockunspent", "true", "[]").map { response =>
         assert(response == "false")
       }
   }
 
   it must "execute getaddressinfo for a known address" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     for {
       addrResponse <- exec(port, "getnewaddress")
       infoResponse <- exec(port, "getaddressinfo", addrResponse)
@@ -462,7 +462,7 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
 
   it must "execute getaddressinfo for unknown address returns null pubkey" in {
     case clientServer =>
-      val port = clientServer.server.port
+      val port = clientServer.server.getPort
       val p2wpkh = P2WPKHWitnessSPKV0(ECPublicKey.freshPublicKey)
       val unknownAddr = BitcoinAddress.fromScriptPubKey(p2wpkh, RegTest)
       exec(port, "getaddressinfo", unknownAddr.toString).map { response =>
@@ -474,7 +474,7 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
 
   it must "execute createnewaccount with segwit purpose" in {
     case clientServer =>
-      val port = clientServer.server.port
+      val port = clientServer.server.getPort
       exec(port, "createnewaccount", HDPurpose.SegWit.toString).map {
         response =>
           // response is a JSON array of xpubs
@@ -484,7 +484,7 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
   }
 
   it must "execute rescan" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     exec(port, "rescan", "--ignorecreationtime").map { response =>
       assert(
         response.contains("Rescan started.") || response.contains(
@@ -493,7 +493,7 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
   }
 
   it must "execute estimatefee" in { case clientServer =>
-    val port = clientServer.server.port
+    val port = clientServer.server.getPort
     exec(port, "estimatefee").map { response =>
       val value = response.toDouble
       assert(value >= -1.0)
@@ -502,7 +502,7 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
 
   it must "fail authentication when an invalid password is provided" in {
     case clientServer =>
-      val port = clientServer.server.port
+      val port = clientServer.server.getPort
       ConsoleCliGrpc
         .exec(
           Vector(
