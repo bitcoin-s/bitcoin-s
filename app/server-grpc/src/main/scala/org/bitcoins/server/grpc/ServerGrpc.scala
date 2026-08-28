@@ -191,14 +191,19 @@ class ServerGrpc(
   }
 
   override def stop(): Future[Unit] = {
+    val dlcNodeStopF = dlcNodeF.flatMap(_.stop())
     bindingOpt.get() match {
       case Some(binding) =>
-        binding
+        val bindingStopF = binding
           .unbind()
           .map { _ =>
             bindingOpt.set(None)
           }
-      case None => Future.unit
+        for {
+          _ <- dlcNodeStopF
+          _ <- bindingStopF
+        } yield ()
+      case None => dlcNodeStopF
     }
   }
 }

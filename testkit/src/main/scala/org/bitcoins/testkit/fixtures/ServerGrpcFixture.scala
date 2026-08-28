@@ -85,6 +85,7 @@ trait ServerGrpcFixture extends NodeTestWithCachedBitcoindNewest {
       )(using appConfig, system)
       // do we need to start this ? and stop it in the teardown process
       dlcNode = DLCNode(walletApi)(using system, appConfig.dlcNodeConf)
+      dlcNodeStartedF = dlcNode.start()
       nodeCallbacks <- BitcoinSWalletTest.createNeutrinoNodeCallbacksForWallet(
         walletApi.walletApi
       )(using system)
@@ -98,7 +99,7 @@ trait ServerGrpcFixture extends NodeTestWithCachedBitcoindNewest {
         network = network,
         startedTorConfigF = Future.unit,
         nodeApiF = neutrinoNodeF.map(_.node),
-        dlcNodeF = Future.successful(dlcNode),
+        dlcNodeF = dlcNodeStartedF.map(_ => dlcNode),
         walletApiF = Future.successful(walletApi)
       )
       bitcoind <- cachedBitcoindWithFundsF
