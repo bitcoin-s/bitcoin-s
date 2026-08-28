@@ -10,6 +10,11 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    # docs/publishWebsite pushes to the shared gh-pages branch; overlapping
+    # runs race and get a non-fast-forward push rejection, so serialize them.
+    concurrency:
+      group: release-publish-ghpages
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v7
         with:

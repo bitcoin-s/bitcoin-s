@@ -13,3 +13,13 @@ updates:
     directory: "/website"
     schedule:
       interval: "weekly"
+    ignore:
+      # These are transitive deps pinned by docusaurus@1.14.7 (via request,
+      # autoprefixer, postcss-svgo, react-dev-utils). Dependabot can't bump
+      # them past the vulnerable range without breaking the docusaurus 1.x
+      # dependency tree, so every security PR for them fails CI. Re-enable
+      # once /website is migrated off docusaurus 1.x.
+      - dependency-name: "form-data"
+      - dependency-name: "svgo"
+      - dependency-name: "postcss"
+      - dependency-name: "shell-quote"
