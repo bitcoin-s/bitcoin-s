@@ -223,60 +223,101 @@ object BitcoindRpcBackendUtil extends BitcoinSLogger {
     pairedWallet
   }
 
+  // how many messages to buffer before backpressuring the ZMQ subscriber
+  // thread; sized comfortably above a burst from generateToAddress()
+  // mining requiredConfirmations blocks at once
+  private val zmqQueueBufferSize = 128
+
   def startZMQWalletCallbacks(
       wallet: NeutrinoHDWalletApi,
       zmqConfig: ZmqConfig
-  )(implicit ec: ExecutionContext): WalletZmqSubscribers = {
+  )(implicit system: ActorSystem): WalletZmqSubscribers = {
+    import system.dispatcher
     require(
       zmqConfig != ZmqConfig.empty,
       "Must have the zmq raw configs defined to setup ZMQ callbacks"
     )
 
-    val rawTxSub = zmqConfig.rawTx.map { zmq =>
-      val rawTxListener: Option[Transaction => Unit] = Some {
-        { (tx: Transaction) =>
-          logger.debug(s"Received tx ${tx.txIdBE.hex}, processing")
-          val f = wallet.transactionProcessing.processTransaction(tx, None)
-          f.failed.foreach { err =>
-            logger.error("failed to process raw tx zmq message", err)
+    // ZMQSubscriber invokes its listener synchronously and does not wait on
+    // the Future it returns before reading the next message, so a burst of
+    // messages (e.g. several rawblock notifications from a single
+    // generateToAddress call) must be serialized downstream ourselves via
+    // mapAsync(1) -- otherwise wallet processing for that burst runs
+    // concurrently against the same underlying database.
+    val rawTxOpt
+        : Option[(SourceQueueWithComplete[Transaction], ZMQSubscriber)] =
+      zmqConfig.rawTx.map { zmq =>
+        val queue = Source
+          .queue[Transaction](zmqQueueBufferSize, OverflowStrategy.backpressure)
+          .mapAsync(parallelism = 1) { tx =>
+            logger.debug(s"Received tx ${tx.txIdBE.hex}, processing")
+            wallet.transactionProcessing
+              .processTransaction(tx, None)
+              .map(_ => ())
+              .recover { case err =>
+                logger.error("failed to process raw tx zmq message", err)
+              }
           }
-          ()
+          .toMat(Sink.ignore)(Keep.left)
+          .run()
+
+        val rawTxListener: Option[Transaction => Unit] = Some {
+          { (tx: Transaction) =>
+            queue.offer(tx)
+            ()
+          }
         }
+
+        val sub = new ZMQSubscriber(
+          socket = zmq,
+          hashTxListener = None,
+          hashBlockListener = None,
+          rawTxListener = rawTxListener,
+          rawBlockListener = None
+        )
+        (queue, sub)
       }
 
-      new ZMQSubscriber(
-        socket = zmq,
-        hashTxListener = None,
-        hashBlockListener = None,
-        rawTxListener = rawTxListener,
-        rawBlockListener = None
-      )
-    }
-
-    val rawBlockSub = zmqConfig.rawBlock.map { zmq =>
-      val rawBlockListener: Option[Block => Unit] = Some {
-        { (block: Block) =>
-          logger.info(
-            s"Received block ${block.blockHeader.hashBE.hex}, processing"
-          )
-          val f = wallet.transactionProcessing.processBlock(block)
-          f.failed.foreach { err =>
-            logger.error("failed to process raw block zmq message", err)
+    val rawBlockOpt: Option[(SourceQueueWithComplete[Block], ZMQSubscriber)] =
+      zmqConfig.rawBlock.map { zmq =>
+        val queue = Source
+          .queue[Block](zmqQueueBufferSize, OverflowStrategy.backpressure)
+          .mapAsync(parallelism = 1) { block =>
+            logger.info(
+              s"Received block ${block.blockHeader.hashBE.hex}, processing"
+            )
+            wallet.transactionProcessing
+              .processBlock(block)
+              .recover { case err =>
+                logger.error("failed to process raw block zmq message", err)
+              }
           }
-          ()
+          .toMat(Sink.ignore)(Keep.left)
+          .run()
+
+        val rawBlockListener: Option[Block => Unit] = Some {
+          { (block: Block) =>
+            queue.offer(block)
+            ()
+          }
         }
+
+        val sub = new ZMQSubscriber(
+          socket = zmq,
+          hashTxListener = None,
+          hashBlockListener = None,
+          rawTxListener = None,
+          rawBlockListener = rawBlockListener
+        )
+        (queue, sub)
       }
 
-      new ZMQSubscriber(
-        socket = zmq,
-        hashTxListener = None,
-        hashBlockListener = None,
-        rawTxListener = None,
-        rawBlockListener = rawBlockListener
-      )
-    }
-
-    val subs = WalletZmqSubscribers(rawTxSub, rawBlockSub)
+    val subs = WalletZmqSubscribers(
+      rawTxSubscriberOpt = rawTxOpt.map(_._2),
+      rawBlockSubscriberOpt = rawBlockOpt.map(_._2),
+      rawTxQueueOpt = rawTxOpt.map(_._1),
+      rawBlockQueueOpt = rawBlockOpt.map(_._1)
+    )
     subs.start()
     subs
   }
