@@ -38,7 +38,14 @@ case class DLCNode(wallet: DLCWalletApi)(implicit
         handleWriteError = handleTLVSendFailed
       )
       .map { case (addr, actor) =>
-        hostAddressP.success(addr)
+        // use the configured host rather than addr.getHostString: binding to
+        // a wildcard address (e.g. 0.0.0.0) can cause the OS/JDK to report the
+        // bound socket's local address using a different InetAddress family
+        // (e.g. the IPv6 form of the wildcard) than what was configured
+        val resolvedAddr =
+          new InetSocketAddress(config.listenAddress.getHostString,
+                                addr.getPort)
+        hostAddressP.success(resolvedAddr)
         (addr, actor)
       }
   }

@@ -54,8 +54,7 @@ class DLCGrpcRoutes(dlcNode: DLCNodeApi)(implicit ec: ExecutionContext)
   override def getDlcHostAddress(
       in: GetDlcHostAddressRequest): Future[GetDlcHostAddressResponse] = {
     dlcNode.getHostAddress.map { addr =>
-      val str = s"${addr.getHostName}:${addr.getPort}"
-      GetDlcHostAddressResponse(address = str)
+      GetDlcHostAddressResponse(address = addr.toString)
     }
   }
 
