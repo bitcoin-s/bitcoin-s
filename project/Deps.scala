@@ -18,7 +18,7 @@ object Deps {
     val avalonLoggingV = "20020627"
     val xzV = "1.12"
 
-    val scalacheck = "1.19.0"
+    val scalacheck = "1.20.0"
     val scalaTest = "3.2.20" // https://www.scalatest.org/
 
     val scalaTestPlus =
@@ -201,8 +201,10 @@ object Deps {
     val javaxMail =
       "javax.mail" % "mail" % V.javaxMailV // https://mvnrepository.com/artifact/javax.mail/mail
 
-    val jacksonDataFormat = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-toml" % V.jacksonV
-    val javaxAnnotation = "javax.annotation" % "javax.annotation-api" % V.javaxAnnotationV
+    val jacksonDataFormat =
+      "com.fasterxml.jackson.dataformat" % "jackson-dataformat-toml" % V.jacksonV
+    val javaxAnnotation =
+      "javax.annotation" % "javax.annotation-api" % V.javaxAnnotationV
 
     val jna = "net.java.dev.jna" % "jna" % V.jnaV
     val waffleJna = "com.github.waffle" % "waffle-jna" % V.waffleJnaV
