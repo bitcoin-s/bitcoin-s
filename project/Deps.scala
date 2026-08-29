@@ -9,7 +9,7 @@ object Deps {
     val bouncyCastle = "1.85"
     val dropWizardMetrics5V = "5.0.7"
 
-    val dropwizardMetricsV = "4.2.39" // https://github.com/dropwizard/metrics
+    val dropwizardMetricsV = "4.2.40" // https://github.com/dropwizard/metrics
 
     val logback = "1.6.3" // https://github.com/qos-ch/logback
     val log4jV = "1.2.17"
@@ -201,8 +201,10 @@ object Deps {
     val javaxMail =
       "javax.mail" % "mail" % V.javaxMailV // https://mvnrepository.com/artifact/javax.mail/mail
 
-    val jacksonDataFormat = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-toml" % V.jacksonV
-    val javaxAnnotation = "javax.annotation" % "javax.annotation-api" % V.javaxAnnotationV
+    val jacksonDataFormat =
+      "com.fasterxml.jackson.dataformat" % "jackson-dataformat-toml" % V.jacksonV
+    val javaxAnnotation =
+      "javax.annotation" % "javax.annotation-api" % V.javaxAnnotationV
 
     val jna = "net.java.dev.jna" % "jna" % V.jnaV
     val waffleJna = "com.github.waffle" % "waffle-jna" % V.waffleJnaV
