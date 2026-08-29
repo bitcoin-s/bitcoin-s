@@ -9,7 +9,7 @@ object Deps {
     val bouncyCastle = "1.85"
     val dropWizardMetrics5V = "5.0.8"
 
-    val dropwizardMetricsV = "4.2.39" // https://github.com/dropwizard/metrics
+    val dropwizardMetricsV = "4.2.40" // https://github.com/dropwizard/metrics
 
     val logback = "1.6.3" // https://github.com/qos-ch/logback
     val log4jV = "1.2.17"
