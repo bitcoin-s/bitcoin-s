@@ -323,7 +323,6 @@ object CommonSettings {
       "ch.qos.logback.core.net" -> "javax.mail",
       "ch.qos.logback.core.net" -> "javax.mail.internet",
       "ch.qos.logback.core" -> "org.jline.jansi",
-      
       "org.apache.log4j.jmx" -> "com.sun.jdmk.comm",
       "ch.qos.logback.classic" -> "jakarta.servlet.http",
       "ch.qos.logback.classic.helpers" -> "jakarta.servlet",
@@ -484,13 +483,14 @@ object CommonSettings {
       .++(byteBuddyJlinkIgnore)
       .++(nettySvmJlinkIgnore)
       .++(monixJlinkIgnore)
-      .++(Vector(
-        // https://github.com/janino-compiler/janino/blob/f6bb39d3137ad2e99b41ecc48aaaf8ab2644bd1c/janino/pom.xml#L37
-        "org.codehaus.janino" -> "org.apache.tools.ant",
-        "com.github.benmanes.caffeine" -> "javax.annotation",
-        "com.github.benmanes.caffeine.cache" -> "javax.annotation",
-        "com.github.benmanes.caffeine.cache.stats" -> "javax.annotation"
-      ))
+      .++(
+        Vector(
+          // https://github.com/janino-compiler/janino/blob/f6bb39d3137ad2e99b41ecc48aaaf8ab2644bd1c/janino/pom.xml#L37
+          "org.codehaus.janino" -> "org.apache.tools.ant",
+          "com.github.benmanes.caffeine" -> "javax.annotation",
+          "com.github.benmanes.caffeine.cache" -> "javax.annotation",
+          "com.github.benmanes.caffeine.cache.stats" -> "javax.annotation"
+        ))
     JlinkIgnore.byPackagePrefix(appServerIgnore: _*)
   }
 
