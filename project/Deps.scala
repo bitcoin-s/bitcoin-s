@@ -84,7 +84,7 @@ object Deps {
     val javaxServletV = "4.0.1"
     val javaxJmsV = "2.0.1"
     val javaxMailV = "1.4.7"
-    val jacksonV = "2.17.0"
+    val jacksonV = "2.17.3"
     val javaxAnnotationV = "1.3.2" // Or a similar version
 
     val gsonV = "2.14.0"
@@ -201,8 +201,10 @@ object Deps {
     val javaxMail =
       "javax.mail" % "mail" % V.javaxMailV // https://mvnrepository.com/artifact/javax.mail/mail
 
-    val jacksonDataFormat = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-toml" % V.jacksonV
-    val javaxAnnotation = "javax.annotation" % "javax.annotation-api" % V.javaxAnnotationV
+    val jacksonDataFormat =
+      "com.fasterxml.jackson.dataformat" % "jackson-dataformat-toml" % V.jacksonV
+    val javaxAnnotation =
+      "javax.annotation" % "javax.annotation-api" % V.javaxAnnotationV
 
     val jna = "net.java.dev.jna" % "jna" % V.jnaV
     val waffleJna = "com.github.waffle" % "waffle-jna" % V.waffleJnaV
