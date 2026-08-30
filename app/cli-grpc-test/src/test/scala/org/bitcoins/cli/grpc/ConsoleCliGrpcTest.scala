@@ -12,6 +12,7 @@ import org.bitcoins.server.grpc.CommonRoutesClient
 import org.bitcoins.testkit.dlc.MockDLCNodeApi
 import org.bitcoins.testkit.fixtures.ServerGrpcFixture
 import org.bitcoins.testkit.util.FileUtil
+import org.bitcoins.testkit.wallet.DLCWalletUtil
 import org.scalatest.FutureOutcome
 
 import java.nio.file.Files
@@ -258,7 +259,7 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
     val port = clientServer.server.getPort
     exec(port, "getdlchostaddress").map { response =>
       val expected =
-        s"${MockDLCNodeApi.hostAddress.getHostName}:${MockDLCNodeApi.hostAddress.getPort}"
+        clientServer.appConfig.dlcNodeConf.listenAddress.toString
       assert(response == expected)
     }
   }
@@ -305,25 +306,32 @@ class ConsoleCliGrpcTest extends ServerGrpcFixture {
 
   it must "execute dlc-contact-add" in { case clientServer =>
     val port = clientServer.server.getPort
-    exec(port,
-         "dlc-contact-add",
-         org.bitcoins.crypto.Sha256Digest.empty.hex,
-         "localhost:2862").map { response =>
+    val dlcNodePort = clientServer.appConfig.dlcNodeConf.listenAddress.getPort
+    val dlcDb = DLCWalletUtil.sampleDLCDb
+    val dlcId = dlcDb.dlcId.hex
+    val peerAddress = s"localhost:$dlcNodePort"
+    for {
+      _ <- clientServer.walletApi.dlcDAO.create(dlcDb)
+      _ <- exec(port, "contact-add", "bob", peerAddress, "memo")
+      response <- exec(port, "dlc-contact-add", dlcId, peerAddress)
+    } yield {
       val json = ujson.read(response)
-      assert(
-        json.obj("dlcId").str == org.bitcoins.crypto.Sha256Digest.empty.hex)
-      assert(json.obj("contactId").str == "localhost:2862")
+      assert(json.obj("dlcId").str == dlcId)
+      assert(json.obj("contactId").str == peerAddress)
     }
   }
 
   it must "execute offer-send" in { case clientServer =>
     val port = clientServer.server.getPort
+    val dlcNodePort = clientServer.appConfig.dlcNodeConf.listenAddress.getPort
+    val peerAddress = s"localhost:$dlcNodePort"
+    val tempContractId = DLCWalletUtil.sampleDLCOffer.tempContractId.hex
     exec(port,
          "offer-send",
-         org.bitcoins.crypto.Sha256Digest.empty.hex,
-         "localhost:2862",
+         MockDLCNodeApi.offerLnMessageHex,
+         peerAddress,
          "message").map { response =>
-      assert(response == org.bitcoins.crypto.Sha256Digest.empty.hex)
+      assert(response == tempContractId)
     }
   }
 
