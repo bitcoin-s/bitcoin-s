@@ -412,4 +412,55 @@ class PartialMerkleTreeTests extends BitcoinSUnitTest {
         assert(partialMerkleTree2 == partialMerkleTree)
     }
   }
+
+  it must "reject crafted inputs with a clean error instead of crashing or accepting them" in {
+    // mirrors the sanity checks in Bitcoin Core's
+    // CPartialMerkleTree::ExtractMatches (merkleblock.cpp): zero/absurd
+    // transaction counts and truncated bits/hashes must be rejected cleanly
+    // (IllegalArgumentException) instead of crashing on `.head` of an empty
+    // collection during tree traversal, or being silently accepted.
+    val h = DoubleSha256Digest(
+      "01272b2b1c8c33a1b4e9ab111db41c9ac275e686fbd9c5d482e586d03e9e0552"
+    )
+
+    // zero transactions: calcMaxHeight(0) degenerates and the traversal
+    // crashes on `.head` of the empty bits/hashes instead of rejecting
+    intercept[IllegalArgumentException] {
+      PartialMerkleTree(UInt32.zero, Vector.empty, BitVector.empty)
+    }
+
+    // absurd transaction count: Bitcoin Core rejects
+    // nTransactions > MAX_BLOCK_WEIGHT / MIN_TRANSACTION_WEIGHT (= 66,666)
+    intercept[IllegalArgumentException] {
+      PartialMerkleTree(UInt32(100000L), Vector.empty, BitVector.low(8))
+    }
+
+    // fewer hashes than the traversal consumes: crashes with `.head` on the
+    // empty hash vector (root bit set forces traversal into both children)
+    val rootSetBits =
+      BitVector.bits(Seq(true, false, false, false, false, false, false, false))
+    intercept[IllegalArgumentException] {
+      PartialMerkleTree(UInt32.two, Vector(h), rootSetBits)
+    }
+
+    // fewer bits than the traversal consumes: all-true flags force recursion
+    // past the end of the 8 provided bits, crashing on `.head`
+    intercept[IllegalArgumentException] {
+      PartialMerkleTree(UInt32(5), Vector.fill(8)(h), BitVector.high(8))
+    }
+  }
+
+  it must "compute calcMaxHeight with integer-exact results for large transaction counts" in {
+    // calcMaxHeight used a floating-point log2, which disagrees with Bitcoin
+    // Core's integer loop (`while (CalcTreeWidth(nHeight) > 1) nHeight++;` in
+    // merkleblock.cpp) at exact powers of two due to double-precision
+    // rounding -- e.g. computing 30 instead of 29 for n = 2^29.
+    //
+    // Note: 1 << 31 overflows as a 32-bit Int (wraps to Int.MinValue), so
+    // calcMaxHeight must accept a Long to even be able to represent 2^31 as
+    // an argument; 1L << 31 avoids that overflow by doing the shift in
+    // 64-bit Long arithmetic from the start.
+    PartialMerkleTree.calcMaxHeight(1 << 29) must be(29)
+    PartialMerkleTree.calcMaxHeight(1L << 31) must be(31)
+  }
 }

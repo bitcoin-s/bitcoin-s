@@ -127,6 +127,22 @@ class NumberUtilTest extends BitcoinSUnitTest {
     runTest(nBits, diffHelper)
   }
 
+  it must "interpret the nBits exponent byte as unsigned in targetExpansion" in {
+    // Bitcoin Core's SetCompact treats the exponent byte (nCompact >> 24) as
+    // an unsigned value 0-255. Reading it as a signed Scala Byte would make
+    // a byte >= 0x80 wrap negative, taking the "negative exponent, shift
+    // right" branch instead of the correct "large exponent, multiply by
+    // 256^n" branch -- dividing a tiny mantissa by an astronomically large
+    // power of two instead of multiplying it, silently producing a target
+    // of zero for a huge, nonzero exponent.
+    val nBits =
+      UInt32.fromBytes(scodec.bits.ByteVector.fromValidHex("c8010203"))
+
+    val target = NumberUtil.targetExpansion(nBits)
+
+    target.target must not be BigInt(0)
+  }
+
   behavior of "NumberUtil.targetCompression"
 
   it must "handle all cases as enumerated in bitcoin core" in {

@@ -1,5 +1,6 @@
 package org.bitcoins.core.script.interpreter
 
+import org.bitcoins.core.consensus.Consensus
 import org.bitcoins.core.crypto.{
   BaseTxSigComponent,
   TaprootSerializationOptions,
@@ -8,15 +9,19 @@ import org.bitcoins.core.crypto.{
   WitnessTxSigComponentP2SH,
   WitnessTxSigComponentRaw
 }
-import org.bitcoins.core.currency.CurrencyUnits
+import org.bitcoins.core.currency.{CurrencyUnits, Satoshis}
+import org.bitcoins.core.number.UInt32
 import org.bitcoins.core.protocol.script.*
 import org.bitcoins.core.protocol.transaction.{
   EmptyTransactionOutPoint,
   Transaction,
+  TransactionConstants,
+  TransactionInput,
+  TransactionOutPoint,
   TransactionOutput,
+  TransactionWitness,
   WitnessTransaction
 }
-import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.policy.Policy
 import org.bitcoins.core.script.PreExecutionScriptProgram
 import org.bitcoins.core.script.flag.{
@@ -27,7 +32,11 @@ import org.bitcoins.core.script.flag.{
 import org.bitcoins.core.script.interpreter.testprotocol.CoreTestCase
 import org.bitcoins.core.script.result.ScriptOk
 import org.bitcoins.core.script.util.PreviousOutputMap
-import org.bitcoins.crypto.{HashType, SchnorrDigitalSignature}
+import org.bitcoins.crypto.{
+  DoubleSha256Digest,
+  HashType,
+  SchnorrDigitalSignature
+}
 import org.bitcoins.testkitcore.util.{BitcoinSUnitTest, TransactionTestUtil}
 import scodec.bits.ByteVector
 import upickle.default.*
@@ -268,6 +277,38 @@ class ScriptInterpreterTest extends BitcoinSUnitTest {
     val component = BaseTxSigComponent(spendingTx, inputIndex, output, flags)
     val result = ScriptInterpreter.run(PreExecutionScriptProgram(component))
     result must be(ScriptOk)
+  }
+
+  it must "use Core's witness-stripped base size check in checkTransaction" in {
+    // Bitcoin Core's CheckTransaction only checks the witness-stripped base
+    // size scaled by WITNESS_SCALE_FACTOR against MAX_BLOCK_WEIGHT
+    // (GetSerializeSize(TX_NO_WITNESS(tx)) * WITNESS_SCALE_FACTOR >
+    // MAX_BLOCK_WEIGHT, consensus/tx_check.cpp). There is no separate check
+    // against the legacy 1MB MAX_BLOCK_SIZE using the full witness-inclusive
+    // size, so a transaction with a small base size but a large witness
+    // (well within the weight limit) must not be rejected just because its
+    // total wire size exceeds 1MB.
+    val outPoint = TransactionOutPoint(
+      DoubleSha256Digest(
+        "01272b2b1c8c33a1b4e9ab111db41c9ac275e686fbd9c5d482e586d03e9e0552"
+      ).flip,
+      UInt32.zero
+    )
+    val input =
+      TransactionInput(outPoint, EmptyScriptSignature, UInt32.zero)
+    val output = TransactionOutput(Satoshis.zero, EmptyScriptPubKey)
+    val hugeWitness = ScriptWitness(Vector(ByteVector.fill(2000000)(0x00)))
+    val tx = WitnessTransaction(
+      TransactionConstants.version,
+      Vector(input),
+      Vector(output),
+      TransactionConstants.lockTime,
+      TransactionWitness(Vector(hugeWitness))
+    )
+
+    assert(tx.baseSize * Consensus.weightScalar <= Consensus.maxBlockWeight)
+    assert(tx.bytes.size > Consensus.maxBlockSize)
+    ScriptInterpreter.checkTransaction(tx) must be(true)
   }
 }
 
