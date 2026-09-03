@@ -84,7 +84,7 @@ object Deps {
     val javaxServletV = "4.0.1"
     val javaxJmsV = "2.0.1"
     val javaxMailV = "1.4.7"
-    val jacksonV = "2.17.3"
+    val jacksonV = "2.22.2"
     val javaxAnnotationV = "1.3.2" // Or a similar version
 
     val gsonV = "2.14.0"
