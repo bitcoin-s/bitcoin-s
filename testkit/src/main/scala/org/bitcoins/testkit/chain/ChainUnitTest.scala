@@ -40,7 +40,7 @@ import java.net.InetSocketAddress
 import java.nio.file.Files
 import scala.annotation.tailrec
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 trait ChainUnitTest extends BitcoinSFixture with PostgresTestDatabase {
 
@@ -272,21 +272,37 @@ trait ChainUnitTest extends BitcoinSFixture with PostgresTestDatabase {
         .to(sink)
         .run()(using Materializer.matFromSystem(using system))
       val handleRawBlock: Block => Unit = { (block: Block) =>
-        queue
-          .offer(block)
-          .foreach {
-            case org.apache.pekko.stream.QueueOfferResult.Enqueued => // all good
-            case org.apache.pekko.stream.QueueOfferResult.Dropped =>
-              logger.warn(
-                s"Block offer dropped for block ${block.blockHeader.hashBE}")
-            case org.apache.pekko.stream.QueueOfferResult.Failure(ex) =>
-              logger.error(
-                s"Block offer failed for block ${block.blockHeader.hashBE}",
-                ex)
-            case org.apache.pekko.stream.QueueOfferResult.QueueClosed =>
-              logger.error(
-                s"Block offer failed: queue closed for block ${block.blockHeader.hashBE}")
-          }(using executionContext)
+        // ZMQSubscriber's receive loop invokes this listener synchronously
+        // and moves on to the next message as soon as this call returns, so
+        // offer() must be awaited here -- calling it again before the
+        // previous call's Future resolves is unsafe for Source.queue and
+        // can silently stall/drop blocks under a burst of zmq messages
+        // (e.g. from generating many blocks in one bitcoind RPC call).
+        val offerResultT = scala.util.Try(
+          Await.result(queue.offer(block), 30.seconds)
+        )
+        offerResultT match {
+          case scala.util.Success(
+                org.apache.pekko.stream.QueueOfferResult.Enqueued
+              ) => // all good
+          case scala.util.Success(
+                org.apache.pekko.stream.QueueOfferResult.Dropped) =>
+            logger.warn(
+              s"Block offer dropped for block ${block.blockHeader.hashBE}")
+          case scala.util.Success(
+                org.apache.pekko.stream.QueueOfferResult.Failure(ex)) =>
+            logger.error(
+              s"Block offer failed for block ${block.blockHeader.hashBE}",
+              ex)
+          case scala.util.Success(
+                org.apache.pekko.stream.QueueOfferResult.QueueClosed) =>
+            logger.error(
+              s"Block offer failed: queue closed for block ${block.blockHeader.hashBE}")
+          case scala.util.Failure(ex) =>
+            logger.error(
+              s"Block offer timed out for block ${block.blockHeader.hashBE}",
+              ex)
+        }
         ()
       }
 
