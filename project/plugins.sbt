@@ -37,7 +37,7 @@ addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.12.1")
 
 // write markdown files with type-checked Scala
 //https://github.com/scalameta/mdoc
-addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.9.1")
+addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.9.2")
 
 //https://github.com/scalameta/sbt-scalafmt
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.6.2")
