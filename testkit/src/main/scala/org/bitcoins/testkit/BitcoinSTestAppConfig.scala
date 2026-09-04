@@ -6,6 +6,7 @@ import org.bitcoins.chain.config.ChainAppConfig
 import org.bitcoins.dlc.oracle.config.DLCOracleAppConfig
 import org.bitcoins.dlc.wallet.DLCAppConfig
 import org.bitcoins.node.config.NodeAppConfig
+import org.bitcoins.rpc.util.RpcUtil
 import org.bitcoins.server.BitcoinSAppConfig
 import org.bitcoins.testkit.db.TestAppConfig
 import org.bitcoins.testkit.keymanager.KeyManagerTestUtil
@@ -137,6 +138,7 @@ object BitcoinSTestAppConfig {
            |  proxy.enabled = $torEnabled
            |  tor.enabled = $torEnabled
            |  tor.use-random-ports = false
+           |  dlcnode.listen="localhost:${RpcUtil.randomPort}"
            |}
       """.stripMargin
       }
