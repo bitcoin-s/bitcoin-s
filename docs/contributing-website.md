@@ -96,7 +96,7 @@ This command first generates Scaladocs, then invokes
 files, build the site and push them to GH pages.
 
 Before running those commands, you might have to change a few constants in
-`siteConfig.js`. These are specifed in the comments of that file.
+`siteConfig.js`. These are specified in the comments of that file.
 
 ### CI
 
