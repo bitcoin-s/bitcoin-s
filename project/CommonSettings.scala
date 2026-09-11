@@ -314,7 +314,16 @@ object CommonSettings {
       // https://github.com/xerial/sqlite-jdbc/commit/6f426839c56f3924be6cad8920d9192400a37d5f#diff-b335630551682c19a781afebcf4d07bf978fb1f8ac04c6bf87428ed5106870f5R117
       "org.sqlite.nativeimage" -> "org.graalvm.nativeimage.hosted",
       // we use slf4j, not apache commons so ignore it
-      "org.flywaydb.core.internal.logging.apachecommons" -> "org.apache.commons.logging"
+      "org.flywaydb.core.internal.logging.apachecommons" -> "org.apache.commons.logging",
+      // flyway 13.5.0 added an optional Jackson 3.x (tools.jackson) based
+      // config resolver; we don't use Flyway's placeholder/config resolvers
+      // feature and only carry classic com.fasterxml.jackson 2.x
+      "org.flywaydb.core.api.configuration" -> "tools.jackson.databind",
+      "org.flywaydb.core.extensibility" -> "tools.jackson.databind",
+      "org.flywaydb.core.internal.configuration.resolvers" -> "tools.jackson.core",
+      "org.flywaydb.core.internal.configuration.resolvers" -> "tools.jackson.databind",
+      "org.flywaydb.core.internal.configuration.resolvers" -> "tools.jackson.databind.cfg",
+      "org.flywaydb.core.internal.configuration.resolvers" -> "tools.jackson.databind.exc"
     )
   }
 
@@ -323,7 +332,6 @@ object CommonSettings {
       "ch.qos.logback.core.net" -> "javax.mail",
       "ch.qos.logback.core.net" -> "javax.mail.internet",
       "ch.qos.logback.core" -> "org.jline.jansi",
-      
       "org.apache.log4j.jmx" -> "com.sun.jdmk.comm",
       "ch.qos.logback.classic" -> "jakarta.servlet.http",
       "ch.qos.logback.classic.helpers" -> "jakarta.servlet",
