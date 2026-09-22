@@ -3,7 +3,7 @@ ThisBuild / libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" 
 // bundle up Scala applications into packaging formats such as Docker,
 // GraalVM native-image, executable JARs etc
 // https://github.com/sbt/sbt-native-packager
-addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.11.7")
+addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.12.0")
 
 addSbtPlugin("com.github.sbt" % "sbt-git" % "2.2.0")
 
