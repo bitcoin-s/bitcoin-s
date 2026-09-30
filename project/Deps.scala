@@ -89,7 +89,7 @@ object Deps {
 
     val gsonV = "2.14.0"
     val jnaV = "5.19.1"
-    val waffleJnaV = "3.6.0"
+    val waffleJnaV = "3.7.0"
 
     // netty optional deps surfaced by jlink static analysis via grpc-netty-shaded
     val brotli4jV = "1.23.0" // https://github.com/aayushatharva/brotli4j
