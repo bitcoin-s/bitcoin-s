@@ -44,7 +44,7 @@ class ChainHandlerTest extends ChainUnitTest {
       version = Int32(1),
       previousBlockHash = ChainTestUtil.regTestGenesisHeaderDb.hashBE.flip,
       merkleRootHash = DoubleSha256Digest.empty,
-      time = UInt32(1231006505),
+      time = ChainTestUtil.regTestGenesisHeaderDb.time + UInt32.one,
       nBits = UInt32(545259519),
       nonce = UInt32(2083236893)
     )
@@ -72,6 +72,17 @@ class ChainHandlerTest extends ChainUnitTest {
         processedHeaderF.flatMap(_.getHeader(newValidHeader.hashBE))
 
       foundHeaderF.map(found => assert(found.get == newValidHeader))
+  }
+
+  it must "calculate median time past over fewer than 11 headers from genesis" in {
+    (chainHandler: ChainHandler) =>
+      val header1 = BlockHeaderHelper.buildNextHeader(genesis)
+      val header2 = BlockHeaderHelper.buildNextHeader(header1)
+      for {
+        newChainHandler <- chainHandler.processHeaders(
+          Vector(header1.blockHeader, header2.blockHeader))
+        mtp <- newChainHandler.getMedianTimePast()
+      } yield assert(mtp == header1.time.toLong)
   }
 
   it must "have an in-order seed" in { _ =>
