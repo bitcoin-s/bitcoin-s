@@ -190,14 +190,59 @@ class TipValidationTest extends ChainUnitTest {
       )
   }
 
-  it must "return None when the blockchain does not have enough headers below the requested header" in {
+  it must "return Some(mtp) over the existing ancestors when the chain starts at genesis" in {
     _ =>
-      // Build genesis + 9 successors (10 total) — fewer than nMedianTimeSpan=11
+      // Genesis + 4 successors: Core takes the median of all 5
       val genesis = ChainTestUtil.regTestGenesisHeaderDb
-      val headers = (0 until 9).foldLeft(Vector(genesis)) { (acc, _) =>
+      val headers = (0 until 4).foldLeft(Vector(genesis)) { (acc, _) =>
         acc :+ BlockHeaderHelper.buildNextHeader(acc.last)
       }
       val blockchain = Blockchain.fromHeaders(headers.reverse)
+
+      assert(blockchain.getMedianTimePast.contains(headers(2).time.toLong))
+      // Of two times, Core takes the later one
+      assert(
+        blockchain
+          .getMedianTimePast(headers(1))
+          .contains(headers(1).time.toLong))
+  }
+
+  it must "reject a header near genesis whose time is <= the median of its ancestors" in {
+    _ =>
+      val genesis = ChainTestUtil.regTestGenesisHeaderDb
+      val headers = (0 until 4).foldLeft(Vector(genesis)) { (acc, _) =>
+        acc :+ BlockHeaderHelper.buildNextHeader(acc.last)
+      }
+      val blockchain = Blockchain.fromHeaders(headers.reverse)
+      val mtp = headers(2).time
+
+      val staleHeader = BlockHeaderHelper
+        .buildNextHeader(blockchain.tip, timeOpt = Some(mtp))
+        .blockHeader
+      val goodHeader =
+        BlockHeaderHelper.buildNextHeader(blockchain.tip,
+                                          timeOpt = Some(mtp + UInt32.one))
+
+      assert(
+        TipValidation.checkNewTip(staleHeader,
+                                  blockchain,
+                                  RegTestNetChainParams) == TipUpdateResult
+          .BadMTP(staleHeader))
+      assert(
+        TipValidation.checkNewTip(goodHeader.blockHeader,
+                                  blockchain,
+                                  RegTestNetChainParams) == TipUpdateResult
+          .Success(goodHeader))
+  }
+
+  it must "return None when the blockchain does not have enough headers below the requested header" in {
+    _ =>
+      // Headers 1 to 10 of a longer chain: 10 headers that do not reach genesis
+      val genesis = ChainTestUtil.regTestGenesisHeaderDb
+      val headers = (0 until 10).foldLeft(Vector(genesis)) { (acc, _) =>
+        acc :+ BlockHeaderHelper.buildNextHeader(acc.last)
+      }
+      val blockchain = Blockchain.fromHeaders(headers.tail.reverse)
       val tip = blockchain.tip
 
       assert(
@@ -244,15 +289,15 @@ class TipValidationTest extends ChainUnitTest {
 
   it must "return None for a mid-chain header when insufficient ancestors exist below it" in {
     _ =>
-      // Genesis + 12 successors (13 total). The header at index 10 from the top
-      // (height 2) only has 3 headers beneath it — fewer than 11.
+      // Headers 1 to 12 of a longer chain. From the header at index 10 from
+      // the top (height 2) down there are only 2 headers, fewer than 11.
       val genesis = ChainTestUtil.regTestGenesisHeaderDb
       val headers =
         (0 until Blockchain.nMedianTimeSpan + 1).foldLeft(Vector(genesis)) {
           (acc, _) =>
             acc :+ BlockHeaderHelper.buildNextHeader(acc.last)
         }
-      val descHeaders = headers.reverse
+      val descHeaders = headers.tail.reverse
       val blockchain = Blockchain.fromHeaders(descHeaders)
 
       // Header near the bottom of the chain (index 10 from tip == height 2)
