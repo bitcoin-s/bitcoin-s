@@ -353,7 +353,7 @@ object Deps {
 
     val scalaTest = Def.setting(
       "org.scalatest" %%% "scalatest" % V.scalaTest % "test" withSources () withJavadoc ())
-    val scalaMock = "org.scalamock" %% "scalamock" % V.scalamockV
+    val scalaMock = "org.scalamock" %% "scalamock-scalatest" % V.scalamockV
 
     val spray =
       "io.spray" %% "spray-json" % V.spray % "test" withSources () withJavadoc ()
