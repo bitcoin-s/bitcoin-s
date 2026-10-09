@@ -6,6 +6,7 @@ import org.bitcoins.core.protocol.dlc.models.EnumContractDescriptor
 import org.bitcoins.crypto.Sha256Digest
 import org.bitcoins.testkit.dlc.MockDLCNodeApi
 import org.bitcoins.testkit.fixtures.ServerGrpcFixture
+import org.bitcoins.testkit.wallet.DLCWalletUtil
 import org.scalatest.FutureOutcome
 
 class DLCGrpcRoutesTest extends ServerGrpcFixture {
@@ -21,7 +22,7 @@ class DLCGrpcRoutesTest extends ServerGrpcFixture {
     val client = clientServer.client
     client.getDlcHostAddress(GetDlcHostAddressRequest()).map { response =>
       val expected =
-        s"${MockDLCNodeApi.hostAddress.getHostName}:${MockDLCNodeApi.hostAddress.getPort}"
+        s"${clientServer.appConfig.dlcNodeConf.listenAddress}"
       assert(response.address == expected)
     }
   }
@@ -73,9 +74,12 @@ class DLCGrpcRoutesTest extends ServerGrpcFixture {
 
   it must "offer-send" in { case clientServer =>
     val client = clientServer.client
-    val tempContractId = Sha256Digest.empty.hex
-    val request = OfferSendRequest(offerOrTempContractId = tempContractId,
-                                   peerAddress = "localhost:2862",
+    val offer = MockDLCNodeApi.offerLnMessageHex
+    val tempContractId = DLCWalletUtil.sampleDLCOffer.tempContractId.hex
+    val port = clientServer.appConfig.dlcNodeConf.listenAddress.getPort
+    val peerAddress = s"localhost:$port"
+    val request = OfferSendRequest(offerOrTempContractId = offer,
+                                   peerAddress = peerAddress,
                                    message = "test message")
     client.offerSend(request).map { response =>
       assert(response.tempContractId == tempContractId)
@@ -100,11 +104,20 @@ class DLCGrpcRoutesTest extends ServerGrpcFixture {
 
   it must "dlc-contact-add" in { case clientServer =>
     val client = clientServer.client
+    val dlcDb = DLCWalletUtil.sampleDLCDb
+    val dlcId = dlcDb.dlcId.hex
+    val addRequest =
+      ContactAddRequest(alias = "bob",
+                        address = "localhost:2862",
+                        memo = "memo")
     val request =
-      DlcContactAddRequest(dlcId = Sha256Digest.empty.hex,
-                           address = "localhost:2862")
-    client.dlcContactAdd(request).map { response =>
-      assert(response.dlcId == Sha256Digest.empty.hex)
+      DlcContactAddRequest(dlcId = dlcId, address = "localhost:2862")
+    for {
+      _ <- clientServer.walletApi.dlcDAO.create(dlcDb)
+      _ <- client.contactAdd(addRequest)
+      response <- client.dlcContactAdd(request)
+    } yield {
+      assert(response.dlcId == dlcId)
       assert(response.contactId == "localhost:2862")
     }
   }
