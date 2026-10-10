@@ -115,6 +115,20 @@ class DERSignatureUtilTest extends BitcoinSCryptoTest {
     DERSignatureUtil.isLowS(highS) must be(false)
   }
 
+  it must "determine if a signature is encoded with a low r value" in {
+    // r has its top bit set, so it takes 33 bytes in DER, while s takes 31:
+    // the signature is 70 bytes, the length a low r signature usually has
+    val highR = ECDigitalSignature(BigInt(1) << 255, BigInt(1) << 240)
+    highR.bytes.length must be(70)
+    DERSignatureUtil.isLowR(highR) must be(false)
+
+    val lowR = ECDigitalSignature((BigInt(1) << 255) - 1, BigInt(1) << 240)
+    DERSignatureUtil.isLowR(lowR) must be(true)
+
+    // Sign.dummySign returns it, so signLowR must stop on it
+    DERSignatureUtil.isLowR(ECDigitalSignature.dummyLowR) must be(true)
+  }
+
   it must "parse lax DER signatures" in {
     // Copied from https://github.com/rust-bitcoin/rust-secp256k1/blob/a1842125a77cadaa8ac7d6ca794ddb1f4852c593/src/lib.rs#L940-L956 except for the first one
     // which is from script_tests.json and the second one which is from tx_valid.json
