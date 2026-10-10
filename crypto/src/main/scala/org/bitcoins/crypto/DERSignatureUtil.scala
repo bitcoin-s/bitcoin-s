@@ -216,6 +216,15 @@ sealed abstract class DERSignatureUtil {
     }
   }
 
+  /** Checks if the R value fits in 32 bytes as a signed DER integer, as Bitcoin
+    * Core's SigHasLowR does. The DER length is not enough, since a high R with
+    * a short S is also 70 bytes.
+    * @return
+    *   if the R value is low
+    */
+  def isLowR(signature: ECDigitalSignature): Boolean =
+    signature.r.bitLength < 256
+
   /** Checks if the given digital signature uses a low s value, if it does not
     * it converts it to a low s value and returns it
     */

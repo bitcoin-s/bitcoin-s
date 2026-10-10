@@ -48,7 +48,7 @@ trait AsyncSign {
     }
 
     sigF.flatMap { sig =>
-      if (AsyncSign.hasLowR(sig)) {
+      if (DERSignatureUtil.isLowR(sig)) {
         Future.successful(sig)
       } else {
         asyncSignLowR(bytes, startAt + 1)
@@ -67,12 +67,6 @@ trait AsyncSign {
 }
 
 object AsyncSign {
-
-  /** Bitcoin Core's SigHasLowR: r fits in 32 bytes as a signed DER integer. The
-    * DER length is not enough, since a high r with a short s is 70 bytes.
-    */
-  private[crypto] def hasLowR(sig: ECDigitalSignature): Boolean =
-    sig.r.bitLength < 256
 
   private case class AsyncSignImpl(
       asyncSignFunction: ByteVector => Future[ECDigitalSignature],
@@ -188,7 +182,7 @@ trait Sign extends AsyncSign {
     CryptoUtil.cryptoContext match {
       case CryptoContext.BCrypto => sig
       case CryptoContext.LibSecp256k1 | CryptoContext.BouncyCastle =>
-        if (AsyncSign.hasLowR(sig)) {
+        if (DERSignatureUtil.isLowR(sig)) {
           sig
         } else {
           signLowR(bytes, startAt + 1)
