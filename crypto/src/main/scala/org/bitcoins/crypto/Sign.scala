@@ -48,7 +48,7 @@ trait AsyncSign {
     }
 
     sigF.flatMap { sig =>
-      if (sig.bytes.length <= 70) {
+      if (DERSignatureUtil.isLowR(sig)) {
         Future.successful(sig)
       } else {
         asyncSignLowR(bytes, startAt + 1)
@@ -182,7 +182,7 @@ trait Sign extends AsyncSign {
     CryptoUtil.cryptoContext match {
       case CryptoContext.BCrypto => sig
       case CryptoContext.LibSecp256k1 | CryptoContext.BouncyCastle =>
-        if (sig.bytes.length <= ECDigitalSignature.LOW_R_SIZE) {
+        if (DERSignatureUtil.isLowR(sig)) {
           sig
         } else {
           signLowR(bytes, startAt + 1)
