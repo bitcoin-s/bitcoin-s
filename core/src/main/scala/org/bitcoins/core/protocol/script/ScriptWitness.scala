@@ -86,6 +86,10 @@ object P2WPKHWitnessV0 {
   def apply(
       publicKey: ECPublicKey,
       signature: ECDigitalSignature): P2WPKHWitnessV0 = {
+    // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki#restrictions-on-public-key-type
+    require(
+      publicKey.isCompressed,
+      s"Public key must be compressed to be used in a segwit script, see BIP143")
     P2WPKHWitnessV0(publicKey.toPublicKeyBytes(), signature)
   }
 
@@ -156,6 +160,7 @@ object P2WSHWitnessV0 {
   def apply(
       spk: RawScriptPubKey,
       scriptSig: ScriptSignature): P2WSHWitnessV0 = {
+    requireCompressedPubKeys(spk)
     // need to remove the OP_0 or OP_1 and replace it with ScriptNumber.zero / ScriptNumber.one since witnesses are *not* run through the interpreter
     // remove pushops from scriptSig
     val minimalIf = BitcoinScriptUtil.minimalIfOp(scriptSig.asm)
@@ -165,13 +170,22 @@ object P2WSHWitnessV0 {
     P2WSHWitnessV0(stack)
   }
 
-  private def apply(stack: Seq[ByteVector]): P2WSHWitnessV0 = {
+  /** Builds the witness without checking its keys, for parsing */
+  private[script] def apply(stack: Seq[ByteVector]): P2WSHWitnessV0 = {
     P2WSHWitnessV0Impl(stack)
   }
 
   def apply(spk: RawScriptPubKey, stack: Seq[ByteVector]): P2WSHWitnessV0 = {
+    requireCompressedPubKeys(spk)
     val fullStack: Seq[ByteVector] = spk.asmBytes +: stack
     P2WSHWitnessV0(fullStack)
+  }
+
+  // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki#restrictions-on-public-key-type
+  private def requireCompressedPubKeys(spk: RawScriptPubKey): Unit = {
+    require(
+      BitcoinScriptUtil.isOnlyCompressedPubKey(spk),
+      s"Public key must be compressed to be used in a segwit script, see BIP143")
   }
 }
 
@@ -184,8 +198,7 @@ object ScriptWitness extends Factory[ScriptWitness] {
   }
 
   def apply(stack: Seq[ByteVector]): ScriptWitness = {
-    // TODO: eventually only compressed public keys will be allowed in v0 scripts
-    // https://github.com/bitcoin/bips/blob/master/bip-0143.mediawiki#restrictions-on-public-key-type
+    // Uncompressed keys are non-standard in v0 witnesses (BIP143) but valid by consensus, so we parse them
     val isPubKey = {
       stack.nonEmpty && (stack.head.size == 33 && (stack.head.head == 0x02 || stack.head.head == 0x03)
         || (stack.head.size == 65 && stack.head.head == 0x04 && CryptoUtil
@@ -215,7 +228,7 @@ object ScriptWitness extends Factory[ScriptWitness] {
         case h :: t =>
           val cmpct = CompactSizeUInt.calc(h)
           val spk = RawScriptPubKey(cmpct.bytes ++ h)
-          P2WSHWitnessV0(spk, t)
+          P2WSHWitnessV0(spk.asmBytes +: t)
       }
     }
   }
