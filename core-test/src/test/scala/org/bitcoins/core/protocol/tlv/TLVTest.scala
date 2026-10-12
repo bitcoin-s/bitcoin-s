@@ -257,7 +257,8 @@ class TLVTest extends BitcoinSUnitTest {
       assert(
         elementParses == 0,
         s"The element parse function ran $elementParses times even though " +
-          s"the declared count $declaredCount exceeds the remaining bytes")
+          s"the declared count $declaredCount exceeds the remaining bytes"
+      )
     }
 
   it must
