@@ -434,14 +434,16 @@ class FrostTestVectors extends BitcoinSCryptoTest {
           thresholdPubKey = vecs.threshold_pubkey
         )
       }
-      val (x, y) = FrostUtil.deterministicSign(vecs.secshare_p0,
-                                               tc.id_indices(tc.signer_index),
-                                               tc.aggothernonce,
-                                               signersContext = signersContext,
-                                               tc.tweaks,
-                                               tc.is_xonly,
-                                               vecs.msgs(tc.msg_index),
-                                               tc.rand)
+      val (x, y) = FrostUtil.deterministicSign(
+        vecs.secshare_p0,
+        tc.id_indices(tc.signer_index),
+        tc.aggothernonce,
+        signersContext = signersContext,
+        tc.tweaks,
+        tc.is_xonly,
+        vecs.msgs(tc.msg_index),
+        tc.rand
+      )
 
       assert(x == tc.expectedAggNonce)
       assert(y == tc.expectedSignature)

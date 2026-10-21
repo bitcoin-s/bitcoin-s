@@ -109,8 +109,8 @@ object ConsoleCliGrpc {
     cmdAndArgs ++ globalOpts
   }
 
-  def exec(args: Vector[String])(implicit
-      system: ActorSystem): Future[String] = {
+  def exec(
+      args: Vector[String])(implicit system: ActorSystem): Future[String] = {
     val normalized = normalizeArgs(args)
     OParser.parse(parser, normalized, Config()) match {
       case None =>
@@ -205,16 +205,15 @@ object ConsoleCliGrpc {
           .map(r => jsValueToString(Str(r.address)))
       case command: AcceptDLC =>
         dlcClient
-          .acceptDlc(
-            AcceptDlcRequest(
-              offer = command.offer.hex,
-              peerAddr =
-                s"${command.peerAddr.getHostString}:${command.peerAddr.getPort}",
-              externalPayoutAddress =
-                command.externalPayoutAddressOpt.map(_.toString),
-              externalChangeAddress =
-                command.externalChangeAddressOpt.map(_.toString)
-            ))
+          .acceptDlc(AcceptDlcRequest(
+            offer = command.offer.hex,
+            peerAddr =
+              s"${command.peerAddr.getHostString}:${command.peerAddr.getPort}",
+            externalPayoutAddress =
+              command.externalPayoutAddressOpt.map(_.toString),
+            externalChangeAddress =
+              command.externalChangeAddressOpt.map(_.toString)
+          ))
           .map(_.acceptHex)
       case command: CreateContractInfo =>
         dlcClient
