@@ -146,6 +146,10 @@ object GlobalPSBTRecord extends Factory[GlobalPSBTRecord] {
         require(PSBT.knownVersions.contains(version),
                 s"Unknown version number given: $version")
         Version(version)
+      case keyId @ (TxVersionKeyId | FallbackLocktimeKeyId | InputCountKeyId |
+          OutputCountKeyId | TxModifiableKeyId) =>
+        throw new IllegalArgumentException(
+          s"$keyId is only allowed in version 2 PSBTs")
       case UnknownKeyId =>
         GlobalPSBTRecord.Unknown(key, value)
     }
@@ -590,6 +594,10 @@ object InputPSBTRecord extends Factory[InputPSBTRecord] {
           value.size == 32,
           s"The value must contain the 32 byte x-only public key, got: ${value.size}")
         TRMerkelRoot(Sha256Digest(value))
+      case keyId @ (PreviousTxIdKeyId | OutputIndexKeyId | SequenceKeyId |
+          RequiredTimeLocktimeKeyId | RequiredHeightLocktimeKeyId) =>
+        throw new IllegalArgumentException(
+          s"$keyId is only allowed in version 2 PSBTs")
       case UnknownKeyId =>
         InputPSBTRecord.Unknown(key, value)
     }
@@ -760,6 +768,9 @@ object OutputPSBTRecord extends Factory[OutputPSBTRecord] {
                                                hashes = hashes,
                                                masterFingerprint = fingerprint,
                                                path = path)
+      case keyId @ (AmountKeyId | ScriptKeyId) =>
+        throw new IllegalArgumentException(
+          s"$keyId is only allowed in version 2 PSBTs")
       case UnknownKeyId =>
         OutputPSBTRecord.Unknown(key, value)
     }
