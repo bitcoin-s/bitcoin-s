@@ -4,14 +4,17 @@ import org.bitcoins.core.api.chain.db.BlockHeaderDb
 
 /** @inheritdoc */
 case class Blockchain(headers: Vector[BlockHeaderDb]) extends BaseBlockChain {
+
+  /** The median time of the last 11 headers, or of all of them when the chain
+    * starts at genesis with fewer than 11, as in Bitcoin Core. None when fewer
+    * than 11 headers are loaded and they do not reach genesis.
+    */
   def getMedianTimePast: Option[Long] = {
-    if (headers.length < Blockchain.nMedianTimeSpan) {
+    val window = headers.take(Blockchain.nMedianTimeSpan)
+    if (window.length < Blockchain.nMedianTimeSpan && window.last.height != 0) {
       None
     } else {
-      val sorted = headers
-        .take(Blockchain.nMedianTimeSpan)
-        .map(_.time.toLong)
-        .sorted
+      val sorted = window.map(_.time.toLong).sorted
       Some(sorted.apply(sorted.length / 2))
     }
   }
