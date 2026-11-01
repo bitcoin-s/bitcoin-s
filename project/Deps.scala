@@ -76,7 +76,7 @@ object Deps {
     val scoptV = "4.2.0"
     val sttpV = "3.11.0" // https://github.com/softwaremill/sttp
     val codehausV = "3.1.12"
-    val scalaJsTimeV = "2.8.0"
+    val scalaJsTimeV = "2.9.0"
     val zxingV = "3.5.0"
 
     val monixV = "3.5.2"
