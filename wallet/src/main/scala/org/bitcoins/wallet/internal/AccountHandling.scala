@@ -219,24 +219,24 @@ case class AccountHandling(
                 ],
                 NoStream,
                 Effect.Read & Effect.Write & Effect.Transactional] = {
-    val receiveAddressesA
-        : DBIOAction[Vector[
-                       BitcoinAddress
-                     ],
-                     NoStream,
-                     Effect.Read & Effect.Write & Effect.Transactional] = {
+    val receiveAddressesA: DBIOAction[
+      Vector[
+        BitcoinAddress
+      ],
+      NoStream,
+      Effect.Read & Effect.Write & Effect.Transactional] = {
       DBIOAction.sequence {
         1.to(addressBatchSize)
           .map(_ => getNewAddressAction(account))
       }
     }.map(_.toVector)
 
-    val changeAddressesA
-        : DBIOAction[Vector[
-                       BitcoinAddress
-                     ],
-                     NoStream,
-                     Effect.Read & Effect.Write & Effect.Transactional] = {
+    val changeAddressesA: DBIOAction[
+      Vector[
+        BitcoinAddress
+      ],
+      NoStream,
+      Effect.Read & Effect.Write & Effect.Transactional] = {
       DBIOAction.sequence {
         1.to(addressBatchSize)
           .map(_ => getNewChangeAddressAction(account))
