@@ -5,6 +5,12 @@ import org.bitcoins.core.api.dlc.wallet.{
   DLCWalletApi,
   IncomingDLCOfferHandlingApi
 }
+import org.bitcoins.core.api.wallet.{
+  AccountHandlingApi,
+  AddressHandlingApi,
+  UtxoHandlingApi
+}
+import org.bitcoins.core.currency.Satoshis
 import org.bitcoins.core.api.dlc.wallet.db.{DLCContactDb, IncomingDLCOfferDb}
 import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.dlc.models.DLCMessage
@@ -112,6 +118,65 @@ object MockDLCNodeApi {
       }
 
     private val walletHandler: InvocationHandler = new InvocationHandler {
+      private val utxoHandling: UtxoHandlingApi =
+        Proxy
+          .newProxyInstance(
+            classOf[UtxoHandlingApi].getClassLoader,
+            Array(classOf[UtxoHandlingApi]),
+            (_: Any, method: Method, _: Array[Object]) =>
+              method.getName match {
+                case "getUtxos" =>
+                  Future.successful(Vector.empty).asInstanceOf[AnyRef]
+                case "toString" => "MockUtxoHandlingApiProxy"
+                case _ =>
+                  throw new UnsupportedOperationException(
+                    s"${method.getName} is not implemented in MockDLCNodeApi utxo handling proxy")
+              }
+          )
+          .asInstanceOf[UtxoHandlingApi]
+
+      private val addressHandling: AddressHandlingApi =
+        Proxy
+          .newProxyInstance(
+            classOf[AddressHandlingApi].getClassLoader,
+            Array(classOf[AddressHandlingApi]),
+            (_: Any, method: Method, _: Array[Object]) =>
+              method.getName match {
+                case "getAddresses" =>
+                  Future.successful(Vector.empty).asInstanceOf[AnyRef]
+                case "getSpentAddresses" =>
+                  Future.successful(Vector.empty).asInstanceOf[AnyRef]
+                case "getFundedAddresses" =>
+                  Future.successful(Vector.empty).asInstanceOf[AnyRef]
+                case "getUnusedAddresses" =>
+                  Future.successful(Vector.empty).asInstanceOf[AnyRef]
+                case "getAddressTags" =>
+                  Future.successful(Vector.empty).asInstanceOf[AnyRef]
+                case "toString" => "MockAddressHandlingApiProxy"
+                case _ =>
+                  throw new UnsupportedOperationException(
+                    s"${method.getName} is not implemented in MockDLCNodeApi address handling proxy")
+              }
+          )
+          .asInstanceOf[AddressHandlingApi]
+
+      private val accountHandling: AccountHandlingApi =
+        Proxy
+          .newProxyInstance(
+            classOf[AccountHandlingApi].getClassLoader,
+            Array(classOf[AccountHandlingApi]),
+            (_: Any, method: Method, _: Array[Object]) =>
+              method.getName match {
+                case "getAccounts" =>
+                  Future.successful(Vector.empty).asInstanceOf[AnyRef]
+                case "toString" => "MockAccountHandlingApiProxy"
+                case _ =>
+                  throw new UnsupportedOperationException(
+                    s"${method.getName} is not implemented in MockDLCNodeApi account handling proxy")
+              }
+          )
+          .asInstanceOf[AccountHandlingApi]
+
       override def invoke(
           proxy: Any,
           method: Method,
@@ -119,6 +184,20 @@ object MockDLCNodeApi {
         method.getName match {
           case "incomingOfferHandling" =>
             incomingOfferHandlingMock.asInstanceOf[AnyRef]
+          case "isEmpty" =>
+            Future.successful(true).asInstanceOf[AnyRef]
+          case "getBalance" =>
+            Future.successful(Satoshis.zero).asInstanceOf[AnyRef]
+          case "getConfirmedBalance" =>
+            Future.successful(Satoshis.zero).asInstanceOf[AnyRef]
+          case "getUnconfirmedBalance" =>
+            Future.successful(Satoshis.zero).asInstanceOf[AnyRef]
+          case "utxoHandling" =>
+            utxoHandling.asInstanceOf[AnyRef]
+          case "addressHandling" =>
+            addressHandling.asInstanceOf[AnyRef]
+          case "accountHandling" =>
+            accountHandling.asInstanceOf[AnyRef]
           case "toString" => "MockDLCWalletApiProxy"
           case _ =>
             throw new UnsupportedOperationException(

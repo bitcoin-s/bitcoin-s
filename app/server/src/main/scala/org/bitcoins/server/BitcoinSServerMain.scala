@@ -564,7 +564,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                 network = nodeConf.network,
                 startedTorConfigF = torConfStarted,
                 nodeApiF = nodeApiF,
-                dlcNodeF = dlcNodeF
+                dlcNodeF = dlcNodeF,
+                walletApiF = walletLoaderF.map(_.walletHolder),
+                walletLifecycleApiF =
+                  walletLoaderF.map(new LoaderWalletGrpcLifecycleApi(_))
               ))
           Server(
             conf = nodeConf,
@@ -588,7 +591,10 @@ class BitcoinSServerMain(override val serverArgParser: ServerArgParser)(implicit
                 network = nodeConf.network,
                 startedTorConfigF = torConfStarted,
                 nodeApiF = nodeApiF,
-                dlcNodeF = dlcNodeF
+                dlcNodeF = dlcNodeF,
+                walletApiF = walletLoaderF.map(_.walletHolder),
+                walletLifecycleApiF =
+                  walletLoaderF.map(new LoaderWalletGrpcLifecycleApi(_))
               ))
           Server(
             conf = nodeConf,
