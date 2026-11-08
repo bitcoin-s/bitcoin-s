@@ -36,6 +36,11 @@ object PSBTGlobalKeyId extends PSBTKeyIdFactory[PSBTGlobalKeyId] {
       case UnsignedTransactionKeyId.byte => UnsignedTransactionKeyId
       case XPubKeyKeyId.byte             => XPubKeyKeyId
       case VersionKeyId.byte             => VersionKeyId
+      case TxVersionKeyId.byte           => TxVersionKeyId
+      case FallbackLocktimeKeyId.byte    => FallbackLocktimeKeyId
+      case InputCountKeyId.byte          => InputCountKeyId
+      case OutputCountKeyId.byte         => OutputCountKeyId
+      case TxModifiableKeyId.byte        => TxModifiableKeyId
       case _: Byte                       => UnknownKeyId
     }
 
@@ -54,6 +59,32 @@ object PSBTGlobalKeyId extends PSBTKeyIdFactory[PSBTGlobalKeyId] {
   case object VersionKeyId extends PSBTGlobalKeyId {
     override val byte: Byte = 0xfb.byteValue
     type RecordType = GlobalPSBTRecord.Version
+  }
+
+  // BIP 370 fields, only allowed in version 2 PSBTs
+  case object TxVersionKeyId extends PSBTGlobalKeyId {
+    override val byte: Byte = 0x02.byteValue
+    type RecordType = Nothing
+  }
+
+  case object FallbackLocktimeKeyId extends PSBTGlobalKeyId {
+    override val byte: Byte = 0x03.byteValue
+    type RecordType = Nothing
+  }
+
+  case object InputCountKeyId extends PSBTGlobalKeyId {
+    override val byte: Byte = 0x04.byteValue
+    type RecordType = Nothing
+  }
+
+  case object OutputCountKeyId extends PSBTGlobalKeyId {
+    override val byte: Byte = 0x05.byteValue
+    type RecordType = Nothing
+  }
+
+  case object TxModifiableKeyId extends PSBTGlobalKeyId {
+    override val byte: Byte = 0x06.byteValue
+    type RecordType = Nothing
   }
 
   case object UnknownKeyId extends PSBTGlobalKeyId {
@@ -92,6 +123,11 @@ object PSBTInputKeyId extends PSBTKeyIdFactory[PSBTInputKeyId] {
       case TRBIP32DerivationPathKeyId.byte     => TRBIP32DerivationPathKeyId
       case TRInternalKeyKeyId.byte             => TRInternalKeyKeyId
       case TRMerkelRootKeyId.byte              => TRMerkelRootKeyId
+      case PreviousTxIdKeyId.byte              => PreviousTxIdKeyId
+      case OutputIndexKeyId.byte               => OutputIndexKeyId
+      case SequenceKeyId.byte                  => SequenceKeyId
+      case RequiredTimeLocktimeKeyId.byte      => RequiredTimeLocktimeKeyId
+      case RequiredHeightLocktimeKeyId.byte    => RequiredHeightLocktimeKeyId
       case _: Byte                             => UnknownKeyId
 
     }
@@ -201,6 +237,32 @@ object PSBTInputKeyId extends PSBTKeyIdFactory[PSBTInputKeyId] {
     type RecordType = InputPSBTRecord.TRMerkelRoot
   }
 
+  // BIP 370 fields, only allowed in version 2 PSBTs
+  case object PreviousTxIdKeyId extends PSBTInputKeyId {
+    override val byte: Byte = 0x0e.byteValue
+    type RecordType = Nothing
+  }
+
+  case object OutputIndexKeyId extends PSBTInputKeyId {
+    override val byte: Byte = 0x0f.byteValue
+    type RecordType = Nothing
+  }
+
+  case object SequenceKeyId extends PSBTInputKeyId {
+    override val byte: Byte = 0x10.byteValue
+    type RecordType = Nothing
+  }
+
+  case object RequiredTimeLocktimeKeyId extends PSBTInputKeyId {
+    override val byte: Byte = 0x11.byteValue
+    type RecordType = Nothing
+  }
+
+  case object RequiredHeightLocktimeKeyId extends PSBTInputKeyId {
+    override val byte: Byte = 0x12.byteValue
+    type RecordType = Nothing
+  }
+
   case object UnknownKeyId extends PSBTInputKeyId {
     override val byte: Byte = Byte.MaxValue
     type RecordType = InputPSBTRecord.Unknown
@@ -223,6 +285,8 @@ object PSBTOutputKeyId extends PSBTKeyIdFactory[PSBTOutputKeyId] {
       case TRInternalKeyKeyId.byte         => TRInternalKeyKeyId
       case TaprootTreeKeyId.byte           => TaprootTreeKeyId
       case TRBIP32DerivationPathKeyId.byte => TRBIP32DerivationPathKeyId
+      case AmountKeyId.byte                => AmountKeyId
+      case ScriptKeyId.byte                => ScriptKeyId
       case _: Byte                         => UnknownKeyId
     }
 
@@ -254,6 +318,17 @@ object PSBTOutputKeyId extends PSBTKeyIdFactory[PSBTOutputKeyId] {
   case object TRBIP32DerivationPathKeyId extends PSBTOutputKeyId {
     override val byte: Byte = 0x07.byteValue
     type RecordType = OutputPSBTRecord.TRBIP32DerivationPath
+  }
+
+  // BIP 370 fields, only allowed in version 2 PSBTs
+  case object AmountKeyId extends PSBTOutputKeyId {
+    override val byte: Byte = 0x03.byteValue
+    type RecordType = Nothing
+  }
+
+  case object ScriptKeyId extends PSBTOutputKeyId {
+    override val byte: Byte = 0x04.byteValue
+    type RecordType = Nothing
   }
 
   case object UnknownKeyId extends PSBTOutputKeyId {
