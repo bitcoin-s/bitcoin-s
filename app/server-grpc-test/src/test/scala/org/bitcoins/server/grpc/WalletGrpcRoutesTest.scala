@@ -7,8 +7,14 @@ import org.bitcoins.core.protocol.BitcoinAddress
 import org.bitcoins.core.protocol.script.P2WPKHWitnessSPKV0
 import org.bitcoins.core.wallet.utxo.TxoState
 import org.bitcoins.crypto.ECPublicKey
+import org.bitcoins.core.api.commons.ArgumentSource
+import org.bitcoins.core.crypto.{ExtKeyVersion, ExtPrivateKey}
+import org.bitcoins.keymanager.WalletStorage
 import org.bitcoins.testkit.fixtures.ServerGrpcFixture
+import io.grpc.{Status, StatusRuntimeException}
 import org.scalatest.FutureOutcome
+
+import scala.jdk.CollectionConverters._
 
 class WalletGrpcRoutesTest extends ServerGrpcFixture {
   override type GrpcClient = WalletRoutesClient
@@ -392,5 +398,222 @@ class WalletGrpcRoutesTest extends ServerGrpcFixture {
       // Any double value is acceptable; -1 is returned when the fee provider fails
       assert(response.satsPerVbyte >= -1.0)
     }
+  }
+
+  // ── Key-manager / wallet-lifecycle endpoints ───────────────────────────────
+
+  private val mnemonic =
+    "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+
+  private def uniqueName(prefix: String): String =
+    prefix + scala.util.Random.alphanumeric.take(8).mkString.toLowerCase
+
+  private def assertGrpcStatus(
+      f: scala.concurrent.Future[?],
+      code: Status.Code) = {
+    f.failed.map {
+      case e: StatusRuntimeException =>
+        assert(e.getStatus.getCode == code)
+      case other =>
+        fail(s"Expected StatusRuntimeException with $code, got $other")
+    }
+  }
+
+  it must "importseed then exportseed round trips the mnemonic" in {
+    case clientServer =>
+      val client = clientServer.client
+      val name = uniqueName("imp")
+      for {
+        imported <- client.importSeed(
+          ImportSeedRequest(walletName = Some(name), mnemonic = mnemonic))
+        exported <- client.exportSeed(
+          ExportSeedRequest(walletName = Some(name)))
+      } yield {
+        assert(imported.success)
+        assert(exported.mnemonic == mnemonic)
+      }
+  }
+
+  it must "importseed does not overwrite an existing seed" in {
+    case clientServer =>
+      val client = clientServer.client
+      val name = uniqueName("dup")
+      val req = ImportSeedRequest(walletName = Some(name), mnemonic = mnemonic)
+      for {
+        first <- client.importSeed(req)
+        second <- client.importSeed(req)
+      } yield {
+        assert(first.success)
+        assert(!second.success)
+      }
+  }
+
+  it must "importseed with a password requires that password to export" in {
+    case clientServer =>
+      val client = clientServer.client
+      val name = uniqueName("enc")
+      val pw = "topsecret"
+      for {
+        _ <- client.importSeed(
+          ImportSeedRequest(walletName = Some(name),
+                            mnemonic = mnemonic,
+                            password = Some(pw)))
+        exported <- client.exportSeed(
+          ExportSeedRequest(walletName = Some(name), password = Some(pw)))
+        wrong <- assertGrpcStatus(
+          client.exportSeed(
+            ExportSeedRequest(walletName = Some(name),
+                              password = Some("wrong"))),
+          Status.Code.FAILED_PRECONDITION)
+      } yield {
+        assert(exported.mnemonic == mnemonic)
+        wrong
+      }
+  }
+
+  it must "importseed rejects an invalid mnemonic and wallet name" in {
+    case clientServer =>
+      val client = clientServer.client
+      for {
+        _ <- assertGrpcStatus(
+          client.importSeed(
+            ImportSeedRequest(walletName = Some(uniqueName("bad")),
+                              mnemonic = "not a real mnemonic")),
+          Status.Code.INVALID_ARGUMENT)
+        r <- assertGrpcStatus(
+          client.importSeed(
+            ImportSeedRequest(walletName = Some("bad name!"),
+                              mnemonic = mnemonic)),
+          Status.Code.INVALID_ARGUMENT)
+      } yield r
+  }
+
+  it must "markseedasbackedup sets the backup time" in { case clientServer =>
+    val client = clientServer.client
+    val name = uniqueName("bkp")
+    for {
+      _ <- client.importSeed(
+        ImportSeedRequest(walletName = Some(name), mnemonic = mnemonic))
+      before <- client.getSeedBackupTime(
+        GetSeedBackupTimeRequest(walletName = Some(name)))
+      marked <- client.markSeedAsBackedUp(
+        MarkSeedAsBackedUpRequest(walletName = Some(name)))
+      after <- client.getSeedBackupTime(
+        GetSeedBackupTimeRequest(walletName = Some(name)))
+      // once backed up the mnemonic can no longer be exported
+      r <- assertGrpcStatus(
+        client.exportSeed(ExportSeedRequest(walletName = Some(name))),
+        Status.Code.FAILED_PRECONDITION)
+    } yield {
+      assert(before.backupEpochSeconds.isEmpty)
+      assert(marked.message == "ok")
+      assert(after.backupEpochSeconds.exists(_ > 0))
+      r
+    }
+  }
+
+  it must "exportseed fails for a wallet that does not exist" in {
+    case clientServer =>
+      assertGrpcStatus(
+        clientServer.client.exportSeed(
+          ExportSeedRequest(walletName = Some(uniqueName("missing")))),
+        Status.Code.FAILED_PRECONDITION)
+  }
+
+  it must "importxprv writes a seed that can be read back" in {
+    case clientServer =>
+      val client = clientServer.client
+      val name = uniqueName("xprv")
+      val xprv = ExtPrivateKey.freshRootKey(ExtKeyVersion.LegacyMainNetPriv)
+      for {
+        _ <- client.importXprv(
+          ImportXprvRequest(walletName = Some(name),
+                            xprv = xprv.toStringSensitive))
+        backup <- client.getSeedBackupTime(
+          GetSeedBackupTimeRequest(walletName = Some(name)))
+        wallets <- client.listWallets(ListWalletsRequest())
+      } yield {
+        assert(backup.backupEpochSeconds.isEmpty)
+        assert(wallets.walletNames.contains(name))
+      }
+  }
+
+  it must "importxprv rejects an invalid xprv" in { case clientServer =>
+    assertGrpcStatus(clientServer.client.importXprv(
+                       ImportXprvRequest(walletName = Some(uniqueName("badx")),
+                                         xprv = "not-an-xprv")),
+                     Status.Code.INVALID_ARGUMENT)
+  }
+
+  it must "listwallets returns imported wallet names" in { case clientServer =>
+    val client = clientServer.client
+    val a = uniqueName("lsa")
+    val b = uniqueName("lsb")
+    for {
+      _ <- client.importSeed(
+        ImportSeedRequest(walletName = Some(a), mnemonic = mnemonic))
+      _ <- client.importSeed(
+        ImportSeedRequest(walletName = Some(b), mnemonic = mnemonic))
+      wallets <- client.listWallets(ListWalletsRequest())
+    } yield {
+      assert(wallets.walletNames.contains(a))
+      assert(wallets.walletNames.contains(b))
+    }
+  }
+
+  it must "keymanagerpassphraseset and keymanagerpassphrasechange re-encrypt the seed" in {
+    case clientServer =>
+      val client = clientServer.client
+      val lifecycle = clientServer.lifecycleApi
+      val name = uniqueName("pw")
+      // point "the current wallet" at a throwaway seed instead of the fixture's
+      lifecycle.kmConfOverrideOpt = Some(
+        lifecycle.kmConf.copy(walletNameOverride =
+          Some(ArgumentSource.RpcArgument(name))))
+      val seedPath = lifecycle.kmConf.seedPath
+      for {
+        _ <- client.importSeed(
+          ImportSeedRequest(walletName = Some(name), mnemonic = mnemonic))
+        _ <- client.keyManagerPassphraseSet(
+          KeyManagerPassphraseSetRequest(password = "first"))
+        exported1 <- client.exportSeed(
+          ExportSeedRequest(walletName = Some(name), password = Some("first")))
+        _ <- client.keyManagerPassphraseChange(
+          KeyManagerPassphraseChangeRequest(oldPassword = "first",
+                                            newPassword = "second"))
+        exported2 <- client.exportSeed(
+          ExportSeedRequest(walletName = Some(name), password = Some("second")))
+        oldFails <- assertGrpcStatus(
+          client.exportSeed(
+            ExportSeedRequest(walletName = Some(name),
+                              password = Some("first"))),
+          Status.Code.FAILED_PRECONDITION)
+      } yield {
+        assert(WalletStorage.seedExists(seedPath))
+        assert(exported1.mnemonic == mnemonic)
+        assert(exported2.mnemonic == mnemonic)
+        oldFails
+      }
+  }
+
+  it must "loadwallet delegates to the wallet loader" in { case clientServer =>
+    val client = clientServer.client
+    val name = uniqueName("load")
+    client
+      .loadWallet(
+        LoadWalletRequest(walletName = Some(name),
+                          aesPassword = Some("password")))
+      .map { response =>
+        assert(response.walletName == name)
+        val requests = clientServer.lifecycleApi.loadRequests.asScala.toVector
+        assert(requests.map(_._1) == Vector(Some(name)))
+        assert(requests.head._2.exists(_.toStringSensitive == "password"))
+      }
+  }
+
+  it must "loadwallet rejects an invalid wallet name" in { case clientServer =>
+    assertGrpcStatus(clientServer.client.loadWallet(
+                       LoadWalletRequest(walletName = Some("bad name!"))),
+                     Status.Code.INVALID_ARGUMENT)
   }
 }

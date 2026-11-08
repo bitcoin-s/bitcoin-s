@@ -68,7 +68,8 @@ class ServerGrpc(
     startedTorConfigF: Future[Unit],
     nodeApiF: Future[NodeApi],
     dlcNodeF: Future[DLCNodeApi],
-    walletApiF: Future[DLCNeutrinoHDWalletApi]
+    walletApiF: Future[DLCNeutrinoHDWalletApi],
+    walletLifecycleApiF: Future[WalletGrpcLifecycleApi]
 )(implicit system: ActorSystem)
     extends StartStopAsync[Unit]
     with BitcoinSLogger {
@@ -91,7 +92,10 @@ class ServerGrpc(
     new ChainGrpcRoutes(chainApi, network, startedTorConfigF)
   private val nodeImplF = nodeApiF.map(n => new NodeGrpcRoutes(n))
   private val dlcImplF = dlcNodeF.map(n => new DLCGrpcRoutes(n))
-  private val walletImplF = walletApiF.map(w => new WalletGrpcRoutes(w))
+  private val walletImplF = for {
+    w <- walletApiF
+    lifecycle <- walletLifecycleApiF
+  } yield new WalletGrpcRoutes(w, lifecycle)
 
   private val handlerF: Future[HttpRequest => Future[HttpResponse]] = {
     for {

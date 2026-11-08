@@ -64,7 +64,8 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
       startedTorConfigF = Future.unit,
       nodeApiF = Future.successful(clientServer.nodeApi),
       dlcNodeF = Future.successful(dlcNode),
-      walletApiF = Future.successful(walletApi)
+      walletApiF = Future.successful(walletApi),
+      walletLifecycleApiF = Future.successful(clientServer.lifecycleApi)
     )
     val clientSettings = org.apache.pekko.grpc.GrpcClientSettings
       .connectToServiceAt("localhost", port)
@@ -105,7 +106,8 @@ class CommonGrpcRoutesTest extends ServerGrpcFixture {
       startedTorConfigF = Future.unit,
       nodeApiF = Future.successful(MockNodeApi),
       dlcNodeF = Future.successful(dlcNode),
-      walletApiF = Future.successful(walletApi)
+      walletApiF = Future.successful(walletApi),
+      walletLifecycleApiF = Future.successful(clientServer.lifecycleApi)
     )
     val clientSettings = org.apache.pekko.grpc.GrpcClientSettings
       .connectToServiceAt("localhost", port)

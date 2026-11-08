@@ -16,7 +16,19 @@ import org.bitcoins.core.wallet.utxo.{
   AddressLabelTagType,
   TxoState
 }
-import org.bitcoins.crypto.DoubleSha256DigestBE
+import org.bitcoins.commons.util.WalletNames
+import org.bitcoins.core.crypto.{ExtPrivateKey, MnemonicCode}
+import org.bitcoins.crypto.{AesPassword, DoubleSha256DigestBE}
+import org.bitcoins.keymanager.{
+  DecryptedExtPrivKey,
+  DecryptedMnemonic,
+  WalletStorage
+}
+import org.bitcoins.keymanager.config.KeyManagerAppConfig
+
+import java.nio.file.{Files, Path}
+import java.time.Instant
+import scala.util.{Failure, Success, Try}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -24,8 +36,9 @@ import scala.concurrent.{ExecutionContext, Future}
   *
   * This implements a subset of [[org.bitcoins.server.WalletRoutes]] over gRPC.
   */
-class WalletGrpcRoutes(wallet: DLCNeutrinoHDWalletApi)(implicit
-    ec: ExecutionContext)
+class WalletGrpcRoutes(
+    wallet: DLCNeutrinoHDWalletApi,
+    lifecycle: WalletGrpcLifecycleApi)(implicit ec: ExecutionContext)
     extends WalletRoutes {
 
   private def formatCurrencyUnit(
@@ -452,45 +465,159 @@ class WalletGrpcRoutes(wallet: DLCNeutrinoHDWalletApi)(implicit
   }
 
   // ── Key-manager / wallet-lifecycle operations ──────────────────────────────
-  // These require access to WalletAppConfig / KeyManagerAppConfig which is not
-  // available through DLCNeutrinoHDWalletApi alone.  They are left as
-  // UNIMPLEMENTED stubs so that the generated gRPC interface is complete.
 
-  private def unimplemented[T](name: String): Future[T] =
-    Future.failed(Status.UNIMPLEMENTED
-      .withDescription(
-        s"$name is not yet available via gRPC — use the HTTP JSON-RPC instead")
-      .asRuntimeException())
+  private def kmConf: KeyManagerAppConfig = lifecycle.kmConf
+
+  private def invalidArgument(msg: String): Throwable =
+    Status.INVALID_ARGUMENT.withDescription(msg).asRuntimeException()
+
+  private def failedPrecondition(msg: String): Throwable =
+    Status.FAILED_PRECONDITION.withDescription(msg).asRuntimeException()
+
+  /** Runs `f`, mapping [[IllegalArgumentException]]s to INVALID_ARGUMENT and
+    * any other failure to FAILED_PRECONDITION (e.g. wrong password, seed
+    * already backed up, seed missing).
+    */
+  private def attempt[T](f: => T): Future[T] =
+    Try(f) match {
+      case Success(v)                                 => Future.successful(v)
+      case Failure(e: io.grpc.StatusRuntimeException) => Future.failed(e)
+      case Failure(e: IllegalArgumentException) =>
+        Future.failed(invalidArgument(e.getMessage))
+      case Failure(e) =>
+        Future.failed(failedPrecondition(String.valueOf(e.getMessage)))
+    }
+
+  private def passwordOpt(opt: Option[String]): Option[AesPassword] =
+    opt.filter(_.nonEmpty).map(AesPassword.fromString)
+
+  private def walletNameOpt(opt: Option[String]): Option[String] = {
+    val nameOpt = opt.filter(_.nonEmpty)
+    nameOpt.foreach { name =>
+      if (name.length > WalletNames.walletNameMaxLen)
+        throw new IllegalArgumentException(
+          s"Invalid wallet name length: ${name.length}. Max length is ${WalletNames.walletNameMaxLen}.")
+      if (!WalletNames.validateWalletName(name))
+        throw new IllegalArgumentException(s"Invalid wallet name `$name`.")
+    }
+    nameOpt
+  }
+
+  private def seedPath(walletName: Option[String]): Path = {
+    val prefix = walletName
+      .map(_ + "-")
+      .getOrElse(KeyManagerAppConfig.DEFAULT_WALLET_NAME)
+    kmConf.seedFolder.resolve(prefix + WalletStorage.ENCRYPTED_SEED_FILE_NAME)
+  }
+
+  private def genesisTime: Instant =
+    Instant.ofEpochSecond(WalletStorage.GENESIS_TIME)
 
   override def keyManagerPassphraseChange(in: KeyManagerPassphraseChangeRequest)
-      : Future[KeyManagerPassphraseChangeResponse] =
-    unimplemented("keyManagerPassphraseChange")
+      : Future[KeyManagerPassphraseChangeResponse] = attempt {
+    WalletStorage.changeAesPassword(
+      kmConf.seedPath,
+      Some(AesPassword.fromString(in.oldPassword)),
+      Some(AesPassword.fromString(in.newPassword)))
+    KeyManagerPassphraseChangeResponse()
+  }
 
   override def keyManagerPassphraseSet(in: KeyManagerPassphraseSetRequest)
-      : Future[KeyManagerPassphraseSetResponse] =
-    unimplemented("keyManagerPassphraseSet")
+      : Future[KeyManagerPassphraseSetResponse] = attempt {
+    WalletStorage.changeAesPassword(kmConf.seedPath,
+                                    None,
+                                    Some(AesPassword.fromString(in.password)))
+    KeyManagerPassphraseSetResponse()
+  }
 
   override def importSeed(in: ImportSeedRequest): Future[ImportSeedResponse] =
-    unimplemented("importSeed")
+    attempt {
+      val path = seedPath(walletNameOpt(in.walletName))
+      val mnemonic = MnemonicCode.fromWords(
+        in.mnemonic.trim.split("\\s+").toVector.filter(_.nonEmpty))
+      val decrypted = DecryptedMnemonic(mnemonic,
+                                        genesisTime,
+                                        backupTimeOpt = None,
+                                        imported = true)
+      val state = passwordOpt(in.password) match {
+        case Some(pass) => decrypted.encrypt(pass)
+        case None       => decrypted
+      }
+      if (Files.exists(path)) {
+        // mirrors the HTTP importseed behavior: never overwrite an existing seed
+        ImportSeedResponse(success = false)
+      } else {
+        WalletStorage.writeSeedToDisk(path, state)
+        ImportSeedResponse(success = true)
+      }
+    }
 
   override def exportSeed(in: ExportSeedRequest): Future[ExportSeedResponse] =
-    unimplemented("exportSeed")
+    attempt {
+      val path = seedPath(walletNameOpt(in.walletName))
+      val words = WalletStorage
+        .readDecryptedSeedPhraseForBackup(path, passwordOpt(in.password))
+        .get
+      ExportSeedResponse(mnemonic = words.mkString(" "))
+    }
 
   override def markSeedAsBackedUp(
       in: MarkSeedAsBackedUpRequest): Future[MarkSeedAsBackedUpResponse] =
-    unimplemented("markSeedAsBackedUp")
+    attempt {
+      val path = seedPath(walletNameOpt(in.walletName))
+      WalletStorage.markSeedAsBackedUp(path, passwordOpt(in.password)).get
+      MarkSeedAsBackedUpResponse(message = "ok")
+    }
 
   override def getSeedBackupTime(
       in: GetSeedBackupTimeRequest): Future[GetSeedBackupTimeResponse] =
-    unimplemented("getSeedBackupTime")
+    attempt {
+      val path = seedPath(walletNameOpt(in.walletName))
+      val backupTimeOpt =
+        WalletStorage.getSeedBackupTime(path, passwordOpt(in.password)).get
+      GetSeedBackupTimeResponse(backupEpochSeconds =
+        backupTimeOpt.map(_.getEpochSecond))
+    }
 
   override def importXprv(in: ImportXprvRequest): Future[ImportXprvResponse] =
-    unimplemented("importXprv")
+    attempt {
+      val path = seedPath(walletNameOpt(in.walletName))
+      val xprv = ExtPrivateKey.fromString(in.xprv)
+      val decrypted = DecryptedExtPrivKey(xprv,
+                                          genesisTime,
+                                          backupTimeOpt = None,
+                                          imported = true)
+      val state = passwordOpt(in.password) match {
+        case Some(pass) => decrypted.encrypt(pass)
+        case None       => decrypted
+      }
+      WalletStorage.writeSeedToDisk(path, state)
+      ImportXprvResponse()
+    }
 
   override def listWallets(
-      in: ListWalletsRequest): Future[ListWalletsResponse] =
-    unimplemented("listWallets")
+      in: ListWalletsRequest): Future[ListWalletsResponse] = attempt {
+    val names = Option(kmConf.seedFolder.toFile.list()).toVector
+      .flatMap(_.toVector)
+      .flatMap { fn =>
+        fn.split(WalletStorage.ENCRYPTED_SEED_FILE_NAME).headOption.flatMap {
+          wn =>
+            if (wn.endsWith("-")) Some(wn.substring(0, wn.length - 1))
+            else None
+        }
+      }
+    ListWalletsResponse(walletNames = names)
+  }
 
-  override def loadWallet(in: LoadWalletRequest): Future[LoadWalletResponse] =
-    unimplemented("loadWallet")
+  override def loadWallet(in: LoadWalletRequest): Future[LoadWalletResponse] = {
+    Try((walletNameOpt(in.walletName), passwordOpt(in.aesPassword))) match {
+      case Failure(e) =>
+        Future.failed(invalidArgument(String.valueOf(e.getMessage)))
+      case Success((nameOpt, passOpt)) =>
+        lifecycle.loadWallet(nameOpt, passOpt).map { _ =>
+          LoadWalletResponse(walletName =
+            nameOpt.getOrElse(KeyManagerAppConfig.DEFAULT_WALLET_NAME))
+        }
+    }
+  }
 }

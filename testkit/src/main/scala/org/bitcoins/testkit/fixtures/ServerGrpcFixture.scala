@@ -3,6 +3,8 @@ import org.apache.pekko.grpc.GrpcClientSettings
 import org.apache.pekko.grpc.scaladsl.PekkoGrpcClient
 import org.bitcoins.core.api.chain.ChainApi
 import org.bitcoins.core.config.{BitcoinNetwork, RegTest}
+import org.bitcoins.crypto.AesPassword
+import org.bitcoins.keymanager.config.KeyManagerAppConfig
 import org.bitcoins.dlc.node.DLCNode
 import org.bitcoins.node.Node
 import org.bitcoins.rpc.util.RpcUtil
@@ -13,6 +15,7 @@ import org.bitcoins.server.grpc.{
   DLCRoutesClient,
   NodeRoutesClient,
   ServerGrpc,
+  WalletGrpcLifecycleApi,
   WalletRoutesClient
 }
 import org.bitcoins.testkit.BitcoinSTestAppConfig
@@ -25,7 +28,33 @@ import org.bitcoins.testkit.wallet.BitcoinSWalletTest
 import org.bitcoins.dlc.wallet.DLCWallet
 import org.scalatest.FutureOutcome
 
+import java.util.concurrent.ConcurrentLinkedQueue
 import scala.concurrent.Future
+
+/** A [[WalletGrpcLifecycleApi]] for tests. Actually swapping wallets would stop
+  * the fixture's configs, so [[loadWallet]] only records the request.
+  */
+class TestWalletGrpcLifecycleApi(baseKmConf: KeyManagerAppConfig)
+    extends WalletGrpcLifecycleApi {
+
+  /** Lets a test point "the current wallet" at a different seed file, so it
+    * does not mutate the seed of the wallet backing the fixture.
+    */
+  @volatile var kmConfOverrideOpt: Option[KeyManagerAppConfig] = None
+
+  override def kmConf: KeyManagerAppConfig =
+    kmConfOverrideOpt.getOrElse(baseKmConf)
+
+  val loadRequests =
+    new ConcurrentLinkedQueue[(Option[String], Option[AesPassword])]()
+
+  override def loadWallet(
+      walletNameOpt: Option[String],
+      aesPasswordOpt: Option[AesPassword]): Future[Unit] = {
+    loadRequests.add((walletNameOpt, aesPasswordOpt))
+    Future.unit
+  }
+}
 
 trait ServerGrpcFixture extends NodeTestWithCachedBitcoindNewest {
   lazy val network: BitcoinNetwork = RegTest
@@ -35,7 +64,8 @@ trait ServerGrpcFixture extends NodeTestWithCachedBitcoindNewest {
       chainApi: ChainApi,
       nodeApi: Node,
       walletApi: DLCWallet,
-      appConfig: BitcoinSAppConfig)
+      appConfig: BitcoinSAppConfig,
+      lifecycleApi: TestWalletGrpcLifecycleApi)
 
   type GrpcClient <: PekkoGrpcClient
   final override type FixtureParam = GrpcClientServerFixture[GrpcClient]
@@ -51,29 +81,40 @@ trait ServerGrpcFixture extends NodeTestWithCachedBitcoindNewest {
       port: Int,
       build: GrpcClientSettings => T,
       serverPackageF: Future[
-        (ServerGrpc, ChainApi, Node, DLCWallet, BitcoinSAppConfig)])
-      : Future[GrpcClientServerFixture[T]] = {
+        (ServerGrpc,
+         ChainApi,
+         Node,
+         DLCWallet,
+         BitcoinSAppConfig,
+         TestWalletGrpcLifecycleApi)]): Future[GrpcClientServerFixture[T]] = {
     val clientSettings = GrpcClientSettings
       .connectToServiceAt(host, port)
       .withTls(false)
     val client: T = build(clientSettings)
     for {
-      (server, chainApi, nodeApi, walletApi, appConfig) <- serverPackageF
+      (server, chainApi, nodeApi, walletApi, appConfig, lifecycleApi) <-
+        serverPackageF
       _ <- server.start()
     } yield GrpcClientServerFixture(client,
                                     server,
                                     chainApi,
                                     nodeApi,
                                     walletApi,
-                                    appConfig)
+                                    appConfig,
+                                    lifecycleApi)
   }
 
   private def buildGrpcServer(
       tmpDir: java.io.File,
       host: String,
       port: Int,
-      rpcPassword: String = "")(implicit appConfig: BitcoinSAppConfig)
-      : Future[(ServerGrpc, ChainApi, Node, DLCWallet, BitcoinSAppConfig)] = {
+      rpcPassword: String = "")(implicit
+      appConfig: BitcoinSAppConfig): Future[(ServerGrpc,
+                                             ChainApi,
+                                             Node,
+                                             DLCWallet,
+                                             BitcoinSAppConfig,
+                                             TestWalletGrpcLifecycleApi)] = {
     val neutrinoNodeF = cachedBitcoindWithFundsF
       .flatMap(createNeutrinoNodeConnectedToBitcoindCached(_)(appConfig))
     for {
@@ -90,6 +131,7 @@ trait ServerGrpcFixture extends NodeTestWithCachedBitcoindNewest {
         walletApi.walletApi
       )(using system)
       _ = appConfig.nodeConf.addCallbacks(nodeCallbacks)
+      lifecycleApi = new TestWalletGrpcLifecycleApi(appConfig.walletConf.kmConf)
       server = new ServerGrpc(
         tmpDir.toPath,
         host,
@@ -100,11 +142,17 @@ trait ServerGrpcFixture extends NodeTestWithCachedBitcoindNewest {
         startedTorConfigF = Future.unit,
         nodeApiF = neutrinoNodeF.map(_.node),
         dlcNodeF = dlcNodeStartedF.map(_ => dlcNode),
-        walletApiF = Future.successful(walletApi)
+        walletApiF = Future.successful(walletApi),
+        walletLifecycleApiF = Future.successful(lifecycleApi)
       )
       bitcoind <- cachedBitcoindWithFundsF
       _ <- NodeTestUtil.awaitAllSync(neutrinoNode.node, bitcoind)
-    } yield (server, chainApi, neutrinoNode.node, walletApi, appConfig)
+    } yield (server,
+             chainApi,
+             neutrinoNode.node,
+             walletApi,
+             appConfig,
+             lifecycleApi)
   }
 
   def withCommonRoutesClient(
