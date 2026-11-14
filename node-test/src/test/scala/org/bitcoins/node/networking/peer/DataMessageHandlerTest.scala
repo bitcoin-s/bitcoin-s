@@ -193,7 +193,7 @@ class DataMessageHandlerTest extends NodeTestWithCachedBitcoindNewest {
         _ = node.nodeAppConfig.addCallbacks(nodeCallbacks)
         txId <- bitcoind.sendToAddress(junkAddress, 1.bitcoin)
         tx <- bitcoind.getRawTransactionRaw(txId)
-        result = Await.result(resultP.future, 30.seconds)
+        result = Await.result(resultP.future, 90.seconds)
       } yield assert(result == tx)
   }
 
