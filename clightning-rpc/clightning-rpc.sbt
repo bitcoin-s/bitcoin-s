@@ -19,7 +19,7 @@ TaskKeys.downloadCLightning := {
     Files.createDirectories(binaryDir)
   }
 
-  val version = "25.09"
+  val version = "26.06.10"
 
   val (platform, suffix) =
     if (Properties.isLinux) {
@@ -27,12 +27,12 @@ TaskKeys.downloadCLightning := {
       val processBuilder = new java.lang.ProcessBuilder("lsb_release", "-rs")
       val inputStream = new java.io.InputStreamReader(processBuilder.start().getInputStream())
       val version = new java.io.BufferedReader(inputStream).readLine()
-      if (version == "20.04") {
-        ("Ubuntu-20.04-amd64", "tar.xz")
-      } else if (version == "22.04")  {
+      if (version == "22.04")  {
         ("Ubuntu-22.04-amd64", "tar.xz")
       } else if (version == "24.04") {
         ("Ubuntu-24.04-amd64", "tar.xz")
+      } else if (version == "26.04") {
+        ("Ubuntu-26.04-amd64", "tar.xz")
       } else
         sys.error(s"Unsupported OS version=$version")
     } else {
@@ -65,12 +65,12 @@ TaskKeys.downloadCLightning := {
       .mkString
 
     val expectedHash =
-      if (platform == "Ubuntu-20.04-amd64") {
-        "d9bdd4f57dd2b617a0321162fb8983af8245314b69b5669fc69296b1f6ac3ceb"
-      } else if (platform == "Ubuntu-22.04-amd64") {
-        "4930477574b878dee4f0921df8e7d8db00958965de30645194699d2c31c2bb71"
+      if (platform == "Ubuntu-22.04-amd64") {
+        "e1e0a7e89b55060e2470d8568ba535a3124d6823c628def548cadeef4279c491"
       } else if (platform == "Ubuntu-24.04-amd64") {
-        "63bca7fae6706e6fffc10b15e05c13c275eb220a64991dafc123fa29ac95f8af"
+        "dbfb97c2a42f4446f4ac5217fff9274a3fda9996e3ea37c9c8a3e7bd8b17d200"
+      } else if (platform == "Ubuntu-26.04-amd64") {
+        "68e3ed84182c81c5b4202e91dbd5f6ed5610672562f97c009276748b2989afb8"
       }
       else sys.error(s"Unsupported OS: ${Properties.osName}")
 

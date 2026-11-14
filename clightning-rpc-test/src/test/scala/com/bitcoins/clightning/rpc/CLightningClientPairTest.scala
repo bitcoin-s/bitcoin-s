@@ -47,7 +47,7 @@ class CLightningClientPairTest extends DualCLightningFixture {
 
       closeResult <- clightning.closeChannel(channel.short_channel_id)
       _ <- bitcoind.generate(6)
-      tx <- bitcoind.getRawTransaction(closeResult.txid.get)
+      tx <- bitcoind.getRawTransaction(closeResult.closingTxId.get)
       find <- clightning.findChannel(channel.short_channel_id)
     } yield {
       assert(tx.confirmations.isDefined)

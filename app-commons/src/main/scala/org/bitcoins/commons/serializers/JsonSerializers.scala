@@ -817,7 +817,7 @@ object JsonSerializers {
     Json.reads[CLightningPeerChannel]
 
   implicit val cLightningPeerReads: Reads[CLightningPeer] =
-    Json.reads[CLightningPeer]
+    Json.using[Json.WithDefaultValues].reads[CLightningPeer]
 
   implicit val cLightningPeersReads: Reads[CLightningPeers] =
     Json.reads[CLightningPeers]

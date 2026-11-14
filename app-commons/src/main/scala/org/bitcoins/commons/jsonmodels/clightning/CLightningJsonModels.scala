@@ -161,7 +161,7 @@ object CLightningJsonModels {
       id: NodeId,
       connected: Boolean,
       features: ByteVector,
-      netaddr: Vector[String],
+      netaddr: Vector[String] = Vector.empty,
       num_channels: Int
   ) extends CLightningJsonModel
 
@@ -291,8 +291,17 @@ object CLightningJsonModels {
   case class CloseChannelResult(
       `type`: ClosedChannelType,
       tx: Option[Transaction],
-      txid: Option[DoubleSha256DigestBE]
-  ) extends CLightningJsonModel
+      txid: Option[DoubleSha256DigestBE],
+      txs: Option[Vector[Transaction]],
+      txids: Option[Vector[DoubleSha256DigestBE]]
+  ) extends CLightningJsonModel {
+
+    /** The closing txid, preferring the `txids` array (v24.11+) over the
+      * deprecated `txid` field.
+      */
+    def closingTxId: Option[DoubleSha256DigestBE] =
+      txids.flatMap(_.headOption).orElse(txid)
+  }
 
   sealed abstract class ClosedChannelType extends CLightningJsonModel
 
