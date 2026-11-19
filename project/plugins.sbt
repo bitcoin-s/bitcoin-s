@@ -54,7 +54,7 @@ addSbtPlugin("org.apache.pekko" % "pekko-grpc-sbt-plugin" % "1.2.0")
 
 // Scala.js
 //https://www.scala-js.org/doc/project/
-addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.22.0")
+addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.23.0")
 
 //https://github.com/scalacenter/scalajs-bundler
 addSbtPlugin("ch.epfl.scala" % "sbt-scalajs-bundler" % "0.21.1")
