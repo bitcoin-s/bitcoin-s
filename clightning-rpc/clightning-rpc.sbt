@@ -23,11 +23,12 @@ TaskKeys.downloadCLightning := {
 
   val (platform, suffix) =
     if (Properties.isLinux) {
-      //from: https://stackoverflow.com/a/51614324/967713
+      // from: https://stackoverflow.com/a/51614324/967713
       val processBuilder = new java.lang.ProcessBuilder("lsb_release", "-rs")
-      val inputStream = new java.io.InputStreamReader(processBuilder.start().getInputStream())
+      val inputStream =
+        new java.io.InputStreamReader(processBuilder.start().getInputStream())
       val version = new java.io.BufferedReader(inputStream).readLine()
-      if (version == "22.04")  {
+      if (version == "22.04") {
         ("Ubuntu-22.04-amd64", "tar.xz")
       } else if (version == "24.04") {
         ("Ubuntu-24.04-amd64", "tar.xz")
@@ -71,8 +72,7 @@ TaskKeys.downloadCLightning := {
         "dbfb97c2a42f4446f4ac5217fff9274a3fda9996e3ea37c9c8a3e7bd8b17d200"
       } else if (platform == "Ubuntu-26.04-amd64") {
         "68e3ed84182c81c5b4202e91dbd5f6ed5610672562f97c009276748b2989afb8"
-      }
-      else sys.error(s"Unsupported OS: ${Properties.osName}")
+      } else sys.error(s"Unsupported OS: ${Properties.osName}")
 
     val success = hash.equalsIgnoreCase(expectedHash)
     if (hash.equalsIgnoreCase(expectedHash)) {
